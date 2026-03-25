@@ -29,7 +29,7 @@ export const HomePetSummaryCard: React.FC<HomePetSummaryCardProps> = React.memo(
       fontFamilies,
     } = theme;
     const uri = pet.photo?.trim() ? pet.photo : DEFAULT_AVATAR_URI;
-    const avatarSize = spacing['3xl'] + spacing['2xl'];
+    const avatarSize = spacing['5xl'] + spacing['5xl'];
 
     return (
       <View
@@ -40,10 +40,14 @@ export const HomePetSummaryCard: React.FC<HomePetSummaryCardProps> = React.memo(
             borderRadius: radius.xl,
             borderColor: colors.brandTint10,
             paddingVertical: spacing.xl,
-            paddingHorizontal: spacing.lg,
+            paddingHorizontal: spacing.xl,
             gap: spacing.lg,
+            shadowColor: colors.accent,
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.8,
+            shadowRadius: 3.84,
+            elevation: 5,
           },
-          shadows.md,
         ]}
       >
         <Pressable
@@ -92,19 +96,26 @@ export const HomePetSummaryCard: React.FC<HomePetSummaryCardProps> = React.memo(
               {
                 color: colors.accent,
                 letterSpacing: 1.2,
+                backgroundColor: colors.brandTint10,
+                paddingHorizontal: spacing.sm,
+                paddingVertical: spacing.xxs,
+                borderRadius: radius.xs,
+                textAlign: 'center',
+                width: '100%',
               },
             ]}
           >
-            Current status
+            CURRENT STATUS
           </AppText>
           <AppText
             style={[
               textStyles.primaryCta,
               {
                 color: colors.text.heading,
-                fontSize: fontSizes.xl,
-                lineHeight: lineHeights.lg,
+                fontSize: fontSizes['2xl'],
+                lineHeight: lineHeights['2xl'],
                 textAlign: 'center',
+                fontFamily: fontFamilies.extrabold,
               },
             ]}
           >
@@ -123,6 +134,9 @@ export const HomePetSummaryCard: React.FC<HomePetSummaryCardProps> = React.memo(
                 borderColor: colors.borderSubtle,
                 padding: spacing.md,
                 gap: spacing.xs,
+                justifyContent: 'center',
+                alignItems: 'center',
+                // height: spacing['6xl'] * 2,
               },
             ]}
           >
@@ -154,6 +168,8 @@ export const HomePetSummaryCard: React.FC<HomePetSummaryCardProps> = React.memo(
                 borderColor: colors.borderSubtle,
                 padding: spacing.md,
                 gap: spacing.xs,
+                justifyContent: 'center',
+                alignItems: 'center',
               },
             ]}
           >

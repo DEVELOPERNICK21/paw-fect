@@ -9,6 +9,8 @@ import type { Theme } from '../../../../../shared/hooks/useTheme';
 import { spacing as spacingTokens } from '../../../../../shared/theme/spacing';
 
 import { reminderTypeIcon } from '../../../../../shared/utils/reminderTypeIcon';
+import { radius } from '../../../../../shared/theme/radius';
+import { fontSizes, lineHeights } from '../../../../../shared/theme/typography';
 
 export interface TodayCareSectionProps {
   items: HomeDashboardTodayCareItem[];
@@ -180,7 +182,22 @@ export const TodayCareSection: React.FC<TodayCareSectionProps> = React.memo(
             >
               Nothing scheduled for today. Add a reminder to keep care on track.
             </AppText>
-            <Button title="Add reminder" onPress={onPressAddReminder} />
+            <Button
+              title="Add reminder"
+              onPress={onPressAddReminder}
+              variant="secondary"
+              style={{
+                width: '100%',
+                borderRadius: radius.lg,
+                paddingVertical: spacing.md,
+                paddingHorizontal: spacing.lg,
+              }}
+              textStyle={{
+                fontFamily: fontFamilies.bold,
+                fontSize: fontSizes.md,
+                lineHeight: lineHeights.md,
+              }}
+            />
           </View>
         ) : null}
 

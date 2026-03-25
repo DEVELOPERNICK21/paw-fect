@@ -5,6 +5,8 @@ import { AppText } from '../../../../../shared/components/AppText';
 import { Button } from '../../../../../shared/components/Button';
 import { MaterialIcon } from '../../../../../shared/components/MaterialIcon';
 import type { Theme } from '../../../../../shared/hooks/useTheme';
+import { fontSizes, lineHeights } from '../../../../../shared/theme/typography';
+import { fontFamilies } from '../../../../../shared/theme/fonts';
 
 export interface HomeHealthSnapshotCardProps {
   weightLine: string;
@@ -93,7 +95,6 @@ export const HomeHealthSnapshotCard: React.FC<HomeHealthSnapshotCardProps> =
           >
             Health snapshot
           </AppText>
-
           <View style={{ gap: spacing.md }}>
             <MetricRow
               label="Weight"
@@ -120,8 +121,22 @@ export const HomeHealthSnapshotCard: React.FC<HomeHealthSnapshotCardProps> =
               theme={theme}
             />
           </View>
-
-          <Button title="Log activity" onPress={onPressLogActivity} />
+          <Button
+            title="Log activity"
+            onPress={onPressLogActivity}
+            // variant="secondary"
+            style={{
+              width: '100%',
+              borderRadius: radius.lg,
+              paddingVertical: spacing.md,
+              paddingHorizontal: spacing.lg,
+            }}
+            textStyle={{
+              fontFamily: fontFamilies.bold,
+              fontSize: fontSizes.md,
+              lineHeight: lineHeights.md,
+            }}
+          />
         </View>
       );
     },
