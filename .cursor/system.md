@@ -2,68 +2,236 @@
 
 Project Name: Pet Perfect
 
-Pet Perfect is a React Native mobile application that helps pet owners manage their pets' care.
+Pet Perfect is a React Native mobile application for managing pet care with an offline-first architecture.
 
-Main features of the application:
+---
 
-- Pet profiles
-- Reminders for vaccination, medication, grooming, and custom tasks
-- Health records
-- Notification scheduling
-- Offline-first data handling
+## Core Features
 
-The application must be scalable, maintainable, and easy to extend with new features.
+- Pet Profiles
+- Reminders (vaccination, medication, grooming, custom)
+- Health Records
+- Notifications
+- Offline-first sync system
 
-Technology stack:
+---
+
+## Tech Stack
 
 - React Native
-- TypeScript (strict mode)
-- Zustand for state management
+- TypeScript (strict)
+- Zustand
+- SQLite
 - Clean Architecture
-- Feature-first module architecture
+- Feature-first structure
 
-The project architecture follows a layered approach:
+---
 
-UI → Domain → Data → Infrastructure
+## Architecture Overview
 
-Where:
+### Command Flow
 
-UI
-Screens and UI components.
+UI → Store → UseCase → Repository → DataSource → Infrastructure
 
-Domain
-Business logic, models, repository interfaces, and use cases.
+### Reactive Flow
 
-Data
-Repository implementations and data sources.
+Repository → UseCase → Store → UI
 
-Infrastructure
-External services such as APIs, storage, and notifications.
+---
 
-All features must be implemented as independent modules under:
+## Core Principles
+
+---
+
+### 1. Single Source of Truth (SSOT)
+
+Repositories manage:
+
+- Local DB
+- API
+- Cache
+- Sync logic
+
+Store is NOT a source of truth.
+
+---
+
+### 2. Offline-First System
+
+- Local DB is primary
+- UI reads only from local DB
+- Writes happen locally first
+- Background sync with server
+
+---
+
+### 3. Sync System
+
+- Queue-based sync
+- Retry failed operations
+- Track sync state
+- Conflict resolution: Last Write Wins
+
+---
+
+### 4. Reactive Architecture
+
+- UI reacts to data changes
+- Observer UseCases emit updates
+- Stores update ViewModels
+- No manual refresh dependency
+
+---
+
+### 5. Application Orchestration
+
+AppOrchestrator handles:
+
+- App initialization
+- Refresh flows
+- Logout cleanup
+- Cross-feature coordination
+
+---
+
+## Module Structure
+
+All features live in:
 
 src/modules/
 
-Example module:
+Each module contains:
 
-modules/reminders
+- domain
+- data
+- store
+- ui
 
-Each feature module must contain its own domain, data, store, and UI layers.
+---
 
-The system must enforce the following principles:
+## Database Strategy
 
-- Single Source of Truth using repositories
-- UI must never access APIs directly
-- Business logic must exist in use cases
-- State management must be handled using Zustand
-- Code must remain modular and scalable
+Primary DB: SQLite
 
-The architecture should support future scaling and additional modules like:
+Tables:
 
 - pets
-- health records
-- analytics
-- user profiles
-- subscriptions
+- reminders
+- health_records
+- sync_queue
 
-The system should prioritize maintainability, testability, and clear separation of responsibilities.
+---
+
+## Storage Strategy
+
+- SQLite → structured data
+- MMKV → lightweight storage
+
+---
+
+## Scalability Strategy
+
+Supports:
+
+- New modules
+- Large datasets
+- Multi-device sync
+- Background processing
+
+---
+
+## Development Philosophy
+
+- Strict separation of concerns
+- Feature isolation
+- Reactive data flow
+- Testable domain logic
+- Scalable architecture
+
+---
+
+## UI Architecture Rules
+
+---
+
+### UI Responsibilities
+
+- Render data from store
+- Trigger store actions
+- Display loading/error states
+
+---
+
+### Forbidden in UI
+
+- No business logic
+- No API calls
+- No DB access
+- No ViewModel building
+- No use case calls
+
+---
+
+### UI Data Flow
+
+UI → Store → UseCase → Repository
+
+---
+
+### Component Rules
+
+- Screens = smart (via store only)
+- Components = dumb
+- Reusable and stateless
+
+---
+
+### State Handling
+
+UI handles only:
+
+- loading
+- error
+- empty
+
+---
+
+### Performance
+
+- FlatList usage
+- Memoization
+- Avoid unnecessary re-renders
+
+---
+
+### Styling
+
+- Centralized design system
+- No random styles
+- Consistent spacing
+
+---
+
+### Navigation
+
+- UI layer only
+- No navigation outside UI
+
+---
+
+## Composite UseCases
+
+Allowed to:
+
+- Combine multiple repositories
+- Build ViewModels
+- Act as domain-level aggregators
+
+---
+
+## Final Principle
+
+UI does not think.
+Store does not decide.
+Domain defines logic.
+Data owns truth.

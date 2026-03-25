@@ -1,16 +1,30 @@
 import { create } from 'zustand';
 import type { Reminder } from '../domain/models/Reminder';
+import type { ReminderType } from '../domain/models/Reminder';
 import { createReminderRepository } from '../data/repositories/ReminderRepositoryImpl';
 import { GetReminders } from '../domain/usecases/GetReminders';
 import { CreateReminder } from '../domain/usecases/CreateReminder';
 import { UpdateReminder } from '../domain/usecases/UpdateReminder';
 import { DeleteReminder } from '../domain/usecases/DeleteReminder';
+import {
+  CreateReminderEntry,
+  type CreateReminderEntryResult,
+} from '../domain/usecases/CreateReminderEntry';
 
 export interface ReminderState {
   reminders: Reminder[];
   loading: boolean;
+  reset: () => void;
   loadReminders: () => Promise<void>;
   createReminder: (reminder: Reminder) => Promise<void>;
+  createReminderEntry: (input: {
+    petId: string;
+    title: string;
+    type: ReminderType;
+    date: string;
+    time: string;
+    repeatEnabled: boolean;
+  }) => Promise<{ success: boolean; error?: string }>;
   updateReminder: (reminder: Reminder) => Promise<void>;
   deleteReminder: (id: string) => Promise<void>;
 }
@@ -20,10 +34,12 @@ const getRemindersUseCase = new GetReminders(repository);
 const createReminderUseCase = new CreateReminder(repository);
 const updateReminderUseCase = new UpdateReminder(repository);
 const deleteReminderUseCase = new DeleteReminder(repository);
+const createReminderEntryUseCase = new CreateReminderEntry();
 
 export const useReminderStore = create<ReminderState>((set, get) => ({
   reminders: [],
   loading: false,
+  reset: () => set({ reminders: [], loading: false }),
 
   loadReminders: async () => {
     set({ loading: true });
@@ -48,6 +64,16 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
       console.error('[reminderStore] createReminder error', error);
       set({ loading: false });
     }
+  },
+
+  createReminderEntry: async (input) => {
+    const result: CreateReminderEntryResult =
+      createReminderEntryUseCase.execute(input);
+    if (!result.ok) {
+      return { success: false, error: result.errorMessage };
+    }
+    await get().createReminder(result.reminder);
+    return { success: true };
   },
 
   updateReminder: async (reminder: Reminder) => {

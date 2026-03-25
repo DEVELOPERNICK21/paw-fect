@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "119015458250",
+    "project_id": "paw-fect-b89be",
+    "storage_bucket": "paw-fect-b89be.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:119015458250:android:6c13fde35d69552a5bfb33",
+        "android_client_info": {
+          "package_name": "com.paw_fect"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "119015458250-3vg7ktre9fkmq6nmthg22h8u34ksbou9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.paw_fect",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "119015458250-cl8ka9kndm1e8sub3jb62taei8qaunml.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBECepBAUM0vLQMbLAaCNbReSetBbuTpH0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "119015458250-cl8ka9kndm1e8sub3jb62taei8qaunml.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

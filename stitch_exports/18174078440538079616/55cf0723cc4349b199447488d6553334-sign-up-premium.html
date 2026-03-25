@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sign Up | Pawfect</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-tint": "#ee8c2b",
+                        "surface-dim": "#f8f7f6",
+                        "on-surface-variant": "#475569",
+                        "on-primary-container": "#7c2d12",
+                        "tertiary-fixed": "#e0f2fe",
+                        "error-container": "#fee2e2",
+                        "outline": "#e2e8f0",
+                        "surface-container-lowest": "#ffffff",
+                        "error": "#ef4444",
+                        "primary": "#ee8c2b",
+                        "secondary": "#475569",
+                        "primary-container": "#ffedd5",
+                        "on-primary-fixed-variant": "#9a3412",
+                        "outline-variant": "#cbd5e1",
+                        "on-secondary-container": "#1e293b",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed": "#431407",
+                        "secondary-fixed-dim": "#cbd5e1",
+                        "secondary-fixed": "#e2e8f0",
+                        "primary-fixed": "#ffedd5",
+                        "on-error": "#ffffff",
+                        "surface-container-low": "#f8f7f6",
+                        "on-tertiary-fixed-variant": "#075985",
+                        "tertiary-fixed-dim": "#bae6fd",
+                        "primary-fixed-dim": "#fed7aa",
+                        "secondary-container": "#f1f5f9",
+                        "on-tertiary-fixed": "#082f49",
+                        "on-secondary-fixed": "#0f172a",
+                        "inverse-primary": "#fbbf24",
+                        "tertiary-container": "#e0f2fe",
+                        "surface-container-highest": "#e5e4e3",
+                        "surface-container": "#f1f0ef",
+                        "surface": "#ffffff",
+                        "on-surface": "#0f172a",
+                        "on-tertiary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "on-error-container": "#7f1d1d",
+                        "tertiary": "#0ea5e9",
+                        "surface-container-high": "#ebeae9",
+                        "inverse-on-surface": "#f8fafc",
+                        "surface-variant": "#f1f5f9",
+                        "surface-bright": "#ffffff",
+                        "background": "#f8f7f6",
+                        "on-tertiary-container": "#0c4a6e",
+                        "on-secondary-fixed-variant": "#334155",
+                        "on-background": "#0f172a",
+                        "inverse-surface": "#1e293b"
+                    },
+                    fontFamily: {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Plus Jakarta Sans"],
+                        "label": ["Plus Jakarta Sans"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .editorial-shadow {
+            box-shadow: 0 10px 15px -3px rgba(238, 140, 43, 0.1), 0 4px 6px -2px rgba(238, 140, 43, 0.05);
+        }
+        .primary-glow {
+            box-shadow: 0 10px 15px -3px rgba(238, 140, 43, 0.25);
+        }
+        .glass-nav {
+            backdrop-filter: blur(12px);
+            background-color: rgba(248, 247, 246, 0.8);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen flex flex-col">
+<!-- TopAppBar (Transactional Suppression Rule: Simple Header) -->
+<header class="sticky top-0 z-50 glass-nav flex items-center justify-between px-6 py-4 w-full">
+<button class="flex items-center justify-center w-12 h-12 rounded-full hover:bg-surface-container transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined text-on-surface" data-icon="arrow_back">arrow_back</span>
+</button>
+<div class="font-headline font-bold text-xl text-primary tracking-tight">Pawfect</div>
+<div class="w-12"></div> <!-- Spacer for centering -->
+</header>
+<main class="flex-1 max-w-md mx-auto w-full px-6 pt-8 pb-12">
+<!-- Hero Branding Section -->
+<section class="mb-10">
+<h1 class="font-headline font-extrabold text-[2rem] leading-tight text-on-surface tracking-tight mb-3">
+                Join the Pawfect family
+            </h1>
+<p class="text-on-surface-variant text-base">
+                Start your journey towards professional pet care and joyful moments today.
+            </p>
+</section>
+<!-- Sign Up Form -->
+<form class="space-y-6">
+<!-- Full Name Field -->
+<div class="relative group">
+<div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-on-surface-variant group-focus-within:text-primary transition-colors" data-icon="person">person</span>
+</div>
+<input class="w-full h-[56px] pl-12 pr-4 bg-surface border-none rounded-2xl text-on-surface placeholder:text-on-surface-variant focus:ring-4 focus:ring-primary/20 transition-all editorial-shadow" placeholder="Full Name" type="text"/>
+</div>
+<!-- Email Field -->
+<div class="relative group">
+<div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-on-surface-variant group-focus-within:text-primary transition-colors" data-icon="mail">mail</span>
+</div>
+<input class="w-full h-[56px] pl-12 pr-4 bg-surface border-none rounded-2xl text-on-surface placeholder:text-on-surface-variant focus:ring-4 focus:ring-primary/20 transition-all editorial-shadow" placeholder="Email Address" type="email"/>
+</div>
+<!-- Password Field -->
+<div class="relative group">
+<div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-on-surface-variant group-focus-within:text-primary transition-colors" data-icon="lock">lock</span>
+</div>
+<input class="w-full h-[56px] pl-12 pr-12 bg-surface border-none rounded-2xl text-on-surface placeholder:text-on-surface-variant focus:ring-4 focus:ring-primary/20 transition-all editorial-shadow" placeholder="Create Password" type="password"/>
+<button class="absolute inset-y-0 right-4 flex items-center text-on-surface-variant hover:text-on-surface" type="button">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+</button>
+</div>
+<!-- Primary CTA -->
+<div class="pt-4">
+<button class="w-full h-[56px] bg-primary text-on-primary font-bold text-lg rounded-2xl primary-glow hover:bg-primary/90 transition-all active:scale-95 duration-200" type="submit">
+                    Create Account
+                </button>
+</div>
+</form>
+<!-- Divider -->
+<div class="relative my-10 flex items-center">
+<div class="flex-grow border-t border-outline-variant/50"></div>
+<span class="flex-shrink mx-4 text-on-surface-variant text-xs font-bold tracking-widest uppercase">OR</span>
+<div class="flex-grow border-t border-outline-variant/50"></div>
+</div>
+<!-- Social Auth -->
+<div class="grid grid-cols-2 gap-4 mb-10">
+<button class="flex items-center justify-center gap-3 h-[56px] bg-surface rounded-2xl editorial-shadow hover:bg-surface-container-low transition-colors active:scale-95">
+<img alt="Google Logo" class="w-6 h-6 object-contain" data-alt="Google brand logo icon" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC5ECrRU8cuSlLiFsN89R2b9c6sNymHaAPTFruvYCF-dxOgrjA1enBnsJPSuIBN8UnzY7wsLeem5SE0aKh8rmo4iMWUpCyV8dM0_owZdliOzA0SskJtuQJXdmRBCPJVkEKyK5866EfxZgiWMmVXwSkzUTOukrIYY-GVsTrlfMTM2MicDOvsxHo-cRgkXVyQUvrmhGv1T7xCDv4aIl1Yi3qtE29GPXkhdxSdd5qHstBRjzpw1rXZK8ylx9I1DolYCY5qF4ywFAS2a9b9"/>
+<span class="font-semibold text-sm">Google</span>
+</button>
+<button class="flex items-center justify-center gap-3 h-[56px] bg-surface rounded-2xl editorial-shadow hover:bg-surface-container-low transition-colors active:scale-95">
+<span class="material-symbols-outlined text-2xl" data-icon="apple" style="font-variation-settings: 'FILL' 1;">ios</span>
+<span class="font-semibold text-sm">Apple</span>
+</button>
+</div>
+<!-- Footer Link -->
+<footer class="text-center">
+<p class="text-on-surface-variant text-sm font-medium">
+                Already have an account? 
+                <a class="text-primary font-bold hover:underline ml-1" href="#">Log in</a>
+</p>
+</footer>
+<!-- Decorative Element -->
+<div class="mt-16 flex justify-center opacity-10">
+<div class="w-32 h-32 rounded-full bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-6xl" data-icon="pets">pets</span>
+</div>
+</div>
+</main>
+<!-- Bottom Spacing for mobile comfort -->
+<div class="h-8"></div>
+</body></html>

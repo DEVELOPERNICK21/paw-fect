@@ -1,0 +1,171 @@
+import { StyleSheet } from 'react-native';
+
+export const OTP_COLORS = {
+  background: '#FDFCFB',
+  primary: '#EE8C2B',
+  onPrimary: '#FFFFFF',
+  onSurface: '#1A1C1E',
+  secondary: '#5E6368',
+  outline: '#E0E2E6',
+  surface: '#FFFFFF',
+  inputSurface: 'rgba(255,255,255,0.6)',
+  error: '#EF4444',
+} as const;
+
+export const otpScreenStyles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: OTP_COLORS.background,
+  },
+  scroll: {
+    flex: 1,
+  },
+  content: {
+    flexGrow: 1,
+    paddingHorizontal: 20,
+    paddingTop: 80,
+    paddingBottom: 30,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  backgroundDecorContainer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 0,
+  },
+  decorTopRight: {
+    position: 'absolute',
+    top: -96,
+    right: -72,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: 'rgba(238, 140, 43, 0.07)',
+  },
+  decorBottomLeft: {
+    position: 'absolute',
+    bottom: -118,
+    left: -86,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: 'rgba(238, 140, 43, 0.06)',
+  },
+  topBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 3,
+    paddingHorizontal: 24,
+    justifyContent: 'flex-end',
+  },
+  titleBlock: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 38,
+  },
+  title: {
+    marginTop: 22,
+    fontSize: 30,
+    lineHeight: 38,
+    letterSpacing: -0.5,
+    color: OTP_COLORS.onSurface,
+    textAlign: 'center',
+  },
+  subtitle: {
+    marginTop: 10,
+    fontSize: 16,
+    lineHeight: 24,
+    color: OTP_COLORS.secondary,
+    textAlign: 'center',
+  },
+  subtitleBold: {
+    color: OTP_COLORS.onSurface,
+  },
+  form: {
+    width: '100%',
+  },
+  actions: {
+    width: '100%',
+    marginTop: 34,
+    alignItems: 'center',
+  },
+  primaryButton: {
+    width: '100%',
+    height: 64,
+    borderRadius: 16,
+    backgroundColor: OTP_COLORS.primary,
+    borderWidth: 0,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    shadowColor: OTP_COLORS.primary,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
+    elevation: 8,
+  },
+  primaryButtonDisabled: {
+    opacity: 0.72,
+  },
+  primaryButtonText: {
+    fontSize: 18,
+    lineHeight: 24,
+    color: OTP_COLORS.onPrimary,
+    letterSpacing: 0,
+  },
+  resendBlock: {
+    marginTop: 28,
+    alignItems: 'center',
+  },
+  resendCaption: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: OTP_COLORS.secondary,
+  },
+  resendButton: {
+    marginTop: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 28,
+  },
+  resendClock: {
+    marginRight: 8,
+  },
+  resendLinkText: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: OTP_COLORS.primary,
+  },
+  errorText: {
+    marginTop: 12,
+    fontSize: 12,
+    lineHeight: 16,
+    textAlign: 'center',
+    color: OTP_COLORS.error,
+  },
+  secureNote: {
+    marginTop: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    opacity: 0.6,
+  },
+  secureNoteIcon: {
+    marginRight: 8,
+    fontSize: 15,
+    color: OTP_COLORS.secondary,
+  },
+  secureNoteText: {
+    fontSize: 12,
+    lineHeight: 16,
+    color: OTP_COLORS.secondary,
+    letterSpacing: 1.2,
+  },
+  hiddenInput: {
+    position: 'absolute',
+    width: 1,
+    height: 1,
+    opacity: 0,
+  },
+});

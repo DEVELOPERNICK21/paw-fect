@@ -21,20 +21,34 @@ export class HealthRecordRepositoryImpl implements HealthRecordRepository {
       return cached;
     }
 
-    const remoteRecords = await this.remote.fetchRecords();
-    await this.local.saveRecords(remoteRecords);
-    return remoteRecords;
+    try {
+      const remoteRecords = await this.remote.fetchRecords();
+      await this.local.saveRecords(remoteRecords);
+      return remoteRecords;
+    } catch {
+      return [];
+    }
   }
 
   async createRecord(record: HealthRecord): Promise<HealthRecord> {
-    const created = await this.remote.createRecord(record);
+    let created = record;
+    try {
+      created = await this.remote.createRecord(record);
+    } catch {
+      created = record;
+    }
     const records = await this.local.getRecords();
-    await this.local.saveRecords([...records, created]);
+    const next = [...records.filter(existing => existing.id !== created.id), created];
+    await this.local.saveRecords(next);
     return created;
   }
 
   async deleteRecord(id: string): Promise<void> {
-    await this.remote.deleteRecord(id);
+    try {
+      await this.remote.deleteRecord(id);
+    } catch {
+      // Ignore remote failures in offline mode.
+    }
     const records = await this.local.getRecords();
     const next = records.filter(record => record.id !== id);
     await this.local.saveRecords(next);

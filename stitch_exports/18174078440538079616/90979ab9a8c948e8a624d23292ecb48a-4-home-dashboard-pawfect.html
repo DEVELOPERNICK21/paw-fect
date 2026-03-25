@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Pawfect - Home Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ee8c2b",
+                        "background-light": "#f8f7f6",
+                        "background-dark": "#221910",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen pb-24">
+<!-- Header Navigation -->
+<header class="sticky top-0 z-30 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-primary/10">
+<div class="flex items-center p-4 justify-between max-w-2xl mx-auto w-full">
+<div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+<span class="material-symbols-outlined text-primary">potted_plant</span>
+</div>
+<h1 class="text-slate-900 dark:text-slate-100 text-xl font-bold leading-tight tracking-tight">Pawfect</h1>
+<div class="flex size-10 items-center justify-end">
+<button class="relative flex items-center justify-center rounded-xl h-10 w-10 bg-primary/10 text-primary">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 flex h-2 w-2 rounded-full bg-primary ring-2 ring-background-light dark:ring-background-dark"></span>
+</button>
+</div>
+</div>
+</header>
+<main class="max-w-2xl mx-auto px-4 pt-6 space-y-8">
+<!-- Pet Summary Card -->
+<section class="relative group overflow-hidden rounded-xl bg-white dark:bg-slate-900 shadow-sm border border-primary/5 p-1">
+<div class="flex flex-col @container">
+<div class="relative w-full aspect-[21/9] overflow-hidden rounded-lg">
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Golden Retriever dog sitting happily in a sunlit field" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBTjI_FvulIIoJ18XpSIFocjA8fpzab0a4wQoqoigyYdaaJu9-ejR25ixQ2yFX6DVC1P-mzS0rAiIakDqbxX5LGdE0DWkYnYtpIxTgGc4Jyl0WbK2XEsp-jNAw9IUkBT_scs8_GotU6SyC81FS6h7rWgfhYACVrVI1vQpUS76pgAm3E7Ndcuubyf0UWWRj-UDGGtUNpLJyDXtLY7-SVYO_3-XMutK67MzPnT0o_QnAG8_FiMxX44sexZnAbMMEC-G6Cj-8y0VAgtMSD"/>
+<div class="absolute bottom-4 left-4 z-20">
+<span class="px-2 py-1 bg-primary text-white text-[10px] font-bold rounded uppercase tracking-wider">Primary Pet</span>
+<h2 class="text-white text-2xl font-extrabold mt-1">Luna</h2>
+</div>
+</div>
+<div class="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="space-y-1">
+<div class="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined text-sm">pets</span>
+<p class="text-sm font-medium">Golden Retriever • 2 years old</p>
+</div>
+<div class="flex items-center gap-2 text-slate-500 dark:text-slate-500">
+<span class="material-symbols-outlined text-sm">medical_services</span>
+<p class="text-xs">Last vet visit: 2 weeks ago</p>
+</div>
+</div>
+<button class="flex items-center justify-center gap-2 rounded-lg h-10 px-6 bg-primary text-white text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors">
+<span>View Profile</span>
+<span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Today's Care List -->
+<section class="space-y-4">
+<div class="flex items-center justify-between">
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold">Today's Care</h2>
+<span class="text-xs font-semibold text-primary px-2 py-1 bg-primary/10 rounded-full">2/4 Done</span>
+</div>
+<div class="grid gap-3">
+<!-- Task 1 (Done) -->
+<div class="flex items-center gap-4 bg-white dark:bg-slate-900 p-3 rounded-xl border border-primary/5 shadow-sm">
+<div class="flex items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 shrink-0 size-12">
+<span class="material-symbols-outlined">directions_walk</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-slate-900 dark:text-slate-100 text-sm font-bold line-clamp-1">Morning Walk</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs line-clamp-1">Completed at 8:30 AM</p>
+</div>
+<div class="text-green-500">
+<span class="material-symbols-outlined text-2xl">check_circle</span>
+</div>
+</div>
+<!-- Task 2 (Done) -->
+<div class="flex items-center gap-4 bg-white dark:bg-slate-900 p-3 rounded-xl border border-primary/5 shadow-sm">
+<div class="flex items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shrink-0 size-12">
+<span class="material-symbols-outlined">restaurant</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-slate-900 dark:text-slate-100 text-sm font-bold line-clamp-1">Breakfast</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs line-clamp-1">Completed at 9:00 AM</p>
+</div>
+<div class="text-green-500">
+<span class="material-symbols-outlined text-2xl">check_circle</span>
+</div>
+</div>
+<!-- Task 3 (Pending) -->
+<div class="flex items-center gap-4 bg-white dark:bg-slate-900 p-3 rounded-xl border border-primary/5 shadow-sm opacity-90">
+<div class="flex items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0 size-12">
+<span class="material-symbols-outlined">vaccines</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-slate-900 dark:text-slate-100 text-sm font-bold line-clamp-1">Daily Vitamins</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs line-clamp-1">Scheduled for 1:00 PM</p>
+</div>
+<button class="flex size-8 items-center justify-center rounded-full border-2 border-slate-200 dark:border-slate-700 hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-slate-300 dark:text-slate-600 text-lg">circle</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Upcoming Reminders -->
+<section class="space-y-4">
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold">Upcoming</h2>
+<div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-4 px-4">
+<!-- Reminder 1 -->
+<div class="min-w-[160px] bg-primary/5 dark:bg-primary/10 border border-primary/10 p-4 rounded-xl flex flex-col gap-3">
+<div class="size-8 rounded-lg bg-primary text-white flex items-center justify-center">
+<span class="material-symbols-outlined text-lg">calendar_today</span>
+</div>
+<div>
+<p class="text-xs font-bold text-primary uppercase">Tomorrow</p>
+<p class="text-sm font-bold text-slate-900 dark:text-slate-100">Grooming Session</p>
+<p class="text-xs text-slate-500 mt-1">10:30 AM</p>
+</div>
+</div>
+<!-- Reminder 2 -->
+<div class="min-w-[160px] bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4 rounded-xl flex flex-col gap-3">
+<div class="size-8 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center">
+<span class="material-symbols-outlined text-lg">medication</span>
+</div>
+<div>
+<p class="text-xs font-bold text-slate-500 uppercase">Friday</p>
+<p class="text-sm font-bold text-slate-900 dark:text-slate-100">Flea Prevention</p>
+<p class="text-xs text-slate-500 mt-1">All Day</p>
+</div>
+</div>
+<!-- Reminder 3 -->
+<div class="min-w-[160px] bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4 rounded-xl flex flex-col gap-3">
+<div class="size-8 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center">
+<span class="material-symbols-outlined text-lg">ecg_heart</span>
+</div>
+<div>
+<p class="text-xs font-bold text-slate-500 uppercase">Oct 12</p>
+<p class="text-sm font-bold text-slate-900 dark:text-slate-100">Annual Checkup</p>
+<p class="text-xs text-slate-500 mt-1">9:15 AM</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Floating Action Button -->
+<button class="fixed right-6 bottom-24 z-50 flex items-center justify-center size-14 rounded-full bg-primary text-white shadow-xl shadow-primary/40 hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 right-0 z-40 bg-background-light/95 dark:bg-background-dark/95 border-t border-primary/10 backdrop-blur-md">
+<div class="max-w-2xl mx-auto flex items-center justify-around p-2 pb-6">
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined fill-1">home</span>
+<span class="text-[10px] font-bold">Home</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">monitor_heart</span>
+<span class="text-[10px] font-medium">Care</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">stethoscope</span>
+<span class="text-[10px] font-medium">Health</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span class="text-[10px] font-medium">Community</span>
+</a>
+</div>
+</nav>
+<style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .fill-1 {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</body></html>

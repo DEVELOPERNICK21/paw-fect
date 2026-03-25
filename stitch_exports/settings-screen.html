@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Pawfect Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ee8c2b",
+                        "background-light": "#f8f7f6",
+                        "background-dark": "#221910",
+                    },
+                    fontFamily: {
+                        "display": ["Plus Jakarta Sans"]
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased">
+<div class="relative flex min-h-screen w-full max-w-md mx-auto flex-col bg-background-light dark:bg-background-dark shadow-2xl overflow-x-hidden">
+<!-- Header -->
+<header class="sticky top-0 z-10 flex items-center bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md p-4 justify-between border-b border-primary/10">
+<button class="text-slate-900 dark:text-slate-100 flex size-10 items-center justify-center hover:bg-primary/10 rounded-full transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h2 class="text-lg font-bold leading-tight tracking-tight flex-1 text-center pr-10">Settings</h2>
+</header>
+<!-- Profile Section -->
+<div class="p-6 flex flex-col items-center">
+<div class="relative">
+<div class="size-24 rounded-full bg-primary/20 flex items-center justify-center border-2 border-primary overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="User profile picture of a young man" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCq5muT0yuM6tHabb4KH5JxrH--3lNXN2dM_Ps0ETau6KYEDzaQ0VKsRe8Lk8Slq_L0YfYJmH33B8jcUr38UReGEjBmuIvDNAmOXQFzu2-Q4OyWXWgaktVDTOUL8H8WMhpe-uHPp8TihxXHwT2Hh5fJ2ar9SxM-hNyeGVZAAla2_5OpQ70jO6Pvcfbs6MuR4P1_AShpIwB21yfLC3EiguZCGWefl0JD5sgtAO7JnpiuGfUHkEycbOi3iE4c_jfi98fU9eK61-ZoxEBI"/>
+</div>
+<button class="absolute bottom-0 right-0 bg-primary text-white p-1.5 rounded-full border-2 border-background-light shadow-sm">
+<span class="material-symbols-outlined text-sm">edit</span>
+</button>
+</div>
+<h3 class="mt-4 text-xl font-bold">Alex Johnson</h3>
+<p class="text-slate-500 dark:text-slate-400 text-sm">Member since Jan 2024</p>
+</div>
+<main class="flex-1 px-4 pb-24">
+<!-- Notifications Group -->
+<div class="mb-8">
+<h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 px-2 mb-3">Notifications</h3>
+<div class="space-y-1 bg-white dark:bg-slate-800/50 rounded-2xl p-2 shadow-sm border border-primary/5">
+<div class="flex items-center gap-4 px-3 py-3 justify-between">
+<div class="flex items-center gap-4">
+<div class="text-primary flex items-center justify-center rounded-xl bg-primary/10 shrink-0 size-10">
+<span class="material-symbols-outlined">notifications</span>
+</div>
+<div class="flex flex-col">
+<p class="text-base font-semibold leading-none mb-1">Push Notifications</p>
+<p class="text-xs text-slate-500">Activity and care reminders</p>
+</div>
+</div>
+<label class="relative flex h-[31px] w-[51px] cursor-pointer items-center rounded-full bg-slate-200 dark:bg-slate-700 p-0.5 transition-colors duration-200 has-[:checked]:bg-primary">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="h-full w-[27px] rounded-full bg-white shadow-md transition-all peer-checked:translate-x-5"></div>
+</label>
+</div>
+<div class="flex items-center gap-4 px-3 py-3 justify-between">
+<div class="flex items-center gap-4">
+<div class="text-primary flex items-center justify-center rounded-xl bg-primary/10 shrink-0 size-10">
+<span class="material-symbols-outlined">mail</span>
+</div>
+<div class="flex flex-col">
+<p class="text-base font-semibold leading-none mb-1">Email Updates</p>
+<p class="text-xs text-slate-500">Weekly health reports &amp; news</p>
+</div>
+</div>
+<label class="relative flex h-[31px] w-[51px] cursor-pointer items-center rounded-full bg-slate-200 dark:bg-slate-700 p-0.5 transition-colors duration-200 has-[:checked]:bg-primary">
+<input class="sr-only peer" type="checkbox"/>
+<div class="h-full w-[27px] rounded-full bg-white shadow-md transition-all peer-checked:translate-x-5"></div>
+</label>
+</div>
+</div>
+</div>
+<!-- Account Group -->
+<div class="mb-8">
+<h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 px-2 mb-3">Account &amp; Pets</h3>
+<div class="space-y-1 bg-white dark:bg-slate-800/50 rounded-2xl p-2 shadow-sm border border-primary/5">
+<button class="w-full flex items-center gap-4 px-3 py-3 justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">
+<div class="flex items-center gap-4 text-red-500">
+<div class="flex items-center justify-center rounded-xl bg-red-50 dark:bg-red-500/10 shrink-0 size-10">
+<span class="material-symbols-outlined">delete_forever</span>
+</div>
+<div class="flex flex-col items-start">
+<p class="text-base font-semibold leading-none mb-1">Delete Pet Profile</p>
+<p class="text-xs opacity-70">Permanently remove a pet</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-400">chevron_right</span>
+</button>
+<button class="w-full flex items-center gap-4 px-3 py-3 justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">
+<div class="flex items-center gap-4">
+<div class="text-slate-600 dark:text-slate-300 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-700 shrink-0 size-10">
+<span class="material-symbols-outlined">lock</span>
+</div>
+<div class="flex flex-col items-start">
+<p class="text-base font-semibold leading-none mb-1">Privacy Policy</p>
+<p class="text-xs text-slate-500">How we protect your data</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-400">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- Logout Section -->
+<div class="px-2">
+<button class="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-800/50 border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 font-bold py-4 rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors shadow-sm">
+<span class="material-symbols-outlined">logout</span>
+                    Logout
+                </button>
+<p class="text-center text-slate-400 text-xs mt-6 mb-8">Pawfect v2.4.0 • Made with love for pets</p>
+</div>
+</main>
+<!-- Bottom Navigation -->
+<nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md flex border-t border-primary/10 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md px-4 pb-6 pt-3 z-20">
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-500" href="#">
+<span class="material-symbols-outlined">home</span>
+<p class="text-[10px] font-medium uppercase tracking-wider">Home</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-500" href="#">
+<span class="material-symbols-outlined">pets</span>
+<p class="text-[10px] font-medium uppercase tracking-wider">Pets</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-slate-400 dark:text-slate-500" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<p class="text-[10px] font-medium uppercase tracking-wider">Activity</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">settings</span>
+<p class="text-[10px] font-bold uppercase tracking-wider">Settings</p>
+</a>
+</nav>
+</div>
+</body></html>

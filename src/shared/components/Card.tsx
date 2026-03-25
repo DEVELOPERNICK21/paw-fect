@@ -8,6 +8,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
+import { spacing as spacingTokens } from '../theme/spacing';
 
 export interface CardProps {
   title?: string;
@@ -96,7 +97,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: spacingTokens.sm,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -104,13 +105,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerText: {
-    marginLeft: 8,
+    marginLeft: spacingTokens.sm,
   },
   actions: {
-    marginLeft: 8,
+    marginLeft: spacingTokens.sm,
   },
   content: {
-    marginTop: 4,
+    marginTop: spacingTokens.xs,
   },
 });
 

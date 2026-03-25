@@ -1,45 +1,41 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
+import React from 'react';
 import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+  StatusBar,
+  Text,
+  TextInput,
+  type TextInputProps,
+  type TextProps,
+} from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+import RootNavigator from './src/app/navigation/RootNavigator';
+import { useTheme } from './src/shared/hooks/useTheme';
+
+const globalTextProps = (Text as unknown as { defaultProps?: TextProps });
+globalTextProps.defaultProps = {
+  ...(globalTextProps.defaultProps ?? {}),
+  allowFontScaling: false,
+  maxFontSizeMultiplier: 1,
+};
+
+const globalTextInputProps = (TextInput as unknown as {
+  defaultProps?: TextInputProps;
+});
+globalTextInputProps.defaultProps = {
+  ...(globalTextInputProps.defaultProps ?? {}),
+  allowFontScaling: false,
+  maxFontSizeMultiplier: 1,
+};
 
 function App() {
-  const isDarkMode = useColorScheme() === 'dark';
+  const { isDarkMode } = useTheme();
 
   return (
     <SafeAreaProvider>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
+      <RootNavigator />
     </SafeAreaProvider>
   );
 }
-
-function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
-
-  return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
-      />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
 
 export default App;

@@ -7,9 +7,13 @@ export const spacing = {
   xl: 24,
   '2xl': 32,
   '3xl': 40,
+  '4xl': 48,
+  '5xl': 56,
+  '6xl': 64,
+  /** Splash: hero vertical offset from safe area */
+  splashHeroTop: 65,
 } as const;
 
 export type SpacingKey = keyof typeof spacing;
 
 export const space = (key: SpacingKey): number => spacing[key];
-

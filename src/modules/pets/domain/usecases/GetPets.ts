@@ -4,8 +4,7 @@ import type { PetRepository } from '../repositories/PetRepository';
 export class GetPets {
   constructor(private readonly repository: PetRepository) {}
 
-  async execute(): Promise<Pet[]> {
-    return this.repository.getPets();
+  async execute(userId: string): Promise<Pet[]> {
+    return this.repository.getPets(userId);
   }
 }
-

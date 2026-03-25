@@ -16,6 +16,10 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
       method: 'GET',
     });
 
+    if (!response.ok) {
+      throw new Error(`fetchPets failed: ${response.status}`);
+    }
+
     return response.data ?? [];
   }
 
@@ -25,6 +29,10 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
       method: 'GET',
     });
 
+    if (!response.ok) {
+      throw new Error(`fetchPetById failed: ${response.status}`);
+    }
+
     return response.data ?? null;
   }
 
@@ -32,10 +40,11 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
     const response = await apiClient.request<Pet, Pet>({
       path: '/pets',
       method: 'POST',
-      body: pet,
+      // syncStatus is local-only and must not be sent to the API.
+      body: (({ syncStatus: _syncStatus, ...dto }) => dto)(pet),
     });
 
-    if (!response.data) {
+    if (!response.ok || !response.data) {
       throw new Error('Failed to create pet');
     }
 
@@ -46,10 +55,11 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
     const response = await apiClient.request<Pet, Pet>({
       path: `/pets/${pet.id}`,
       method: 'PUT',
-      body: pet,
+      // syncStatus is local-only and must not be sent to the API.
+      body: (({ syncStatus: _syncStatus, ...dto }) => dto)(pet),
     });
 
-    if (!response.data) {
+    if (!response.ok || !response.data) {
       throw new Error('Failed to update pet');
     }
 
@@ -57,13 +67,16 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
   }
 
   async deletePet(id: string): Promise<void> {
-    await apiClient.request<void>({
+    const response = await apiClient.request<void>({
       path: `/pets/${id}`,
       method: 'DELETE',
     });
+
+    if (!response.ok) {
+      throw new Error(`deletePet failed: ${response.status}`);
+    }
   }
 }
 
 export const createPetRemoteDataSource = (): PetRemoteDataSource =>
   new PetRemoteDataSourceImpl();
-

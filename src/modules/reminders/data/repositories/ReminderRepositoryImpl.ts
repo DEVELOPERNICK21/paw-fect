@@ -21,30 +21,55 @@ export class ReminderRepositoryImpl implements ReminderRepository {
       return cached;
     }
 
-    const remoteReminders = await this.remote.fetchReminders();
-    await this.local.saveReminders(remoteReminders);
-    return remoteReminders;
+    try {
+      const remoteReminders = await this.remote.fetchReminders();
+      await this.local.saveReminders(remoteReminders);
+      return remoteReminders;
+    } catch {
+      return [];
+    }
   }
 
   async createReminder(reminder: Reminder): Promise<Reminder> {
-    const created = await this.remote.createReminder(reminder);
+    let created = reminder;
+    try {
+      created = await this.remote.createReminder(reminder);
+    } catch {
+      created = reminder;
+    }
     const reminders = await this.local.getReminders();
-    await this.local.saveReminders([...reminders, created]);
+    const next = [
+      ...reminders.filter(existing => existing.id !== created.id),
+      created,
+    ];
+    await this.local.saveReminders(next);
     return created;
   }
 
   async updateReminder(reminder: Reminder): Promise<Reminder> {
-    const updated = await this.remote.updateReminder(reminder);
+    let updated = reminder;
+    try {
+      updated = await this.remote.updateReminder(reminder);
+    } catch {
+      updated = reminder;
+    }
     const reminders = await this.local.getReminders();
-    const next = reminders.map(existing =>
-      existing.id === updated.id ? updated : existing,
-    );
+    const exists = reminders.some(existing => existing.id === updated.id);
+    const next = exists
+      ? reminders.map(existing =>
+          existing.id === updated.id ? updated : existing,
+        )
+      : [...reminders, updated];
     await this.local.saveReminders(next);
     return updated;
   }
 
   async deleteReminder(id: string): Promise<void> {
-    await this.remote.deleteReminder(id);
+    try {
+      await this.remote.deleteReminder(id);
+    } catch {
+      // Ignore remote failures in offline mode.
+    }
     const reminders = await this.local.getReminders();
     const next = reminders.filter(reminder => reminder.id !== id);
     await this.local.saveReminders(next);

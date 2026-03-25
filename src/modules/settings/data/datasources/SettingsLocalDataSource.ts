@@ -6,6 +6,8 @@ const SETTINGS_STORAGE_KEY = 'settings';
 const DEFAULT_SETTINGS: Settings = {
   notificationsEnabled: true,
   emailUpdates: true,
+  onboardingCompleted: false,
+  themeMode: 'system',
 };
 
 export interface SettingsLocalDataSource {
@@ -15,10 +17,17 @@ export interface SettingsLocalDataSource {
 
 class SettingsLocalDataSourceImpl implements SettingsLocalDataSource {
   async getSettings(): Promise<Settings> {
-    const stored = await storageService.getItem<Settings | null>(
+    const stored = await storageService.getItem<Partial<Settings> | null>(
       SETTINGS_STORAGE_KEY,
     );
-    return stored ?? DEFAULT_SETTINGS;
+    if (!stored) {
+      return DEFAULT_SETTINGS;
+    }
+
+    return {
+      ...DEFAULT_SETTINGS,
+      ...stored,
+    };
   }
 
   async saveSettings(settings: Settings): Promise<void> {

@@ -1,35 +1,41 @@
-# Architecture Rules
+# Architecture Rules (STRICT)
 
-The project follows strict architectural rules that must never be violated.
-
----
-
-Architecture Layers
-
-The application follows Clean Architecture.
-
-Dependency direction must always be:
-
-UI → Store → UseCase → Repository → DataSource → Infrastructure
-
-No layer may import from a higher layer.
-
-Forbidden examples:
-
-UI → API
-UI → Storage
-Domain → React
-Domain → API
+These rules are mandatory and must never be violated.
 
 ---
 
-Feature Module Structure
+## 1. Dependency Flow
+
+### Command Flow
+
+UI → Store → UseCase → Repository Interface → Repository Implementation → DataSource → Infrastructure
+
+### Read / Reactive Flow
+
+Repository → UseCase (ViewModel Builder / Observer) → Store → UI
+
+---
+
+## 2. Forbidden Dependencies
+
+- UI → UseCase ❌
+- UI → Repository ❌
+- UI → API / Storage ❌
+- Store → Repository ❌
+- Store ↔ Store ❌
+- Domain → React / Zustand / API / Storage ❌
+- Data → UI ❌
+- Infrastructure → Feature Modules ❌
+
+---
+
+## 3. Feature Module Structure
 
 All features must live inside:
 
-src/modules/<feature>
+src/modules/<feature>/
 
-Each feature must follow this structure:
+Structure:
 
 domain/
 models/
@@ -46,125 +52,249 @@ ui/
 screens/
 components/
 
-Feature logic must not be placed outside its module.
+No feature logic outside its module.
+
+Cross-feature interaction allowed ONLY via:
+
+- UseCases
+- App Orchestrator
 
 ---
 
-Domain Layer Rules
-
-Domain layer must contain only pure TypeScript logic.
-
-It must not depend on:
-
-React
-React Native
-State management libraries
-API libraries
-Storage libraries
-
-Domain contains:
-
-models
-repository interfaces
-use cases
+## 4. Layer Responsibilities
 
 ---
 
-Data Layer Rules
+### UI Layer
 
-Data layer implements repository interfaces.
+- Pure presentation
+- No business logic
+- No API calls
+- Interacts ONLY with Store
+
+Allowed:
+
+- Navigation
+- Minimal formatting
+
+---
+
+### Store Layer (Application Layer)
+
+Zustand-based
+
+#### Store Types
+
+1. Command Store
+
+- Calls UseCases
+- Handles loading/error
+- Holds minimal UI state
+
+2. Projection Store
+
+- Holds ViewModels
+- Does NOT call UseCases
+- Updated by orchestrator or observers
+
+Forbidden:
+
+- No API calls
+- No Repository access
+- No business logic
+
+---
+
+### Domain Layer
+
+- Pure TypeScript
+- Contains:
+
+  - Models
+  - Repository Interfaces
+  - UseCases
+
+#### UseCase Types
+
+- Command UseCase (write operations)
+- Query UseCase (read operations)
+- Composite UseCase (combine multiple repositories)
+- Observer UseCase (reactive updates)
+
+Forbidden:
+
+- No React / Zustand / API / Storage
+- No external libraries
+
+---
+
+### Data Layer
+
+Implements Repository Interfaces
 
 Responsibilities:
 
-- API communication
-- local storage
-- caching
-- data transformation
+- API calls
+- Local DB operations
+- Caching
+- Sync logic
+- Conflict resolution
 
-Repositories are the Single Source of Truth.
-
-UI must never call APIs directly.
+This is the Single Source of Truth (SSOT)
 
 ---
 
-State Management Rules
+### DataSource Layer
 
-Zustand is used for state management.
+Handles:
+
+- Remote API
+- Local database
+
+No business logic.
+
+---
+
+### Infrastructure Layer
+
+Shared services:
+
+- API Client
+- SQLite
+- Notification service
+- Secure storage
+
+Must not depend on feature modules.
+
+---
+
+## 5. Application Orchestrator (MANDATORY)
+
+Responsible for:
+
+- App initialization
+- Refresh flows
+- Logout handling
+- Coordinating multiple use cases
+- Updating projection stores
 
 Rules:
 
-Stores hold application state.
-
-Stores must not contain API calls.
-
-Stores should interact with use cases or repositories.
-
-UI components read state through store hooks.
+- Can call multiple UseCases
+- Can update stores
+- No business logic
+- No UI access
 
 ---
 
-UI Layer Rules
+## 6. Data Flow Rules
 
-UI layer contains:
+### Command
 
-screens
-components
+UI → Store → UseCase → Repository → DataSource
 
-Rules:
+### Reactive
 
-UI must be presentation only.
+Repository → UseCase → Store → UI
 
-UI must not contain business logic.
+UI must never:
 
-UI must not call APIs.
-
-UI must trigger actions through stores or use cases.
+- Combine multiple data sources
+- Build ViewModels
 
 ---
 
-Infrastructure Layer
+## 7. Offline-First Rules
 
-Infrastructure contains shared services.
-
-Examples:
-
-API client
-storage service
-notification scheduling
-
-Infrastructure must not depend on feature modules.
+- Local DB is primary source
+- Writes go to local DB first
+- Sync happens in background
+- UI must not depend on API
 
 ---
 
-Naming Conventions
+## 8. Sync Rules
 
-Model: Reminder.ts
-Repository interface: ReminderRepository.ts
-Repository implementation: ReminderRepositoryImpl.ts
-Use case: CreateReminder.ts
-Store: reminderStore.ts
-Screen: ReminderListScreen.tsx
-Component: ReminderCard.tsx
+- Maintain sync queue
+- Retry failed operations
+- Track:
 
----
+  - isSynced
+  - updatedAt
 
-Code Quality Rules
-
-Use TypeScript strict typing.
-
-Avoid using "any".
-
-Functions should be small and focused.
-
-Business logic must never be placed inside UI components.
+- Conflict strategy: Last Write Wins
 
 ---
 
-When generating new features, always follow this process:
+## 9. State Management Rules
 
-1. Create domain models.
-2. Define repository interfaces.
-3. Implement use cases.
-4. Implement repository logic.
-5. Create state store.
-6. Implement UI screens and components.
+- Zustand is mandatory
+- Store must be minimal
+
+Allowed:
+
+- ViewModels
+- Cached subsets
+
+Forbidden:
+
+- Uncontrolled duplication of raw DB entities
+
+Store is NOT a source of truth.
+
+---
+
+## 10. Reactivity Rules
+
+- UI must update automatically when data changes
+- Observer UseCases handle subscriptions
+
+Example:
+ObserveDashboard → Store → UI
+
+No manual polling.
+
+---
+
+## 11. Performance Rules
+
+- Indexed queries (petId, date)
+- Avoid full scans
+- Use pagination when needed
+- Optimize FlatList
+- Memoize components
+
+---
+
+## 12. Naming Conventions
+
+Model: Pet.ts
+Repository Interface: PetRepository.ts
+Repository Impl: PetRepositoryImpl.ts
+UseCase: CreatePet.ts
+Store: petStore.ts
+Screen: PetListScreen.tsx
+Component: PetCard.tsx
+
+---
+
+## 13. Code Quality
+
+- TypeScript strict mode
+- No "any"
+- Small focused functions
+- No business logic in UI
+
+---
+
+## 14. Feature Development Flow
+
+1. Define models
+2. Define repository interfaces
+3. Create use cases
+4. Implement repository
+5. Implement DB schema
+6. Add sync logic
+7. Create stores (command + projection)
+8. Add orchestrator (if needed)
+9. Build UI

@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   StyleSheet,
-  Text,
   TextInput,
   View,
   type NativeSyntheticEvent,
@@ -13,9 +12,11 @@ import {
 } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
 import { Icon, type IconProps } from './Icon';
+import { AppText } from './AppText';
 
 export interface InputProps extends TextInputProps {
   containerStyle?: StyleProp<ViewStyle>;
+  fieldStyle?: StyleProp<ViewStyle>;
   inputStyle?: StyleProp<TextStyle>;
   leftIcon?: Pick<IconProps, 'name'>;
   rightIcon?: Pick<IconProps, 'name'>;
@@ -27,6 +28,7 @@ export interface InputProps extends TextInputProps {
 
 export const Input: React.FC<InputProps> = ({
   containerStyle,
+  fieldStyle,
   inputStyle,
   leftIcon,
   rightIcon,
@@ -52,6 +54,7 @@ export const Input: React.FC<InputProps> = ({
             borderColor: hasError ? colors.danger : colors.border,
             backgroundColor: colors.surface,
           },
+          fieldStyle,
         ])}
       >
         {leftIcon ? (
@@ -72,6 +75,8 @@ export const Input: React.FC<InputProps> = ({
             inputStyle,
           ])}
           onBlur={onBlur}
+          allowFontScaling={false}
+          maxFontSizeMultiplier={1}
           {...rest}
         />
         {rightIcon ? (
@@ -83,7 +88,7 @@ export const Input: React.FC<InputProps> = ({
         ) : null}
       </View>
       {hasError ? (
-        <Text
+        <AppText
           style={StyleSheet.flatten([
             textStyles.caption,
             styles.errorText,
@@ -91,7 +96,7 @@ export const Input: React.FC<InputProps> = ({
           ])}
         >
           {errorText}
-        </Text>
+        </AppText>
       ) : null}
     </View>
   );
