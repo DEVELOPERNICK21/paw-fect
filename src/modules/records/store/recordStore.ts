@@ -11,6 +11,8 @@ import {
 
 export interface RecordState {
   records: HealthRecord[];
+  loading: boolean;
+  error: string | null;
   reset: () => void;
   loadRecords: () => Promise<void>;
   createRecord: (record: HealthRecord) => Promise<void>;
@@ -32,13 +34,20 @@ const createRecordEntryUseCase = new CreateRecordEntry();
 
 export const useRecordStore = create<RecordState>((set, get) => ({
   records: [],
-  reset: () => set({ records: [] }),
+  loading: false,
+  error: null,
+  reset: () => set({ records: [], loading: false, error: null }),
 
   loadRecords: async () => {
     try {
+      set({ loading: true, error: null });
       const records = await getRecordsUseCase.execute();
-      set({ records });
+      set({ records, loading: false, error: null });
     } catch (error) {
+      set({
+        loading: false,
+        error: 'Unable to load health records. Please try again.',
+      });
       // eslint-disable-next-line no-console
       console.error('[recordStore] loadRecords error', error);
     }
