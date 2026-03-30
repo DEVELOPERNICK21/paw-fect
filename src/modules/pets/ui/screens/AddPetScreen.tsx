@@ -41,8 +41,6 @@ const ICON_PATHS: Record<IconKind, string> = {
 const PET_TYPE_IMAGES: Record<PetType, string> = {
   dog: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB1JhATT4ndqHRyiO3eoRsf-MTsdqhiab1V_86x886YKgZ3kBrF7rjrKFKHhR43jjJ9HfKVlmmVBTW8nzmpk8BYi3t_9c9TTGhMrYzEPc1tnMFKLVYZelw4ue0qqBH2z6lsnF4OTmDdwh1Me8calZVM9trzp_nEl91Y2QkF-p-B22D-64F9DiA3WS516fZe5mfqndmnEMAjZOcbTEe85ub1i2qnZ0o42zcsNmBiKVXquhhS0M-XHeKd54_VQkTWkEUEcNwhUXDma1iw',
   cat: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC8EslexE4kKR8L1-OVbw-BjjYuMZqhUDwQJwGldqbY_yJQIgr2mWLQx6g_OO4ZiHZI1rd1zXn_dPUkK9xe8KK-jiqMG3XUBgUpRtBZCTebNC0QLs8zdPXrz4RD1uvsAzy8J0mEGabFSggCWQM2juGKgkT2w6zebpzXGUOOKNoOeD5r1hgMDmR6GctBiH3SgOMPpHq8rLtKS_g01V3zOkm_eMGIdEd71dMb8vKLqF84yN81uhLSgCmtaKRGglZBkoVzWNiNat0azFeq',
-  other:
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuCEB2433HaP_zVNtmWjvj7RlqgSWHp3K1IvguKHnLqS-qh8yRf7hbCVzYV4oDj3fXW367BD_CH9_wfOrd7werdSa05AHosNOWH1bABId-djsqITgDb074JxlpZcjif14gVWHLDo_TIg8UFSU7OBKMCcMXEXOYzKkwUO4IMTNpzXzUUnhFwvd8FpEBxnnPEeHiDg4sXzxzAlP-hhS6WTB1QbgtGuLujpqMmBIc--vsfhx2Ei9dPUsam-oakHWUpfOtzJHQQIBJ3mo4t8',
 };
 
 const PROFILE_PLACEHOLDER =
@@ -224,7 +222,6 @@ export const AddPetScreen: React.FC = () => {
       [
         { key: 'dog', label: 'Dog' },
         { key: 'cat', label: 'Cat' },
-        { key: 'other', label: 'Other' },
       ] as const,
     [],
   );
@@ -487,7 +484,7 @@ export const AddPetScreen: React.FC = () => {
             onPress={handleSave}
             disabled={!canSave}
           >
-            <icons.paw width={18} height={18} />
+            <icons.paws width={18} height={18} />
             <Text style={[styles.ctaText, { fontFamily: fontFamilies.bold }]}>
               {isEditMode ? 'Save changes' : 'Save Pet Profile'}
             </Text>

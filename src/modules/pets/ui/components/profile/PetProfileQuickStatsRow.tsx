@@ -6,7 +6,7 @@ import { icons } from '../../../../../shared/assets/icons';
 import type { PetGender } from '../../../domain/models/Pet';
 import type { Theme } from '../../../../../shared/hooks/useTheme';
 import { useTheme } from '../../../../../shared/hooks/useTheme';
-import { space, spacing } from '../../../../../shared/theme/spacing';
+import { spacing } from '../../../../../shared/theme/spacing';
 import { colors } from '../../../../../shared/theme/colors';
 
 export interface PetProfileQuickStatsRowProps {

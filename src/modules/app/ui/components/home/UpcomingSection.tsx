@@ -14,6 +14,8 @@ import { MaterialIcon } from '../../../../../shared/components/MaterialIcon';
 import type { Theme } from '../../../../../shared/hooks/useTheme';
 
 import { reminderTypeIcon } from '../../../../../shared/utils/reminderTypeIcon';
+import { spacing } from '../../../../../shared/theme/spacing';
+import { radius } from '../../../../../shared/theme/radius';
 
 export interface UpcomingSectionProps {
   items: HomeDashboardUpcomingItem[];
@@ -169,7 +171,11 @@ export const UpcomingSection: React.FC<UpcomingSectionProps> = React.memo(
               No upcoming reminders yet. Plan the next vet visit or grooming
               session.
             </AppText>
-            <Button title="Add reminder" onPress={onPressAddReminder} />
+            <Button
+              title="Add reminder"
+              onPress={onPressAddReminder}
+              // style={styles.emptyButton}
+            />
           </View>
         ) : null}
 
@@ -207,5 +213,11 @@ const styles = StyleSheet.create({
   empty: {
     borderWidth: 1,
     alignItems: 'stretch',
+  },
+  emptyButton: {
+    width: '100%',
+    borderRadius: radius.lg,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
   },
 });

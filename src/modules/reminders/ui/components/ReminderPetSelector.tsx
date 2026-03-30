@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 
-type ReminderPetOptionType = 'dog' | 'cat' | 'other';
+type ReminderPetOptionType = 'dog' | 'cat';
 
 export interface ReminderPetOption {
   id: string;
@@ -48,9 +48,7 @@ export const ReminderPetSelector: React.FC<ReminderPetSelectorProps> = ({
               style={[
                 textStyles.body,
                 {
-                  color: selected
-                    ? colors.primaryDark
-                    : colors.text.primary,
+                  color: selected ? colors.primaryDark : colors.text.primary,
                 },
               ]}
             >
@@ -74,4 +72,3 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
 });
-

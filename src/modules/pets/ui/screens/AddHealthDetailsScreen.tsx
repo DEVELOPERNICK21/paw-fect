@@ -1,12 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   useNavigation,
@@ -18,6 +11,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { PetsStackParamList } from '../../../../app/navigation/types';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
+import { Input } from '../../../../shared/components/Input';
 import { useRecordStore } from '../../../records/store/recordStore';
 import { usePetStore } from '../../store/petStore';
 import { useAppTabBarInset } from '../../../../app/navigation/layout';
@@ -245,26 +239,12 @@ export const AddHealthDetailsScreen: React.FC = () => {
           >
             Date
           </Text>
-          <View
-            style={[
-              styles.inputWrap,
-              {
-                borderColor: colors.borderSubtle,
-                backgroundColor: colors.surface,
-              },
-            ]}
-          >
-            <TextInput
-              value={date}
-              onChangeText={setDate}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={colors.input.placeholder}
-              style={[
-                styles.input,
-                { fontFamily: fontFamilies.regular, color: colors.text.body },
-              ]}
-            />
-          </View>
+          <Input
+            value={date}
+            onChangeText={setDate}
+            placeholder="YYYY-MM-DD"
+            keyboardType="numbers-and-punctuation"
+          />
 
           {kind === 'weight' ? (
             <>
@@ -280,21 +260,11 @@ export const AddHealthDetailsScreen: React.FC = () => {
                 >
                   Weight({unit})
                 </Text>
-                <TextInput
+                <Input
                   value={weight}
                   onChangeText={setWeight}
                   placeholder={unit === 'kg' ? 'e.g. 12.5' : 'e.g. 27'}
-                  placeholderTextColor={colors.input.placeholder}
                   keyboardType="decimal-pad"
-                  style={[
-                    styles.input,
-                    {
-                      borderColor: colors.borderSubtle,
-                      backgroundColor: colors.surface,
-                      fontFamily: fontFamilies.regular,
-                      color: colors.text.body,
-                    },
-                  ]}
                 />
               </View>
 
@@ -352,20 +322,10 @@ export const AddHealthDetailsScreen: React.FC = () => {
               >
                 Vaccine name
               </Text>
-              <TextInput
+              <Input
                 value={name}
                 onChangeText={setName}
                 placeholder="e.g. Rabies, DHPP"
-                placeholderTextColor={colors.input.placeholder}
-                style={[
-                  styles.input,
-                  {
-                    borderColor: colors.borderSubtle,
-                    backgroundColor: colors.surface,
-                    fontFamily: fontFamilies.regular,
-                    color: colors.text.body,
-                  },
-                ]}
               />
             </View>
           ) : null}
@@ -383,20 +343,10 @@ export const AddHealthDetailsScreen: React.FC = () => {
               >
                 Condition name
               </Text>
-              <TextInput
+              <Input
                 value={name}
                 onChangeText={setName}
                 placeholder="e.g. Allergy, Arthritis"
-                placeholderTextColor={colors.input.placeholder}
-                style={[
-                  styles.input,
-                  {
-                    borderColor: colors.borderSubtle,
-                    backgroundColor: colors.surface,
-                    fontFamily: fontFamilies.regular,
-                    color: colors.text.body,
-                  },
-                ]}
               />
             </View>
           ) : null}

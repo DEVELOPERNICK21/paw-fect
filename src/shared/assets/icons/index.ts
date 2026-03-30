@@ -9,6 +9,8 @@ import VaccineIcon from './VaccineIcon.svg';
 import MaleIcon from './MaleIcon.svg';
 import CakeIcon from './CakeIcon.svg';
 import FemaleIcon from './femaleIcon.svg';
+import SearchIcon from './SearchIcon.svg';
+import NoRecordsIcon from './NoRecordsIcon.svg';
 
 export const icons = {
   paw: PawIcon,
@@ -22,6 +24,8 @@ export const icons = {
   maleIcon: MaleIcon,
   cakeIcon: CakeIcon,
   femaleIcon: FemaleIcon,
+  searchIcon: SearchIcon,
+  noRecordsIcon: NoRecordsIcon,
 } as const;
 
 export type AppSvgIconName = keyof typeof icons;

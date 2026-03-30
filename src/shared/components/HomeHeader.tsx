@@ -89,9 +89,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = React.memo(
 HomeHeader.displayName = 'HomeHeader';
 
 const styles = StyleSheet.create({
-  wrap: {
-    borderBottomWidth: 1,
-  },
+  wrap: {},
   row: {
     flexDirection: 'row',
     alignItems: 'center',

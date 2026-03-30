@@ -99,7 +99,7 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = React.memo(
           accessibilityLabel="Pick date"
           onPress={handlePress}
           disabled={disabled}
-          style={({ pressed }) => [
+          style={[
             styles.field,
             {
               backgroundColor: colors.surface,
@@ -124,7 +124,11 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = React.memo(
             >
               {value ? display : placeholder}
             </AppText>
-            <MaterialIcon name={rightIconName} size={18} color={colors.accent} />
+            <MaterialIcon
+              name={rightIconName}
+              size={18}
+              color={colors.accent}
+            />
           </View>
         </Pressable>
 
@@ -156,4 +160,3 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
 });
-

@@ -1,4 +1,4 @@
-export type PetType = 'dog' | 'cat' | 'other';
+export type PetType = 'dog' | 'cat';
 
 export type PetGender = 'male' | 'female' | 'unknown';
 

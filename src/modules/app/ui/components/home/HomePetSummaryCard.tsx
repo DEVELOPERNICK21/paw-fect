@@ -19,15 +19,8 @@ export interface HomePetSummaryCardProps {
 
 export const HomePetSummaryCard: React.FC<HomePetSummaryCardProps> = React.memo(
   ({ pet, healthStatusLine, nextMealLine, onPressViewProfile, theme }) => {
-    const {
-      colors,
-      radius,
-      shadows,
-      spacing,
-      textStyles,
-      fontSizes,
-      fontFamilies,
-    } = theme;
+    const { colors, radius, spacing, textStyles, fontSizes, fontFamilies } =
+      theme;
     const uri = pet.photo?.trim() ? pet.photo : DEFAULT_AVATAR_URI;
     const avatarSize = spacing['5xl'] + spacing['5xl'];
 
@@ -56,7 +49,18 @@ export const HomePetSummaryCard: React.FC<HomePetSummaryCardProps> = React.memo(
           onPress={onPressViewProfile}
           style={styles.avatarBlock}
         >
-          <View style={{ width: avatarSize, height: avatarSize }}>
+          <View
+            style={{
+              width: avatarSize,
+              height: avatarSize,
+              borderRadius: radius.round,
+              shadowColor: colors.primary,
+              shadowOffset: { width: 2, height: 2 },
+              shadowOpacity: 1,
+              shadowRadius: 3.84,
+              elevation: 10,
+            }}
+          >
             <Image
               source={{ uri }}
               style={[
@@ -65,8 +69,8 @@ export const HomePetSummaryCard: React.FC<HomePetSummaryCardProps> = React.memo(
                   width: avatarSize,
                   height: avatarSize,
                   borderRadius: radius.round,
-                  borderWidth: 2,
-                  borderColor: colors.borderSubtle,
+                  borderWidth: 5,
+                  borderColor: colors.brandTint10,
                 },
               ]}
               accessibilityIgnoresInvertColors

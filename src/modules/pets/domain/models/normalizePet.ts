@@ -1,7 +1,6 @@
 import type { Pet, PetGender, PetSyncStatus, PetType } from './Pet';
 
-const isPetType = (v: unknown): v is PetType =>
-  v === 'dog' || v === 'cat' || v === 'other';
+const isPetType = (v: unknown): v is PetType => v === 'dog' || v === 'cat';
 
 const isPetGender = (v: unknown): v is PetGender =>
   v === 'male' || v === 'female' || v === 'unknown';
@@ -25,8 +24,7 @@ export function normalizePet(raw: unknown, userId: string): Pet | null {
   }
   const createdAt =
     typeof o.createdAt === 'string' ? o.createdAt : new Date().toISOString();
-  const updatedAt =
-    typeof o.updatedAt === 'string' ? o.updatedAt : createdAt;
+  const updatedAt = typeof o.updatedAt === 'string' ? o.updatedAt : createdAt;
   const uid = typeof o.userId === 'string' ? o.userId : userId;
 
   const syncStatus: PetSyncStatus | undefined = isPetSyncStatus(o.syncStatus)

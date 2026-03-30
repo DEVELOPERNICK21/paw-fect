@@ -40,6 +40,7 @@ export const OnboardingScreen: React.FC = () => {
       notificationsEnabled: true,
       emailUpdates: true,
       onboardingCompleted: false,
+      themeMode: 'system' as const,
     };
     updateSettings({
       ...current,
@@ -62,7 +63,9 @@ export const OnboardingScreen: React.FC = () => {
   const stepLabel = useMemo(() => `Step ${step + 1} of 3`, [step]);
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.backgroundAlt }]}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: colors.backgroundAlt }]}
+    >
       <StatusBar
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
         backgroundColor={colors.backgroundAlt}
@@ -75,9 +78,9 @@ export const OnboardingScreen: React.FC = () => {
             style={styles.navIconButton}
             hitSlop={8}
           >
-          <Text style={[styles.navIcon, { color: colors.text.heading }]}>
-            {step === 0 ? '✕' : '←'}
-          </Text>
+            <Text style={[styles.navIcon, { color: colors.text.heading }]}>
+              {step === 0 ? '✕' : '←'}
+            </Text>
           </Pressable>
 
           <Text style={[styles.navTitle, { fontFamily: fontFamilies.bold }]}>
@@ -509,7 +512,6 @@ export const OnboardingScreen: React.FC = () => {
               </View>
             </>
           ) : null}
-
         </ScrollView>
 
         <View style={[styles.actions, { paddingTop: sv(10) }]}>

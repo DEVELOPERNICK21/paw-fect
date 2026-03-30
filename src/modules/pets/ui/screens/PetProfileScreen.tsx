@@ -1,10 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -76,25 +70,21 @@ export const PetProfileScreen: React.FC = () => {
 
   const [recordsLoading, setRecordsLoading] = useState(false);
 
-  useEffect(() => {
-    void loadPets().catch(() => {});
-    setRecordsLoading(true);
-    void loadRecords()
-      .catch(() => {})
-      .finally(() => setRecordsLoading(false));
-  }, [loadPets, loadRecords]);
-
-  const lastDashboardRefreshPetId = useRef<string | null>(null);
+  const lastRefreshTime = useRef<number>(0);
 
   useFocusEffect(
     useCallback(() => {
-      const nextPetId = activePet?.id ?? null;
-      if (lastDashboardRefreshPetId.current === nextPetId) {
-        return;
+      const now = Date.now();
+      if (now - lastRefreshTime.current > 100) {
+        lastRefreshTime.current = now;
+        void loadPets().catch(() => {});
+        setRecordsLoading(true);
+        void loadRecords()
+          .catch(() => {})
+          .finally(() => setRecordsLoading(false));
+        requestDashboardRefresh();
       }
-      lastDashboardRefreshPetId.current = nextPetId;
-      requestDashboardRefresh();
-    }, [activePet?.id, requestDashboardRefresh]),
+    }, [loadPets, loadRecords, requestDashboardRefresh]),
   );
 
   const goSettings = useCallback(() => {
@@ -107,6 +97,10 @@ export const PetProfileScreen: React.FC = () => {
     }
     navigation.navigate('AddPet', { petId: effectivePet.id });
   }, [navigation, effectivePet]);
+
+  const goAddPet = useCallback(() => {
+    navigation.navigate('AddPet');
+  }, [navigation]);
 
   const goAddHealthDetails = useCallback(
     (kind: 'weight' | 'vaccines' | 'conditions') => {
@@ -658,53 +652,76 @@ export const PetProfileScreen: React.FC = () => {
         theme={theme}
       />
 
-      <FlatList
-        data={recordsForPet}
-        keyExtractor={keyExtractor}
-        renderItem={renderRecordItem}
-        ListHeaderComponent={listHeader}
-        ListFooterComponent={listFooter}
-        ListEmptyComponent={
-          recordsLoading ? (
-            <View style={styles.loaderWrap}>
-              <ActivityIndicator size="large" color={colors.primary} />
-            </View>
-          ) : (
-            <View
-              style={[
-                styles.emptyCard,
-                {
-                  backgroundColor: colors.surfaceAlt,
-                  borderColor: colors.borderSubtle,
-                },
-              ]}
-            >
-              <MaterialIcon
-                name="stethoscope"
-                size={38}
-                color={colors.accent}
-              />
-              <AppText
+      <View style={styles.mainWithFab}>
+        <FlatList
+          data={recordsForPet}
+          keyExtractor={keyExtractor}
+          renderItem={renderRecordItem}
+          ListHeaderComponent={listHeader}
+          ListFooterComponent={listFooter}
+          ListEmptyComponent={
+            recordsLoading ? (
+              <View style={styles.loaderWrap}>
+                <ActivityIndicator size="large" color={colors.primary} />
+              </View>
+            ) : (
+              <View
                 style={[
-                  textStyles.subtitle,
-                  { color: colors.text.heading, fontFamily: fontFamilies.bold },
+                  styles.emptyCard,
+                  {
+                    backgroundColor: colors.surfaceAlt,
+                    borderColor: colors.borderSubtle,
+                  },
                 ]}
               >
-                No health records yet
-              </AppText>
-              <Button title="Add health record" onPress={goAddHealthRecord} />
-            </View>
-          )
-        }
-        ItemSeparatorComponent={itemSeparator}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.listContent,
-          {
-            paddingBottom: tabBarInset + spacingTokens['2xl'],
-          },
-        ]}
-      />
+                <MaterialIcon
+                  name="stethoscope"
+                  size={38}
+                  color={colors.accent}
+                />
+                <AppText
+                  style={[
+                    textStyles.subtitle,
+                    {
+                      color: colors.text.heading,
+                      fontFamily: fontFamilies.bold,
+                    },
+                  ]}
+                >
+                  No health records yet
+                </AppText>
+                <Button title="Add health record" onPress={goAddHealthRecord} />
+              </View>
+            )
+          }
+          ItemSeparatorComponent={itemSeparator}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.listContent,
+            {
+              paddingBottom: tabBarInset + spacingTokens['2xl'],
+            },
+          ]}
+        />
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Add another pet"
+          onPress={goAddPet}
+          style={({ pressed }) => [
+            styles.addPetFab,
+            theme.shadows.lg,
+            {
+              bottom: tabBarInset + spacingTokens.md,
+              right: spacingTokens.lg,
+              backgroundColor: colors.primary,
+              opacity: pressed ? 0.92 : 1,
+            },
+          ]}
+        >
+          <MaterialIcon name="add" size={28} color={colors.text.inverse} />
+        </Pressable>
+      </View>
     </SafeAreaView>
   );
 };
@@ -712,6 +729,18 @@ export const PetProfileScreen: React.FC = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+  },
+  mainWithFab: {
+    flex: 1,
+  },
+  addPetFab: {
+    position: 'absolute',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 8,
   },
   center: {
     flex: 1,

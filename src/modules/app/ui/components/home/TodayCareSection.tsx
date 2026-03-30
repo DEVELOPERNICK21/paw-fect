@@ -185,7 +185,7 @@ export const TodayCareSection: React.FC<TodayCareSectionProps> = React.memo(
             <Button
               title="Add reminder"
               onPress={onPressAddReminder}
-              variant="secondary"
+              // variant="secondary"
               style={{
                 width: '100%',
                 borderRadius: radius.lg,

@@ -3,9 +3,7 @@ import {
   StyleSheet,
   TextInput,
   View,
-  type NativeSyntheticEvent,
   type StyleProp,
-  type TextInputFocusEventData,
   type TextInputProps,
   type TextStyle,
   type ViewStyle,
@@ -21,9 +19,6 @@ export interface InputProps extends TextInputProps {
   leftIcon?: Pick<IconProps, 'name'>;
   rightIcon?: Pick<IconProps, 'name'>;
   errorText?: string;
-  onBlur?:
-    | ((e: NativeSyntheticEvent<TextInputFocusEventData>) => void)
-    | undefined;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -123,4 +118,3 @@ const styles = StyleSheet.create({
 
 // Example:
 // <Input placeholder="Pet Name" value={name} onChangeText={setName} />
-

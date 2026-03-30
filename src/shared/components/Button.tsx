@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
 import { AppText } from './AppText';
-import { space } from '../theme/spacing';
+import { space, spacing } from '../theme/spacing';
+import { radius } from '../theme/radius';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'danger';
 
@@ -113,6 +114,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
+    width: '100%',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: radius.lg,
   },
   content: {
     flexDirection: 'row',

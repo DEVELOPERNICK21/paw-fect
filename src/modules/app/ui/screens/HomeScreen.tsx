@@ -23,7 +23,6 @@ import { HomeHealthSnapshotCard } from '../components/home/HomeHealthSnapshotCar
 import { HomePetSummaryCard } from '../components/home/HomePetSummaryCard';
 import { TodayCareSection } from '../components/home/TodayCareSection';
 import { UpcomingSection } from '../components/home/UpcomingSection';
-import { spacing } from '../../../../shared/theme/spacing';
 
 export const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeRootNavigation>();
