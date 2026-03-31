@@ -1,0 +1,36 @@
+import type {
+  SmartHealthHistoryLog,
+  SmartHealthRecord,
+} from '../../domain/models/SmartHealthRecord';
+import type { SmartHealthRecordRepository } from '../../domain/repositories/SmartHealthRecordRepository';
+import type { SmartHealthRecordRemoteDataSource } from '../datasources/SmartHealthRecordRemoteDataSource';
+import { createSmartHealthRecordRemoteDataSource } from '../datasources/SmartHealthRecordRemoteDataSource';
+
+export class SmartHealthRecordRepositoryImpl
+  implements SmartHealthRecordRepository
+{
+  constructor(private readonly remote: SmartHealthRecordRemoteDataSource) {}
+
+  async listByPet(userId: string, petId: string): Promise<SmartHealthRecord[]> {
+    return this.remote.listByPet(userId, petId);
+  }
+
+  async upsertMany(records: SmartHealthRecord[]): Promise<void> {
+    await this.remote.upsertMany(records);
+  }
+
+  async updateOne(record: SmartHealthRecord): Promise<void> {
+    await this.remote.updateOne(record);
+  }
+
+  async appendHistory(logs: SmartHealthHistoryLog[]): Promise<void> {
+    await this.remote.appendHistory(logs);
+  }
+}
+
+export const createSmartHealthRecordRepository =
+  (): SmartHealthRecordRepository => {
+    const remote = createSmartHealthRecordRemoteDataSource();
+    return new SmartHealthRecordRepositoryImpl(remote);
+  };
+

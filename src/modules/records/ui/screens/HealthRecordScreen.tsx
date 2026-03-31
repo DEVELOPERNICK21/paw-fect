@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -13,195 +13,108 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAppTabBarInset } from '../../../../app/navigation/layout';
 import type { HealthRecordsRootNavigation } from '../../../../app/navigation/types';
-import { Button } from '../../../../shared/components/Button';
 import { AppText } from '../../../../shared/components/AppText';
-import { MaterialIcon, type IconName } from '../../../../shared/components/MaterialIcon';
+import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { icons } from '../../../../shared/assets/icons';
 import { usePetStore } from '../../../pets/store/petStore';
-import { useRecordStore } from '../../store/recordStore';
-import { useHealthScheduleStore } from '../../store/healthScheduleStore';
-import type { HealthRecord } from '../../domain/models/HealthRecord';
-import type { HealthSchedule } from '../../domain/models/HealthSchedule';
-import { HealthScheduleEngine } from '../../domain/utils/HealthScheduleEngine';
-
-import { HealthRecordListItem } from '../components/HealthRecordListItem';
+import { useSmartHealthRecordStore } from '../../store/smartHealthRecordStore';
+import type { SmartHealthRecord } from '../../domain/models/SmartHealthRecord';
 import { PremiumUpgradeCard } from '../components/PremiumUpgradeCard';
-import { UpcomingDueCard } from '../components/UpcomingDueCard';
+import { SmartHealthRecordItem } from '../components/SmartHealthRecordItem';
 
 type CategoryFilter = 'Vaccination' | 'Deworming';
 
 const CATEGORIES: CategoryFilter[] = ['Vaccination', 'Deworming'];
 
-const CATEGORY_ICON: Record<CategoryFilter, IconName> = {
-  Vaccination: 'vaccines',
-  Deworming: 'healing',
-};
-
-function formatDueDateLabel(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) {
-    return iso;
-  }
-  return d.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
-
 export const HealthRecordScreen: React.FC = () => {
   const navigation = useNavigation<HealthRecordsRootNavigation>();
-  const tabBarInset = useAppTabBarInset();
   const theme = useTheme();
-  const { colors, space, radius, textStyles, fontFamilies } = theme;
+  const tabBarInset = useAppTabBarInset();
+  const { colors, space, spacing, radius, textStyles, fontFamilies } = theme;
 
   const activePet = usePetStore(s => s.activePet);
-  const petsLoading = usePetStore(s => s.loading);
-  const petsError = usePetStore(s => s.loadError);
-
-  const records = useRecordStore(s => s.records);
-  const recordsLoading = useRecordStore(s => s.loading);
-  const recordsError = useRecordStore(s => s.error);
-  const loadRecords = useRecordStore(s => s.loadRecords);
-
-  const schedules = useHealthScheduleStore(s => s.schedules);
-  const schedulesLoading = useHealthScheduleStore(s => s.loading);
-  const schedulesError = useHealthScheduleStore(s => s.error);
-  const loadSchedules = useHealthScheduleStore(s => s.loadSchedules);
-  const initializeSchedulesForPet = useHealthScheduleStore(
-    s => s.initializeSchedulesForPet,
+  const loading = useSmartHealthRecordStore(s => s.loading);
+  const error = useSmartHealthRecordStore(s => s.error);
+  const records = useSmartHealthRecordStore(s => s.records);
+  const bootstrapPetSchedule = useSmartHealthRecordStore(
+    s => s.bootstrapPetSchedule,
   );
+  const loadPetRecords = useSmartHealthRecordStore(s => s.loadPetRecords);
+  const markAsDone = useSmartHealthRecordStore(s => s.markAsDone);
 
   const [selectedCategory, setSelectedCategory] =
     useState<CategoryFilter>('Vaccination');
   const [search, setSearch] = useState('');
 
-  const todayIsoDate = useMemo(
-    () => new Date().toISOString().slice(0, 10),
-    [],
-  );
-
-  // Refresh records and schedule freshness when screen gains focus.
   useFocusEffect(
-    useCallback(() => {
-      void loadRecords().catch(() => {});
-    }, [loadRecords]),
+    React.useCallback(() => {
+      if (!activePet) return;
+      void loadPetRecords(activePet.id).catch(() => {});
+    }, [activePet?.id, loadPetRecords]),
   );
 
-  // Initialize schedules for the active pet when the pet changes.
   useEffect(() => {
     if (!activePet) return;
-    void initializeSchedulesForPet(activePet.id, activePet.type, activePet.dob)
-      .then(() => loadSchedules().catch(() => {}))
+    void bootstrapPetSchedule({
+      petId: activePet.id,
+      petType: activePet.type,
+      dateOfBirth: activePet.dob ?? new Date().toISOString().slice(0, 10),
+    })
+      .then(() => loadPetRecords(activePet.id))
       .catch(() => {});
-  }, [activePet?.id, activePet?.type, activePet?.dob, initializeSchedulesForPet, loadSchedules]);
+  }, [
+    activePet?.id,
+    activePet?.type,
+    activePet?.dob,
+    bootstrapPetSchedule,
+    loadPetRecords,
+  ]);
 
-  const recordsForPet = useMemo(() => {
-    if (!activePet) return [] as HealthRecord[];
-    return records.filter(r => r.petId === activePet.id);
-  }, [activePet, records]);
+  const tabType = selectedCategory === 'Vaccination' ? 'vaccination' : 'deworming';
 
-  const normalizedSearch = search.trim().toLowerCase();
-
-  const filteredRecords = useMemo(() => {
-    const cat = selectedCategory.toLowerCase();
-    return recordsForPet
-      .filter(r => r.category.toLowerCase().includes(cat))
-      .filter(r => {
-        if (!normalizedSearch) return true;
-        const haystack = `${r.title} ${r.category} ${r.notes}`.toLowerCase();
-        return haystack.includes(normalizedSearch);
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return records
+      .filter(item => item.type === tabType)
+      .filter(item => {
+        if (!q) return true;
+        return item.name.toLowerCase().includes(q);
       })
       .slice()
-      .sort((a, b) => b.date.localeCompare(a.date));
-  }, [normalizedSearch, recordsForPet, selectedCategory]);
+      .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+  }, [records, search, tabType]);
 
-  const recentRecords = useMemo(() => filteredRecords.slice(0, 3), [filteredRecords]);
+  const grouped = useMemo(() => {
+    const upcoming = filtered.filter(
+      item => item.status === 'upcoming' || item.status === 'overdue',
+    );
+    const completed = filtered.filter(item => item.status === 'completed');
+    return { upcoming, completed };
+  }, [filtered]);
 
-  const upcomingDueTask = useMemo((): HealthSchedule | null => {
-    if (!activePet) return null;
-    const upcoming = HealthScheduleEngine.getUpcomingTasks(schedules)
-      .filter(s => s.petId === activePet.id)
+  const nextDue = useMemo((): SmartHealthRecord | null => {
+    const urgent = filtered
+      .filter(item => item.status !== 'completed')
       .slice()
-      .sort((a, b) => a.nextDueDate.localeCompare(b.nextDueDate));
+      .sort((a, b) => {
+        // overdue first, then by due date
+        if (a.status === 'overdue' && b.status !== 'overdue') return -1;
+        if (b.status === 'overdue' && a.status !== 'overdue') return 1;
+        return a.dueDate.localeCompare(b.dueDate);
+      });
+    return urgent[0] ?? null;
+  }, [filtered]);
 
-    if (upcoming.length === 0) return null;
-
-    if (selectedCategory === 'Vaccination') {
-      return (
-        upcoming.find(
-          s => s.taskType === 'vaccination' && s.vaccineType === 'rabies',
-        ) ??
-        upcoming.find(s => s.taskType === 'vaccination') ??
-        upcoming[0]
-      );
-    }
-
-    return upcoming.find(s => s.taskType === 'deworming') ?? upcoming[0];
-  }, [activePet, schedules, selectedCategory]);
-
-  const dueTitle = useMemo(() => {
-    if (!upcomingDueTask) return '';
-    if (upcomingDueTask.taskType === 'vaccination' && upcomingDueTask.vaccineType === 'rabies') {
-      return 'Rabies Booster';
-    }
-    return upcomingDueTask.taskName;
-  }, [upcomingDueTask]);
-
-  const dueLabel = useMemo(() => {
-    if (!upcomingDueTask) return '';
-    return `Due on ${formatDueDateLabel(upcomingDueTask.nextDueDate)}`;
-  }, [upcomingDueTask]);
-
-  const goBack = useCallback(() => {
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-      return;
-    }
-    navigation.navigate('HomeTab', { screen: 'Home' });
-  }, [navigation]);
-
-  const handleLearnMore = useCallback(() => {
-    // No premium flow exists in this codebase yet.
-  }, []);
-
-  const showInitialLoading = petsLoading || recordsLoading && recordsForPet.length === 0;
-
-  if (!activePet && showInitialLoading) {
-    return (
-      <SafeAreaView
-        edges={['top', 'left', 'right']}
-        style={[styles.safeArea, { backgroundColor: colors.backgroundAlt }]}
-      >
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (petsError && !activePet) {
-    return (
-      <SafeAreaView
-        edges={['top', 'left', 'right']}
-        style={[styles.safeArea, { backgroundColor: colors.backgroundAlt }]}
-      >
-        <View style={styles.center}>
-          <AppText
-            style={[
-              textStyles.subtitle,
-              { color: colors.text.heading, fontFamily: fontFamilies.bold },
-            ]}
-          >
-            {petsError}
-          </AppText>
-          <View style={{ height: space('md') }} />
-          <Button title="Retry" onPress={() => void loadRecords().catch(() => {})} />
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const formatUiDate = (isoDate: string): string => {
+    const date = new Date(`${isoDate}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return isoDate;
+    return date.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
 
   if (!activePet) {
     return (
@@ -210,29 +123,68 @@ export const HealthRecordScreen: React.FC = () => {
         style={[styles.safeArea, { backgroundColor: colors.backgroundAlt }]}
       >
         <View style={styles.center}>
-          <View
+        <View
+          style={[
+            styles.emptyCard,
+            { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
+          ]}
+        >
+          <icons.paw width={40} height={40} />
+          <AppText
             style={[
-              styles.emptyCard,
-              { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
+              textStyles.subtitle,
+              { color: colors.text.heading, fontFamily: fontFamilies.bold },
             ]}
           >
-            <icons.paw width={40} height={40} />
-            <AppText
-              style={[
-                textStyles.subtitle,
-                { color: colors.text.heading, fontFamily: fontFamilies.bold },
-              ]}
-            >
-              No pet selected
-            </AppText>
-            <AppText style={[textStyles.body, { color: colors.text.secondary, textAlign: 'center' }]}>
-              Add a pet profile to see your health records.
-            </AppText>
-          </View>
+            No pet selected
+          </AppText>
+          <AppText style={[textStyles.body, { color: colors.text.secondary, textAlign: 'center' }]}>
+            Add a pet profile to generate automatic health schedules.
+          </AppText>
+        </View>
         </View>
       </SafeAreaView>
     );
   }
+
+  const nextDueColor =
+    nextDue?.status === 'overdue' ? colors.danger : colors.warning;
+
+  const renderSection = (
+    title: string,
+    data: SmartHealthRecord[],
+    emptyText: string,
+  ) => (
+    <View style={{ marginTop: space('lg') }}>
+      <AppText style={[textStyles.overline, { color: colors.text.subdued }]}>
+        {title}
+      </AppText>
+      <View style={{ height: space('sm') }} />
+      {data.length === 0 ? (
+        <View
+          style={[
+            styles.emptyCard,
+            { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
+          ]}
+        >
+          <AppText style={[textStyles.caption, { color: colors.text.secondary }]}>
+            {emptyText}
+          </AppText>
+        </View>
+      ) : (
+        data.map(item => (
+          <View key={item.id} style={{ marginBottom: space('sm') }}>
+            <SmartHealthRecordItem
+              record={item}
+              onMarkAsDone={() => {
+                void markAsDone(item.id);
+              }}
+            />
+          </View>
+        ))
+      )}
+    </View>
+  );
 
   return (
     <SafeAreaView
@@ -244,7 +196,7 @@ export const HealthRecordScreen: React.FC = () => {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Back"
-            onPress={goBack}
+            onPress={() => navigation.goBack()}
             style={[
               styles.backBtn,
               { backgroundColor: colors.brandTint10, borderRadius: radius.round },
@@ -267,20 +219,23 @@ export const HealthRecordScreen: React.FC = () => {
             accessibilityRole="button"
             accessibilityLabel="Add health record"
             onPress={() => navigation.navigate('AddHealthRecord')}
-            style={[styles.addBtn, { backgroundColor: colors.accent, borderRadius: radius.round }]}
+            style={[
+              styles.addBtn,
+              { backgroundColor: colors.accent, borderRadius: radius.round },
+            ]}
           >
             <MaterialIcon name="add" size={20} color={colors.text.inverse} />
           </Pressable>
         </View>
 
-        <View style={styles.searchWrap}>
+        <View style={[styles.searchWrap, { backgroundColor: colors.surface }]}>
           <View style={styles.searchIconWrap}>
             <icons.searchIcon width={18} height={18} color={colors.text.subdued} />
           </View>
           <TextInput
             value={search}
             onChangeText={setSearch}
-            placeholder="Search by vaccine, clinic or vet..."
+            placeholder="Search by vaccine or record name..."
             placeholderTextColor={colors.input.placeholder}
             style={[
               styles.searchInput,
@@ -302,7 +257,7 @@ export const HealthRecordScreen: React.FC = () => {
                   styles.tab,
                   {
                     borderBottomColor: selected ? colors.accent : colors.borderSubtle,
-                    borderBottomWidth: selected ? 2 : 2,
+                    borderBottomWidth: 2,
                   },
                 ]}
               >
@@ -324,123 +279,145 @@ export const HealthRecordScreen: React.FC = () => {
       </View>
 
       <FlatList
-        data={recentRecords}
-        keyExtractor={item => item.id}
-        contentContainerStyle={[
-          styles.listContent,
-          {
-            paddingBottom: tabBarInset + space('2xl'),
-          },
-        ]}
-        ListHeaderComponent={
+        data={[1]}
+        keyExtractor={() => 'smart-health-list'}
+        renderItem={() => (
           <View>
-            {upcomingDueTask ? (
-              <UpcomingDueCard
-                iconName="repeat"
-                title={dueTitle}
-                dueLabel={dueLabel}
-                onPressUpdate={() => {}}
-              />
-            ) : null}
-
-            <View style={styles.sectionHeaderRow}>
-              <AppText style={[textStyles.overline, { color: colors.text.subdued }]}>
-                RECENT RECORDS
-              </AppText>
-            </View>
-          </View>
-        }
-        ListEmptyComponent={
-          recordsError || schedulesError ? null : (
-            <View style={styles.emptyState}>
-              <View style={styles.emptyIconContainer}>
-                <icons.noRecordsIcon
-                  width={180}
-                  height={180}
-                  color={colors.accent}
-                />
-              </View>
-              <AppText
+            {nextDue ? (
+              <View
                 style={[
-                  textStyles.subtitle,
-                  { color: colors.text.heading, fontFamily: fontFamilies.bold },
-                ]}
-              >
-                No {selectedCategory} Records Yet
-              </AppText>
-              <AppText
-                style={[
-                  textStyles.body,
+                  styles.nextDueCard,
                   {
-                    color: colors.text.secondary,
-                    fontFamily: fontFamilies.medium,
-                    textAlign: 'center',
+                    backgroundColor: colors.surface,
+                    borderColor: colors.brandTint10,
+                    borderRadius: radius.lg,
+                    padding: space('lg'),
                   },
                 ]}
               >
-                Tap the + button to add your first{' '}
-                {selectedCategory === 'Vaccination'
-                  ? 'vaccination record'
-                  : 'deworming record'}
-              </AppText>
-            </View>
-          )
-        }
-        renderItem={({ item }) => (
-          <HealthRecordListItem
-            record={item}
-            iconName={CATEGORY_ICON[selectedCategory]}
-            todayIsoDate={todayIsoDate}
-          />
-        )}
-        ItemSeparatorComponent={() => <View style={{ height: space('sm') }} />}
-        ListFooterComponent={
-          <View style={{ marginTop: space('lg') }}>
-            <PremiumUpgradeCard />
-            <View style={{ height: space('lg') }} />
-            {recordsError ? (
-              <View style={[styles.errorCard, { backgroundColor: colors.surfaceAlt, borderColor: colors.borderSubtle }]}>
-                <MaterialIcon name="info" size={22} color={colors.accent} />
-                <AppText
-                  style={[
-                    textStyles.body,
-                    { color: colors.text.secondary, fontFamily: fontFamilies.medium },
-                  ]}
-                >
-                  {recordsError}
-                </AppText>
+                <View style={styles.nextDueRow}>
+                  <View
+                    style={[
+                      styles.nextDueIconCircle,
+                      {
+                        borderRadius: radius.round,
+                        backgroundColor: colors.brandTint10,
+                        width: spacing['4xl'],
+                        height: spacing['4xl'],
+                      },
+                    ]}
+                  >
+                    <MaterialIcon name="schedule" size={22} color={nextDueColor} />
+                  </View>
+
+                  <View style={styles.nextDueInfo}>
+                    <AppText
+                      style={[
+                        textStyles.overline,
+                        { color: nextDueColor, fontFamily: fontFamilies.bold },
+                      ]}
+                    >
+                      NEXT DUE
+                    </AppText>
+                    <AppText
+                      style={[
+                        textStyles.title,
+                        {
+                          color: colors.text.heading,
+                          fontFamily: fontFamilies.extrabold,
+                        },
+                      ]}
+                      numberOfLines={2}
+                    >
+                      {nextDue.name}
+                    </AppText>
+                    <AppText
+                      style={[
+                        textStyles.caption,
+                        { color: colors.text.secondary, fontFamily: fontFamilies.medium },
+                      ]}
+                    >
+                      Due on {formatUiDate(nextDue.dueDate)}
+                    </AppText>
+                  </View>
+
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Update next due item"
+                    onPress={() => {
+                      void markAsDone(nextDue.id);
+                    }}
+                    style={({ pressed }) => [
+                      styles.nextDueUpdateBtn,
+                      {
+                        borderRadius: radius.round,
+                        backgroundColor: colors.accent,
+                        opacity: pressed ? 0.9 : 1,
+                        paddingHorizontal: space('lg'),
+                        paddingVertical: space('sm'),
+                      },
+                    ]}
+                  >
+                    <AppText
+                      style={[
+                        textStyles.subtitle,
+                        {
+                          color: colors.text.inverse,
+                          fontFamily: fontFamilies.bold,
+                        },
+                      ]}
+                    >
+                      Update
+                    </AppText>
+                  </Pressable>
+                </View>
               </View>
             ) : null}
-            {schedulesError ? (
-              <View style={[styles.errorCard, { backgroundColor: colors.surfaceAlt, borderColor: colors.borderSubtle }]}>
-                <MaterialIcon name="info" size={22} color={colors.accent} />
+
+            {renderSection('RECENT RECORDS', grouped.upcoming, 'No upcoming items')}
+            {renderSection('COMPLETED', grouped.completed, 'No completed items')}
+
+            <View style={{ marginTop: space('lg') }}>
+              <PremiumUpgradeCard />
+            </View>
+
+            {error ? (
+              <View
+                style={[
+                  styles.errorCard,
+                  {
+                    backgroundColor: colors.surfaceAlt,
+                    borderColor: colors.borderSubtle,
+                    marginTop: space('md'),
+                  },
+                ]}
+              >
+                <MaterialIcon name="info" size={20} color={colors.accent} />
                 <AppText
                   style={[
-                    textStyles.body,
+                    textStyles.caption,
                     { color: colors.text.secondary, fontFamily: fontFamilies.medium },
                   ]}
                 >
-                  {schedulesError}
+                  {error}
                 </AppText>
               </View>
             ) : null}
           </View>
-        }
+        )}
+        contentContainerStyle={{
+          paddingHorizontal: space('lg'),
+          paddingTop: space('md'),
+          paddingBottom: tabBarInset + space('2xl'),
+        }}
         showsVerticalScrollIndicator={false}
       />
 
-      {(recordsLoading || schedulesLoading) && recentRecords.length === 0 ? (
-        <View style={styles.loadingOverlay} pointerEvents="none">
+      {loading ? (
+        <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : null}
-
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Learn more about Premium"
-        onPress={handleLearnMore}
-        style={styles.invisibleOverlay}
-      />
     </SafeAreaView>
   );
 };
@@ -505,8 +482,6 @@ const styles = StyleSheet.create({
   },
   tabsRow: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: 'transparent',
   },
   tab: {
     flex: 1,
@@ -515,27 +490,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderBottomWidth: 2,
   },
-  listContent: {
-    paddingHorizontal: 16,
-    paddingTop: 14,
+  nextDueCard: {
+    borderWidth: 1,
+    gap: 8,
+  },
+  nextDueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
   },
-  sectionHeaderRow: {
-    marginTop: 6,
-    marginBottom: 4,
-  },
-  emptyState: {
-    paddingVertical: 40,
+  nextDueIconCircle: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
   },
-  emptyIconContainer: {
+  nextDueInfo: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
+  },
+  nextDueUpdateBtn: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   errorCard: {
-    marginTop: 10,
     borderWidth: 1,
     borderRadius: 12,
     padding: 14,
@@ -545,20 +522,12 @@ const styles = StyleSheet.create({
   },
   loadingOverlay: {
     position: 'absolute',
-    top: 180,
+    top: 0,
     left: 0,
     right: 0,
     bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  invisibleOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 1,
-    opacity: 0,
   },
   emptyCard: {
     borderWidth: 1,
