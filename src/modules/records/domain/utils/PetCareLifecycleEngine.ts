@@ -98,14 +98,13 @@ const toSmartRecord = (params: {
 };
 
 const dogAdultCoreCatchup = (): Array<{ key: string; label: string; offsetWeeks: number }> => [
-  { key: 'DHPP_CATCHUP_1', label: 'DHPP (Catch-up 1)', offsetWeeks: 0 },
-  { key: 'DHPP_CATCHUP_2', label: 'DHPP (Catch-up 2)', offsetWeeks: 3 },
-  { key: 'DHPP_CATCHUP_3', label: 'DHPP (Catch-up 3)', offsetWeeks: 6 },
+  { key: 'DHPP_ADULT_START', label: 'DHPP (Start Vaccination)', offsetWeeks: 0 },
+  { key: 'DHPP_ADULT_FOLLOW_UP', label: 'DHPP (Follow-up Dose)', offsetWeeks: 3 },
 ];
 
 const catAdultCoreCatchup = (): Array<{ key: string; label: string; offsetWeeks: number }> => [
-  { key: 'FVRCP_CATCHUP_1', label: 'FVRCP (Catch-up 1)', offsetWeeks: 0 },
-  { key: 'FVRCP_CATCHUP_2', label: 'FVRCP (Catch-up 2)', offsetWeeks: 3 },
+  { key: 'FVRCP_ADULT_START', label: 'FVRCP (Start Vaccination)', offsetWeeks: 0 },
+  { key: 'FVRCP_ADULT_FOLLOW_UP', label: 'FVRCP (Follow-up Dose)', offsetWeeks: 3 },
 ];
 
 export class PetCareLifecycleEngine {
@@ -131,7 +130,10 @@ export class PetCareLifecycleEngine {
 
     const dob = context.dateOfBirth;
     const ageWeeks = Math.max(0, Math.floor(daysBetween(dob, context.nowDate) / 7));
-    const isAdultUnknownHistory = ageWeeks >= 52 && !input.lastVaccinationDate;
+    const isPuppyOrKitten = ageWeeks < 20;
+    const hasVaccinationHistory = Boolean(input.lastVaccinationDate);
+    const hasDewormingHistory = Boolean(input.lastDewormingDate);
+    const isAdultUnknownHistory = !isPuppyOrKitten && !hasVaccinationHistory;
 
     const pushVaccineRule = (rule: VaccineRule): void => {
       if (!shouldIncludeByLifestyle(rule.lifestyleTriggers, context.lifestyleType)) {
@@ -183,30 +185,34 @@ export class PetCareLifecycleEngine {
       template.coreSeries.forEach(pushVaccineRule);
     }
 
-    const nonOptionalCore = template.coreSeries
-      .filter(rule => !rule.isOptional)
-      .slice()
-      .sort((a, b) => a.ageWeeksMin - b.ageWeeksMin);
-    const lastCore = nonOptionalCore[nonOptionalCore.length - 1];
-    if (lastCore) {
-      const lastCoreDue = addWeeks(dob, lastCore.ageWeeksMin);
-      records.push(
-        toSmartRecord({
-          userId,
-          petId,
-          type: 'vaccination',
-          key: `${lastCore.family.toUpperCase()}_BOOSTER_6MO`,
-          family: lastCore.family,
-          name: `${lastCore.family} Booster (6-month)`,
-          dueDate: addMonths(lastCoreDue, 6),
-          nowDate: context.nowDate,
-          category: 'core',
-          recurrenceType: 'yearly',
-        }),
-      );
+    if (isPuppyOrKitten) {
+      const nonOptionalCore = template.coreSeries
+        .filter(rule => !rule.isOptional)
+        .slice()
+        .sort((a, b) => a.ageWeeksMin - b.ageWeeksMin);
+      const lastCore = nonOptionalCore[nonOptionalCore.length - 1];
+      if (lastCore) {
+        const lastCoreDue = addWeeks(dob, lastCore.ageWeeksMin);
+        records.push(
+          toSmartRecord({
+            userId,
+            petId,
+            type: 'vaccination',
+            key: `${lastCore.family.toUpperCase()}_BOOSTER_6MO`,
+            family: lastCore.family,
+            name: `${lastCore.family} Booster (6-month)`,
+            dueDate: addMonths(lastCoreDue, 6),
+            nowDate: context.nowDate,
+            category: 'core',
+            recurrenceType: 'yearly',
+          }),
+        );
+      }
     }
 
-    const rabiesFirstDue = addWeeks(dob, template.rabies.firstDoseAgeWeeksMin);
+    const rabiesFirstDue = isAdultUnknownHistory
+      ? context.nowDate
+      : addWeeks(dob, template.rabies.firstDoseAgeWeeksMin);
     records.push(
       toSmartRecord({
         userId,
@@ -250,7 +256,9 @@ export class PetCareLifecycleEngine {
       }
     }
 
-    const dewormDates = template.deworming.startWeeks.map(week => addWeeks(dob, week));
+    const dewormDates = isPuppyOrKitten
+      ? template.deworming.startWeeks.map(week => addWeeks(dob, week))
+      : [];
     const intervalByLifestyle =
       context.lifestyleType === 'outdoor'
         ? template.deworming.outdoorIntervalDays
@@ -267,14 +275,19 @@ export class PetCareLifecycleEngine {
     const sixMonthDate = addMonths(dob, template.deworming.untilMonths);
     const oneYearDate = addMonths(dob, 12);
     const dewormSet = new Set(dewormDates);
-    let rolling = dewormDates[dewormDates.length - 1] ?? addWeeks(dob, 2);
-    while (rolling < sixMonthDate) {
-      rolling = addDays(rolling, juvenileIntervalDays);
-      if (rolling <= sixMonthDate) dewormSet.add(rolling);
-    }
-    while (rolling < oneYearDate) {
-      rolling = addMonths(rolling, template.deworming.adultIntervalMonths);
-      if (rolling <= oneYearDate) dewormSet.add(rolling);
+    let rolling = dewormDates[dewormDates.length - 1] ?? context.nowDate;
+    if (isPuppyOrKitten) {
+      while (rolling < sixMonthDate) {
+        rolling = addDays(rolling, juvenileIntervalDays);
+        if (rolling <= sixMonthDate) dewormSet.add(rolling);
+      }
+      while (rolling < oneYearDate) {
+        rolling = addMonths(rolling, template.deworming.adultIntervalMonths);
+        if (rolling <= oneYearDate) dewormSet.add(rolling);
+      }
+    } else if (!hasDewormingHistory) {
+      dewormSet.add(context.nowDate);
+      dewormSet.add(addMonths(context.nowDate, template.deworming.adultIntervalMonths));
     }
     for (const dueDate of Array.from(dewormSet).sort()) {
       records.push(

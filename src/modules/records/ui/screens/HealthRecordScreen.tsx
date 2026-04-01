@@ -107,14 +107,13 @@ export const HealthRecordScreen: React.FC = () => {
 
   const partitioned = useMemo(() => partitionCareRecordsForUi(filtered), [filtered]);
   const actionRequiredItems = useMemo(
-    () => getActionRequiredItems(tabType, 2),
+    () => getActionRequiredItems(tabType, 1),
     [getActionRequiredItems, tabType, records],
   );
   const primaryTask = actionRequiredItems[0] ?? null;
-  const secondaryActionTask = actionRequiredItems[1] ?? null;
   const upcomingItems = useMemo(() => {
     const hiddenIds = new Set(actionRequiredItems.map(item => item.id));
-    return getUpcomingItems(tabType, { limit: 5, dedupeByFamily: true }).filter(
+    return getUpcomingItems(tabType, { limit: 5, dedupeByFamily: false }).filter(
       item => !hiddenIds.has(item.id),
     );
   }, [actionRequiredItems, getUpcomingItems, tabType, records]);
@@ -137,7 +136,7 @@ export const HealthRecordScreen: React.FC = () => {
 
   const nextDewormingFallbackDate = useMemo((): string | null => {
     if (selectedCategory !== 'Deworming') return null;
-    if (primaryTask || secondaryActionTask || upcomingItems.length > 0) return null;
+    if (primaryTask || upcomingItems.length > 0) return null;
     const latestCompleted = completedRecords
       .slice()
       .sort((a, b) =>
@@ -148,7 +147,6 @@ export const HealthRecordScreen: React.FC = () => {
   }, [
     selectedCategory,
     primaryTask,
-    secondaryActionTask,
     upcomingItems.length,
     completedRecords,
   ]);
@@ -195,7 +193,9 @@ export const HealthRecordScreen: React.FC = () => {
   }
 
   const logPrimaryCtaLabel =
-    primaryTask?.type === 'vaccination' ? 'Log Vaccination' : 'Log Deworming';
+    selectedCategory === 'Vaccination' ? 'Log Vaccination' : 'Log Deworming';
+  const completedCount = filtered.filter(item => item.status === 'completed').length;
+  const totalCount = filtered.length;
 
   const openUpdateDate = (record: SmartHealthRecord): void => {
     setEditingRecord(record);
@@ -254,6 +254,15 @@ export const HealthRecordScreen: React.FC = () => {
                 ? `${petAgeWeeks} weeks old · ${summaryLine}`
                 : summaryLine}
             </AppText>
+            <AppText
+              style={[
+                textStyles.caption,
+                { color: colors.text.subdued, fontFamily: fontFamilies.medium },
+              ]}
+              numberOfLines={1}
+            >
+              {selectedCategory} progress: {completedCount}/{totalCount} completed
+            </AppText>
           </View>
 
           <Pressable
@@ -310,7 +319,7 @@ export const HealthRecordScreen: React.FC = () => {
           <View>
             <View style={{ marginTop: space('md') }}>
               <AppText style={[textStyles.overline, { color: colors.text.subdued }]}>
-                ACTION REQUIRED
+                NEXT STEP
               </AppText>
             </View>
 
@@ -352,25 +361,9 @@ export const HealthRecordScreen: React.FC = () => {
               />
             ) : null}
 
-            {secondaryActionTask ? (
-              <View style={{ marginTop: space('lg') }}>
-                <View style={{ marginBottom: space('sm') }}>
-                  <SmartHealthRecordItem
-                    record={secondaryActionTask}
-                    onMarkDone={() => {
-                      void markAsDone(secondaryActionTask.id);
-                    }}
-                    onRemind={() => {
-                      void remindTask(secondaryActionTask.id);
-                    }}
-                  />
-                </View>
-              </View>
-            ) : null}
-
             <View style={{ marginTop: space('lg') }}>
               <AppText style={[textStyles.overline, { color: colors.text.subdued }]}>
-                UPCOMING
+                COMING UP
               </AppText>
               <View style={{ height: space('sm') }} />
               {upcomingItems.length > 0 ? (

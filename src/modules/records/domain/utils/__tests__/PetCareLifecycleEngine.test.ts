@@ -119,4 +119,25 @@ describe('PetCareLifecycleEngine', () => {
     const target = updated.find(r => r.id === recurring!.id);
     expect(target?.status).toBe('completed');
   });
+
+  it('uses adult catch-up protocol for 55-week dog without history', () => {
+    const records = engine.generateInitialPlan({
+      userId: 'u4',
+      petId: 'p6',
+      context: {
+        petType: 'dog',
+        dateOfBirth: '2025-03-15',
+        nowDate: '2026-04-01',
+        region: 'IN',
+        lifestyleType: 'indoor',
+        lifestyleRiskLevel: 'low',
+      },
+    });
+    const dhpp = records.filter(r => r.family === 'DHPP');
+    expect(dhpp.some(r => r.name === 'DHPP (Start Vaccination)')).toBe(true);
+    expect(dhpp.some(r => r.name === 'DHPP (Follow-up Dose)')).toBe(true);
+    expect(dhpp.some(r => r.name.includes('(1st)'))).toBe(false);
+    const rabiesNow = records.find(r => r.key === 'RABIES_1');
+    expect(rabiesNow?.dueDate).toBe('2026-04-01');
+  });
 });
