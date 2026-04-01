@@ -1,9 +1,17 @@
-import firestore from '@react-native-firebase/firestore';
+import {
+  collection,
+  doc,
+  getDocs,
+  getFirestore,
+  setDoc,
+  writeBatch,
+} from '@react-native-firebase/firestore';
 
 import type {
   SmartHealthHistoryLog,
   SmartHealthRecord,
 } from '../../domain/models/SmartHealthRecord';
+import { stripUndefinedDeep } from '../utils/stripUndefinedDeep';
 
 export interface SmartHealthRecordRemoteDataSource {
   listByPet(userId: string, petId: string): Promise<SmartHealthRecord[]>;
@@ -15,58 +23,69 @@ export interface SmartHealthRecordRemoteDataSource {
 class SmartHealthRecordRemoteDataSourceImpl
   implements SmartHealthRecordRemoteDataSource
 {
-  private recordsCollection(userId: string, petId: string) {
-    return firestore()
-      .collection('users')
-      .doc(userId)
-      .collection('pets')
-      .doc(petId)
-      .collection('healthRecords');
+  private readonly db = getFirestore();
+
+  private healthRecordsCollection(userId: string, petId: string) {
+    return collection(
+      this.db,
+      'users',
+      userId,
+      'pets',
+      petId,
+      'healthRecords',
+    );
   }
 
-  private historyCollection(userId: string, petId: string) {
-    return firestore()
-      .collection('users')
-      .doc(userId)
-      .collection('pets')
-      .doc(petId)
-      .collection('healthRecordHistory');
+  private healthRecordHistoryCollection(userId: string, petId: string) {
+    return collection(
+      this.db,
+      'users',
+      userId,
+      'pets',
+      petId,
+      'healthRecordHistory',
+    );
   }
 
   async listByPet(userId: string, petId: string): Promise<SmartHealthRecord[]> {
-    const snap = await this.recordsCollection(userId, petId).get();
+    const colRef = this.healthRecordsCollection(userId, petId);
+    const snap = await getDocs(colRef);
     const records: SmartHealthRecord[] = [];
-    snap.forEach(doc => {
-      const data = doc.data() as SmartHealthRecord;
+    for (const snapshotDoc of snap.docs) {
+      const data = snapshotDoc.data() as SmartHealthRecord;
       records.push({
         ...data,
-        id: doc.id,
+        id: snapshotDoc.id,
       });
-    });
+    }
     return records;
   }
 
   async upsertMany(records: SmartHealthRecord[]): Promise<void> {
     if (records.length === 0) return;
-    const batch = firestore().batch();
+    const batch = writeBatch(this.db);
     for (const record of records) {
-      const ref = this.recordsCollection(record.userId, record.petId).doc(record.id);
-      batch.set(ref, record, { merge: true });
+      const colRef = this.healthRecordsCollection(record.userId, record.petId);
+      const ref = doc(colRef, record.id);
+      const payload = stripUndefinedDeep(record);
+      batch.set(ref, payload, { merge: true });
     }
     await batch.commit();
   }
 
   async updateOne(record: SmartHealthRecord): Promise<void> {
-    const ref = this.recordsCollection(record.userId, record.petId).doc(record.id);
-    await ref.set(record, { merge: true });
+    const colRef = this.healthRecordsCollection(record.userId, record.petId);
+    const ref = doc(colRef, record.id);
+    await setDoc(ref, stripUndefinedDeep(record), { merge: true });
   }
 
   async appendHistory(logs: SmartHealthHistoryLog[]): Promise<void> {
     if (logs.length === 0) return;
-    const batch = firestore().batch();
+    const batch = writeBatch(this.db);
     for (const log of logs) {
-      const ref = this.historyCollection(log.userId, log.petId).doc(log.id);
-      batch.set(ref, log, { merge: true });
+      const colRef = this.healthRecordHistoryCollection(log.userId, log.petId);
+      const ref = doc(colRef, log.id);
+      batch.set(ref, stripUndefinedDeep(log), { merge: true });
     }
     await batch.commit();
   }

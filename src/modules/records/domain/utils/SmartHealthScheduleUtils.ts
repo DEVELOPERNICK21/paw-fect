@@ -8,16 +8,17 @@ import type {
 } from '../models/SmartHealthRecord';
 
 const ISO_DATE_ONLY_LENGTH = 10;
+const LOCK_WINDOW_DAYS = 30;
 
-const VAC_DOG_TIMELINE: Array<{ weeks: number; name: string }> = [
+const VAC_DOG_TIMELINE: Array<{ weeks: number; name: string; isOptional?: boolean }> = [
   { weeks: 7, name: 'DHPP (1st)' },
   { weeks: 10, name: 'DHPP (2nd)' },
   { weeks: 13, name: 'DHPP (3rd)' },
   { weeks: 13, name: 'Rabies' },
-  { weeks: 16, name: 'DHPP (Optional booster)' },
+  { weeks: 16, name: 'DHPP (Optional booster)', isOptional: true },
 ];
 
-const VAC_CAT_TIMELINE: Array<{ weeks: number; name: string }> = [
+const VAC_CAT_TIMELINE: Array<{ weeks: number; name: string; isOptional?: boolean }> = [
   { weeks: 7, name: 'FVRCP (1st)' },
   { weeks: 10, name: 'FVRCP (2nd)' },
   { weeks: 13, name: 'FVRCP (3rd)' },
@@ -44,6 +45,12 @@ function addMonths(dateOnly: string, months: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+function daysBetween(fromDate: string, toDate: string): number {
+  const from = new Date(`${fromDate}T00:00:00`).getTime();
+  const to = new Date(`${toDate}T00:00:00`).getTime();
+  return Math.floor((to - from) / (24 * 60 * 60 * 1000));
+}
+
 function yearsBetweenDobAndNow(dateOfBirth: string): number {
   const dob = new Date(`${dateOfBirth}T00:00:00`);
   const now = new Date();
@@ -59,9 +66,11 @@ export function resolveSmartStatus(
   dueDate: string,
   completedDate: string | null,
   todayDate: string,
+  lockWindowDays = LOCK_WINDOW_DAYS,
 ): SmartHealthRecordStatus {
   if (completedDate) return 'completed';
   if (todayDate > dueDate) return 'overdue';
+  if (daysBetween(todayDate, dueDate) > lockWindowDays) return 'locked';
   return 'upcoming';
 }
 
@@ -87,6 +96,7 @@ function createRecord(params: {
   name: string;
   dueDate: string;
   recurrenceType: SmartHealthRecord['recurrenceType'];
+  isOptional?: boolean;
   nowIso: string;
   todayDate: string;
 }): SmartHealthRecord {
@@ -99,6 +109,7 @@ function createRecord(params: {
     dueDate: params.dueDate,
     completedDate: null,
     status: 'upcoming',
+    isOptional: params.isOptional,
     recurrenceType: params.recurrenceType,
     createdAt: params.nowIso,
     updatedAt: params.nowIso,
@@ -182,6 +193,7 @@ export function generateBootstrapSchedule(
         type: 'vaccination',
         name: row.name,
         dueDate: addDays(dateOfBirth, row.weeks * 7),
+        isOptional: row.isOptional,
         recurrenceType: 'none',
         nowIso,
         todayDate,
@@ -203,14 +215,47 @@ export function generateBootstrapSchedule(
     }),
   );
 
-  // Deworming recurring every 3 months from DOB+3m onward.
+  // Deworming lifecycle:
+  // - every 2 weeks until 3 months
+  // - monthly until 6 months
+  // - then quarterly
+  const dewormingDueDates: string[] = [];
+  let biweekly = addDays(dateOfBirth, 14);
+  const threeMonths = addMonths(dateOfBirth, 3);
+  while (biweekly <= threeMonths) {
+    dewormingDueDates.push(biweekly);
+    biweekly = addDays(biweekly, 14);
+  }
+
+  let monthly = addMonths(threeMonths, 1);
+  const sixMonths = addMonths(dateOfBirth, 6);
+  while (monthly <= sixMonths) {
+    dewormingDueDates.push(monthly);
+    monthly = addMonths(monthly, 1);
+  }
+
+  for (const dueDate of dewormingDueDates) {
+    pushRecord(
+      createRecord({
+        userId: input.userId,
+        petId: input.petId,
+        type: 'deworming',
+        name: 'Deworming',
+        dueDate,
+        recurrenceType: 'none',
+        nowIso,
+        todayDate,
+      }),
+    );
+  }
+
   pushRecord(
     createRecord({
       userId: input.userId,
       petId: input.petId,
       type: 'deworming',
       name: 'Deworming',
-      dueDate: addMonths(dateOfBirth, 3),
+      dueDate: addMonths(sixMonths, 3),
       recurrenceType: 'quarterly',
       nowIso,
       todayDate,
@@ -241,6 +286,7 @@ export function createNextRecurringRecord(
     dueDate,
     completedDate: null,
     status: resolveSmartStatus(dueDate, null, nowIso.slice(0, 10)),
+    isOptional: completed.isOptional,
     recurrenceType: completed.recurrenceType,
     createdAt: nowIso,
     updatedAt: nowIso,
@@ -289,8 +335,7 @@ export function buildRescheduleUpdate(
   const updated: SmartHealthRecord = {
     ...record,
     dueDate: newDueDate,
-    completedDate: null,
-    status: resolveSmartStatus(newDueDate, null, nowIso.slice(0, 10)),
+    status: resolveSmartStatus(newDueDate, record.completedDate, nowIso.slice(0, 10)),
     updatedAt: nowIso,
   };
   return {

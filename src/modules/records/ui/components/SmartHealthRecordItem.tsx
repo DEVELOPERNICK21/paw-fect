@@ -1,15 +1,14 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../../../../shared/components/AppText';
-import { Button } from '../../../../shared/components/Button';
 import { icons } from '../../../../shared/assets/icons';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import type { SmartHealthRecord } from '../../domain/models/SmartHealthRecord';
 
 export interface SmartHealthRecordItemProps {
   record: SmartHealthRecord;
-  onMarkAsDone: () => void;
+  onUpdate: () => void;
 }
 
 function formatDate(isoDate: string): string {
@@ -24,9 +23,10 @@ function formatDate(isoDate: string): string {
 
 export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
   record,
-  onMarkAsDone,
+  onUpdate,
 }) => {
-  const { colors, radius, space, spacing, textStyles, fontFamilies } = useTheme();
+  const { colors, radius, space, spacing, textStyles, fontFamilies } =
+    useTheme();
   const isVaccination = record.type === 'vaccination';
 
   const badgeBg =
@@ -34,21 +34,33 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
       ? colors.successSurface
       : record.status === 'overdue'
       ? colors.brandTint20
+      : record.status === 'locked'
+      ? colors.infoSurface
       : colors.brandTint12;
   const badgeText =
     record.status === 'completed'
       ? colors.success
       : record.status === 'overdue'
       ? colors.danger
+      : record.status === 'locked'
+      ? colors.info
       : colors.warning;
   const statusLabel =
     record.status === 'completed'
       ? 'COMPLETED'
       : record.status === 'overdue'
       ? 'OVERDUE'
+      : record.status === 'locked'
+      ? 'LOCKED'
       : 'UPCOMING';
   const detailPrefix =
     record.status === 'completed' ? 'Administered' : 'Scheduled';
+  const cadenceSuffix =
+    record.type === 'deworming' &&
+    record.recurrenceType === 'quarterly' &&
+    record.status !== 'completed'
+      ? ' • Every 3 months'
+      : '';
 
   return (
     <View
@@ -82,12 +94,32 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
         </View>
 
         <View style={[styles.infoCol, { gap: space('xs') }]}>
+          <View
+            style={[
+              styles.badge,
+              {
+                borderRadius: radius.round,
+                backgroundColor: badgeBg,
+                paddingHorizontal: space('sm'),
+                paddingVertical: space('xs'),
+              },
+            ]}
+          >
+            <AppText
+              style={[
+                textStyles.overline,
+                { color: badgeText, fontFamily: fontFamilies.bold },
+              ]}
+            >
+              {statusLabel}
+            </AppText>
+          </View>
           <AppText
             style={[
               textStyles.subtitle,
               { color: colors.text.heading, fontFamily: fontFamilies.bold },
             ]}
-            numberOfLines={1}
+            numberOfLines={2}
           >
             {record.name}
           </AppText>
@@ -96,42 +128,40 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
               textStyles.caption,
               { color: colors.text.secondary, fontFamily: fontFamilies.medium },
             ]}
+            numberOfLines={2}
           >
             {detailPrefix} {formatDate(record.dueDate)}
-          </AppText>
-        </View>
-
-        <View
-          style={[
-            styles.badge,
-            {
-              borderRadius: radius.round,
-              backgroundColor: badgeBg,
-              paddingHorizontal: space('sm'),
-              paddingVertical: space('xs'),
-            },
-          ]}
-        >
-          <AppText
-            style={[
-              textStyles.overline,
-              { color: badgeText, fontFamily: fontFamilies.bold },
-            ]}
-          >
-            {statusLabel}
+            {cadenceSuffix}
           </AppText>
         </View>
       </View>
 
-      {record.status === 'upcoming' || record.status === 'overdue' ? (
-        <View style={{ marginTop: space('md') }}>
-          <Button
-            title="Mark as Done"
-            onPress={onMarkAsDone}
-            variant="primary"
-            style={{ borderRadius: radius.round, minHeight: spacing['4xl'] }}
-            textStyle={{ fontFamily: fontFamilies.bold }}
-          />
+      {record.status !== 'completed' && record.status !== 'locked' ? (
+        <View style={{ marginTop: space('md'), alignItems: 'flex-end' }}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Update ${record.name} date`}
+            onPress={onUpdate}
+            style={({ pressed }) => [
+              styles.updateBtn,
+              {
+                borderRadius: radius.round,
+                backgroundColor: colors.accent,
+                opacity: pressed ? 0.9 : 1,
+                paddingHorizontal: space('lg'),
+                paddingVertical: space('sm'),
+              },
+            ]}
+          >
+            <AppText
+              style={[
+                textStyles.subtitle,
+                { color: colors.text.inverse, fontFamily: fontFamilies.bold },
+              ]}
+            >
+              Update
+            </AppText>
+          </Pressable>
         </View>
       ) : null}
     </View>
@@ -157,5 +187,10 @@ const styles = StyleSheet.create({
   },
   badge: {
     alignSelf: 'flex-start',
+  },
+  updateBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 96,
   },
 });

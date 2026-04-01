@@ -8,6 +8,7 @@ import type {
 } from '../domain/models/SmartHealthRecord';
 import { createSmartHealthRecordRepository } from '../data/repositories/SmartHealthRecordRepositoryImpl';
 import { BootstrapSmartHealthSchedule } from '../domain/usecases/BootstrapSmartHealthSchedule';
+import { GetNextSmartHealthTask } from '../domain/usecases/GetNextSmartHealthTask';
 import { GetSmartHealthRecords } from '../domain/usecases/GetSmartHealthRecords';
 import { MarkSmartHealthRecordDone } from '../domain/usecases/MarkSmartHealthRecordDone';
 import { RescheduleSmartHealthRecord } from '../domain/usecases/RescheduleSmartHealthRecord';
@@ -24,12 +25,21 @@ interface SmartHealthRecordState {
   loadPetRecords: (petId: string) => Promise<void>;
   markAsDone: (recordId: string, completedDate?: string) => Promise<void>;
   reschedule: (recordId: string, newDueDate: string) => Promise<void>;
+  remindTask: (recordId: string) => Promise<void>;
   getByType: (type: SmartHealthRecordType) => SmartHealthRecord[];
+  getNextActionTask: (type: SmartHealthRecordType) => SmartHealthRecord | null;
+  getUpcomingShortList: (
+    type: SmartHealthRecordType,
+    limit?: number,
+  ) => SmartHealthRecord[];
+  getCompletedTasks: (type: SmartHealthRecordType) => SmartHealthRecord[];
+  getFullSchedule: (type: SmartHealthRecordType) => SmartHealthRecord[];
 }
 
 const repository = createSmartHealthRecordRepository();
 const bootstrapScheduleUseCase = new BootstrapSmartHealthSchedule(repository);
 const getRecordsUseCase = new GetSmartHealthRecords(repository);
+const getNextTaskUseCase = new GetNextSmartHealthTask();
 const markDoneUseCase = new MarkSmartHealthRecordDone(repository);
 const rescheduleUseCase = new RescheduleSmartHealthRecord(repository);
 
@@ -179,6 +189,27 @@ export const useSmartHealthRecordStore = create<SmartHealthRecordState>(
         });
       }
     },
+    remindTask: async recordId => {
+      const record = get().records.find(item => item.id === recordId);
+      if (!record) return;
+      try {
+        const reminderDate = new Date();
+        reminderDate.setMinutes(reminderDate.getMinutes() + 5);
+        await notificationService.scheduleNotification({
+          id: `health-remind-${record.id}-${Date.now()}`,
+          title: `Reminder: ${record.name}`,
+          body: `Don't forget this ${record.type} task.`,
+          scheduledDate: reminderDate,
+          data: { recordId: record.id, type: record.type },
+        });
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('[smartHealthRecordStore] remindTask error', error);
+        set({
+          error: 'Unable to set reminder right now.',
+        });
+      }
+    },
 
     getByType: type =>
       get()
@@ -186,6 +217,23 @@ export const useSmartHealthRecordStore = create<SmartHealthRecordState>(
         .filter(record => record.type === type)
         .slice()
         .sort((a, b) => a.dueDate.localeCompare(b.dueDate)),
+    getNextActionTask: type => {
+      const records = get().getByType(type);
+      return getNextTaskUseCase.execute(records);
+    },
+    getUpcomingShortList: (type, limit = 3) => {
+      const records = get().getByType(type);
+      const nextActionTask = get().getNextActionTask(type);
+      return records
+        .filter(record => record.status === 'overdue' || record.status === 'upcoming')
+        .filter(record => record.id !== nextActionTask?.id)
+        .slice(0, limit);
+    },
+    getCompletedTasks: type =>
+      get()
+        .getByType(type)
+        .filter(record => record.status === 'completed'),
+    getFullSchedule: type => get().getByType(type),
   }),
 );
 

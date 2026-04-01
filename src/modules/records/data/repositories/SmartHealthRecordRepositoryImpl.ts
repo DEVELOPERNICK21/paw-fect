@@ -3,6 +3,7 @@ import type {
   SmartHealthRecord,
 } from '../../domain/models/SmartHealthRecord';
 import type { SmartHealthRecordRepository } from '../../domain/repositories/SmartHealthRecordRepository';
+import { MockSmartHealthRecordRepository } from './MockSmartHealthRecordRepository';
 import type { SmartHealthRecordRemoteDataSource } from '../datasources/SmartHealthRecordRemoteDataSource';
 import { createSmartHealthRecordRemoteDataSource } from '../datasources/SmartHealthRecordRemoteDataSource';
 
@@ -28,9 +29,19 @@ export class SmartHealthRecordRepositoryImpl
   }
 }
 
-export const createSmartHealthRecordRepository =
-  (): SmartHealthRecordRepository => {
+export type SmartHealthRecordRepositoryAdapter = 'firebase' | 'mock';
+
+interface CreateSmartHealthRecordRepositoryOptions {
+  adapter?: SmartHealthRecordRepositoryAdapter;
+}
+
+export const createSmartHealthRecordRepository = (
+  options?: CreateSmartHealthRecordRepositoryOptions,
+): SmartHealthRecordRepository => {
+  if (options?.adapter === 'mock') {
+    return new MockSmartHealthRecordRepository();
+  }
     const remote = createSmartHealthRecordRemoteDataSource();
     return new SmartHealthRecordRepositoryImpl(remote);
-  };
+};
 

@@ -1,6 +1,10 @@
 export type SmartHealthRecordType = 'vaccination' | 'deworming';
 
-export type SmartHealthRecordStatus = 'upcoming' | 'completed' | 'overdue';
+export type SmartHealthRecordStatus =
+  | 'upcoming'
+  | 'completed'
+  | 'overdue'
+  | 'locked';
 
 export type SmartHealthRecurrenceType = 'none' | 'yearly' | 'quarterly';
 
@@ -13,6 +17,7 @@ export interface SmartHealthRecord {
   dueDate: string; // YYYY-MM-DD
   completedDate: string | null; // YYYY-MM-DD
   status: SmartHealthRecordStatus;
+  isOptional?: boolean;
   recurrenceType: SmartHealthRecurrenceType;
   createdAt: string;
   updatedAt: string;
