@@ -1,8 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
-  ImageBackground,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -22,7 +20,14 @@ import Svg, { Path } from 'react-native-svg';
 import type { PetsStackParamList } from '../../../../app/navigation/types';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { usePetStore } from '../../store/petStore';
-import type { Pet, PetGender, PetType } from '../../domain/models/Pet';
+import type {
+  Pet,
+  PetGender,
+  PetLifestyleRiskLevel,
+  PetLifestyleType,
+  PetRegion,
+  PetType,
+} from '../../domain/models/Pet';
 import { isPetPhotoPlaceholderUri } from '../../domain/utils/petPhotoPlaceholder';
 import { icons } from '../../../../shared/assets/icons';
 import { DatePickerField } from '../../../../shared/components/DatePickerField';
@@ -38,19 +43,9 @@ const ICON_PATHS: Record<IconKind, string> = {
   pets: 'M4.5 9C3.12 9 2 7.88 2 6.5S3.12 4 4.5 4 7 5.12 7 6.5 5.88 9 4.5 9zm15 0c-1.38 0-2.5-1.12-2.5-2.5S18.12 4 19.5 4 22 5.12 22 6.5 20.88 9 19.5 9zM12 4c-1.38 0-2.5-1.12-2.5-2.5S10.62-1 12-1s2.5 1.12 2.5 2.5S13.38 4 12 4zm0 20c-3.31 0-6-2.24-6-5 0-1.77 1.03-3.32 2.56-4.21C9.76 13.96 10.84 13.5 12 13.5s2.24.46 3.44 1.29C16.97 15.68 18 17.23 18 19c0 2.76-2.69 5-6 5z',
 };
 
-const PET_TYPE_IMAGES: Record<PetType, string> = {
-  dog: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB1JhATT4ndqHRyiO3eoRsf-MTsdqhiab1V_86x886YKgZ3kBrF7rjrKFKHhR43jjJ9HfKVlmmVBTW8nzmpk8BYi3t_9c9TTGhMrYzEPc1tnMFKLVYZelw4ue0qqBH2z6lsnF4OTmDdwh1Me8calZVM9trzp_nEl91Y2QkF-p-B22D-64F9DiA3WS516fZe5mfqndmnEMAjZOcbTEe85ub1i2qnZ0o42zcsNmBiKVXquhhS0M-XHeKd54_VQkTWkEUEcNwhUXDma1iw',
-  cat: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC8EslexE4kKR8L1-OVbw-BjjYuMZqhUDwQJwGldqbY_yJQIgr2mWLQx6g_OO4ZiHZI1rd1zXn_dPUkK9xe8KK-jiqMG3XUBgUpRtBZCTebNC0QLs8zdPXrz4RD1uvsAzy8J0mEGabFSggCWQM2juGKgkT2w6zebpzXGUOOKNoOeD5r1hgMDmR6GctBiH3SgOMPpHq8rLtKS_g01V3zOkm_eMGIdEd71dMb8vKLqF84yN81uhLSgCmtaKRGglZBkoVzWNiNat0azFeq',
-};
+const PROFILE_PLACEHOLDER = '';
 
-const PROFILE_PLACEHOLDER =
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuDP617HtYuv4CiktH2Mn5DR3V8qiKsz_gbkRMw8DRhDtSdABlZHFGZwPFUs_L0qts--7PYAEigCACBJ9uh4obJZgP5Q84qVyq8R-pzW8g5yZ435BTVhDQD6d_RsQujzmYgkWWzDPHVxAGWZszwrkNVBTErZfmwBQlp3iLk05ZY7NhS-5whUgni2DFXrdiQww9fi81k-3AfybVG0EO24r-2mewFFWll5owCe-OVGDFXTFBTUI6KpLttwzEeCGcUzKfn_UM_EhHvTH_CM';
-
-const samplePhotos = [
-  PROFILE_PLACEHOLDER,
-  'https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg?auto=compress&cs=tinysrgb&w=800',
-  'https://images.pexels.com/photos/5731862/pexels-photo-5731862.jpeg?auto=compress&cs=tinysrgb&w=800',
-];
+export {};
 
 interface IconProps {
   kind: IconKind;
@@ -85,6 +80,11 @@ export const AddPetScreen: React.FC = () => {
   const [photoUri, setPhotoUri] = useState<string>(PROFILE_PLACEHOLDER);
   const [dob, setDob] = useState<string>('');
   const [gender, setGender] = useState<PetGender | ''>('');
+  const [lifestyleType, setLifestyleType] =
+    useState<PetLifestyleType>('indoor');
+  const [lifestyleRiskLevel, setLifestyleRiskLevel] =
+    useState<PetLifestyleRiskLevel>('low');
+  const [region, setRegion] = useState<PetRegion>('OTHER');
   const [error, setError] = useState<string | null>(null);
   const [initLoading, setInitLoading] = useState(isEditMode);
   const [editBase, setEditBase] = useState<Pet | null>(null);
@@ -125,6 +125,9 @@ export const AddPetScreen: React.FC = () => {
         setPhotoUri(pet.photo?.trim() ? pet.photo : PROFILE_PLACEHOLDER);
         setDob(pet.dob ?? '');
         setGender((pet.gender as PetGender | undefined) ?? '');
+        setLifestyleType(pet.lifestyle?.type ?? 'indoor');
+        setLifestyleRiskLevel(pet.lifestyle?.riskLevel ?? 'low');
+        setRegion(pet.region ?? 'OTHER');
         setInitLoading(false);
       });
 
@@ -132,12 +135,6 @@ export const AddPetScreen: React.FC = () => {
       cancelled = true;
     };
   }, [isEditMode, navigation, petId]);
-
-  const handlePickImage = () => {
-    const idx = samplePhotos.indexOf(photoUri);
-    const nextIdx = idx === -1 ? 0 : (idx + 1) % samplePhotos.length;
-    setPhotoUri(samplePhotos[nextIdx]);
-  };
 
   const trimmedName = name.trim();
   const canSave = trimmedName.length > 0;
@@ -188,6 +185,8 @@ export const AddPetScreen: React.FC = () => {
         photo: nextPhoto,
         dob: dob.trim() || undefined,
         gender: gender || undefined,
+        lifestyle: { type: lifestyleType, riskLevel: lifestyleRiskLevel },
+        region,
       });
       if (!result.success) {
         setError(result.error ?? 'Unable to save changes.');
@@ -205,6 +204,10 @@ export const AddPetScreen: React.FC = () => {
       name,
       type: petType,
       breed,
+      dob: dob.trim() || undefined,
+      gender: gender || undefined,
+      lifestyle: { type: lifestyleType, riskLevel: lifestyleRiskLevel },
+      region,
       photo: isPetPhotoPlaceholderUri(photoUri) ? undefined : photoUri,
     });
     if (!result.success) {
@@ -273,26 +276,15 @@ export const AddPetScreen: React.FC = () => {
         </View>
 
         <View style={styles.avatarSection}>
-          <View style={styles.profileImageWrap}>
-            <Image source={{ uri: photoUri }} style={styles.profileImage} />
-            <Pressable
-              onPress={handlePickImage}
-              style={[styles.cameraBadge, { backgroundColor: colors.accent }]}
-            >
-              <MaterialIcon kind="camera" size={14} color="#FFFFFF" />
-            </Pressable>
-          </View>
-          <Text style={[styles.uploadTitle, { fontFamily: fontFamilies.bold }]}>
-            Upload Photo
-          </Text>
-          <Text
-            style={[
-              styles.uploadSubtitle,
-              { fontFamily: fontFamilies.medium, color: colors.primary },
-            ]}
+          <View
+            style={[styles.profileImageWrap, { backgroundColor: '#FFF5EB' }]}
           >
-            Tap to change profile picture
-          </Text>
+            {petType === 'dog' ? (
+              <icons.dogIcon width={80} height={80} />
+            ) : (
+              <icons.catIcon width={80} height={80} />
+            )}
+          </View>
         </View>
 
         <View style={styles.formSection}>
@@ -329,30 +321,19 @@ export const AddPetScreen: React.FC = () => {
                     ]}
                     onPress={() => setPetType(type.key)}
                   >
-                    <ImageBackground
-                      source={{ uri: PET_TYPE_IMAGES[type.key] }}
-                      style={styles.petTypeImage}
-                      imageStyle={styles.petTypeImageInner}
+                    <Text
+                      style={[
+                        styles.petTypeLabel,
+                        { fontFamily: fontFamilies.bold },
+                      ]}
                     >
-                      <View style={styles.petTypeOverlay} />
-                      <Text
-                        style={[
-                          styles.petTypeLabel,
-                          { fontFamily: fontFamilies.bold },
-                        ]}
-                      >
-                        {type.label}
-                      </Text>
-                      {selected ? (
-                        <View style={styles.checkBadge}>
-                          <MaterialIcon
-                            kind="check"
-                            size={12}
-                            color="#FFFFFF"
-                          />
-                        </View>
-                      ) : null}
-                    </ImageBackground>
+                      {type.label}
+                    </Text>
+                    {selected ? (
+                      <View style={styles.checkBadge}>
+                        <MaterialIcon kind="check" size={12} color="#FFFFFF" />
+                      </View>
+                    ) : null}
                   </Pressable>
                 );
               })}
@@ -373,98 +354,208 @@ export const AddPetScreen: React.FC = () => {
               style={[styles.textInput, { fontFamily: fontFamilies.regular }]}
             />
           </View>
-          {isEditMode ? (
-            <View style={{ gap: 14 }}>
-              <View>
-                <Text
-                  style={[
-                    styles.sectionLabel,
-                    { fontFamily: fontFamilies.bold },
-                  ]}
-                >
-                  Core Identity
-                </Text>
-                <Text
-                  style={[
-                    styles.fieldLabelSm,
-                    { fontFamily: fontFamilies.semibold },
-                  ]}
-                >
-                  Date of birth (optional)
-                </Text>
-                <DatePickerField
-                  value={dob}
-                  onChange={setDob}
-                  placeholder="YYYY-MM-DD"
-                  maximumDate={today}
-                />
-              </View>
+          <View style={{ gap: 14 }}>
+            <View>
+              <Text
+                style={[styles.sectionLabel, { fontFamily: fontFamilies.bold }]}
+              >
+                Core Identity
+              </Text>
+              <Text
+                style={[
+                  styles.fieldLabelSm,
+                  { fontFamily: fontFamilies.semibold },
+                ]}
+              >
+                Date of birth (optional)
+              </Text>
+              <DatePickerField
+                value={dob}
+                onChange={setDob}
+                placeholder="YYYY-MM-DD"
+                maximumDate={today}
+              />
+            </View>
 
-              <View>
-                <Text
-                  style={[
-                    styles.fieldLabelSm,
-                    { fontFamily: fontFamilies.semibold },
-                  ]}
-                >
-                  Gender (optional)
-                </Text>
-                <View style={styles.genderRow}>
-                  {(['male', 'female'] as const).map(next => {
-                    const selected = gender === next;
-                    const label =
-                      next === 'male'
-                        ? 'Male'
-                        : next === 'female'
-                        ? 'Female'
-                        : '';
-                    if (!label) {
-                      return null;
-                    }
-                    return (
-                      <Pressable
-                        key={next}
+            <View>
+              <Text
+                style={[
+                  styles.fieldLabelSm,
+                  { fontFamily: fontFamilies.semibold },
+                ]}
+              >
+                Gender (optional)
+              </Text>
+              <View style={styles.genderRow}>
+                {(['male', 'female'] as const).map(next => {
+                  const selected = gender === next;
+                  const label =
+                    next === 'male'
+                      ? 'Male'
+                      : next === 'female'
+                      ? 'Female'
+                      : '';
+                  if (!label) {
+                    return null;
+                  }
+                  return (
+                    <Pressable
+                      key={next}
+                      style={[
+                        styles.genderChip,
+                        selected ? styles.genderChipSelected : undefined,
+                      ]}
+                      onPress={() => setGender(next)}
+                    >
+                      <Text
                         style={[
-                          styles.genderChip,
-                          selected ? styles.genderChipSelected : undefined,
+                          styles.genderChipText,
+                          selected ? styles.genderChipTextSelected : undefined,
+                          {
+                            fontFamily: selected
+                              ? fontFamilies.bold
+                              : fontFamilies.medium,
+                          },
                         ]}
-                        onPress={() => setGender(next)}
                       >
-                        <Text
-                          style={[
-                            styles.genderChipText,
-                            selected
-                              ? styles.genderChipTextSelected
-                              : undefined,
-                            {
-                              fontFamily: selected
-                                ? fontFamilies.bold
-                                : fontFamilies.medium,
-                            },
-                          ]}
-                        >
-                          {label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-                <Pressable
-                  onPress={() => setGender('')}
-                  style={styles.genderClear}
+                        {label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <Pressable
+                onPress={() => setGender('')}
+                style={styles.genderClear}
+              >
+                <Text
+                  style={{
+                    fontFamily: fontFamilies.medium,
+                    color: colors.text.subdued,
+                  }}
                 >
-                  <Text
-                    style={{
-                      fontFamily: fontFamilies.medium,
-                      color: colors.text.subdued,
-                    }}
-                  >
-                    Clear
-                  </Text>
-                </Pressable>
+                  Clear
+                </Text>
+              </Pressable>
+            </View>
+            <View>
+              <Text
+                style={[
+                  styles.fieldLabelSm,
+                  { fontFamily: fontFamilies.semibold },
+                ]}
+              >
+                Lifestyle
+              </Text>
+              <View style={styles.genderRow}>
+                {(['indoor', 'mixed', 'outdoor'] as const).map(next => {
+                  const selected = lifestyleType === next;
+                  return (
+                    <Pressable
+                      key={next}
+                      style={[
+                        styles.genderChip,
+                        selected ? styles.genderChipSelected : undefined,
+                      ]}
+                      onPress={() => setLifestyleType(next)}
+                    >
+                      <Text
+                        style={[
+                          styles.genderChipText,
+                          selected ? styles.genderChipTextSelected : undefined,
+                          {
+                            fontFamily: selected
+                              ? fontFamilies.bold
+                              : fontFamilies.medium,
+                          },
+                        ]}
+                      >
+                        {next[0].toUpperCase() + next.slice(1)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
             </View>
-          ) : null}
+            <View>
+              <Text
+                style={[
+                  styles.fieldLabelSm,
+                  { fontFamily: fontFamilies.semibold },
+                ]}
+              >
+                Risk level
+              </Text>
+              <View style={styles.genderRow}>
+                {(['low', 'medium', 'high'] as const).map(next => {
+                  const selected = lifestyleRiskLevel === next;
+                  return (
+                    <Pressable
+                      key={next}
+                      style={[
+                        styles.genderChip,
+                        selected ? styles.genderChipSelected : undefined,
+                      ]}
+                      onPress={() => setLifestyleRiskLevel(next)}
+                    >
+                      <Text
+                        style={[
+                          styles.genderChipText,
+                          selected ? styles.genderChipTextSelected : undefined,
+                          {
+                            fontFamily: selected
+                              ? fontFamilies.bold
+                              : fontFamilies.medium,
+                          },
+                        ]}
+                      >
+                        {next[0].toUpperCase() + next.slice(1)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+            <View>
+              <Text
+                style={[
+                  styles.fieldLabelSm,
+                  { fontFamily: fontFamilies.semibold },
+                ]}
+              >
+                Region
+              </Text>
+              <View style={styles.genderRow}>
+                {(['OTHER', 'IN', 'US', 'EU'] as const).map(next => {
+                  const selected = region === next;
+                  return (
+                    <Pressable
+                      key={next}
+                      style={[
+                        styles.genderChip,
+                        selected ? styles.genderChipSelected : undefined,
+                      ]}
+                      onPress={() => setRegion(next)}
+                    >
+                      <Text
+                        style={[
+                          styles.genderChipText,
+                          selected ? styles.genderChipTextSelected : undefined,
+                          {
+                            fontFamily: selected
+                              ? fontFamilies.bold
+                              : fontFamilies.medium,
+                          },
+                        ]}
+                      >
+                        {next}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          </View>
         </View>
 
         <View style={styles.ctaContainer}>
@@ -550,6 +641,12 @@ const styles = StyleSheet.create({
     borderWidth: 4,
     borderColor: 'rgba(238, 140, 43, 0.2)',
     overflow: 'visible',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  petTypeDisplayText: {
+    fontSize: 36,
+    color: '#EE8C2B',
   },
   profileImage: {
     width: 120,
@@ -641,11 +738,14 @@ const styles = StyleSheet.create({
   },
   petTypeCard: {
     flex: 1,
-    aspectRatio: 1,
+    height: 56,
     borderRadius: 12,
-    overflow: 'hidden',
+    overflow: 'visible',
     borderWidth: 2,
     borderColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
   },
   petTypeCardSelected: {
     borderColor: '#EE8C2B',
@@ -667,7 +767,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
     fontSize: 14,
     lineHeight: 20,
-    color: '#FFFFFF',
+    color: '#0F172A',
   },
   checkBadge: {
     position: 'absolute',

@@ -7,12 +7,22 @@ export class BootstrapSmartHealthSchedule {
 
   async execute(input: BootstrapSmartScheduleInput): Promise<void> {
     const existing = await this.repository.listByPet(input.userId, input.petId);
-    if (existing.length > 0) {
-      return;
-    }
     const { records, logs } = generateBootstrapSchedule(input);
-    await this.repository.upsertMany(records);
-    await this.repository.appendHistory(logs);
+    const existingKeys = new Set(
+      existing.map(record => `${record.type}:${record.key ?? ''}:${record.dueDate}:${record.name}`),
+    );
+    const recordsToCreate = records.filter(
+      record =>
+        !existingKeys.has(
+          `${record.type}:${record.key ?? ''}:${record.dueDate}:${record.name}`,
+        ),
+    );
+    if (recordsToCreate.length === 0) return;
+    const logsToCreate = logs.filter(log =>
+      recordsToCreate.some(record => record.id === log.recordId),
+    );
+    await this.repository.upsertMany(recordsToCreate);
+    await this.repository.appendHistory(logsToCreate);
   }
 }
 

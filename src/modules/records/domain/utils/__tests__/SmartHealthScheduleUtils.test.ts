@@ -4,6 +4,7 @@ import {
   resolveSmartStatus,
 } from '../SmartHealthScheduleUtils';
 import type { SmartHealthRecord } from '../../models/SmartHealthRecord';
+import { PetCareLifecycleEngine } from '../PetCareLifecycleEngine';
 
 describe('SmartHealthScheduleUtils', () => {
   it('resolves completed/overdue/upcoming/locked statuses', () => {
@@ -15,28 +16,31 @@ describe('SmartHealthScheduleUtils', () => {
     expect(resolveSmartStatus('2026-03-10', null, '2026-01-02')).toBe('locked');
   });
 
-  it('generates dog bootstrap schedule with optional booster and phased deworming', () => {
+  it('generates dog bootstrap schedule with core/non-core and deterministic keys', () => {
     const { records } = generateBootstrapSchedule({
       userId: 'user-1',
       petId: 'pet-1',
       petType: 'dog',
       dateOfBirth: '2026-01-01',
+      region: 'IN',
+      lifestyleType: 'outdoor',
+      lifestyleRiskLevel: 'high',
     });
 
     const vaccinations = records.filter(r => r.type === 'vaccination');
     const deworming = records.filter(r => r.type === 'deworming');
 
-    expect(vaccinations.some(r => r.name === 'DHPP (Optional booster)')).toBe(
+    expect(vaccinations.some(r => r.name === 'DHPP (4th/optional puppy dose)')).toBe(
       true,
     );
-    expect(
-      vaccinations.some(r => r.name === 'DHPP (Optional booster)' && r.isOptional),
-    ).toBe(true);
+    expect(vaccinations.some(r => r.family === 'Leptospirosis')).toBe(true);
+    expect(vaccinations.some(r => r.key === 'RABIES_1')).toBe(true);
     expect(deworming.length).toBeGreaterThan(3);
     expect(deworming.some(r => r.recurrenceType === 'quarterly')).toBe(true);
+    expect(records.every(r => typeof r.key === 'string')).toBe(true);
   });
 
-  it('generates adult onboarding schedule from last dates', () => {
+  it('generates adult onboarding schedule from last dates and region override', () => {
     const { records } = generateBootstrapSchedule({
       userId: 'user-1',
       petId: 'pet-1',
@@ -44,11 +48,15 @@ describe('SmartHealthScheduleUtils', () => {
       dateOfBirth: '2020-01-01',
       lastVaccinationDate: '2026-01-10',
       lastDewormingDate: '2026-01-12',
+      region: 'US',
+      lifestyleType: 'indoor',
+      lifestyleRiskLevel: 'low',
     });
 
-    expect(records).toHaveLength(2);
-    expect(records.find(r => r.type === 'vaccination')?.dueDate).toBe('2027-01-10');
-    expect(records.find(r => r.type === 'deworming')?.dueDate).toBe('2026-04-12');
+    expect(records.length).toBeGreaterThan(2);
+    expect(records.find(r => r.key === 'RABIES_1_BOoster')).toBeUndefined();
+    expect(records.find(r => r.name === 'Rabies Booster')?.dueDate).toBe('2029-01-10');
+    expect(records.find(r => r.type === 'deworming' && r.recurrenceType === 'quarterly')?.dueDate).toBe('2026-02-11');
   });
 
   it('creates next recurring task from completion date', () => {
@@ -71,5 +79,43 @@ describe('SmartHealthScheduleUtils', () => {
     expect(updated.status).toBe('completed');
     expect(updated.completedDate).toBe('2026-02-03');
     expect(next?.dueDate).toBe('2026-05-03');
+    expect(updated.recovery?.recoveryReason).toBe('late');
+  });
+
+  it('recalculates records for missed and backdated events', () => {
+    const engine = new PetCareLifecycleEngine();
+    const records = generateBootstrapSchedule({
+      userId: 'user-1',
+      petId: 'pet-1',
+      petType: 'dog',
+      dateOfBirth: '2026-01-01',
+      region: 'IN',
+      lifestyleType: 'outdoor',
+      lifestyleRiskLevel: 'high',
+    }).records;
+    const first = records[0] as SmartHealthRecord;
+    const missed = engine.recalculatePlanOnEvent({
+      records,
+      event: { type: 'missed', recordId: first.id },
+      contextNowDate: '2026-02-20',
+    });
+    expect(missed.find(r => r.id === first.id)?.status).toBe('missed');
+
+    const recurring = records.find(
+      r => r.type === 'deworming' && r.recurrenceType === 'quarterly',
+    );
+    expect(recurring).toBeDefined();
+    const backdated = engine.recalculatePlanOnEvent({
+      records,
+      event: {
+        type: 'backdated_entry',
+        recordId: recurring!.id,
+        completedDate: '2026-03-01',
+      },
+      contextNowDate: '2026-03-02',
+    });
+    const done = backdated.find(r => r.id === recurring!.id);
+    expect(done?.status).toBe('completed');
+    expect(done?.completedDate).toBe('2026-03-01');
   });
 });

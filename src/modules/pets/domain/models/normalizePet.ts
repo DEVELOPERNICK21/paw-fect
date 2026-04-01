@@ -1,4 +1,12 @@
-import type { Pet, PetGender, PetSyncStatus, PetType } from './Pet';
+import type {
+  Pet,
+  PetGender,
+  PetLifestyleRiskLevel,
+  PetLifestyleType,
+  PetRegion,
+  PetSyncStatus,
+  PetType,
+} from './Pet';
 
 const isPetType = (v: unknown): v is PetType => v === 'dog' || v === 'cat';
 
@@ -7,6 +15,12 @@ const isPetGender = (v: unknown): v is PetGender =>
 
 const isPetSyncStatus = (v: unknown): v is PetSyncStatus =>
   v === 'pending' || v === 'synced' || v === 'failed';
+const isPetLifestyleType = (v: unknown): v is PetLifestyleType =>
+  v === 'indoor' || v === 'outdoor' || v === 'mixed';
+const isPetLifestyleRiskLevel = (v: unknown): v is PetLifestyleRiskLevel =>
+  v === 'low' || v === 'medium' || v === 'high';
+const isPetRegion = (v: unknown): v is PetRegion =>
+  v === 'IN' || v === 'US' || v === 'EU' || v === 'OTHER';
 
 /**
  * Coerces stored/API JSON into a canonical {@link Pet} for the given owner.
@@ -34,6 +48,12 @@ export function normalizePet(raw: unknown, userId: string): Pet | null {
   const gender: PetGender | undefined = isPetGender(o.gender)
     ? o.gender
     : undefined;
+  const rawLifestyle =
+    o.lifestyle && typeof o.lifestyle === 'object'
+      ? (o.lifestyle as Record<string, unknown>)
+      : null;
+  const lifestyleType = rawLifestyle?.type;
+  const lifestyleRisk = rawLifestyle?.riskLevel;
 
   return {
     id: o.id,
@@ -43,6 +63,17 @@ export function normalizePet(raw: unknown, userId: string): Pet | null {
     breed: typeof o.breed === 'string' ? o.breed : undefined,
     gender,
     dob: typeof o.dob === 'string' ? o.dob : undefined,
+    lifestyle:
+      isPetLifestyleType(lifestyleType) && isPetLifestyleRiskLevel(lifestyleRisk)
+        ? {
+            type: lifestyleType,
+            riskLevel: lifestyleRisk,
+          }
+        : {
+            type: 'indoor',
+            riskLevel: 'low',
+          },
+    region: isPetRegion(o.region) ? o.region : 'OTHER',
     photo: typeof o.photo === 'string' ? o.photo : undefined,
     createdAt,
     updatedAt,

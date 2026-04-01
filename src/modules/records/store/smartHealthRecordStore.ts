@@ -13,6 +13,7 @@ import { GetSmartHealthRecords } from '../domain/usecases/GetSmartHealthRecords'
 import { MarkSmartHealthRecordDone } from '../domain/usecases/MarkSmartHealthRecordDone';
 import { RescheduleSmartHealthRecord } from '../domain/usecases/RescheduleSmartHealthRecord';
 import { notificationService } from '../../../infrastructure/notifications/notificationService';
+import { PetCareLifecycleEngine } from '../domain/utils/PetCareLifecycleEngine';
 
 interface SmartHealthRecordState {
   records: SmartHealthRecord[];
@@ -34,6 +35,14 @@ interface SmartHealthRecordState {
   ) => SmartHealthRecord[];
   getCompletedTasks: (type: SmartHealthRecordType) => SmartHealthRecord[];
   getFullSchedule: (type: SmartHealthRecordType) => SmartHealthRecord[];
+  getActionRequiredItem: (type: SmartHealthRecordType) => SmartHealthRecord | null;
+  getActionRequiredItems: (type: SmartHealthRecordType, limit?: number) => SmartHealthRecord[];
+  getUpcomingItems: (
+    type: SmartHealthRecordType,
+    options?: { limit?: number; dedupeByFamily?: boolean },
+  ) => SmartHealthRecord[];
+  getHistoryItems: (type: SmartHealthRecordType) => SmartHealthRecord[];
+  getOverdueCount: (type: SmartHealthRecordType) => number;
 }
 
 const repository = createSmartHealthRecordRepository();
@@ -42,6 +51,7 @@ const getRecordsUseCase = new GetSmartHealthRecords(repository);
 const getNextTaskUseCase = new GetNextSmartHealthTask();
 const markDoneUseCase = new MarkSmartHealthRecordDone(repository);
 const rescheduleUseCase = new RescheduleSmartHealthRecord(repository);
+const lifecycleEngine = new PetCareLifecycleEngine();
 
 function requireUserId(): string | null {
   return useAuthStore.getState().user?.id ?? null;
@@ -234,6 +244,30 @@ export const useSmartHealthRecordStore = create<SmartHealthRecordState>(
         .getByType(type)
         .filter(record => record.status === 'completed'),
     getFullSchedule: type => get().getByType(type),
+    getActionRequiredItem: type => {
+      const records = get().getByType(type);
+      return lifecycleEngine.getActionRequired(records);
+    },
+    getActionRequiredItems: (type, limit = 2) => {
+      const records = get().getByType(type);
+      return lifecycleEngine.getActionRequiredList(records, limit);
+    },
+    getUpcomingItems: (type, options) => {
+      const records = get().getByType(type);
+      return lifecycleEngine.getUpcoming(
+        records,
+        options?.limit ?? 5,
+        options?.dedupeByFamily ?? true,
+      );
+    },
+    getHistoryItems: type => {
+      const records = get().getByType(type);
+      return lifecycleEngine.getHistory(records);
+    },
+    getOverdueCount: type =>
+      get()
+        .getByType(type)
+        .filter(record => record.status === 'overdue').length,
   }),
 );
 

@@ -5,7 +5,6 @@ import {
   Modal,
   Pressable,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
 
@@ -24,6 +23,7 @@ import { useSmartHealthRecordStore } from '../../store/smartHealthRecordStore';
 import type { SmartHealthRecord } from '../../domain/models/SmartHealthRecord';
 import { PremiumUpgradeCard } from '../components/PremiumUpgradeCard';
 import { SmartHealthRecordItem } from '../components/SmartHealthRecordItem';
+import { partitionCareRecordsForUi, weeksBetweenDobAndToday } from '../utils/healthRecordScreenPartition';
 
 type CategoryFilter = 'Vaccination' | 'Deworming';
 
@@ -54,14 +54,16 @@ export const HealthRecordScreen: React.FC = () => {
   const remindTask = useSmartHealthRecordStore(s => s.remindTask);
   const reschedule = useSmartHealthRecordStore(s => s.reschedule);
   const getByType = useSmartHealthRecordStore(s => s.getByType);
+  const getActionRequiredItems = useSmartHealthRecordStore(
+    s => s.getActionRequiredItems,
+  );
+  const getUpcomingItems = useSmartHealthRecordStore(s => s.getUpcomingItems);
 
   const [selectedCategory, setSelectedCategory] =
     useState<CategoryFilter>('Vaccination');
-  const [search, setSearch] = useState('');
   const [editingRecord, setEditingRecord] = useState<SmartHealthRecord | null>(null);
   const [editingDueDate, setEditingDueDate] = useState('');
   const [isCompletedExpanded, setIsCompletedExpanded] = useState(false);
-  const [isFullScheduleExpanded, setIsFullScheduleExpanded] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -76,6 +78,9 @@ export const HealthRecordScreen: React.FC = () => {
       petId: activePet.id,
       petType: activePet.type,
       dateOfBirth: activePet.dob ?? new Date().toISOString().slice(0, 10),
+      region: activePet.region,
+      lifestyleType: activePet.lifestyle?.type,
+      lifestyleRiskLevel: activePet.lifestyle?.riskLevel,
     })
       .then(() => loadPetRecords(activePet.id))
       .catch(() => {});
@@ -94,56 +99,59 @@ export const HealthRecordScreen: React.FC = () => {
     [getByType, records, tabType],
   );
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return recordsByType
-      .filter(item => {
-        if (!q) return true;
-        return item.name.toLowerCase().includes(q);
-      })
-      .slice()
-      .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
-  }, [recordsByType, search]);
-
-  const nextActionTask = useMemo((): SmartHealthRecord | null => {
-    const urgent = filtered
-      .filter(
-        item => item.status === 'overdue' || item.status === 'upcoming',
-      )
-      .slice()
-      .sort((a, b) => {
-        if (a.status === 'overdue' && b.status !== 'overdue') return -1;
-        if (b.status === 'overdue' && a.status !== 'overdue') return 1;
-        return a.dueDate.localeCompare(b.dueDate);
-      });
-    return urgent[0] ?? null;
-  }, [filtered]);
-
-  const upcomingShortList = useMemo(
+  const filtered = useMemo(
     () =>
-      filtered
-        .filter(item => item.status === 'upcoming' || item.status === 'overdue')
-        .filter(item => item.id !== nextActionTask?.id)
-        .slice(0, 3),
-    [filtered, nextActionTask?.id],
+      recordsByType.slice().sort((a, b) => a.dueDate.localeCompare(b.dueDate)),
+    [recordsByType],
   );
 
-  const completedRecords = useMemo(
-    () => filtered.filter(item => item.status === 'completed'),
-    [filtered],
+  const partitioned = useMemo(() => partitionCareRecordsForUi(filtered), [filtered]);
+  const actionRequiredItems = useMemo(
+    () => getActionRequiredItems(tabType, 2),
+    [getActionRequiredItems, tabType, records],
   );
+  const primaryTask = actionRequiredItems[0] ?? null;
+  const secondaryActionTask = actionRequiredItems[1] ?? null;
+  const upcomingItems = useMemo(() => {
+    const hiddenIds = new Set(actionRequiredItems.map(item => item.id));
+    return getUpcomingItems(tabType, { limit: 5, dedupeByFamily: true }).filter(
+      item => !hiddenIds.has(item.id),
+    );
+  }, [actionRequiredItems, getUpcomingItems, tabType, records]);
+
+  const completedRecords = partitioned.history;
+
+  const petAgeWeeks = useMemo(
+    () => weeksBetweenDobAndToday(activePet?.dob ?? ''),
+    [activePet?.dob],
+  );
+
+  const summaryLine = useMemo(() => {
+    const od = partitioned.overdue.length;
+    const comp = partitioned.history.length;
+    const dueSoon = partitioned.dueSoon.length;
+    const fut = partitioned.futureSchedule.length;
+    const scheduled = dueSoon + fut;
+    return `${od} overdue · ${comp} completed · ${scheduled} scheduled`;
+  }, [partitioned]);
 
   const nextDewormingFallbackDate = useMemo((): string | null => {
     if (selectedCategory !== 'Deworming') return null;
-    if (nextActionTask) return null;
-
+    if (primaryTask || secondaryActionTask || upcomingItems.length > 0) return null;
     const latestCompleted = completedRecords
       .slice()
-      .sort((a, b) => (b.completedDate ?? b.dueDate).localeCompare(a.completedDate ?? a.dueDate))[0];
-
+      .sort((a, b) =>
+        (b.completedDate ?? b.dueDate).localeCompare(a.completedDate ?? a.dueDate),
+      )[0];
     if (!latestCompleted) return null;
     return addMonthsToIsoDate(latestCompleted.completedDate ?? latestCompleted.dueDate, 3);
-  }, [selectedCategory, nextActionTask, completedRecords]);
+  }, [
+    selectedCategory,
+    primaryTask,
+    secondaryActionTask,
+    upcomingItems.length,
+    completedRecords,
+  ]);
 
   const formatUiDate = (isoDate: string): string => {
     const date = new Date(`${isoDate}T00:00:00`);
@@ -186,8 +194,8 @@ export const HealthRecordScreen: React.FC = () => {
     );
   }
 
-  const nextDueColor =
-    nextActionTask?.status === 'overdue' ? colors.danger : colors.warning;
+  const logPrimaryCtaLabel =
+    primaryTask?.type === 'vaccination' ? 'Log Vaccination' : 'Log Deworming';
 
   const openUpdateDate = (record: SmartHealthRecord): void => {
     setEditingRecord(record);
@@ -225,15 +233,28 @@ export const HealthRecordScreen: React.FC = () => {
             <MaterialIcon name="arrow_back" size={20} color={colors.accent} />
           </Pressable>
 
-          <AppText
-            style={[
-              textStyles.title,
-              { color: colors.text.heading, fontFamily: fontFamilies.extrabold },
-            ]}
-            numberOfLines={1}
-          >
-            Health Records
-          </AppText>
+          <View style={styles.headerTitleBlock}>
+            <AppText
+              style={[
+                textStyles.title,
+                { color: colors.text.heading, fontFamily: fontFamilies.extrabold },
+              ]}
+              numberOfLines={1}
+            >
+              {activePet.name}
+            </AppText>
+            <AppText
+              style={[
+                textStyles.caption,
+                { color: colors.text.secondary, fontFamily: fontFamilies.medium },
+              ]}
+              numberOfLines={1}
+            >
+              {petAgeWeeks !== null
+                ? `${petAgeWeeks} weeks old · ${summaryLine}`
+                : summaryLine}
+            </AppText>
+          </View>
 
           <Pressable
             accessibilityRole="button"
@@ -246,22 +267,6 @@ export const HealthRecordScreen: React.FC = () => {
           >
             <MaterialIcon name="add" size={20} color={colors.text.inverse} />
           </Pressable>
-        </View>
-
-        <View style={[styles.searchWrap, { backgroundColor: colors.surface }]}>
-          <View style={styles.searchIconWrap}>
-            <icons.searchIcon width={18} height={18} color={colors.text.subdued} />
-          </View>
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search by vaccine or record name..."
-            placeholderTextColor={colors.input.placeholder}
-            style={[
-              styles.searchInput,
-              { color: colors.text.body, fontFamily: fontFamilies.regular },
-            ]}
-          />
         </View>
 
         <View style={styles.tabsRow}>
@@ -303,214 +308,131 @@ export const HealthRecordScreen: React.FC = () => {
         keyExtractor={() => 'smart-health-list'}
         renderItem={() => (
           <View>
-            <View style={{ marginTop: space('lg') }}>
+            <View style={{ marginTop: space('md') }}>
               <AppText style={[textStyles.overline, { color: colors.text.subdued }]}>
                 ACTION REQUIRED
               </AppText>
             </View>
 
-            {nextActionTask ? (
+            {!primaryTask && !nextDewormingFallbackDate ? (
               <View
                 style={[
-                  styles.nextDueCard,
+                  styles.emptyActionHint,
                   {
+                    marginTop: space('sm'),
                     backgroundColor: colors.surface,
-                    borderColor: colors.brandTint10,
+                    borderColor: colors.borderSubtle,
                     borderRadius: radius.lg,
-                    padding: space('lg'),
+                    padding: space('md'),
                   },
                 ]}
               >
-                <View style={styles.nextDueRow}>
-                  <View
-                    style={[
-                      styles.nextDueIconCircle,
-                      {
-                        borderRadius: radius.round,
-                        backgroundColor: colors.brandTint10,
-                        width: spacing['4xl'],
-                        height: spacing['4xl'],
-                      },
-                    ]}
-                  >
-                    <MaterialIcon name="schedule" size={22} color={nextDueColor} />
-                  </View>
-
-                  <View style={styles.nextDueInfo}>
-                    <AppText style={[textStyles.overline, { color: nextDueColor, fontFamily: fontFamilies.bold }]}>
-                      NEXT DUE
-                    </AppText>
-                    <AppText
-                      style={[
-                        textStyles.title,
-                        {
-                          color: colors.text.heading,
-                          fontFamily: fontFamilies.extrabold,
-                        },
-                      ]}
-                      numberOfLines={2}
-                    >
-                      {nextActionTask.name}
-                    </AppText>
-                    <AppText
-                      style={[
-                        textStyles.caption,
-                        { color: colors.text.secondary, fontFamily: fontFamilies.medium },
-                      ]}
-                    >
-                      Due on {formatUiDate(nextActionTask.dueDate)}
-                    </AppText>
-                  </View>
-
-                  <View style={[styles.nextDueActions, { gap: space('sm') }]}>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Mark next action as done"
-                      onPress={() => {
-                        void markAsDone(nextActionTask.id);
-                      }}
-                      style={({ pressed }) => [
-                        styles.nextDueActionBtn,
-                        {
-                          borderRadius: radius.round,
-                          backgroundColor: colors.accent,
-                          opacity: pressed ? 0.9 : 1,
-                        },
-                      ]}
-                    >
-                      <AppText
-                        style={[
-                          textStyles.caption,
-                          {
-                            color: colors.text.inverse,
-                            fontFamily: fontFamilies.bold,
-                          },
-                        ]}
-                      >
-                        Mark as Done
-                      </AppText>
-                    </Pressable>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Remind me about next action"
-                      onPress={() => {
-                        void remindTask(nextActionTask.id);
-                      }}
-                      style={({ pressed }) => [
-                        styles.nextDueActionBtn,
-                        {
-                          borderRadius: radius.round,
-                          borderColor: colors.borderSubtle,
-                          borderWidth: 1,
-                          backgroundColor: colors.surfaceAlt,
-                          opacity: pressed ? 0.9 : 1,
-                        },
-                      ]}
-                    >
-                      <AppText
-                        style={[
-                          textStyles.caption,
-                          {
-                            color: colors.text.secondary,
-                            fontFamily: fontFamilies.bold,
-                          },
-                        ]}
-                      >
-                        Remind Me
-                      </AppText>
-                    </Pressable>
-                  </View>
-                </View>
-              </View>
-            ) : null}
-
-            {nextDewormingFallbackDate ? (
-              <View
-                style={[
-                  styles.nextDueCard,
-                  {
-                    marginTop: nextActionTask ? space('md') : space('sm'),
-                    backgroundColor: colors.surface,
-                    borderColor: colors.brandTint10,
-                    borderRadius: radius.lg,
-                    padding: space('lg'),
-                  },
-                ]}
-              >
-                <View style={styles.nextDueRow}>
-                  <View
-                    style={[
-                      styles.nextDueIconCircle,
-                      {
-                        borderRadius: radius.round,
-                        backgroundColor: colors.brandTint10,
-                        width: spacing['4xl'],
-                        height: spacing['4xl'],
-                      },
-                    ]}
-                  >
-                    <icons.dewormIcon width={20} height={20} />
-                  </View>
-                  <View style={styles.nextDueInfo}>
-                    <AppText
-                      style={[
-                        textStyles.overline,
-                        { color: colors.warning, fontFamily: fontFamilies.bold },
-                      ]}
-                    >
-                      NEXT DEWORMING
-                    </AppText>
-                    <AppText
-                      style={[
-                        textStyles.title,
-                        {
-                          color: colors.text.heading,
-                          fontFamily: fontFamilies.extrabold,
-                        },
-                      ]}
-                      numberOfLines={1}
-                    >
-                      Quarterly cycle
-                    </AppText>
-                    <AppText
-                      style={[
-                        textStyles.caption,
-                        { color: colors.text.secondary, fontFamily: fontFamilies.medium },
-                      ]}
-                    >
-                      Due on {formatUiDate(nextDewormingFallbackDate)}
-                    </AppText>
-                  </View>
-                </View>
-              </View>
-            ) : null}
-
-            {upcomingShortList.length > 0 ? (
-              <View style={{ marginTop: space('lg') }}>
-                <AppText style={[textStyles.overline, { color: colors.text.subdued }]}>
-                  UPCOMING
+                <AppText
+                  style={[
+                    textStyles.caption,
+                    { color: colors.text.secondary, fontFamily: fontFamilies.medium },
+                  ]}
+                >
+                  No urgent items — you are caught up for this tab.
                 </AppText>
-                <View style={{ height: space('sm') }} />
-                {upcomingShortList.map(item => (
-                  <View key={item.id} style={{ marginBottom: space('sm') }}>
-                    <SmartHealthRecordItem
-                      record={item}
-                      onUpdate={() => openUpdateDate(item)}
-                    />
-                  </View>
-                ))}
+              </View>
+            ) : null}
+
+            {primaryTask ? (
+              <SmartHealthRecordItem
+                record={primaryTask}
+                variant="hero"
+                primaryActionLabel={logPrimaryCtaLabel}
+                onMarkDone={() => {
+                  void markAsDone(primaryTask.id);
+                }}
+                onRemind={() => {
+                  void remindTask(primaryTask.id);
+                }}
+              />
+            ) : null}
+
+            {secondaryActionTask ? (
+              <View style={{ marginTop: space('lg') }}>
+                <View style={{ marginBottom: space('sm') }}>
+                  <SmartHealthRecordItem
+                    record={secondaryActionTask}
+                    onMarkDone={() => {
+                      void markAsDone(secondaryActionTask.id);
+                    }}
+                    onRemind={() => {
+                      void remindTask(secondaryActionTask.id);
+                    }}
+                  />
+                </View>
               </View>
             ) : null}
 
             <View style={{ marginTop: space('lg') }}>
+              <AppText style={[textStyles.overline, { color: colors.text.subdued }]}>
+                UPCOMING
+              </AppText>
+              <View style={{ height: space('sm') }} />
+              {upcomingItems.length > 0 ? (
+                upcomingItems.map(item => (
+                  <View key={item.id} style={{ marginBottom: space('sm') }}>
+                    <SmartHealthRecordItem record={item} />
+                  </View>
+                ))
+              ) : nextDewormingFallbackDate ? (
+                <View
+                  style={[
+                    styles.emptyActionHint,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.borderSubtle,
+                      borderRadius: radius.lg,
+                      padding: space('md'),
+                    },
+                  ]}
+                >
+                  <AppText
+                    style={[
+                      textStyles.caption,
+                      { color: colors.text.secondary, fontFamily: fontFamilies.medium },
+                    ]}
+                  >
+                    Next deworming estimate: {formatUiDate(nextDewormingFallbackDate)}
+                  </AppText>
+                </View>
+              ) : (
+                <View
+                  style={[
+                    styles.emptyActionHint,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: colors.borderSubtle,
+                      borderRadius: radius.lg,
+                      padding: space('md'),
+                    },
+                  ]}
+                >
+                  <AppText
+                    style={[
+                      textStyles.caption,
+                      { color: colors.text.secondary, fontFamily: fontFamilies.medium },
+                    ]}
+                  >
+                    No upcoming items.
+                  </AppText>
+                </View>
+              )}
+            </View>
+
+            <View style={{ marginTop: space('lg') }}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Toggle completed records"
+                accessibilityLabel="Toggle history records"
                 onPress={() => setIsCompletedExpanded(prev => !prev)}
                 style={styles.completedHeader}
               >
                 <AppText style={[textStyles.overline, { color: colors.text.subdued }]}>
-                  COMPLETED ({completedRecords.length})
+                  HISTORY ({completedRecords.length})
                 </AppText>
                 <AppText
                   style={[
@@ -528,7 +450,7 @@ export const HealthRecordScreen: React.FC = () => {
                       <View key={item.id} style={{ marginBottom: space('sm') }}>
                         <SmartHealthRecordItem
                           record={item}
-                          onUpdate={() => openUpdateDate(item)}
+                          onEditDate={() => openUpdateDate(item)}
                         />
                       </View>
                     ))
@@ -545,7 +467,7 @@ export const HealthRecordScreen: React.FC = () => {
                       <AppText
                         style={[textStyles.caption, { color: colors.text.secondary }]}
                       >
-                        No completed items
+                        No history yet
                       </AppText>
                     </View>
                   )}
@@ -553,54 +475,12 @@ export const HealthRecordScreen: React.FC = () => {
               ) : null}
             </View>
 
-            <View style={{ marginTop: space('lg') }}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Toggle full schedule"
-                onPress={() => setIsFullScheduleExpanded(prev => !prev)}
-                style={styles.completedHeader}
-              >
-                <AppText style={[textStyles.overline, { color: colors.text.subdued }]}>
-                  FULL SCHEDULE ({filtered.length})
-                </AppText>
-                <AppText
-                  style={[
-                    textStyles.caption,
-                    { color: colors.text.subdued, fontFamily: fontFamilies.medium },
-                  ]}
-                >
-                  {isFullScheduleExpanded ? 'Hide' : 'Show'}
-                </AppText>
-              </Pressable>
-              {isFullScheduleExpanded ? (
-                <View style={{ marginTop: space('sm') }}>
-                  {filtered.map(item => (
-                    <View key={`${item.id}-full`} style={{ marginBottom: space('sm') }}>
-                      <SmartHealthRecordItem
-                        record={item}
-                        onUpdate={() => openUpdateDate(item)}
-                      />
-                    </View>
-                  ))}
-                </View>
-              ) : null}
-            </View>
-
-            <View style={{ marginTop: space('lg') }}>
+            <View style={{ marginTop: space('2xl') }}>
               <PremiumUpgradeCard />
             </View>
 
             {error ? (
-              <View
-                style={[
-                  styles.errorCard,
-                  {
-                    backgroundColor: colors.surfaceAlt,
-                    borderColor: colors.borderSubtle,
-                    marginTop: space('md'),
-                  },
-                ]}
-              >
+              <View style={{ marginTop: space('lg') }}>
                 <MaterialIcon name="info" size={20} color={colors.accent} />
                 <AppText
                   style={[
@@ -652,7 +532,7 @@ export const HealthRecordScreen: React.FC = () => {
                 { color: colors.text.heading, fontFamily: fontFamilies.bold },
               ]}
             >
-              Update due date
+              Edit due date
             </AppText>
             <View style={{ marginTop: space('sm') }}>
               <DatePickerField value={editingDueDate} onChange={setEditingDueDate} />
@@ -698,7 +578,7 @@ export const HealthRecordScreen: React.FC = () => {
                     { color: colors.text.inverse, fontFamily: fontFamilies.bold },
                   ]}
                 >
-                  Update
+                  Save
                 </AppText>
               </Pressable>
             </View>
@@ -729,6 +609,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 8,
+  },
+  headerTitleBlock: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'center',
+  },
+  emptyActionHint: {
+    borderWidth: 1,
   },
   backBtn: {
     width: 40,
@@ -746,27 +635,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'transparent',
   },
-  searchWrap: {
-    height: 50,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'transparent',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    gap: 8,
-  },
-  searchIconWrap: {
-    width: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  searchInput: {
-    flex: 1,
-    paddingVertical: 0,
-    fontSize: 14,
-    lineHeight: 20,
-  },
   tabsRow: {
     flexDirection: 'row',
   },
@@ -776,33 +644,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderBottomWidth: 2,
-  },
-  nextDueCard: {
-    borderWidth: 1,
-    gap: 8,
-  },
-  nextDueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  nextDueIconCircle: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  nextDueInfo: {
-    flex: 1,
-    gap: 2,
-    minWidth: 0,
-  },
-  nextDueActions: {
-    alignItems: 'flex-end',
-  },
-  nextDueActionBtn: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 110,
-    minHeight: 36,
   },
   errorCard: {
     borderWidth: 1,

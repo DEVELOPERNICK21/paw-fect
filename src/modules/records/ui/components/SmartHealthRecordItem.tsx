@@ -8,7 +8,12 @@ import type { SmartHealthRecord } from '../../domain/models/SmartHealthRecord';
 
 export interface SmartHealthRecordItemProps {
   record: SmartHealthRecord;
-  onUpdate: () => void;
+  onMarkDone?: () => void;
+  onRemind?: () => void;
+  /** Reschedule / correct the planned date */
+  onEditDate?: () => void;
+  variant?: 'default' | 'hero';
+  primaryActionLabel?: string;
 }
 
 function formatDate(isoDate: string): string {
@@ -23,7 +28,11 @@ function formatDate(isoDate: string): string {
 
 export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
   record,
-  onUpdate,
+  onMarkDone,
+  onRemind,
+  onEditDate,
+  variant = 'default',
+  primaryActionLabel = 'Mark as Done',
 }) => {
   const { colors, radius, space, spacing, textStyles, fontFamilies } =
     useTheme();
@@ -32,6 +41,8 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
   const badgeBg =
     record.status === 'completed'
       ? colors.successSurface
+      : record.status === 'missed'
+      ? colors.brandTint10
       : record.status === 'overdue'
       ? colors.brandTint20
       : record.status === 'locked'
@@ -40,6 +51,8 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
   const badgeText =
     record.status === 'completed'
       ? colors.success
+      : record.status === 'missed'
+      ? colors.text.subdued
       : record.status === 'overdue'
       ? colors.danger
       : record.status === 'locked'
@@ -48,19 +61,41 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
   const statusLabel =
     record.status === 'completed'
       ? 'COMPLETED'
+      : record.status === 'missed'
+      ? 'MISSED'
       : record.status === 'overdue'
       ? 'OVERDUE'
       : record.status === 'locked'
-      ? 'LOCKED'
-      : 'UPCOMING';
-  const detailPrefix =
-    record.status === 'completed' ? 'Administered' : 'Scheduled';
+      ? 'SCHEDULED'
+      : 'DUE SOON';
+
+  const detailLine = (() => {
+    if (record.status === 'completed') {
+      const when = record.completedDate ?? record.dueDate;
+      return `Administered ${formatDate(when)}`;
+    }
+    if (record.status === 'overdue') {
+      return `Overdue since ${formatDate(record.dueDate)}`;
+    }
+    if (record.status === 'missed') {
+      return `Missed on ${formatDate(record.dueDate)}`;
+    }
+    if (record.status === 'locked') {
+      return `Scheduled for ${formatDate(record.dueDate)}`;
+    }
+    return `Due on ${formatDate(record.dueDate)}`;
+  })();
+
   const cadenceSuffix =
     record.type === 'deworming' &&
     record.recurrenceType === 'quarterly' &&
     record.status !== 'completed'
-      ? ' • Every 3 months'
+      ? ' · Every 3 months'
       : '';
+
+  const showActionRow =
+    record.status === 'overdue' || record.status === 'upcoming';
+  const showCompletedActions = record.status === 'completed' && onEditDate;
 
   return (
     <View
@@ -68,8 +103,8 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
         styles.card,
         {
           borderRadius: radius.lg,
-          backgroundColor: colors.surfaceAlt,
-          borderColor: colors.borderSubtle,
+          backgroundColor: variant === 'hero' ? colors.surface : colors.surfaceAlt,
+          borderColor: variant === 'hero' ? colors.brandTint10 : colors.borderSubtle,
           padding: space('md'),
         },
       ]}
@@ -130,36 +165,91 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
             ]}
             numberOfLines={2}
           >
-            {detailPrefix} {formatDate(record.dueDate)}
+            {detailLine}
             {cadenceSuffix}
           </AppText>
         </View>
       </View>
 
-      {record.status !== 'completed' && record.status !== 'locked' ? (
+      {showActionRow ? (
+        <View style={[styles.actionRow, { marginTop: space('md'), gap: space('sm') }]}>
+          {onMarkDone ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Mark ${record.name} as done`}
+              onPress={onMarkDone}
+              style={({ pressed }) => [
+                styles.actionBtn,
+                {
+                  borderRadius: radius.round,
+                  backgroundColor: colors.accent,
+                  opacity: pressed ? 0.9 : 1,
+                },
+              ]}
+            >
+              <AppText
+                style={[
+                  textStyles.caption,
+                  { color: colors.text.inverse, fontFamily: fontFamilies.bold },
+                ]}
+              >
+                {primaryActionLabel}
+              </AppText>
+            </Pressable>
+          ) : null}
+          {onRemind ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Remind me about ${record.name}`}
+              onPress={onRemind}
+              style={({ pressed }) => [
+                styles.actionBtn,
+                {
+                  borderRadius: radius.round,
+                  borderWidth: 1,
+                  borderColor: colors.borderSubtle,
+                  backgroundColor: colors.surface,
+                  opacity: pressed ? 0.9 : 1,
+                },
+              ]}
+            >
+              <AppText
+                style={[
+                  textStyles.caption,
+                  { color: colors.text.secondary, fontFamily: fontFamilies.bold },
+                ]}
+              >
+                Remind Me
+              </AppText>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
+
+      {showCompletedActions ? (
         <View style={{ marginTop: space('md'), alignItems: 'flex-end' }}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`Update ${record.name} date`}
-            onPress={onUpdate}
+            accessibilityLabel={`Edit date for ${record.name}`}
+            onPress={onEditDate}
             style={({ pressed }) => [
-              styles.updateBtn,
+              styles.actionBtn,
               {
                 borderRadius: radius.round,
-                backgroundColor: colors.accent,
+                borderWidth: 1,
+                borderColor: colors.borderSubtle,
+                backgroundColor: colors.surface,
                 opacity: pressed ? 0.9 : 1,
-                paddingHorizontal: space('lg'),
-                paddingVertical: space('sm'),
               },
             ]}
           >
             <AppText
               style={[
-                textStyles.subtitle,
-                { color: colors.text.inverse, fontFamily: fontFamilies.bold },
+                textStyles.caption,
+                { color: colors.text.body, fontFamily: fontFamilies.bold },
               ]}
             >
-              Update
+              Edit date
             </AppText>
           </Pressable>
         </View>
@@ -188,9 +278,17 @@ const styles = StyleSheet.create({
   badge: {
     alignSelf: 'flex-start',
   },
-  updateBtn: {
+  actionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  actionBtn: {
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 96,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    minHeight: 36,
   },
 });

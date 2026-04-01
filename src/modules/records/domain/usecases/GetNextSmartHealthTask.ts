@@ -1,16 +1,10 @@
 import type { SmartHealthRecord } from '../models/SmartHealthRecord';
+import { PetCareLifecycleEngine } from '../utils/PetCareLifecycleEngine';
 
 export class GetNextSmartHealthTask {
-  execute(records: SmartHealthRecord[]): SmartHealthRecord | null {
-    const actionable = records
-      .filter(record => record.status === 'overdue' || record.status === 'upcoming')
-      .slice()
-      .sort((a, b) => {
-        if (a.status === 'overdue' && b.status !== 'overdue') return -1;
-        if (b.status === 'overdue' && a.status !== 'overdue') return 1;
-        return a.dueDate.localeCompare(b.dueDate);
-      });
+  private readonly engine = new PetCareLifecycleEngine();
 
-    return actionable[0] ?? null;
+  execute(records: SmartHealthRecord[]): SmartHealthRecord | null {
+    return this.engine.getActionRequired(records);
   }
 }

@@ -4,7 +4,8 @@ export type SmartHealthRecordStatus =
   | 'upcoming'
   | 'completed'
   | 'overdue'
-  | 'locked';
+  | 'locked'
+  | 'missed';
 
 export type SmartHealthRecurrenceType = 'none' | 'yearly' | 'quarterly';
 
@@ -13,12 +14,25 @@ export interface SmartHealthRecord {
   userId: string;
   petId: string;
   type: SmartHealthRecordType;
+  key?: string;
+  family?: string;
+  category?: 'core' | 'non-core';
   name: string;
   dueDate: string; // YYYY-MM-DD
+  recommendedDate?: string; // YYYY-MM-DD
   completedDate: string | null; // YYYY-MM-DD
   status: SmartHealthRecordStatus;
   isOptional?: boolean;
   recurrenceType: SmartHealthRecurrenceType;
+  riskLevel?: 'low' | 'medium' | 'high';
+  lifestyleTriggers?: string[];
+  doseNumber?: number;
+  totalDoses?: number;
+  recovery?: {
+    isRecovered: boolean;
+    recoveredFrom: string | null;
+    recoveryReason?: 'missed' | 'late' | 'manual_adjustment';
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -38,6 +52,9 @@ export interface BootstrapSmartScheduleInput {
   petId: string;
   petType: 'dog' | 'cat';
   dateOfBirth: string; // YYYY-MM-DD
+  region?: 'IN' | 'US' | 'EU' | 'OTHER';
+  lifestyleType?: 'indoor' | 'outdoor' | 'mixed';
+  lifestyleRiskLevel?: 'low' | 'medium' | 'high';
   lastVaccinationDate?: string;
   lastDewormingDate?: string;
 }

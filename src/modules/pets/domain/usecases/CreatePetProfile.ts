@@ -1,4 +1,11 @@
-import type { Pet, PetGender, PetType } from '../models/Pet';
+import type {
+  Pet,
+  PetGender,
+  PetLifestyleRiskLevel,
+  PetLifestyleType,
+  PetRegion,
+  PetType,
+} from '../models/Pet';
 import { createLocalId } from '../../../../shared/utils/id';
 
 export interface CreatePetProfileInput {
@@ -8,6 +15,11 @@ export interface CreatePetProfileInput {
   breed?: string;
   gender?: PetGender;
   dob?: string;
+  lifestyle?: {
+    type: PetLifestyleType;
+    riskLevel: PetLifestyleRiskLevel;
+  };
+  region?: PetRegion;
   photo?: string;
 }
 
@@ -37,6 +49,8 @@ export class CreatePetProfile {
         breed: input.breed?.trim() || undefined,
         gender: input.gender,
         dob: input.dob,
+        lifestyle: input.lifestyle ?? { type: 'indoor', riskLevel: 'low' },
+        region: input.region ?? 'OTHER',
         photo: input.photo || undefined,
         createdAt: now,
         updatedAt: now,

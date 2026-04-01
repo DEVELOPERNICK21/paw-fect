@@ -18,6 +18,8 @@ interface CreatePetProfileFormInput {
   breed?: string;
   gender?: Pet['gender'];
   dob?: string;
+  lifestyle?: Pet['lifestyle'];
+  region?: Pet['region'];
   photo?: string;
 }
 
