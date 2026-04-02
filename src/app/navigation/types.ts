@@ -23,6 +23,7 @@ export type HomeStackParamList = {
 export type HealthStackParamList = {
   HealthRecords: undefined;
   AddHealthRecord: undefined;
+  Deworming: undefined;
 };
 
 export type PetsStackParamList = {

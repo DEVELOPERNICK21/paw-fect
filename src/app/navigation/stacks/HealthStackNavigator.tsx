@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { HealthStackParamList } from '../types';
 import HealthRecordScreen from '../../../modules/records/ui/screens/HealthRecordScreen';
 import AddHealthRecordScreen from '../../../modules/records/ui/screens/AddHealthRecordScreen';
+import DewormingScreen from '../../../modules/records/ui/screens/DewormingScreen';
 
 const Stack = createNativeStackNavigator<HealthStackParamList>();
 
@@ -21,6 +22,7 @@ export const HealthStackNavigator = React.memo(function HealthStackNavigator() {
     >
       <Stack.Screen name="HealthRecords" component={HealthRecordScreen} />
       <Stack.Screen name="AddHealthRecord" component={AddHealthRecordScreen} />
+      <Stack.Screen name="Deworming" component={DewormingScreen} />
     </Stack.Navigator>
   );
 });

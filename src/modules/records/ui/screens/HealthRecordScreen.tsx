@@ -288,12 +288,19 @@ export const HealthRecordScreen: React.FC = () => {
         <View style={styles.tabsRow}>
           {CATEGORIES.map(category => {
             const selected = category === selectedCategory;
+            const handleCategoryPress = () => {
+              if (category === 'Deworming') {
+                navigation.navigate('Deworming');
+              } else {
+                setSelectedCategory(category);
+              }
+            };
             return (
               <Pressable
                 key={category}
                 accessibilityRole="button"
                 accessibilityLabel={`Filter: ${category}`}
-                onPress={() => setSelectedCategory(category)}
+                onPress={handleCategoryPress}
                 style={[
                   styles.tab,
                   {

@@ -61,7 +61,7 @@ export const useDewormingStore = create<DewormingState>((set, get) => ({
 
   hydrateAndGenerate: async (pet: Pet) => {
     const userId = requireUserId();
-    if (!userId || !pet.dob || !pet.lifestyle) {
+    if (!userId || !pet.dob) {
       set({
         result: null,
         loading: false,
@@ -98,7 +98,7 @@ export const useDewormingStore = create<DewormingState>((set, get) => ({
   logCompletion: async (completedDate: string) => {
     const userId = requireUserId();
     const pet = usePetStore.getState().activePet;
-    if (!userId || !pet?.dob || !pet.lifestyle) {
+    if (!userId || !pet?.dob) {
       return;
     }
 
@@ -127,14 +127,16 @@ export const useDewormingStore = create<DewormingState>((set, get) => ({
       });
     } catch (err) {
       set({
-        error:
-          err instanceof Error ? err.message : 'Failed to update schedule',
+        error: err instanceof Error ? err.message : 'Failed to update schedule',
         loading: false,
       });
     }
   },
 
-  updateLocalState: async (petId: string, partial: Partial<DewormingPetState>) => {
+  updateLocalState: async (
+    petId: string,
+    partial: Partial<DewormingPetState>,
+  ) => {
     const userId = requireUserId();
     if (!userId) {
       return;
@@ -155,7 +157,7 @@ export const useDewormingStore = create<DewormingState>((set, get) => ({
   persistSymptoms: async (symptoms: DewormingSymptom[]) => {
     const userId = requireUserId();
     const pet = usePetStore.getState().activePet;
-    if (!userId || !pet?.dob || !pet.lifestyle) {
+    if (!userId || !pet?.dob) {
       return;
     }
     const prev = await dewormingLocal.getState(userId, pet.id);
