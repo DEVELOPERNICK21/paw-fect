@@ -9,6 +9,12 @@ export type SmartHealthRecordStatus =
 
 export type SmartHealthRecurrenceType = 'none' | 'yearly' | 'quarterly';
 
+export type PetStage = 'puppy' | 'adolescent' | 'adult';
+
+export type RecordPriority = 'critical' | 'high' | 'medium' | 'low';
+
+export type RecordSource = 'system' | 'manual';
+
 export interface SmartHealthRecord {
   id: string;
   userId: string;
@@ -28,6 +34,13 @@ export interface SmartHealthRecord {
   lifestyleTriggers?: string[];
   doseNumber?: number;
   totalDoses?: number;
+  // New fields for sequence and context
+  stage?: PetStage;
+  dependsOn?: string | null; // ID of previous dose that must be completed
+  source?: RecordSource;
+  isLocked?: boolean; // true if dependsOn not completed
+  priority?: RecordPriority;
+  contextLabel?: string; // e.g., "Catch-up Required", "Start Vaccination"
   recovery?: {
     isRecovered: boolean;
     recoveredFrom: string | null;
@@ -58,4 +71,3 @@ export interface BootstrapSmartScheduleInput {
   lastVaccinationDate?: string;
   lastDewormingDate?: string;
 }
-

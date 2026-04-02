@@ -252,8 +252,9 @@ const CAT_TEMPLATE: SpeciesCarePlanTemplate = {
       riskLevel: 'medium',
     },
   ],
+  /** Aligned with DewormingEngine: same early milestones as dogs (2–8 weeks). */
   deworming: {
-    startWeeks: [4, 6, 8, 12],
+    startWeeks: [2, 4, 6, 8],
     untilMonths: 6,
     indoorIntervalDays: 30,
     mixedIntervalDays: 21,

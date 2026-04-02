@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -18,6 +19,13 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Svg, { Path } from 'react-native-svg';
 
 import type { PetsStackParamList } from '../../../../app/navigation/types';
+import { useAuthStore } from '../../../auth/store/authStore';
+import {
+  getDewormingLocalDataSource,
+  saveDewormingOnboardingForPet,
+  useDewormingStore,
+} from '../../../records/store/dewormingStore';
+import { validateLastDewormingDate } from '../../../records/domain/utils/DewormingEngine';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { usePetStore } from '../../store/petStore';
 import type {
@@ -88,8 +96,13 @@ export const AddPetScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [initLoading, setInitLoading] = useState(isEditMode);
   const [editBase, setEditBase] = useState<Pet | null>(null);
+  const [hasPreviousDeworming, setHasPreviousDeworming] = useState(false);
+  const [lastDewormingDate, setLastDewormingDate] = useState('');
+  const [lastDewormingUnknown, setLastDewormingUnknown] = useState(false);
 
   const today = useMemo(() => new Date(), []);
+  const todayIso = useMemo(() => today.toISOString().slice(0, 10), [today]);
+  const hydrateAndGenerate = useDewormingStore(s => s.hydrateAndGenerate);
 
   useEffect(() => {
     if (!isEditMode || !petId) {
@@ -128,6 +141,19 @@ export const AddPetScreen: React.FC = () => {
         setLifestyleType(pet.lifestyle?.type ?? 'indoor');
         setLifestyleRiskLevel(pet.lifestyle?.riskLevel ?? 'low');
         setRegion(pet.region ?? 'OTHER');
+        const uid = useAuthStore.getState().user?.id;
+        if (uid) {
+          void getDewormingLocalDataSource()
+            .getState(uid, pet.id)
+            .then(dw => {
+              if (cancelled) {
+                return;
+              }
+              setHasPreviousDeworming(dw.hasPreviousDeworming ?? false);
+              setLastDewormingUnknown(dw.lastDewormingUnknown ?? false);
+              setLastDewormingDate(dw.lastDewormingDate ?? '');
+            });
+        }
         setInitLoading(false);
       });
 
@@ -135,9 +161,6 @@ export const AddPetScreen: React.FC = () => {
       cancelled = true;
     };
   }, [isEditMode, navigation, petId]);
-
-  const trimmedName = name.trim();
-  const canSave = trimmedName.length > 0;
 
   const parseAndValidateDob = (
     raw: string,
@@ -159,12 +182,87 @@ export const AddPetScreen: React.FC = () => {
     return { ok: true, value: v };
   };
 
+  const trimmedName = name.trim();
+  const dobCheck = parseAndValidateDob(dob);
+  const canSave =
+    trimmedName.length > 0 &&
+    (isEditMode || (dob.trim().length > 0 && dobCheck.ok));
+
+  const performEditSave = async (): Promise<void> => {
+    if (!editBase) {
+      return;
+    }
+    setError(null);
+    const nextPhoto = isPetPhotoPlaceholderUri(photoUri)
+      ? undefined
+      : photoUri;
+    const result = await updatePet({
+      ...editBase,
+      name: trimmedName,
+      type: petType,
+      breed: breed.trim() || undefined,
+      photo: nextPhoto,
+      dob: dob.trim() || undefined,
+      gender: gender || undefined,
+      lifestyle: { type: lifestyleType, riskLevel: lifestyleRiskLevel },
+      region,
+    });
+    if (!result.success) {
+      setError(result.error ?? 'Unable to save changes.');
+      return;
+    }
+    const uid = useAuthStore.getState().user?.id;
+    const updated = usePetStore.getState().activePet;
+    if (uid && updated) {
+      await saveDewormingOnboardingForPet(uid, updated.id, {
+        hasPreviousDeworming,
+        lastDewormingDate: lastDewormingUnknown ? null : lastDewormingDate.trim(),
+        lastDewormingUnknown,
+      });
+      await hydrateAndGenerate(updated);
+    }
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    }
+  };
+
   const handleSave = async () => {
     setError(null);
     if (!canSave) {
-      setError('Pet name is required.');
+      setError('Pet name and date of birth are required.');
       return;
     }
+    if (!isEditMode) {
+      const checkDob = parseAndValidateDob(dob);
+      if (!checkDob.ok || !checkDob.value) {
+        setError(
+          checkDob.ok ? 'Date of birth is required.' : checkDob.error,
+        );
+        return;
+      }
+      if (hasPreviousDeworming && !lastDewormingUnknown) {
+        if (!lastDewormingDate.trim()) {
+          setError(
+            'Enter the last deworming date or choose “I don’t know the date”.',
+          );
+          return;
+        }
+        const v = validateLastDewormingDate(
+          checkDob.value,
+          lastDewormingDate.trim(),
+          todayIso,
+        );
+        if (!v.ok) {
+          setError(
+            v.code === 'before_dob'
+              ? 'Last deworming cannot be before date of birth.'
+              : 'Last deworming cannot be in the future.',
+          );
+          return;
+        }
+      }
+    }
+
     if (isEditMode && editBase) {
       if (dob.trim().length > 0) {
         const check = parseAndValidateDob(dob);
@@ -174,29 +272,53 @@ export const AddPetScreen: React.FC = () => {
         }
       }
 
-      const nextPhoto = isPetPhotoPlaceholderUri(photoUri)
-        ? undefined
-        : photoUri;
-      const result = await updatePet({
-        ...editBase,
-        name: trimmedName,
-        type: petType,
-        breed: breed.trim() || undefined,
-        photo: nextPhoto,
-        dob: dob.trim() || undefined,
-        gender: gender || undefined,
-        lifestyle: { type: lifestyleType, riskLevel: lifestyleRiskLevel },
-        region,
-      });
-      if (!result.success) {
-        setError(result.error ?? 'Unable to save changes.');
-        return;
+      if (hasPreviousDeworming && !lastDewormingUnknown && dob.trim()) {
+        const check = parseAndValidateDob(dob);
+        if (check.ok && check.value && lastDewormingDate.trim()) {
+          const v = validateLastDewormingDate(
+            check.value,
+            lastDewormingDate.trim(),
+            todayIso,
+          );
+          if (!v.ok) {
+            setError(
+              v.code === 'before_dob'
+                ? 'Last deworming cannot be before date of birth.'
+                : 'Last deworming cannot be in the future.',
+            );
+            return;
+          }
+        }
       }
-      if (navigation.canGoBack()) {
-        navigation.goBack();
-      } else {
-        // We're likely in the "pet required" gate. RootNavigator will swap screens after save.
+
+      const uid = useAuthStore.getState().user?.id;
+      const dobChanged =
+        Boolean(dob.trim()) &&
+        Boolean(editBase.dob) &&
+        editBase.dob !== dob.trim();
+      if (uid && dobChanged) {
+        const dwState = await getDewormingLocalDataSource().getState(
+          uid,
+          editBase.id,
+        );
+        if (dwState.completionDates.length > 0) {
+          const proceed = await new Promise<boolean>(resolve => {
+            Alert.alert(
+              'Change date of birth?',
+              'Future deworming reminders will be recalculated from the new date. Your logged deworming history is kept.',
+              [
+                { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+                { text: 'Continue', onPress: () => resolve(true) },
+              ],
+            );
+          });
+          if (!proceed) {
+            return;
+          }
+        }
       }
+
+      await performEditSave();
       return;
     }
 
@@ -214,10 +336,19 @@ export const AddPetScreen: React.FC = () => {
       setError(result.error ?? 'Unable to save pet profile.');
       return;
     }
+    const uid = useAuthStore.getState().user?.id;
+    const created = usePetStore.getState().activePet;
+    if (uid && created) {
+      await saveDewormingOnboardingForPet(uid, created.id, {
+        hasPreviousDeworming,
+        lastDewormingDate: lastDewormingUnknown ? null : lastDewormingDate.trim(),
+        lastDewormingUnknown,
+      });
+      await hydrateAndGenerate(created);
+    }
     if (navigation.canGoBack()) {
       navigation.goBack();
     }
-    // In gate mode, do nothing; RootNavigator will swap to `AppNavigator`.
   };
 
   const petTypes = useMemo(
@@ -288,6 +419,130 @@ export const AddPetScreen: React.FC = () => {
         </View>
 
         <View style={styles.formSection}>
+          <View>
+            <Text
+              style={[styles.sectionLabel, { fontFamily: fontFamilies.bold }]}
+            >
+              Health onboarding
+            </Text>
+            <Text
+              style={[styles.fieldLabelSm, { fontFamily: fontFamilies.semibold }]}
+            >
+              Date of birth {!isEditMode ? '(required)' : '(optional)'}
+            </Text>
+            <DatePickerField
+              value={dob}
+              onChange={setDob}
+              placeholder="YYYY-MM-DD"
+              maximumDate={today}
+            />
+          </View>
+
+          <View>
+            <Text
+              style={[styles.fieldLabelSm, { fontFamily: fontFamilies.semibold }]}
+            >
+              Has your pet been dewormed before?
+            </Text>
+            <View style={styles.genderRow}>
+              <Pressable
+                style={[
+                  styles.genderChip,
+                  !hasPreviousDeworming ? styles.genderChipSelected : undefined,
+                ]}
+                onPress={() => {
+                  setHasPreviousDeworming(false);
+                  setLastDewormingDate('');
+                  setLastDewormingUnknown(false);
+                }}
+              >
+                <Text
+                  style={[
+                    styles.genderChipText,
+                    !hasPreviousDeworming
+                      ? styles.genderChipTextSelected
+                      : undefined,
+                    {
+                      fontFamily: !hasPreviousDeworming
+                        ? fontFamilies.bold
+                        : fontFamilies.medium,
+                    },
+                  ]}
+                >
+                  No
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.genderChip,
+                  hasPreviousDeworming ? styles.genderChipSelected : undefined,
+                ]}
+                onPress={() => setHasPreviousDeworming(true)}
+              >
+                <Text
+                  style={[
+                    styles.genderChipText,
+                    hasPreviousDeworming
+                      ? styles.genderChipTextSelected
+                      : undefined,
+                    {
+                      fontFamily: hasPreviousDeworming
+                        ? fontFamilies.bold
+                        : fontFamilies.medium,
+                    },
+                  ]}
+                >
+                  Yes
+                </Text>
+              </Pressable>
+            </View>
+            {hasPreviousDeworming ? (
+              <View style={{ marginTop: 12, gap: 10 }}>
+                <Pressable
+                  onPress={() => {
+                    setLastDewormingUnknown(v => {
+                      const next = !v;
+                      if (next) {
+                        setLastDewormingDate('');
+                      }
+                      return next;
+                    });
+                  }}
+                  style={styles.genderClear}
+                >
+                  <Text
+                    style={{
+                      fontFamily: fontFamilies.medium,
+                      color: lastDewormingUnknown
+                        ? colors.accent
+                        : colors.text.subdued,
+                    }}
+                  >
+                    I don&apos;t know the date
+                  </Text>
+                </Pressable>
+                {!lastDewormingUnknown ? (
+                  <>
+                    <Text
+                      style={[
+                        styles.fieldLabelSm,
+                        { fontFamily: fontFamilies.semibold },
+                      ]}
+                    >
+                      Last deworming date
+                    </Text>
+                    <DatePickerField
+                      value={lastDewormingDate}
+                      onChange={setLastDewormingDate}
+                      placeholder="YYYY-MM-DD"
+                      maximumDate={today}
+                    />
+                  </>
+                ) : null}
+              </View>
+            ) : null}
+          </View>
+
           <View>
             <Text
               style={[styles.fieldLabel, { fontFamily: fontFamilies.semibold }]}
@@ -361,20 +616,6 @@ export const AddPetScreen: React.FC = () => {
               >
                 Core Identity
               </Text>
-              <Text
-                style={[
-                  styles.fieldLabelSm,
-                  { fontFamily: fontFamilies.semibold },
-                ]}
-              >
-                Date of birth (optional)
-              </Text>
-              <DatePickerField
-                value={dob}
-                onChange={setDob}
-                placeholder="YYYY-MM-DD"
-                maximumDate={today}
-              />
             </View>
 
             <View>

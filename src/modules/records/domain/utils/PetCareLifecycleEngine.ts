@@ -19,7 +19,8 @@ const addDays = (date: string, days: number): string => {
   return toIsoDateOnly(d.toISOString());
 };
 
-const addWeeks = (date: string, weeks: number): string => addDays(date, weeks * 7);
+const addWeeks = (date: string, weeks: number): string =>
+  addDays(date, weeks * 7);
 
 const addMonths = (date: string, months: number): string => {
   const [year, month, day] = date.split('-').map(Number);
@@ -43,8 +44,12 @@ const resolveStatus = (
   return 'upcoming';
 };
 
-const recordId = (petId: string, type: string, key: string, dueDate: string): string =>
-  `${petId}-${type}-${key}-${dueDate}`;
+const recordId = (
+  petId: string,
+  type: string,
+  key: string,
+  dueDate: string,
+): string => `${petId}-${type}-${key}-${dueDate}`;
 
 const shouldIncludeByLifestyle = (
   triggers: LifestyleType[] | undefined,
@@ -70,8 +75,14 @@ const toSmartRecord = (params: {
   doseNumber?: number;
   totalDoses?: number;
   isOptional?: boolean;
+  stage?: SmartHealthRecord['stage'];
+  dependsOn?: string | null;
+  contextLabel?: string;
 }): SmartHealthRecord => {
   const nowIso = new Date().toISOString();
+  const status = resolveStatus(params.dueDate, params.nowDate);
+  const isLocked = params.dependsOn !== null && params.dependsOn !== undefined;
+
   return {
     id: recordId(params.petId, params.type, params.key, params.dueDate),
     userId: params.userId,
@@ -84,33 +95,66 @@ const toSmartRecord = (params: {
     dueDate: params.dueDate,
     recommendedDate: params.dueDate,
     completedDate: null,
-    status: resolveStatus(params.dueDate, params.nowDate),
+    status: isLocked ? 'locked' : status,
     recurrenceType: params.recurrenceType,
     riskLevel: params.riskLevel,
     lifestyleTriggers: params.lifestyleTriggers,
     doseNumber: params.doseNumber,
     totalDoses: params.totalDoses,
     isOptional: params.isOptional,
+    stage: params.stage,
+    dependsOn: params.dependsOn,
+    source: 'system',
+    isLocked: isLocked,
+    priority: params.category === 'core' ? 'high' : 'medium',
+    contextLabel: params.contextLabel,
     recovery: { isRecovered: false, recoveredFrom: null },
     createdAt: nowIso,
     updatedAt: nowIso,
   };
 };
 
-const dogAdultCoreCatchup = (): Array<{ key: string; label: string; offsetWeeks: number }> => [
-  { key: 'DHPP_ADULT_START', label: 'DHPP (Start Vaccination)', offsetWeeks: 0 },
-  { key: 'DHPP_ADULT_FOLLOW_UP', label: 'DHPP (Follow-up Dose)', offsetWeeks: 3 },
+const dogAdultCoreCatchup = (): Array<{
+  key: string;
+  label: string;
+  offsetWeeks: number;
+}> => [
+  {
+    key: 'DHPP_ADULT_START',
+    label: 'DHPP (Start Vaccination)',
+    offsetWeeks: 0,
+  },
+  {
+    key: 'DHPP_ADULT_FOLLOW_UP',
+    label: 'DHPP (Follow-up Dose)',
+    offsetWeeks: 3,
+  },
 ];
 
-const catAdultCoreCatchup = (): Array<{ key: string; label: string; offsetWeeks: number }> => [
-  { key: 'FVRCP_ADULT_START', label: 'FVRCP (Start Vaccination)', offsetWeeks: 0 },
-  { key: 'FVRCP_ADULT_FOLLOW_UP', label: 'FVRCP (Follow-up Dose)', offsetWeeks: 3 },
+const catAdultCoreCatchup = (): Array<{
+  key: string;
+  label: string;
+  offsetWeeks: number;
+}> => [
+  {
+    key: 'FVRCP_ADULT_START',
+    label: 'FVRCP (Start Vaccination)',
+    offsetWeeks: 0,
+  },
+  {
+    key: 'FVRCP_ADULT_FOLLOW_UP',
+    label: 'FVRCP (Follow-up Dose)',
+    offsetWeeks: 3,
+  },
 ];
 
 export class PetCareLifecycleEngine {
   private familyKey(record: SmartHealthRecord): string {
     if (record.family?.trim()) return record.family.trim().toLowerCase();
-    return record.name.split('(')[0]?.trim().toLowerCase() || record.name.toLowerCase();
+    return (
+      record.name.split('(')[0]?.trim().toLowerCase() ||
+      record.name.toLowerCase()
+    );
   }
 
   getTemplate(petType: 'dog' | 'cat'): SpeciesCarePlanTemplate {
@@ -129,18 +173,38 @@ export class PetCareLifecycleEngine {
     const records: SmartHealthRecord[] = [];
 
     const dob = context.dateOfBirth;
-    const ageWeeks = Math.max(0, Math.floor(daysBetween(dob, context.nowDate) / 7));
-    const isPuppyOrKitten = ageWeeks < 20;
+    const ageWeeks = Math.max(
+      0,
+      Math.floor(daysBetween(dob, context.nowDate) / 7),
+    );
+
+    // Determine pet stage
+    const stage: SmartHealthRecord['stage'] =
+      ageWeeks < 20 ? 'puppy' : ageWeeks < 52 ? 'adolescent' : 'adult';
+
     const hasVaccinationHistory = Boolean(input.lastVaccinationDate);
     const hasDewormingHistory = Boolean(input.lastDewormingDate);
-    const isAdultUnknownHistory = !isPuppyOrKitten && !hasVaccinationHistory;
+    const isAdultUnknownHistory = stage === 'adult' && !hasVaccinationHistory;
 
-    const pushVaccineRule = (rule: VaccineRule): void => {
-      if (!shouldIncludeByLifestyle(rule.lifestyleTriggers, context.lifestyleType)) {
-        return;
-      }
-      records.push(
-        toSmartRecord({
+    // Build dose sequence with dependencies
+    const buildDoseSequence = (
+      rules: VaccineRule[],
+    ): { record: SmartHealthRecord; prevId: string | null }[] => {
+      const results: { record: SmartHealthRecord; prevId: string | null }[] =
+        [];
+      let prevId: string | null = null;
+
+      for (const rule of rules) {
+        if (
+          !shouldIncludeByLifestyle(
+            rule.lifestyleTriggers,
+            context.lifestyleType,
+          )
+        ) {
+          continue;
+        }
+
+        const record = toSmartRecord({
           userId,
           petId,
           type: 'vaccination',
@@ -156,36 +220,52 @@ export class PetCareLifecycleEngine {
           doseNumber: rule.doseNumber,
           totalDoses: rule.totalDoses,
           isOptional: rule.isOptional,
-        }),
-      );
+          stage,
+          dependsOn: prevId,
+          contextLabel: isAdultUnknownHistory ? 'Catch-up Required' : undefined,
+        });
+
+        results.push({ record, prevId: record.id });
+        prevId = record.id;
+      }
+
+      return results;
     };
 
     if (isAdultUnknownHistory) {
+      // Adult with no history - catch-up series
       const catchupSeries =
         context.petType === 'dog'
           ? dogAdultCoreCatchup()
           : catAdultCoreCatchup();
+
+      let prevId: string | null = null;
       for (const dose of catchupSeries) {
-        records.push(
-          toSmartRecord({
-            userId,
-            petId,
-            type: 'vaccination',
-            key: dose.key,
-            family: context.petType === 'dog' ? 'DHPP' : 'FVRCP',
-            name: dose.label,
-            dueDate: addWeeks(context.nowDate, dose.offsetWeeks),
-            nowDate: context.nowDate,
-            category: 'core',
-            recurrenceType: 'none',
-          }),
-        );
+        const record = toSmartRecord({
+          userId,
+          petId,
+          type: 'vaccination',
+          key: dose.key,
+          family: context.petType === 'dog' ? 'DHPP' : 'FVRCP',
+          name: dose.label,
+          dueDate: addWeeks(context.nowDate, dose.offsetWeeks),
+          nowDate: context.nowDate,
+          category: 'core',
+          recurrenceType: 'none',
+          stage: 'adult',
+          dependsOn: prevId,
+          contextLabel: 'Start Vaccination (No prior records)',
+        });
+        records.push(record);
+        prevId = record.id;
       }
     } else {
-      template.coreSeries.forEach(pushVaccineRule);
+      // Normal puppy/adolescent series with dependencies
+      const sequenced = buildDoseSequence(template.coreSeries);
+      records.push(...sequenced.map(s => s.record));
     }
 
-    if (isPuppyOrKitten) {
+    if (stage === 'puppy') {
       const nonOptionalCore = template.coreSeries
         .filter(rule => !rule.isOptional)
         .slice()
@@ -205,6 +285,7 @@ export class PetCareLifecycleEngine {
             nowDate: context.nowDate,
             category: 'core',
             recurrenceType: 'yearly',
+            stage,
           }),
         );
       }
@@ -247,18 +328,17 @@ export class PetCareLifecycleEngine {
       }),
     );
 
-    for (const rule of template.nonCoreSeries) {
-      if (
-        shouldIncludeByLifestyle(rule.lifestyleTriggers, context.lifestyleType) ||
-        context.lifestyleRiskLevel === 'high'
-      ) {
-        pushVaccineRule(rule);
-      }
+    // Add non-core vaccines (optional ones based on lifestyle/risk)
+    const nonCoreSequenced = buildDoseSequence(template.nonCoreSeries);
+    for (const { record } of nonCoreSequenced) {
+      records.push(record);
     }
 
-    const dewormDates = isPuppyOrKitten
-      ? template.deworming.startWeeks.map(week => addWeeks(dob, week))
-      : [];
+    // Deworming schedule
+    const dewormDates =
+      stage === 'puppy'
+        ? template.deworming.startWeeks.map(week => addWeeks(dob, week))
+        : [];
     const intervalByLifestyle =
       context.lifestyleType === 'outdoor'
         ? template.deworming.outdoorIntervalDays
@@ -276,7 +356,7 @@ export class PetCareLifecycleEngine {
     const oneYearDate = addMonths(dob, 12);
     const dewormSet = new Set(dewormDates);
     let rolling = dewormDates[dewormDates.length - 1] ?? context.nowDate;
-    if (isPuppyOrKitten) {
+    if (stage === 'puppy') {
       while (rolling < sixMonthDate) {
         rolling = addDays(rolling, juvenileIntervalDays);
         if (rolling <= sixMonthDate) dewormSet.add(rolling);
@@ -287,7 +367,9 @@ export class PetCareLifecycleEngine {
       }
     } else if (!hasDewormingHistory) {
       dewormSet.add(context.nowDate);
-      dewormSet.add(addMonths(context.nowDate, template.deworming.adultIntervalMonths));
+      dewormSet.add(
+        addMonths(context.nowDate, template.deworming.adultIntervalMonths),
+      );
     }
     for (const dueDate of Array.from(dewormSet).sort()) {
       records.push(
@@ -331,7 +413,10 @@ export class PetCareLifecycleEngine {
     return this.getActionRequiredList(records, 1)[0] ?? null;
   }
 
-  getActionRequiredList(records: SmartHealthRecord[], limit = 2): SmartHealthRecord[] {
+  getActionRequiredList(
+    records: SmartHealthRecord[],
+    limit = 2,
+  ): SmartHealthRecord[] {
     const actionable = records
       .filter(r => r.status === 'overdue' || r.status === 'upcoming')
       .slice()
@@ -411,7 +496,9 @@ export class PetCareLifecycleEngine {
         isRecovered: params.event.type === 'late_completion',
         recoveredFrom: target.id,
         recoveryReason:
-          params.event.type === 'late_completion' ? 'late' : 'manual_adjustment',
+          params.event.type === 'late_completion'
+            ? 'late'
+            : 'manual_adjustment',
       };
       target.updatedAt = nowIso;
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -23,7 +23,10 @@ import { useSmartHealthRecordStore } from '../../store/smartHealthRecordStore';
 import type { SmartHealthRecord } from '../../domain/models/SmartHealthRecord';
 import { PremiumUpgradeCard } from '../components/PremiumUpgradeCard';
 import { SmartHealthRecordItem } from '../components/SmartHealthRecordItem';
-import { partitionCareRecordsForUi, weeksBetweenDobAndToday } from '../utils/healthRecordScreenPartition';
+import {
+  partitionCareRecordsForUi,
+  weeksBetweenDobAndToday,
+} from '../utils/healthRecordScreenPartition';
 
 type CategoryFilter = 'Vaccination' | 'Deworming';
 
@@ -40,15 +43,12 @@ export const HealthRecordScreen: React.FC = () => {
   const navigation = useNavigation<HealthRecordsRootNavigation>();
   const theme = useTheme();
   const tabBarInset = useAppTabBarInset();
-  const { colors, space, spacing, radius, textStyles, fontFamilies } = theme;
+  const { colors, space, radius, textStyles, fontFamilies } = theme;
 
   const activePet = usePetStore(s => s.activePet);
   const loading = useSmartHealthRecordStore(s => s.loading);
   const error = useSmartHealthRecordStore(s => s.error);
   const records = useSmartHealthRecordStore(s => s.records);
-  const bootstrapPetSchedule = useSmartHealthRecordStore(
-    s => s.bootstrapPetSchedule,
-  );
   const loadPetRecords = useSmartHealthRecordStore(s => s.loadPetRecords);
   const markAsDone = useSmartHealthRecordStore(s => s.markAsDone);
   const remindTask = useSmartHealthRecordStore(s => s.remindTask);
@@ -61,7 +61,9 @@ export const HealthRecordScreen: React.FC = () => {
 
   const [selectedCategory, setSelectedCategory] =
     useState<CategoryFilter>('Vaccination');
-  const [editingRecord, setEditingRecord] = useState<SmartHealthRecord | null>(null);
+  const [editingRecord, setEditingRecord] = useState<SmartHealthRecord | null>(
+    null,
+  );
   const [editingDueDate, setEditingDueDate] = useState('');
   const [isCompletedExpanded, setIsCompletedExpanded] = useState(false);
 
@@ -72,27 +74,8 @@ export const HealthRecordScreen: React.FC = () => {
     }, [activePet?.id, loadPetRecords]),
   );
 
-  useEffect(() => {
-    if (!activePet) return;
-    void bootstrapPetSchedule({
-      petId: activePet.id,
-      petType: activePet.type,
-      dateOfBirth: activePet.dob ?? new Date().toISOString().slice(0, 10),
-      region: activePet.region,
-      lifestyleType: activePet.lifestyle?.type,
-      lifestyleRiskLevel: activePet.lifestyle?.riskLevel,
-    })
-      .then(() => loadPetRecords(activePet.id))
-      .catch(() => {});
-  }, [
-    activePet?.id,
-    activePet?.type,
-    activePet?.dob,
-    bootstrapPetSchedule,
-    loadPetRecords,
-  ]);
-
-  const tabType = selectedCategory === 'Vaccination' ? 'vaccination' : 'deworming';
+  const tabType =
+    selectedCategory === 'Vaccination' ? 'vaccination' : 'deworming';
 
   const recordsByType = useMemo(
     () => getByType(tabType),
@@ -105,7 +88,10 @@ export const HealthRecordScreen: React.FC = () => {
     [recordsByType],
   );
 
-  const partitioned = useMemo(() => partitionCareRecordsForUi(filtered), [filtered]);
+  const partitioned = useMemo(
+    () => partitionCareRecordsForUi(filtered),
+    [filtered],
+  );
   const actionRequiredItems = useMemo(
     () => getActionRequiredItems(tabType, 1),
     [getActionRequiredItems, tabType, records],
@@ -113,9 +99,10 @@ export const HealthRecordScreen: React.FC = () => {
   const primaryTask = actionRequiredItems[0] ?? null;
   const upcomingItems = useMemo(() => {
     const hiddenIds = new Set(actionRequiredItems.map(item => item.id));
-    return getUpcomingItems(tabType, { limit: 5, dedupeByFamily: false }).filter(
-      item => !hiddenIds.has(item.id),
-    );
+    return getUpcomingItems(tabType, {
+      limit: 5,
+      dedupeByFamily: false,
+    }).filter(item => !hiddenIds.has(item.id));
   }, [actionRequiredItems, getUpcomingItems, tabType, records]);
 
   const completedRecords = partitioned.history;
@@ -140,16 +127,16 @@ export const HealthRecordScreen: React.FC = () => {
     const latestCompleted = completedRecords
       .slice()
       .sort((a, b) =>
-        (b.completedDate ?? b.dueDate).localeCompare(a.completedDate ?? a.dueDate),
+        (b.completedDate ?? b.dueDate).localeCompare(
+          a.completedDate ?? a.dueDate,
+        ),
       )[0];
     if (!latestCompleted) return null;
-    return addMonthsToIsoDate(latestCompleted.completedDate ?? latestCompleted.dueDate, 3);
-  }, [
-    selectedCategory,
-    primaryTask,
-    upcomingItems.length,
-    completedRecords,
-  ]);
+    return addMonthsToIsoDate(
+      latestCompleted.completedDate ?? latestCompleted.dueDate,
+      3,
+    );
+  }, [selectedCategory, primaryTask, upcomingItems.length, completedRecords]);
 
   const formatUiDate = (isoDate: string): string => {
     const date = new Date(`${isoDate}T00:00:00`);
@@ -168,25 +155,33 @@ export const HealthRecordScreen: React.FC = () => {
         style={[styles.safeArea, { backgroundColor: colors.backgroundAlt }]}
       >
         <View style={styles.center}>
-        <View
-          style={[
-            styles.emptyCard,
-            { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
-          ]}
-        >
-          <icons.paw width={40} height={40} />
-          <AppText
+          <View
             style={[
-              textStyles.subtitle,
-              { color: colors.text.heading, fontFamily: fontFamilies.bold },
+              styles.emptyCard,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.borderSubtle,
+              },
             ]}
           >
-            No pet selected
-          </AppText>
-          <AppText style={[textStyles.body, { color: colors.text.secondary, textAlign: 'center' }]}>
-            Add a pet profile to generate automatic health schedules.
-          </AppText>
-        </View>
+            <icons.paw width={40} height={40} />
+            <AppText
+              style={[
+                textStyles.subtitle,
+                { color: colors.text.heading, fontFamily: fontFamilies.bold },
+              ]}
+            >
+              No pet selected
+            </AppText>
+            <AppText
+              style={[
+                textStyles.body,
+                { color: colors.text.secondary, textAlign: 'center' },
+              ]}
+            >
+              Add a pet profile to generate automatic health schedules.
+            </AppText>
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -194,7 +189,9 @@ export const HealthRecordScreen: React.FC = () => {
 
   const logPrimaryCtaLabel =
     selectedCategory === 'Vaccination' ? 'Log Vaccination' : 'Log Deworming';
-  const completedCount = filtered.filter(item => item.status === 'completed').length;
+  const completedCount = filtered.filter(
+    item => item.status === 'completed',
+  ).length;
   const totalCount = filtered.length;
 
   const openUpdateDate = (record: SmartHealthRecord): void => {
@@ -227,7 +224,10 @@ export const HealthRecordScreen: React.FC = () => {
             onPress={() => navigation.goBack()}
             style={[
               styles.backBtn,
-              { backgroundColor: colors.brandTint10, borderRadius: radius.round },
+              {
+                backgroundColor: colors.brandTint10,
+                borderRadius: radius.round,
+              },
             ]}
           >
             <MaterialIcon name="arrow_back" size={20} color={colors.accent} />
@@ -237,7 +237,10 @@ export const HealthRecordScreen: React.FC = () => {
             <AppText
               style={[
                 textStyles.title,
-                { color: colors.text.heading, fontFamily: fontFamilies.extrabold },
+                {
+                  color: colors.text.heading,
+                  fontFamily: fontFamilies.extrabold,
+                },
               ]}
               numberOfLines={1}
             >
@@ -246,7 +249,10 @@ export const HealthRecordScreen: React.FC = () => {
             <AppText
               style={[
                 textStyles.caption,
-                { color: colors.text.secondary, fontFamily: fontFamilies.medium },
+                {
+                  color: colors.text.secondary,
+                  fontFamily: fontFamilies.medium,
+                },
               ]}
               numberOfLines={1}
             >
@@ -261,7 +267,8 @@ export const HealthRecordScreen: React.FC = () => {
               ]}
               numberOfLines={1}
             >
-              {selectedCategory} progress: {completedCount}/{totalCount} completed
+              {selectedCategory} progress: {completedCount}/{totalCount}{' '}
+              completed
             </AppText>
           </View>
 
@@ -290,7 +297,9 @@ export const HealthRecordScreen: React.FC = () => {
                 style={[
                   styles.tab,
                   {
-                    borderBottomColor: selected ? colors.accent : colors.borderSubtle,
+                    borderBottomColor: selected
+                      ? colors.accent
+                      : colors.borderSubtle,
                     borderBottomWidth: 2,
                   },
                 ]}
@@ -300,7 +309,9 @@ export const HealthRecordScreen: React.FC = () => {
                     textStyles.caption,
                     {
                       color: selected ? colors.accent : colors.text.subdued,
-                      fontFamily: selected ? fontFamilies.bold : fontFamilies.medium,
+                      fontFamily: selected
+                        ? fontFamilies.bold
+                        : fontFamilies.medium,
                     },
                   ]}
                 >
@@ -318,7 +329,9 @@ export const HealthRecordScreen: React.FC = () => {
         renderItem={() => (
           <View>
             <View style={{ marginTop: space('md') }}>
-              <AppText style={[textStyles.overline, { color: colors.text.subdued }]}>
+              <AppText
+                style={[textStyles.overline, { color: colors.text.subdued }]}
+              >
                 NEXT STEP
               </AppText>
             </View>
@@ -339,7 +352,10 @@ export const HealthRecordScreen: React.FC = () => {
                 <AppText
                   style={[
                     textStyles.caption,
-                    { color: colors.text.secondary, fontFamily: fontFamilies.medium },
+                    {
+                      color: colors.text.secondary,
+                      fontFamily: fontFamilies.medium,
+                    },
                   ]}
                 >
                   No urgent items — you are caught up for this tab.
@@ -362,7 +378,9 @@ export const HealthRecordScreen: React.FC = () => {
             ) : null}
 
             <View style={{ marginTop: space('lg') }}>
-              <AppText style={[textStyles.overline, { color: colors.text.subdued }]}>
+              <AppText
+                style={[textStyles.overline, { color: colors.text.subdued }]}
+              >
                 COMING UP
               </AppText>
               <View style={{ height: space('sm') }} />
@@ -387,10 +405,14 @@ export const HealthRecordScreen: React.FC = () => {
                   <AppText
                     style={[
                       textStyles.caption,
-                      { color: colors.text.secondary, fontFamily: fontFamilies.medium },
+                      {
+                        color: colors.text.secondary,
+                        fontFamily: fontFamilies.medium,
+                      },
                     ]}
                   >
-                    Next deworming estimate: {formatUiDate(nextDewormingFallbackDate)}
+                    Next deworming estimate:{' '}
+                    {formatUiDate(nextDewormingFallbackDate)}
                   </AppText>
                 </View>
               ) : (
@@ -408,7 +430,10 @@ export const HealthRecordScreen: React.FC = () => {
                   <AppText
                     style={[
                       textStyles.caption,
-                      { color: colors.text.secondary, fontFamily: fontFamilies.medium },
+                      {
+                        color: colors.text.secondary,
+                        fontFamily: fontFamilies.medium,
+                      },
                     ]}
                   >
                     No upcoming items.
@@ -424,13 +449,18 @@ export const HealthRecordScreen: React.FC = () => {
                 onPress={() => setIsCompletedExpanded(prev => !prev)}
                 style={styles.completedHeader}
               >
-                <AppText style={[textStyles.overline, { color: colors.text.subdued }]}>
+                <AppText
+                  style={[textStyles.overline, { color: colors.text.subdued }]}
+                >
                   HISTORY ({completedRecords.length})
                 </AppText>
                 <AppText
                   style={[
                     textStyles.caption,
-                    { color: colors.text.subdued, fontFamily: fontFamilies.medium },
+                    {
+                      color: colors.text.subdued,
+                      fontFamily: fontFamilies.medium,
+                    },
                   ]}
                 >
                   {isCompletedExpanded ? 'Hide' : 'Show'}
@@ -458,7 +488,10 @@ export const HealthRecordScreen: React.FC = () => {
                       ]}
                     >
                       <AppText
-                        style={[textStyles.caption, { color: colors.text.secondary }]}
+                        style={[
+                          textStyles.caption,
+                          { color: colors.text.secondary },
+                        ]}
                       >
                         No history yet
                       </AppText>
@@ -478,7 +511,10 @@ export const HealthRecordScreen: React.FC = () => {
                 <AppText
                   style={[
                     textStyles.caption,
-                    { color: colors.text.secondary, fontFamily: fontFamilies.medium },
+                    {
+                      color: colors.text.secondary,
+                      fontFamily: fontFamilies.medium,
+                    },
                   ]}
                 >
                   {error}
@@ -507,7 +543,9 @@ export const HealthRecordScreen: React.FC = () => {
         animationType="fade"
         onRequestClose={closeUpdateDate}
       >
-        <View style={[styles.modalBackdrop, { backgroundColor: colors.overlay }]}>
+        <View
+          style={[styles.modalBackdrop, { backgroundColor: colors.overlay }]}
+        >
           <View
             style={[
               styles.modalCard,
@@ -528,7 +566,10 @@ export const HealthRecordScreen: React.FC = () => {
               Edit due date
             </AppText>
             <View style={{ marginTop: space('sm') }}>
-              <DatePickerField value={editingDueDate} onChange={setEditingDueDate} />
+              <DatePickerField
+                value={editingDueDate}
+                onChange={setEditingDueDate}
+              />
             </View>
             <View style={[styles.modalActions, { marginTop: space('md') }]}>
               <Pressable
@@ -547,7 +588,10 @@ export const HealthRecordScreen: React.FC = () => {
                 <AppText
                   style={[
                     textStyles.caption,
-                    { color: colors.text.secondary, fontFamily: fontFamilies.bold },
+                    {
+                      color: colors.text.secondary,
+                      fontFamily: fontFamilies.bold,
+                    },
                   ]}
                 >
                   Cancel
@@ -568,7 +612,10 @@ export const HealthRecordScreen: React.FC = () => {
                 <AppText
                   style={[
                     textStyles.caption,
-                    { color: colors.text.inverse, fontFamily: fontFamilies.bold },
+                    {
+                      color: colors.text.inverse,
+                      fontFamily: fontFamilies.bold,
+                    },
                   ]}
                 >
                   Save
@@ -689,4 +736,3 @@ const styles = StyleSheet.create({
 });
 
 export default HealthRecordScreen;
-

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import { useAuthStore } from '../../auth/store/authStore';
+import { useSmartHealthRecordStore } from '../../records/store/smartHealthRecordStore';
 import { petComposition } from '../petComposition';
 import type { Pet } from '../domain/models/Pet';
 import type { PetType } from '../domain/models/Pet';
@@ -132,6 +133,19 @@ export const usePetStore = create<PetState>((set, get) => ({
     }
     await get().createPet(result.pet);
     await get().setActivePet(result.pet.id);
+
+    // Bootstrap health schedule for new pet
+    const bootstrapHealthSchedule =
+      useSmartHealthRecordStore.getState().bootstrapPetSchedule;
+    await bootstrapHealthSchedule({
+      petId: result.pet.id,
+      petType: result.pet.type,
+      dateOfBirth: result.pet.dob ?? new Date().toISOString().slice(0, 10),
+      region: result.pet.region,
+      lifestyleType: result.pet.lifestyle?.type,
+      lifestyleRiskLevel: result.pet.lifestyle?.riskLevel,
+    });
+
     return { success: true };
   },
 
@@ -143,7 +157,6 @@ export const usePetStore = create<PetState>((set, get) => ({
     const next: Pet = {
       ...pet,
       updatedAt: new Date().toISOString(),
-      // Any user edit creates a local pending state until sync reconciliation updates it.
       syncStatus: 'pending',
     };
     try {
@@ -151,9 +164,21 @@ export const usePetStore = create<PetState>((set, get) => ({
       const { activePet } = get();
       set({
         pets: get().pets.map(p => (p.id === updated.id ? updated : p)),
-        activePet:
-          activePet?.id === updated.id ? updated : activePet,
+        activePet: activePet?.id === updated.id ? updated : activePet,
       });
+
+      // Re-bootstrap health schedule if DOB changed
+      const bootstrapHealthSchedule =
+        useSmartHealthRecordStore.getState().bootstrapPetSchedule;
+      await bootstrapHealthSchedule({
+        petId: updated.id,
+        petType: updated.type,
+        dateOfBirth: updated.dob ?? new Date().toISOString().slice(0, 10),
+        region: updated.region,
+        lifestyleType: updated.lifestyle?.type,
+        lifestyleRiskLevel: updated.lifestyle?.riskLevel,
+      });
+
       return { success: true };
     } catch (error) {
       // eslint-disable-next-line no-console
