@@ -223,9 +223,9 @@ describe('DewormingEngine', () => {
 
   describe('cadence and log window', () => {
     it('classifies early milestones as every 2 weeks', () => {
-      expect(
-        getCadenceForDueDate('2026-01-01', '2026-01-15', 'indoor'),
-      ).toBe('every_14_days');
+      expect(getCadenceForDueDate('2026-01-01', '2026-01-15', 'indoor')).toBe(
+        'every_14_days',
+      );
     });
 
     it('rejects log date outside rolling window for monthly cadence', () => {
@@ -323,6 +323,7 @@ describe('DewormingEngine', () => {
         completedDate: '2026-04-10',
         dateOfBirth: '2024-01-01',
         lifestyle: 'indoor',
+        petType: 'dog',
         previousItems,
         todayDate: '2026-04-15',
       });
@@ -337,6 +338,7 @@ describe('DewormingEngine', () => {
         completedDate: '2026-04-10',
         dateOfBirth: '2020-01-01',
         lifestyle: 'indoor',
+        petType: 'dog',
         previousItems: [],
         todayDate: '2026-04-15',
         completionDates: ['2026-04-10'],
@@ -359,6 +361,7 @@ describe('DewormingEngine', () => {
         completedDate: '2026-04-10',
         dateOfBirth: '2024-01-01',
         lifestyle: 'indoor',
+        petType: 'dog',
         previousItems,
         todayDate: '2026-04-15',
       });
@@ -371,16 +374,16 @@ describe('DewormingEngine', () => {
         completedDate: '2026-02-01',
         dateOfBirth: '2024-01-01',
         lifestyle: 'indoor',
+        petType: 'dog',
         previousItems: [
           { id: '1', dueDate: '2026-01-01', status: 'completed' as const },
         ],
         todayDate: '2026-04-15',
       });
 
-      const missedLike = [
-        result.nextStep,
-        ...result.upcoming,
-      ].filter(i => i?.status === 'missed');
+      const missedLike = [result.nextStep, ...result.upcoming].filter(
+        i => i?.status === 'missed',
+      );
       expect(missedLike.length >= 0).toBe(true);
     });
   });

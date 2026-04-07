@@ -180,9 +180,10 @@ export const cadenceDisplayLabel = (cadence: DewormingCadenceKind): string => {
 };
 
 /**
- * Earliest date the user may log for this cadence: rolling window ending today,
- * never before DOB. (14d / 1mo / 2mo / 3mo lookback from today.)
+ * Validates a log date using the completion history.
+ * Uses the last completion date (or earliest pending due date) as baseline.
  */
+
 export const getMinimumLogDate = (
   dob: string,
   today: string,
@@ -208,30 +209,207 @@ export const getMinimumLogDate = (
   return windowStart > d0 ? windowStart : d0;
 };
 
+const calculateFirstDueDateRaw = (
+  dob: string,
+  cadence: DewormingCadenceKind,
+): { min: string; max: string; due: string } => {
+  let min: string;
+  let max: string;
+  let due: string;
+
+  switch (cadence) {
+    case 'every_14_days':
+      due = addWeeks(dob, 2);
+      min = addWeeks(dob, 1);
+      max = addWeeks(dob, 3);
+      break;
+    case 'monthly':
+      due = addMonths(dob, 2);
+      min = addMonths(dob, 1);
+      max = addMonths(dob, 3);
+      break;
+    case 'every_2_months':
+      due = addMonths(dob, 3);
+      min = addMonths(dob, 2);
+      max = addMonths(dob, 4);
+      break;
+    case 'every_3_months':
+      due = addMonths(dob, 6);
+      min = addMonths(dob, 4);
+      max = addMonths(dob, 8);
+      break;
+  }
+
+  return { min, max, due };
+};
+
+const calculateFirstDueDate = (
+  dob: string,
+  cadence: DewormingCadenceKind,
+  today: string,
+): { min: string; max: string; display: string } => {
+  const d0 = toIsoDateOnly(dob);
+  const t = toIsoDateOnly(today);
+  const raw = calculateFirstDueDateRaw(dob, cadence);
+
+  let windowStart = raw.min;
+  let windowEnd = raw.max;
+
+  if (windowEnd > t) {
+    windowEnd = t;
+  }
+  if (windowStart > t) {
+    windowStart = t;
+  }
+  if (windowStart < d0) {
+    windowStart = d0;
+  }
+
+  return {
+    min: windowStart,
+    max: windowEnd,
+    display: formatDisplayDate(raw.due),
+  };
+};
+
+const formatDisplayDate = (isoDate: string): string => {
+  const d = new Date(`${isoDate}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return isoDate;
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+};
+
+const validateNotBeforeDOB = (
+  selected: string,
+  dob: string,
+): { ok: true } | { ok: false; error: string } => {
+  if (selected < dob) {
+    return {
+      ok: false,
+      error: "Date cannot be before your pet's date of birth.",
+    };
+  }
+  return { ok: true };
+};
+
+const validateNotFuture = (
+  selected: string,
+  today: string,
+): { ok: true } | { ok: false; error: string } => {
+  if (selected > today) {
+    return { ok: false, error: 'You can only log today or a past date.' };
+  }
+  return { ok: true };
+};
+
+const validateFirstDose = (
+  selected: string,
+  dob: string,
+  today: string,
+  cadence: DewormingCadenceKind,
+): { ok: true } | { ok: false; error: string } => {
+  const firstDue = calculateFirstDueDate(dob, cadence, today);
+
+  if (selected > firstDue.max) {
+    return {
+      ok: false,
+      error: `For the first ${cadenceDisplayLabel(
+        cadence,
+      ).toLowerCase()} dose, select a date on or before ${firstDue.display}.`,
+    };
+  }
+
+  if (selected < firstDue.min) {
+    return {
+      ok: false,
+      error: `For the first ${cadenceDisplayLabel(
+        cadence,
+      ).toLowerCase()} dose, the earliest you can log is ${firstDue.display}.`,
+    };
+  }
+
+  return { ok: true };
+};
+
+const getCadenceMinDays = (cadence: DewormingCadenceKind): number => {
+  switch (cadence) {
+    case 'every_14_days':
+      return 12;
+    case 'monthly':
+      return 0;
+    case 'every_2_months':
+      return 30;
+    case 'every_3_months':
+      return 60;
+  }
+};
+
+const getCadenceMaxDays = (cadence: DewormingCadenceKind): number => {
+  switch (cadence) {
+    case 'every_14_days':
+      return 16;
+    case 'monthly':
+      return 31;
+    case 'every_2_months':
+      return 62;
+    case 'every_3_months':
+      return 93;
+  }
+};
+
+const validateRegularDose = (
+  selected: string,
+  baseline: string,
+  cadence: DewormingCadenceKind,
+): { ok: true } | { ok: false; error: string } => {
+  const minDays = getCadenceMinDays(cadence);
+  const maxDays = getCadenceMaxDays(cadence);
+  const minDate = addDays(baseline, minDays);
+  const maxDate = addDays(baseline, maxDays);
+
+  if (selected < minDate) {
+    return {
+      ok: false,
+      error: `For ${cadenceDisplayLabel(
+        cadence,
+      )}, choose a date on or after ${formatDisplayDate(minDate)}.`,
+    };
+  }
+
+  if (selected > maxDate) {
+    return {
+      ok: false,
+      error: `Date cannot be more than ${cadenceDisplayLabel(
+        cadence,
+      ).toLowerCase()} after previous dose.`,
+    };
+  }
+
+  return { ok: true };
+};
+
 export const validateLogDateForCadence = (
   dob: string,
   today: string,
   selectedDate: string,
   cadence: DewormingCadenceKind,
+  lastCompletionDate?: string,
 ): { ok: true } | { ok: false; error: string } => {
-  const min = getMinimumLogDate(dob, today, cadence);
-  const max = toIsoDateOnly(today);
   const s = toIsoDateOnly(selectedDate);
-  if (s < toIsoDateOnly(dob)) {
-    return { ok: false, error: 'Date cannot be before your pet’s date of birth.' };
+  const t = toIsoDateOnly(today);
+  const d0 = toIsoDateOnly(dob);
+
+  const step1 = validateNotBeforeDOB(s, d0);
+  if (!step1.ok) return step1;
+
+  const step2 = validateNotFuture(s, t);
+  if (!step2.ok) return step2;
+
+  if (!lastCompletionDate) {
+    return validateFirstDose(s, d0, t, cadence);
   }
-  if (s > max) {
-    return { ok: false, error: 'You can only log today or a past date.' };
-  }
-  if (s < min) {
-    return {
-      ok: false,
-      error: `For ${cadenceDisplayLabel(
-        cadence,
-      )} doses, choose a date within the allowed window (on or after ${min}).`,
-    };
-  }
-  return { ok: true };
+
+  const baseline = toIsoDateOnly(lastCompletionDate);
+  return validateRegularDose(s, baseline, cadence);
 };
 
 const attachCadence = (
@@ -243,7 +421,10 @@ const attachCadence = (
   cadence: getCadenceForDueDate(dob, item.dueDate, lifestyle),
 });
 
-const buildIdealMilestoneDates = (dob: string, horizonEnd: string): string[] => {
+const buildIdealMilestoneDates = (
+  dob: string,
+  horizonEnd: string,
+): string[] => {
   const dates: string[] = [];
   for (const w of EARLY_WEEK_MILESTONES) {
     dates.push(addWeeks(dob, w));
@@ -272,7 +453,9 @@ const mergeCompletionSources = (input: DewormingInput): string[] => {
   if (validLast && last) {
     raw.push(last);
   }
-  return [...new Set(raw.map(toIsoDateOnly))].sort((a, b) => a.localeCompare(b));
+  return [...new Set(raw.map(toIsoDateOnly))].sort((a, b) =>
+    a.localeCompare(b),
+  );
 };
 
 const makeItem = (
@@ -564,6 +747,7 @@ export class DewormingEngine {
     completedDate: string;
     dateOfBirth: string;
     lifestyle: LifestyleType;
+    petType: 'dog' | 'cat';
     previousItems: ScheduleItem[];
     todayDate: string;
     completionDates?: string[];
@@ -578,7 +762,7 @@ export class DewormingEngine {
       ].map(toIsoDateOnly),
     );
     return this.execute({
-      petType: 'dog',
+      petType: input.petType,
       dateOfBirth: input.dateOfBirth,
       lifestyle: input.lifestyle,
       todayDate: input.todayDate,

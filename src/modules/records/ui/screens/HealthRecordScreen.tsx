@@ -20,7 +20,12 @@ import { useTheme } from '../../../../shared/hooks/useTheme';
 import { icons } from '../../../../shared/assets/icons';
 import { usePetStore } from '../../../pets/store/petStore';
 import { useSmartHealthRecordStore } from '../../store/smartHealthRecordStore';
+import { useDewormingStore } from '../../store/dewormingStore';
 import type { SmartHealthRecord } from '../../domain/models/SmartHealthRecord';
+import {
+  cadenceDisplayLabel,
+  validateLogDateForCadence,
+} from '../../domain/utils/DewormingEngine';
 import { PremiumUpgradeCard } from '../components/PremiumUpgradeCard';
 import { SmartHealthRecordItem } from '../components/SmartHealthRecordItem';
 import {
@@ -59,6 +64,9 @@ export const HealthRecordScreen: React.FC = () => {
   );
   const getUpcomingItems = useSmartHealthRecordStore(s => s.getUpcomingItems);
 
+  const dewormingResult = useDewormingStore(s => s.result);
+  const dewormingHydrate = useDewormingStore(s => s.hydrateAndGenerate);
+
   const [selectedCategory, setSelectedCategory] =
     useState<CategoryFilter>('Vaccination');
   const [editingRecord, setEditingRecord] = useState<SmartHealthRecord | null>(
@@ -67,11 +75,73 @@ export const HealthRecordScreen: React.FC = () => {
   const [editingDueDate, setEditingDueDate] = useState('');
   const [isCompletedExpanded, setIsCompletedExpanded] = useState(false);
 
+  const [showDewormingModal, setShowDewormingModal] = useState(false);
+  const [selectedDewormingDate, setSelectedDewormingDate] = useState('');
+  const [dewormingLogError, setDewormingLogError] = useState<string | null>(
+    null,
+  );
+
+  const todayDate = useMemo(() => new Date().toISOString().slice(0, 10), []);
+
+  const dewormingLogCompletion = useDewormingStore(s => s.logCompletion);
+
+  const handleMarkDewormingDone = () => {
+    if (!displayPrimaryTask || !activePet?.dob || !todayDate) return;
+
+    setDewormingLogError(null);
+    setSelectedDewormingDate(todayDate);
+    setShowDewormingModal(true);
+  };
+
+  const handleSaveDewormingDate = async () => {
+    if (!selectedDewormingDate || !activePet?.dob || !displayPrimaryTask)
+      return;
+
+    const cadence = (displayPrimaryTask as unknown as { cadence?: string })
+      .cadence;
+
+    // Get last completion date from deworming store
+    const dewormingCompleted =
+      useDewormingStore.getState().result?.completed ?? [];
+    const lastCompletionDate = dewormingCompleted[0]?.dueDate;
+
+    const check = validateLogDateForCadence(
+      activePet.dob,
+      todayDate,
+      selectedDewormingDate,
+      (cadence ?? 'every_3_months') as
+        | 'every_14_days'
+        | 'monthly'
+        | 'every_2_months'
+        | 'every_3_months',
+      lastCompletionDate,
+    );
+
+    if (!check.ok) {
+      setDewormingLogError(check.error);
+      return;
+    }
+
+    setDewormingLogError(null);
+    await dewormingLogCompletion(selectedDewormingDate);
+    setShowDewormingModal(false);
+  };
+
+  const isDewormingCategory = selectedCategory === 'Deworming';
+
   useFocusEffect(
     React.useCallback(() => {
       if (!activePet) return;
       void loadPetRecords(activePet.id).catch(() => {});
     }, [activePet?.id, loadPetRecords]),
+  );
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (isDewormingCategory && activePet?.dob) {
+        void dewormingHydrate(activePet);
+      }
+    }, [isDewormingCategory, activePet?.dob]),
   );
 
   const tabType =
@@ -93,19 +163,42 @@ export const HealthRecordScreen: React.FC = () => {
     [filtered],
   );
   const actionRequiredItems = useMemo(
-    () => getActionRequiredItems(tabType, 1),
-    [getActionRequiredItems, tabType, records],
+    () => getActionRequiredItems('vaccination', 1),
+    [getActionRequiredItems, records],
   );
-  const primaryTask = actionRequiredItems[0] ?? null;
-  const upcomingItems = useMemo(() => {
+  const vaccinationPrimaryTask = actionRequiredItems[0] ?? null;
+  const vaccinationUpcomingItems = useMemo(() => {
     const hiddenIds = new Set(actionRequiredItems.map(item => item.id));
-    return getUpcomingItems(tabType, {
+    return getUpcomingItems('vaccination', {
       limit: 5,
       dedupeByFamily: false,
     }).filter(item => !hiddenIds.has(item.id));
-  }, [actionRequiredItems, getUpcomingItems, tabType, records]);
+  }, [actionRequiredItems, getUpcomingItems, records]);
 
-  const completedRecords = partitioned.history;
+  const dewormingNextStep = dewormingResult?.nextStep ?? null;
+  const dewormingUpcoming = dewormingResult?.upcoming ?? [];
+  const dewormingCompleted = dewormingResult?.completed ?? [];
+
+  const displayPrimaryTask = isDewormingCategory
+    ? dewormingNextStep
+    : vaccinationPrimaryTask;
+  const displayUpcomingItems = isDewormingCategory
+    ? dewormingUpcoming
+    : vaccinationUpcomingItems;
+  const displayCompletedRecords = isDewormingCategory
+    ? dewormingCompleted
+    : partitioned.history;
+
+  const canMarkDewormingDone = useMemo(() => {
+    if (!isDewormingCategory || !displayPrimaryTask || !todayDate) return false;
+    const dueDate = displayPrimaryTask.dueDate;
+    const due = new Date(`${dueDate}T00:00:00`);
+    const todayd = new Date(`${todayDate}T00:00:00`);
+    const diffDays = Math.floor(
+      (todayd.getTime() - due.getTime()) / (1000 * 60 * 60 * 24),
+    );
+    return diffDays >= -3;
+  }, [isDewormingCategory, displayPrimaryTask, todayDate]);
 
   const petAgeWeeks = useMemo(
     () => weeksBetweenDobAndToday(activePet?.dob ?? ''),
@@ -113,30 +206,42 @@ export const HealthRecordScreen: React.FC = () => {
   );
 
   const summaryLine = useMemo(() => {
+    if (isDewormingCategory && dewormingResult) {
+      const pending = dewormingUpcoming.filter(
+        i => i.status === 'pending',
+      ).length;
+      const missed = dewormingUpcoming.filter(
+        i => i.status === 'missed',
+      ).length;
+      const completed = dewormingCompleted.length;
+      return `${missed} overdue · ${completed} completed · ${pending} pending`;
+    }
     const od = partitioned.overdue.length;
     const comp = partitioned.history.length;
     const dueSoon = partitioned.dueSoon.length;
     const fut = partitioned.futureSchedule.length;
     const scheduled = dueSoon + fut;
     return `${od} overdue · ${comp} completed · ${scheduled} scheduled`;
-  }, [partitioned]);
+  }, [
+    isDewormingCategory,
+    dewormingResult,
+    dewormingUpcoming,
+    dewormingCompleted,
+    partitioned,
+  ]);
 
   const nextDewormingFallbackDate = useMemo((): string | null => {
-    if (selectedCategory !== 'Deworming') return null;
-    if (primaryTask || upcomingItems.length > 0) return null;
-    const latestCompleted = completedRecords
-      .slice()
-      .sort((a, b) =>
-        (b.completedDate ?? b.dueDate).localeCompare(
-          a.completedDate ?? a.dueDate,
-        ),
-      )[0];
+    if (!isDewormingCategory) return null;
+    if (dewormingNextStep || dewormingUpcoming.length > 0) return null;
+    const latestCompleted = dewormingCompleted[0];
     if (!latestCompleted) return null;
-    return addMonthsToIsoDate(
-      latestCompleted.completedDate ?? latestCompleted.dueDate,
-      3,
-    );
-  }, [selectedCategory, primaryTask, upcomingItems.length, completedRecords]);
+    return addMonthsToIsoDate(latestCompleted.dueDate, 3);
+  }, [
+    isDewormingCategory,
+    dewormingNextStep,
+    dewormingUpcoming.length,
+    dewormingCompleted,
+  ]);
 
   const formatUiDate = (isoDate: string): string => {
     const date = new Date(`${isoDate}T00:00:00`);
@@ -289,11 +394,7 @@ export const HealthRecordScreen: React.FC = () => {
           {CATEGORIES.map(category => {
             const selected = category === selectedCategory;
             const handleCategoryPress = () => {
-              if (category === 'Deworming') {
-                navigation.navigate('Deworming');
-              } else {
-                setSelectedCategory(category);
-              }
+              setSelectedCategory(category);
             };
             return (
               <Pressable
@@ -343,7 +444,7 @@ export const HealthRecordScreen: React.FC = () => {
               </AppText>
             </View>
 
-            {!primaryTask && !nextDewormingFallbackDate ? (
+            {!displayPrimaryTask && !nextDewormingFallbackDate ? (
               <View
                 style={[
                   styles.emptyActionHint,
@@ -370,18 +471,83 @@ export const HealthRecordScreen: React.FC = () => {
               </View>
             ) : null}
 
-            {primaryTask ? (
+            {displayPrimaryTask && !isDewormingCategory ? (
               <SmartHealthRecordItem
-                record={primaryTask}
+                record={displayPrimaryTask as SmartHealthRecord}
                 variant="hero"
                 primaryActionLabel={logPrimaryCtaLabel}
                 onMarkDone={() => {
-                  void markAsDone(primaryTask.id);
+                  void markAsDone(displayPrimaryTask.id);
                 }}
                 onRemind={() => {
-                  void remindTask(primaryTask.id);
+                  void remindTask(displayPrimaryTask.id);
                 }}
               />
+            ) : isDewormingCategory && displayPrimaryTask ? (
+              <View
+                style={[
+                  styles.emptyActionHint,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor:
+                      displayPrimaryTask.status === 'missed'
+                        ? colors.danger
+                        : colors.accent,
+                    borderRadius: radius.lg,
+                    padding: space('md'),
+                  },
+                ]}
+              >
+                <AppText
+                  style={[textStyles.title, { color: colors.text.heading }]}
+                >
+                  Deworming{' '}
+                  {displayPrimaryTask.status === 'missed' ? 'Overdue' : 'Due'}
+                </AppText>
+                <AppText
+                  style={[textStyles.body, { color: colors.text.secondary }]}
+                >
+                  {formatUiDate(displayPrimaryTask.dueDate)}
+                  {(displayPrimaryTask as unknown as { cadence?: string })
+                    .cadence &&
+                    ` · ${cadenceDisplayLabel(
+                      (
+                        displayPrimaryTask as unknown as {
+                          cadence:
+                            | 'every_14_days'
+                            | 'monthly'
+                            | 'every_2_months'
+                            | 'every_3_months';
+                        }
+                      ).cadence,
+                    )}`}
+                </AppText>
+                {canMarkDewormingDone ? (
+                  <Pressable
+                    style={[
+                      styles.addBtn,
+                      {
+                        backgroundColor: colors.accent,
+                        borderRadius: radius.round,
+                        marginTop: space('sm'),
+                      },
+                    ]}
+                    onPress={handleMarkDewormingDone}
+                  >
+                    <AppText
+                      style={[
+                        textStyles.caption,
+                        {
+                          color: colors.text.inverse,
+                          fontFamily: fontFamilies.bold,
+                        },
+                      ]}
+                    >
+                      Mark as Done
+                    </AppText>
+                  </Pressable>
+                ) : null}
+              </View>
             ) : null}
 
             <View style={{ marginTop: space('lg') }}>
@@ -391,10 +557,54 @@ export const HealthRecordScreen: React.FC = () => {
                 COMING UP
               </AppText>
               <View style={{ height: space('sm') }} />
-              {upcomingItems.length > 0 ? (
-                upcomingItems.map(item => (
+              {!isDewormingCategory && displayUpcomingItems.length > 0 ? (
+                displayUpcomingItems.map(item => (
                   <View key={item.id} style={{ marginBottom: space('sm') }}>
-                    <SmartHealthRecordItem record={item} />
+                    <SmartHealthRecordItem record={item as SmartHealthRecord} />
+                  </View>
+                ))
+              ) : isDewormingCategory && displayUpcomingItems.length > 0 ? (
+                displayUpcomingItems.map(item => (
+                  <View key={item.id} style={{ marginBottom: space('sm') }}>
+                    <View
+                      style={[
+                        styles.emptyActionHint,
+                        {
+                          backgroundColor: colors.surface,
+                          borderColor: colors.borderSubtle,
+                          padding: space('md'),
+                        },
+                      ]}
+                    >
+                      <AppText
+                        style={[
+                          textStyles.body,
+                          { color: colors.text.heading },
+                        ]}
+                      >
+                        Deworming
+                      </AppText>
+                      <AppText
+                        style={[
+                          textStyles.caption,
+                          { color: colors.text.secondary },
+                        ]}
+                      >
+                        {formatUiDate(item.dueDate)}
+                        {(item as unknown as { cadence?: string }).cadence &&
+                          ` · ${cadenceDisplayLabel(
+                            (
+                              item as unknown as {
+                                cadence:
+                                  | 'every_14_days'
+                                  | 'monthly'
+                                  | 'every_2_months'
+                                  | 'every_3_months';
+                              }
+                            ).cadence,
+                          )}`}
+                      </AppText>
+                    </View>
                   </View>
                 ))
               ) : nextDewormingFallbackDate ? (
@@ -459,7 +669,7 @@ export const HealthRecordScreen: React.FC = () => {
                 <AppText
                   style={[textStyles.overline, { color: colors.text.subdued }]}
                 >
-                  HISTORY ({completedRecords.length})
+                  HISTORY ({displayCompletedRecords.length})
                 </AppText>
                 <AppText
                   style={[
@@ -475,13 +685,44 @@ export const HealthRecordScreen: React.FC = () => {
               </Pressable>
               {isCompletedExpanded ? (
                 <View style={{ marginTop: space('sm') }}>
-                  {completedRecords.length > 0 ? (
-                    completedRecords.map(item => (
+                  {displayCompletedRecords.length > 0 ? (
+                    displayCompletedRecords.map(item => (
                       <View key={item.id} style={{ marginBottom: space('sm') }}>
-                        <SmartHealthRecordItem
-                          record={item}
-                          onEditDate={() => openUpdateDate(item)}
-                        />
+                        {!isDewormingCategory ? (
+                          <SmartHealthRecordItem
+                            record={item as SmartHealthRecord}
+                            onEditDate={() =>
+                              openUpdateDate(item as SmartHealthRecord)
+                            }
+                          />
+                        ) : (
+                          <View
+                            style={[
+                              styles.emptyCard,
+                              {
+                                backgroundColor: colors.surface,
+                                borderColor: colors.borderSubtle,
+                              },
+                            ]}
+                          >
+                            <AppText
+                              style={[
+                                textStyles.body,
+                                { color: colors.text.heading },
+                              ]}
+                            >
+                              Deworming Completed
+                            </AppText>
+                            <AppText
+                              style={[
+                                textStyles.caption,
+                                { color: colors.text.secondary },
+                              ]}
+                            >
+                              {formatUiDate(item.dueDate)}
+                            </AppText>
+                          </View>
+                        )}
                       </View>
                     ))
                   ) : (
@@ -632,6 +873,102 @@ export const HealthRecordScreen: React.FC = () => {
           </View>
         </View>
       </Modal>
+
+      {isDewormingCategory && (
+        <Modal
+          transparent
+          visible={showDewormingModal}
+          animationType="fade"
+          onRequestClose={() => setShowDewormingModal(false)}
+        >
+          <View
+            style={[styles.modalBackdrop, { backgroundColor: colors.overlay }]}
+          >
+            <View
+              style={[
+                styles.modalCard,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.borderSubtle,
+                  borderRadius: 16,
+                  padding: space('lg'),
+                },
+              ]}
+            >
+              <AppText
+                style={[textStyles.subtitle, { color: colors.text.heading }]}
+              >
+                Log Deworming
+              </AppText>
+              <AppText
+                style={[
+                  textStyles.caption,
+                  { color: colors.text.secondary, marginTop: space('xs') },
+                ]}
+              >
+                Select the date you completed the deworming
+              </AppText>
+
+              <View style={{ marginTop: space('lg') }}>
+                <DatePickerField
+                  value={selectedDewormingDate}
+                  onChange={setSelectedDewormingDate}
+                  maximumDate={new Date()}
+                />
+              </View>
+
+              {dewormingLogError ? (
+                <AppText
+                  style={[
+                    textStyles.caption,
+                    { color: colors.danger, marginTop: space('sm') },
+                  ]}
+                >
+                  {dewormingLogError}
+                </AppText>
+              ) : null}
+
+              <View style={[styles.modalActions, { marginTop: space('md') }]}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setShowDewormingModal(false)}
+                  style={[
+                    styles.modalActionBtn,
+                    {
+                      borderRadius: 12,
+                      borderColor: colors.borderSubtle,
+                      backgroundColor: colors.surfaceAlt,
+                    },
+                  ]}
+                >
+                  <AppText
+                    style={[
+                      textStyles.caption,
+                      { color: colors.text.secondary },
+                    ]}
+                  >
+                    Cancel
+                  </AppText>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={handleSaveDewormingDate}
+                  style={[
+                    styles.modalActionBtn,
+                    { borderRadius: 12, backgroundColor: colors.accent },
+                  ]}
+                >
+                  <AppText
+                    style={[textStyles.caption, { color: colors.text.inverse }]}
+                  >
+                    Save
+                  </AppText>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 };
