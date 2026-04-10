@@ -28,6 +28,13 @@ function addMonths(dateOnly: string, months: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+function addDays(dateOnly: string, days: number): string {
+  const [year, month, day] = dateOnly.split('-').map(Number);
+  const d = new Date(Date.UTC(year, (month ?? 1) - 1, day ?? 1));
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 function daysBetween(fromDate: string, toDate: string): number {
   const from = new Date(`${fromDate}T00:00:00`).getTime();
   const to = new Date(`${toDate}T00:00:00`).getTime();
@@ -50,7 +57,23 @@ export function normalizeSmartRecordStatus(
   record: SmartHealthRecord,
   todayDate: string,
 ): SmartHealthRecord {
-  const status = resolveSmartStatus(record.dueDate, record.completedDate, todayDate);
+  if (record.status === 'skipped') {
+    return record;
+  }
+  if (record.status === 'missed' && !record.completedDate) {
+    return record;
+  }
+  if (record.completedDate) {
+    if (record.status === 'completed') {
+      return record;
+    }
+    return {
+      ...record,
+      status: 'completed',
+      updatedAt: new Date().toISOString(),
+    };
+  }
+  const status = resolveSmartStatus(record.dueDate, null, todayDate);
   if (status === record.status) {
     return record;
   }
@@ -61,7 +84,7 @@ export function normalizeSmartRecordStatus(
   };
 }
 
-function createHistory(
+export function createSmartHealthHistoryLog(
   userId: string,
   petId: string,
   recordId: string,
@@ -79,6 +102,16 @@ function createHistory(
   };
 }
 
+function createHistory(
+  userId: string,
+  petId: string,
+  recordId: string,
+  action: SmartHealthHistoryLog['action'],
+  meta?: Record<string, string>,
+): SmartHealthHistoryLog {
+  return createSmartHealthHistoryLog(userId, petId, recordId, action, meta);
+}
+
 export function generateBootstrapSchedule(
   input: BootstrapSmartScheduleInput,
 ): { records: SmartHealthRecord[]; logs: SmartHealthHistoryLog[] } {
@@ -89,15 +122,17 @@ export function generateBootstrapSchedule(
     petType: input.petType,
     dateOfBirth: toIsoDateOnly(input.dateOfBirth),
     nowDate: todayDate,
-    region: input.region ?? 'OTHER',
+    region: (input.region ?? 'OTHER') as CarePlanContext['region'],
     lifestyleType: input.lifestyleType ?? 'indoor',
-    lifestyleRiskLevel: input.lifestyleRiskLevel ?? 'low',
+    lifestyleRiskLevel: (input.lifestyleRiskLevel ??
+      'low') as CarePlanContext['lifestyleRiskLevel'],
   };
   const records = lifecycleEngine.generateInitialPlan({
     userId: input.userId,
     petId: input.petId,
     context,
     lastVaccinationDate: input.lastVaccinationDate,
+    lastRabiesDate: input.lastRabiesDate,
     lastDewormingDate: input.lastDewormingDate,
   });
   for (const record of records) {
@@ -114,21 +149,48 @@ export function createNextRecurringRecord(
     return null;
   }
   const dueDate =
-    completed.recurrenceType === 'yearly'
+    completed.type === 'deworming'
+      ? completed.cadence === 'every_14_days'
+        ? addDays(completedDate, 14)
+        : completed.cadence === 'monthly'
+        ? addMonths(completedDate, 1)
+        : completed.cadence === 'every_2_months'
+        ? addMonths(completedDate, 2)
+        : addMonths(completedDate, 3)
+      : completed.recurrenceType === 'yearly'
       ? addMonths(completedDate, 12)
       : addMonths(completedDate, 3);
   const nowIso = new Date().toISOString();
   return {
-    id: createLocalId('smart-health'),
+    id:
+      completed.type === 'deworming'
+        ? `${completed.petId}-deworming-DEWORM_${dueDate}-${dueDate}`
+        : createLocalId('smart-health'),
     userId: completed.userId,
     petId: completed.petId,
     type: completed.type,
+    key: completed.type === 'deworming' ? `DEWORM_${dueDate}` : completed.key,
+    family: completed.family,
+    category: completed.category,
     name: completed.name,
     dueDate,
+    recommendedDate: dueDate,
     completedDate: null,
     status: resolveSmartStatus(dueDate, null, nowIso.slice(0, 10)),
     isOptional: completed.isOptional,
     recurrenceType: completed.recurrenceType,
+    cadence: completed.cadence,
+    riskLevel: completed.riskLevel,
+    lifestyleTriggers: completed.lifestyleTriggers,
+    doseNumber: completed.doseNumber,
+    totalDoses: completed.totalDoses,
+    stage: completed.stage,
+    dependsOn: null,
+    source: completed.source ?? 'system',
+    isLocked: false,
+    priority: completed.priority,
+    contextLabel: completed.contextLabel,
+    recovery: { isRecovered: false, recoveredFrom: null },
     createdAt: nowIso,
     updatedAt: nowIso,
   };
@@ -158,7 +220,10 @@ export function buildCompletionUpdate(
         : record.recovery,
     updatedAt: nowIso,
   };
-  const next = createNextRecurringRecord(record, completedDate);
+  const next =
+    record.type === 'deworming'
+      ? null
+      : createNextRecurringRecord(record, completedDate);
   const logs: SmartHealthHistoryLog[] = [
     createHistory(record.userId, record.petId, record.id, 'completed', {
       completedDate,

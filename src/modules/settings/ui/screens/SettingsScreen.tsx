@@ -147,7 +147,11 @@ export const SettingsScreen: React.FC = () => {
               size={avatarSize}
               loading={profileLabels.isProfileLoading}
             />
-            <Pressable style={styles.editProfileBadge} accessibilityRole="button">
+            <Pressable
+              style={styles.editProfileBadge}
+              accessibilityRole="button"
+              onPress={() => navigation.navigate('UserProfile')}
+            >
               <icons.editPencil width={14} height={14} />
             </Pressable>
           </View>
@@ -222,6 +226,46 @@ export const SettingsScreen: React.FC = () => {
                 trackColor={{ true: colors.primary, false: colors.borderSubtle }}
               />
             </View>
+
+            <Pressable
+              style={styles.actionRow}
+              onPress={() =>
+                navigation.navigate('NotificationsTab', { screen: 'NotificationInbox' })
+              }
+            >
+              <View style={styles.rowLeft}>
+                <View style={styles.rowIcon}>
+                  <MaterialIcon name="notifications" size={20} color={colors.accent} />
+                </View>
+                <View>
+                  <Text style={[styles.rowTitle, { fontFamily: fontFamilies.semibold }]}>Alert history</Text>
+                  <Text style={[styles.rowSubtitle, { fontFamily: fontFamilies.medium }]}>
+                    Scheduled and in-app notifications
+                  </Text>
+                </View>
+              </View>
+              <MaterialIcon name="chevron_right" size={20} color={colors.text.subdued} />
+            </Pressable>
+
+            <Pressable
+              style={styles.actionRow}
+              onPress={() =>
+                navigation.navigate('NotificationsTab', { screen: 'ReminderList' })
+              }
+            >
+              <View style={styles.rowLeft}>
+                <View style={styles.rowIcon}>
+                  <MaterialIcon name="schedule" size={20} color={colors.accent} />
+                </View>
+                <View>
+                  <Text style={[styles.rowTitle, { fontFamily: fontFamilies.semibold }]}>Manual reminders</Text>
+                  <Text style={[styles.rowSubtitle, { fontFamily: fontFamilies.medium }]}>
+                    Your custom reminder list
+                  </Text>
+                </View>
+              </View>
+              <MaterialIcon name="chevron_right" size={20} color={colors.text.subdued} />
+            </Pressable>
           </View>
         </View>
 

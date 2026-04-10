@@ -6,7 +6,7 @@ Focus on user value, interaction quality, and resilient behavior.
 
 ## Task
 
-Design feature: Forgot password
+Design feature: curretnly remove the reminders screen from the bottom tab as per UI level and on that screen put the notification and put all the notification in app also as same we are getting on the out of the app with time and toher scenerios
 
 ---
 

@@ -11,11 +11,12 @@ import { useReminderStore } from '../../store/reminderStore';
 
 const iconByType: Record<
   string,
-  'vaccines' | 'pill' | 'content_cut' | 'add_circle'
+  'vaccines' | 'pill' | 'content_cut' | 'stethoscope' | 'add_circle'
 > = {
   vaccination: 'vaccines',
   medication: 'pill',
   grooming: 'content_cut',
+  checkup: 'stethoscope',
   other: 'add_circle',
 };
 
@@ -135,7 +136,13 @@ export const ReminderListScreen: React.FC = () => {
       <View style={styles.header}>
         <Pressable
           style={styles.backButton}
-          onPress={() => navigation.navigate('HomeTab', { screen: 'Home' })}
+          onPress={() => {
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+              return;
+            }
+            navigation.navigate('NotificationInbox');
+          }}
         >
           <MaterialIcon
             name="arrow_back"
@@ -144,7 +151,7 @@ export const ReminderListScreen: React.FC = () => {
           />
         </Pressable>
         <Text style={[styles.headerTitle, { fontFamily: fontFamilies.bold }]}>
-          Reminders
+          Your reminders
         </Text>
         <Pressable
           style={styles.addButton}
@@ -174,7 +181,8 @@ export const ReminderListScreen: React.FC = () => {
                 { fontFamily: fontFamilies.medium },
               ]}
             >
-              Add your first reminder to keep pet care on track.
+              Quick extras — vet follow-ups, grooming, anything you want nudged
+              about.
             </Text>
             <Pressable
               style={styles.primaryBtn}
@@ -186,7 +194,7 @@ export const ReminderListScreen: React.FC = () => {
                   { fontFamily: fontFamilies.bold },
                 ]}
               >
-                Create Reminder
+                Add reminder
               </Text>
             </Pressable>
           </View>

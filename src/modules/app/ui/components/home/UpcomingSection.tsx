@@ -7,33 +7,52 @@ import {
   View,
 } from 'react-native';
 
-import type { HomeDashboardUpcomingItem } from '../../../domain/models/HomeDashboardViewModel';
+import type { HomeDashboardWeekCareItem } from '../../../domain/models/HomeDashboardViewModel';
 import { AppText } from '../../../../../shared/components/AppText';
 import { Button } from '../../../../../shared/components/Button';
 import { MaterialIcon } from '../../../../../shared/components/MaterialIcon';
+import type { IconName } from '../../../../../shared/components/MaterialIcon';
 import type { Theme } from '../../../../../shared/hooks/useTheme';
 
 import { reminderTypeIcon } from '../../../../../shared/utils/reminderTypeIcon';
-import { spacing } from '../../../../../shared/theme/spacing';
-import { radius } from '../../../../../shared/theme/radius';
 
 export interface UpcomingSectionProps {
-  items: HomeDashboardUpcomingItem[];
+  items: HomeDashboardWeekCareItem[];
   loading: boolean;
-  onPressAddReminder: () => void;
+  /** Primary empty-state action: Health tab (smart schedules + system nudges). */
+  onPressOpenHealth: () => void;
   theme: Theme;
 }
 
+function iconForWeekItem(item: HomeDashboardWeekCareItem): IconName {
+  if (item.kind === 'vaccination') {
+    return 'vaccines';
+  }
+  if (item.kind === 'deworming') {
+    return 'pill';
+  }
+  return reminderTypeIcon(item.reminderType ?? 'other');
+}
+
+function tagLabel(item: HomeDashboardWeekCareItem): string {
+  if (item.kind === 'vaccination') {
+    return 'Vaccine';
+  }
+  if (item.kind === 'deworming') {
+    return 'Deworm';
+  }
+  return 'Reminder';
+}
+
 type UpcomingRowProps = {
-  item: HomeDashboardUpcomingItem;
+  item: HomeDashboardWeekCareItem;
   theme: Theme;
   accent: boolean;
 };
 
 const UpcomingCard = React.memo(({ item, theme, accent }: UpcomingRowProps) => {
   const { colors, radius, spacing, textStyles, fontFamilies } = theme;
-  const { reminder, milestoneSubtitle } = item;
-  const iconName = reminderTypeIcon(reminder.type);
+  const iconName = iconForWeekItem(item);
 
   const surface = accent ? colors.brandTint10 : colors.surfaceAlt;
   const border = accent ? colors.brandTint12 : colors.borderSubtle;
@@ -83,13 +102,13 @@ const UpcomingCard = React.memo(({ item, theme, accent }: UpcomingRowProps) => {
             ]}
             numberOfLines={2}
           >
-            {reminder.title}
+            {item.title}
           </AppText>
           <AppText
             style={[textStyles.footer, { color: colors.text.secondary }]}
             numberOfLines={2}
           >
-            {milestoneSubtitle}
+            {item.subtitle}
           </AppText>
           <View
             style={[
@@ -110,7 +129,7 @@ const UpcomingCard = React.memo(({ item, theme, accent }: UpcomingRowProps) => {
                 { color: colors.accent, fontFamily: fontFamilies.bold },
               ]}
             >
-              Scheduled
+              {tagLabel(item)}
             </AppText>
           </View>
         </View>
@@ -122,10 +141,10 @@ const UpcomingCard = React.memo(({ item, theme, accent }: UpcomingRowProps) => {
 UpcomingCard.displayName = 'UpcomingCard';
 
 export const UpcomingSection: React.FC<UpcomingSectionProps> = React.memo(
-  ({ items, loading, onPressAddReminder, theme }) => {
+  ({ items, loading, onPressOpenHealth, theme }) => {
     const { colors, spacing, textStyles } = theme;
 
-    const renderItem: ListRenderItem<HomeDashboardUpcomingItem> = useCallback(
+    const renderItem: ListRenderItem<HomeDashboardWeekCareItem> = useCallback(
       ({ item, index }) => (
         <UpcomingCard item={item} theme={theme} accent={index === 0} />
       ),
@@ -133,14 +152,22 @@ export const UpcomingSection: React.FC<UpcomingSectionProps> = React.memo(
     );
 
     const keyExtractor = useCallback(
-      (item: HomeDashboardUpcomingItem) => item.reminder.id,
+      (item: HomeDashboardWeekCareItem) => item.id,
       [],
     );
 
     return (
       <View style={{ gap: spacing.md }}>
         <AppText style={[textStyles.title, { color: colors.text.heading }]}>
-          Upcoming milestones
+          This week
+        </AppText>
+        <AppText
+          style={[
+            textStyles.caption,
+            { color: colors.text.secondary, marginTop: -spacing.sm },
+          ]}
+        >
+          Next 7 days: vaccines, deworming, and any custom reminders
         </AppText>
 
         {loading ? (
@@ -168,14 +195,10 @@ export const UpcomingSection: React.FC<UpcomingSectionProps> = React.memo(
                 { color: colors.text.secondary, textAlign: 'center' },
               ]}
             >
-              No upcoming reminders yet. Plan the next vet visit or grooming
-              session.
+              Nothing extra on the calendar this week. Vaccine and deworming alerts
+              still come from your Health schedule and notifications.
             </AppText>
-            <Button
-              title="Add reminder"
-              onPress={onPressAddReminder}
-              // style={styles.emptyButton}
-            />
+            <Button title="Open health schedule" onPress={onPressOpenHealth} />
           </View>
         ) : null}
 
@@ -213,11 +236,5 @@ const styles = StyleSheet.create({
   empty: {
     borderWidth: 1,
     alignItems: 'stretch',
-  },
-  emptyButton: {
-    width: '100%',
-    borderRadius: radius.lg,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
   },
 });

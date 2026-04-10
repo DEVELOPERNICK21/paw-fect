@@ -44,11 +44,14 @@ export class HealthRecordRepositoryImpl implements HealthRecordRepository {
 
   async deleteRecord(id: string): Promise<void> {
     const records = await this.local.getRecords();
+    const target = records.find(record => record.id === id) ?? null;
     const next = records.filter(record => record.id !== id);
     await this.local.saveRecords(next);
 
     try {
-      await this.remote.deleteRecord(id);
+      if (target) {
+        await this.remote.deleteRecord(target);
+      }
     } catch {
       // Sync will retry in background
     }

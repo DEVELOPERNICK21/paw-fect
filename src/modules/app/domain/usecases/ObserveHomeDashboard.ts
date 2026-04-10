@@ -2,6 +2,8 @@ import type { Pet } from '../../../pets/domain/models/Pet';
 import type { PetRepository } from '../../../pets/domain/repositories/PetRepository';
 import type { ReminderRepository } from '../../../reminders/domain/repositories/ReminderRepository';
 import type { HealthRecordRepository } from '../../../records/domain/repositories/HealthRecordRepository';
+import type { SmartHealthRecord } from '../../../records/domain/models/SmartHealthRecord';
+import type { SmartHealthRecordRepository } from '../../../records/domain/repositories/SmartHealthRecordRepository';
 import type { HomeDashboardInvalidationPort } from '../ports/HomeDashboardInvalidationPort';
 import type { HomeDashboardObserver, ObserveHomeDashboardPort } from '../ports/ObserveHomeDashboardPort';
 import { BuildHomeDashboardViewModel } from './BuildHomeDashboardViewModel';
@@ -15,6 +17,7 @@ export class ObserveHomeDashboard implements ObserveHomeDashboardPort {
     private readonly petRepository: PetRepository,
     private readonly reminderRepository: ReminderRepository,
     private readonly healthRecordRepository: HealthRecordRepository,
+    private readonly smartHealthRecordRepository: SmartHealthRecordRepository,
     private readonly buildHomeDashboardViewModel: BuildHomeDashboardViewModel,
     private readonly getCurrentUserId: () => string | null,
     private readonly invalidation: HomeDashboardInvalidationPort,
@@ -44,6 +47,7 @@ export class ObserveHomeDashboard implements ObserveHomeDashboardPort {
                     reminders: [],
                     remindersLoading: false,
                     records: [],
+                    smartHealthRecords: [],
                     lastError: null,
                     isRefreshing: false,
                   }),
@@ -61,6 +65,19 @@ export class ObserveHomeDashboard implements ObserveHomeDashboardPort {
 
             const activePet = this.resolveDisplayActivePet(pets, activePetId);
 
+            let smartHealthRecords: SmartHealthRecord[] = [];
+            if (activePet != null) {
+              try {
+                smartHealthRecords =
+                  await this.smartHealthRecordRepository.listByPet(
+                    userId,
+                    activePet.id,
+                  );
+              } catch {
+                smartHealthRecords = [];
+              }
+            }
+
             const vm = this.buildHomeDashboardViewModel.execute({
               now: new Date(),
               petsLoading: false,
@@ -69,6 +86,7 @@ export class ObserveHomeDashboard implements ObserveHomeDashboardPort {
               reminders,
               remindersLoading: false,
               records,
+              smartHealthRecords,
               lastError: null,
               isRefreshing: false,
             });
@@ -87,6 +105,7 @@ export class ObserveHomeDashboard implements ObserveHomeDashboardPort {
                   reminders: [],
                   remindersLoading: false,
                   records: [],
+                  smartHealthRecords: [],
                   lastError: 'Unable to load dashboard.',
                   isRefreshing: false,
                 }),

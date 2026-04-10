@@ -18,7 +18,6 @@ import { PetProfileQuickStatsRow } from '../components/profile/PetProfileQuickSt
 import { PetProfileSectionHeader } from '../components/profile/PetProfileSectionHeader';
 import { PetProfileTodayCareSection } from '../components/profile/PetProfileTodayCareSection';
 import { PetProfileTipCard } from '../components/profile/PetProfileTipCard';
-import { PetProfileUpcomingTeaserCard } from '../components/profile/PetProfileUpcomingTeaserCard';
 
 import { HomeHeader } from '../../../../shared/components/HomeHeader';
 import { AppText } from '../../../../shared/components/AppText';
@@ -41,7 +40,6 @@ import {
 } from '../../domain/utils/petDobDisplay';
 import { getPawsitiveTip } from '../../domain/utils/getPawsitiveTip';
 import type { HealthRecord } from '../../../records/domain/models/HealthRecord';
-import type { HomeDashboardUpcomingItem } from '../../../app/domain/models/HomeDashboardViewModel';
 
 const FALLBACK_IMAGE =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuAQXZRqux3dGiKVHxg69tsjQga2xzb_Z44MMFEOFTW1lkUd8j1zSaK6EKRCHN9n9PX6s6XdsbTaJqSwqhhSOG2KITXiPsnHHNzGMbccqz_MCcJEaxfYujRzatpy05j5j3o37UTqn0RlfNQ7en9mHWZZPMAd014HsyIn9qbrvdaa482zs4BhKiuI2OFZxAv6h0wGYRDxyTTVxIA7D8xBrCujbnv8b8Qs-WZGBgxxsmBN2dtSukXRhVKftZOZptWGBrodXRCxgTLQWlQR';
@@ -53,6 +51,8 @@ export const PetProfileScreen: React.FC = () => {
   const { colors, spacing: spacingTokens, textStyles, fontFamilies } = theme;
 
   const activePet = usePetStore(s => s.activePet);
+  const pets = usePetStore(s => s.pets);
+  const setActivePet = usePetStore(s => s.setActivePet);
   const loadPets = usePetStore(s => s.loadPets);
   const loading = usePetStore(s => s.loading);
   const loadError = usePetStore(s => s.loadError);
@@ -102,20 +102,16 @@ export const PetProfileScreen: React.FC = () => {
     navigation.navigate('AddPet');
   }, [navigation]);
 
+  const goPetSwitcher = useCallback(() => {
+    navigation.navigate('PetSwitcher');
+  }, [navigation]);
+
   const goAddHealthDetails = useCallback(
     (kind: 'weight' | 'vaccines' | 'conditions') => {
       navigation.navigate('AddHealthDetails', { kind });
     },
     [navigation],
   );
-
-  const goReminderList = useCallback(() => {
-    navigation.navigate('RemindersTab', { screen: 'ReminderList' });
-  }, [navigation]);
-
-  const goAddReminder = useCallback(() => {
-    navigation.navigate('RemindersTab', { screen: 'AddReminder' });
-  }, [navigation]);
 
   const goAddHealthRecord = useCallback(() => {
     navigation.navigate('HealthTab', { screen: 'AddHealthRecord' });
@@ -127,9 +123,6 @@ export const PetProfileScreen: React.FC = () => {
 
   const todayCare = dashboardVm?.todayCare ?? [];
   const todayCareLoading = dashboardVm == null;
-
-  const upcomingItem: HomeDashboardUpcomingItem | null =
-    dashboardVm?.upcoming?.[0] ?? null;
 
   const recordsForPet: HealthRecord[] = useMemo(() => {
     if (!petId) {
@@ -466,10 +459,67 @@ export const PetProfileScreen: React.FC = () => {
           </Pressable>
         </View>
 
+        <View>
+          <PetProfileSectionHeader
+            title="My Pets"
+            rightElement={
+              <Pressable
+                onPress={goPetSwitcher}
+                accessibilityRole="button"
+                accessibilityLabel="View all pets"
+              >
+                <AppText
+                  style={[
+                    textStyles.caption,
+                    { color: colors.accent, fontFamily: fontFamilies.bold },
+                  ]}
+                >
+                  View all
+                </AppText>
+              </Pressable>
+            }
+          />
+          <View style={styles.petChipsRow}>
+            {pets.slice(0, 4).map(pet => {
+              const isCurrent = pet.id === effectivePet.id;
+              return (
+                <Pressable
+                  key={pet.id}
+                  onPress={() => {
+                    void setActivePet(pet.id);
+                  }}
+                  style={[
+                    styles.petChip,
+                    {
+                      backgroundColor: isCurrent ? colors.accent : colors.surface,
+                      borderColor: isCurrent ? colors.accent : colors.borderSubtle,
+                    },
+                  ]}
+                >
+                  <AppText
+                    style={[
+                      textStyles.caption,
+                      {
+                        color: isCurrent ? colors.text.inverse : colors.text.secondary,
+                        fontFamily: isCurrent
+                          ? fontFamilies.bold
+                          : fontFamilies.medium,
+                      },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {pet.name}
+                  </AppText>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
         <PetProfileTodayCareSection
           items={todayCare}
           loading={todayCareLoading}
-          onPressViewCalendar={goReminderList}
+          onPressOpenHealthSchedule={goHealthRecords}
         />
 
         <PetProfileTipCard title={tip.title} body={tip.body} />
@@ -498,6 +548,9 @@ export const PetProfileScreen: React.FC = () => {
     ageLabel,
     locationLine,
     goEditPet,
+    pets,
+    setActivePet,
+    goPetSwitcher,
     weightValue,
     birthdayValue,
     genderValue,
@@ -507,7 +560,7 @@ export const PetProfileScreen: React.FC = () => {
     goNextAction,
     todayCare,
     todayCareLoading,
-    goReminderList,
+    goHealthRecords,
     tip.body,
     tip.title,
     goAddHealthRecord,
@@ -518,26 +571,8 @@ export const PetProfileScreen: React.FC = () => {
     if (!effectivePet) {
       return null;
     }
-    if (!upcomingItem) {
-      return <View style={{ height: spacingTokens.xl }} />;
-    }
-
-    return (
-      <View style={{ gap: spacingTokens.lg }}>
-        <PetProfileUpcomingTeaserCard
-          title={upcomingItem.reminder.title}
-          onPressSchedule={goAddReminder}
-        />
-        <View style={{ height: spacingTokens.xl }} />
-      </View>
-    );
-  }, [
-    effectivePet,
-    upcomingItem,
-    goAddReminder,
-    spacingTokens.lg,
-    spacingTokens.xl,
-  ]);
+    return <View style={{ height: spacingTokens.xl }} />;
+  }, [effectivePet, spacingTokens.xl]);
 
   if (loading && !effectivePet) {
     return (
@@ -754,6 +789,18 @@ const styles = StyleSheet.create({
   listHeader: {
     gap: spacing.lg,
     paddingBottom: spacing.lg,
+  },
+  petChipsRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    flexWrap: 'wrap',
+  },
+  petChip: {
+    borderWidth: 1,
+    borderRadius: radiusTokens.round,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    maxWidth: 140,
   },
   completionCard: {
     borderWidth: 1,

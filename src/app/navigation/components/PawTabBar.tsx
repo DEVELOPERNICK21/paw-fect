@@ -1,17 +1,24 @@
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
+  Image,
+  Modal,
   Platform,
   Pressable,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { AppTabParamList } from '../types';
 import { TAB_BAR_VISUAL_HEIGHT } from '../layout';
+import { useHomeDashboardStore } from '../../../modules/app/store/homeDashboardStore';
+import { usePetStore } from '../../../modules/pets/store/petStore';
+import type { Pet } from '../../../modules/pets/domain/models/Pet';
+import { AppText } from '../../../shared/components/AppText';
 import { MaterialIcon } from '../../../shared/components/MaterialIcon';
 import { useTheme } from '../../../shared/hooks/useTheme';
 import type { Theme } from '../../../shared/hooks/useTheme';
@@ -19,11 +26,16 @@ import { icons } from '../../../shared/assets/icons';
 
 export { TAB_BAR_VISUAL_HEIGHT as APP_TAB_BAR_HEIGHT } from '../layout';
 
-type TabKey = 'home' | 'health' | 'reminder' | 'settings' | 'pets';
+type TabKey = 'home' | 'health' | 'notifications' | 'settings' | 'pets';
 
 const FAB_SIZE = 58;
 const FAB_BOTTOM = 28;
 const BAR_ROW_MIN_HEIGHT = 56;
+const ORBIT_AVATAR = 52;
+const ORBIT_ITEM_WIDTH = 76;
+
+const DEFAULT_PET_PHOTO_URI =
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuBTjI_FvulIIoJ18XpSIFocjA8fpzab0a4wQoqoigyYdaaJu9-ejR25ixQ2yFX6DVC1P-mzS0rAiIakDqbxX5LGdE0DWkYnYtpIxTgGc4Jyl0WbK2XEsp-jNAw9IUkBT_scs8_GotU6SyC81FS6h7rWgfhYACVrVI1vQpUS76pgAm3E7Ndcuubyf0UWWRj-UDGGtUNpLJyDXtLY7-SVYO_3-XMutK67MzPnT0o_QnAG8_FiMxX44sexZnAbMMEC-G6Cj-8y0VAgtMSD';
 
 type TabIconName =
   | 'home'
@@ -39,8 +51,8 @@ function tabKeyFromRouteName(name: keyof AppTabParamList | string): TabKey {
       return 'home';
     case 'HealthTab':
       return 'health';
-    case 'RemindersTab':
-      return 'reminder';
+    case 'NotificationsTab':
+      return 'notifications';
     case 'SettingsTab':
       return 'settings';
     case 'PetsTab':
@@ -210,12 +222,31 @@ const TabSlot = React.memo(function TabSlot({
 });
 
 export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) => {
-  const { fontFamilies, colors, shadows } = useTheme();
+  const { fontFamilies, colors, shadows, textStyles, radius, spacing } = useTheme();
   const insets = useSafeAreaInsets();
+  const { width: winW, height: winH } = useWindowDimensions();
   const styles = useMemo(() => createStyles(), []);
+
+  const pets = usePetStore(s => s.pets);
+  const activePet = usePetStore(s => s.activePet);
+  const setActivePet = usePetStore(s => s.setActivePet);
+  const requestDashboardRefresh = useHomeDashboardStore(
+    s => s.requestDashboardRefresh,
+  );
+
+  const [petPickerOpen, setPetPickerOpen] = useState(false);
+
+  const closePetPicker = useCallback(() => {
+    setPetPickerOpen(false);
+  }, []);
 
   const bottomPad = Math.max(insets.bottom, Platform.OS === 'ios' ? 6 : 4);
   const shellHeight = TAB_BAR_VISUAL_HEIGHT + bottomPad;
+  /** Vertical center of the paw FAB on screen (for orbit layout). */
+  const fabCenterY = winH - bottomPad - FAB_BOTTOM - FAB_SIZE / 2;
+
+  const bubbleAnimsRef = useRef<Animated.Value[]>([]);
+  const backdropOpac = useRef(new Animated.Value(0)).current;
 
   const currentRoute = state.routes[state.index];
   const currentKey = tabKeyFromRouteName(currentRoute.name);
@@ -261,8 +292,8 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
       case 'HealthTab':
         navigation.navigate('HealthTab', { screen: 'HealthRecords' });
         break;
-      case 'RemindersTab':
-        navigation.navigate('RemindersTab', { screen: 'ReminderList' });
+      case 'NotificationsTab':
+        navigation.navigate('NotificationsTab', { screen: 'NotificationInbox' });
         break;
       case 'SettingsTab':
         navigation.navigate('SettingsTab', { screen: 'Settings' });
@@ -275,6 +306,167 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
     }
   };
 
+  const openPetPicker = useCallback(() => {
+    if (pets.length === 0) {
+      navigation.navigate('PetsTab', { screen: 'PetProfile' });
+      return;
+    }
+    setPetPickerOpen(true);
+  }, [navigation, pets.length]);
+
+  const onPickPet = useCallback(
+    (pet: Pet) => {
+      void (async () => {
+        await setActivePet(pet.id);
+        requestDashboardRefresh();
+        setPetPickerOpen(false);
+      })();
+    },
+    [requestDashboardRefresh, setActivePet],
+  );
+
+  const goManagePets = useCallback(() => {
+    setPetPickerOpen(false);
+    navigation.navigate('PetsTab', { screen: 'PetSwitcher' });
+  }, [navigation]);
+
+  const orbitLayout = useMemo(() => {
+    const n = pets.length;
+    if (n === 0) {
+      return [];
+    }
+    const cx = winW / 2;
+    const cy = fabCenterY;
+    const orbitR = Math.min(winW * 0.26, 72 + n * 11);
+    const spread = Math.min(1.18 * Math.PI, Math.PI * 0.4 + Math.max(0, n - 1) * 0.15);
+    const startAngle = -Math.PI / 2 - spread / 2;
+    return Array.from({ length: n }, (_, i) => {
+      const t = n === 1 ? 0.5 : i / (n - 1);
+      const angle = startAngle + t * spread;
+      const ax = cx + orbitR * Math.cos(angle);
+      const ay = cy + orbitR * Math.sin(angle);
+      return {
+        left: ax - ORBIT_ITEM_WIDTH / 2,
+        top: ay - ORBIT_AVATAR / 2 - spacing.sm,
+      };
+    });
+  }, [pets.length, winW, fabCenterY, spacing.sm]);
+
+  useEffect(() => {
+    if (!petPickerOpen || pets.length === 0) {
+      backdropOpac.setValue(0);
+      return;
+    }
+    const arr = bubbleAnimsRef.current;
+    while (arr.length < pets.length) {
+      arr.push(new Animated.Value(0));
+    }
+    const active = arr.slice(0, pets.length);
+    active.forEach(a => a.setValue(0));
+    backdropOpac.setValue(0);
+    Animated.parallel([
+      Animated.timing(backdropOpac, {
+        toValue: 1,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+      Animated.stagger(
+        52,
+        active.map(v =>
+          Animated.spring(v, {
+            toValue: 1,
+            friction: 7,
+            tension: 92,
+            useNativeDriver: true,
+          }),
+        ),
+      ),
+    ]).start();
+  }, [petPickerOpen, pets.length, backdropOpac]);
+
+  const radialStyles = useMemo(
+    () =>
+      StyleSheet.create({
+        modalRoot: {
+          flex: 1,
+        },
+        backdrop: {
+          ...StyleSheet.absoluteFillObject,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+        },
+        orbitLayer: {
+          ...StyleSheet.absoluteFillObject,
+        },
+        closeFab: {
+          position: 'absolute',
+          top: Math.max(insets.top, spacing.md) + spacing.sm,
+          right: spacing.lg,
+          width: 40,
+          height: 40,
+          borderRadius: 20,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: colors.surface,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.borderSubtle,
+        },
+        hint: {
+          position: 'absolute',
+          left: spacing.lg,
+          right: spacing.lg,
+          alignItems: 'center',
+        },
+        manageChip: {
+          marginTop: spacing.sm,
+          paddingHorizontal: spacing.lg,
+          paddingVertical: spacing.sm,
+          borderRadius: radius.round,
+          backgroundColor: colors.primaryLight,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.borderSubtle,
+        },
+        avatarWrap: {
+          width: ORBIT_AVATAR,
+          height: ORBIT_AVATAR,
+          borderRadius: ORBIT_AVATAR / 2,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        avatarImg: {
+          width: ORBIT_AVATAR - 4,
+          height: ORBIT_AVATAR - 4,
+          borderRadius: (ORBIT_AVATAR - 4) / 2,
+          resizeMode: 'cover',
+        },
+        activeRing: {
+          borderWidth: 3,
+          borderColor: colors.accent,
+        },
+        checkDot: {
+          position: 'absolute',
+          bottom: -2,
+          right: -2,
+          width: 20,
+          height: 20,
+          borderRadius: 10,
+          backgroundColor: colors.accent,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderWidth: 2,
+          borderColor: colors.surface,
+        },
+      }),
+    [
+      colors.accent,
+      colors.borderSubtle,
+      colors.primaryLight,
+      colors.surface,
+      insets.top,
+      radius.round,
+      spacing,
+    ],
+  );
+
   const fabShadow = shadows.lg;
   const fabTranslateY = fabLift.interpolate({
     inputRange: [0, 1],
@@ -282,6 +474,7 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
   });
 
   return (
+    <>
     <View
       style={[
         styles.shell,
@@ -321,11 +514,11 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
 
         <View style={styles.side}>
           <TabSlot
-            label="Reminder"
-            accessibilityLabel="Reminders"
-            icon="schedule"
-            active={currentKey === 'reminder'}
-            onPress={() => jumpToTabRoot('RemindersTab')}
+            label="Notifications"
+            accessibilityLabel="Notifications"
+            icon="notifications"
+            active={currentKey === 'notifications'}
+            onPress={() => jumpToTabRoot('NotificationsTab')}
             fontFamilies={fontFamilies}
             colors={colors}
           />
@@ -364,11 +557,13 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
                 currentKey === 'pets' && styles.fabButtonActive,
               ]}
               onPress={() => jumpToTabRoot('PetsTab')}
+              onLongPress={openPetPicker}
+              delayLongPress={380}
               onPressIn={() => animateFabPress(true)}
               onPressOut={() => animateFabPress(false)}
               accessibilityRole="button"
               accessibilityLabel="Pets"
-              accessibilityHint="Opens pet profiles. Add or switch pets from there."
+              accessibilityHint="Tap to open pet profile. Long press to switch pets."
               accessibilityState={{ selected: currentKey === 'pets' }}
               android_ripple={{
                 color: 'rgba(255,255,255,0.35)',
@@ -382,6 +577,189 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
         </Animated.View>
       </View>
     </View>
+
+    <Modal
+      visible={petPickerOpen}
+      transparent
+      animationType="none"
+      onRequestClose={closePetPicker}
+    >
+      <View style={radialStyles.modalRoot}>
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={closePetPicker}
+          accessibilityRole="button"
+          accessibilityLabel="Close pet picker"
+        >
+          <Animated.View
+            pointerEvents="none"
+            style={[radialStyles.backdrop, { opacity: backdropOpac }]}
+          />
+        </Pressable>
+
+        <View style={radialStyles.orbitLayer} pointerEvents="box-none">
+          <View
+            style={[
+              radialStyles.hint,
+              { top: Math.max(insets.top + spacing.md, fabCenterY - 168) },
+            ]}
+            pointerEvents="none"
+          >
+            <AppText
+              style={[
+                textStyles.subtitle,
+                {
+                  color: colors.text.inverse,
+                  fontFamily: fontFamilies.bold,
+                  textAlign: 'center',
+                  textShadowColor: 'rgba(0,0,0,0.35)',
+                  textShadowOffset: { width: 0, height: 1 },
+                  textShadowRadius: 4,
+                },
+              ]}
+            >
+              Who are you caring for?
+            </AppText>
+            <AppText
+              style={[
+                textStyles.caption,
+                {
+                  color: 'rgba(255,255,255,0.88)',
+                  fontFamily: fontFamilies.medium,
+                  textAlign: 'center',
+                  marginTop: spacing.xs,
+                },
+              ]}
+            >
+              Tap a profile to switch
+            </AppText>
+          </View>
+
+          <Pressable
+            style={radialStyles.closeFab}
+            onPress={closePetPicker}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+          >
+            <MaterialIcon name="close" size={20} color={colors.text.heading} />
+          </Pressable>
+
+          {pets.map((pet, i) => {
+            const pos = orbitLayout[i];
+            if (pos == null) {
+              return null;
+            }
+            const arr = bubbleAnimsRef.current;
+            while (arr.length <= i) {
+              arr.push(new Animated.Value(0));
+            }
+            const bubbleAnim = arr[i]!;
+            const isActive = activePet?.id === pet.id;
+            const scale = bubbleAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0.2, 1],
+            });
+            const opacity = bubbleAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 1],
+            });
+            const uri = pet.photo?.trim() ? pet.photo : DEFAULT_PET_PHOTO_URI;
+            return (
+              <Animated.View
+                key={pet.id}
+                style={[
+                  {
+                    position: 'absolute',
+                    left: pos.left,
+                    top: pos.top,
+                    width: ORBIT_ITEM_WIDTH,
+                    alignItems: 'center',
+                  },
+                  { opacity, transform: [{ scale }] },
+                ]}
+              >
+                <Pressable
+                  onPress={() => onPickPet(pet)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Select ${pet.name}`}
+                  accessibilityState={{ selected: isActive }}
+                  style={{ alignItems: 'center' }}
+                >
+                  <View
+                    style={[
+                      radialStyles.avatarWrap,
+                      shadows.md,
+                      isActive && radialStyles.activeRing,
+                      { backgroundColor: colors.surface },
+                    ]}
+                  >
+                    <Image
+                      source={{ uri }}
+                      style={radialStyles.avatarImg}
+                      accessibilityIgnoresInvertColors
+                    />
+                    {isActive ? (
+                      <View style={radialStyles.checkDot}>
+                        <MaterialIcon
+                          name="check"
+                          size={12}
+                          color={colors.text.inverse}
+                        />
+                      </View>
+                    ) : null}
+                  </View>
+                  <AppText
+                    style={[
+                      textStyles.caption,
+                      {
+                        color: colors.text.inverse,
+                        fontFamily: fontFamilies.semibold,
+                        textAlign: 'center',
+                        marginTop: spacing.xs,
+                        maxWidth: ORBIT_ITEM_WIDTH + 8,
+                        textShadowColor: 'rgba(0,0,0,0.4)',
+                        textShadowOffset: { width: 0, height: 1 },
+                        textShadowRadius: 3,
+                      },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {pet.name}
+                  </AppText>
+                </Pressable>
+              </Animated.View>
+            );
+          })}
+
+          <View
+            style={[
+              radialStyles.hint,
+              {
+                top: fabCenterY + 96,
+              },
+            ]}
+            pointerEvents="box-none"
+          >
+            <Pressable
+              style={radialStyles.manageChip}
+              onPress={goManagePets}
+              accessibilityRole="button"
+              accessibilityLabel="Manage all pets"
+            >
+              <AppText
+                style={[
+                  textStyles.caption,
+                  { color: colors.accent, fontFamily: fontFamilies.bold },
+                ]}
+              >
+                Manage all pets
+              </AppText>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
+    </>
   );
 };
 

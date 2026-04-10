@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import type { SettingsStackParamList } from '../types';
 import SettingsScreen from '../../../modules/settings/ui/screens/SettingsScreen';
+import UserProfileScreen from '../../../modules/settings/ui/screens/UserProfileScreen';
 
 const Stack = createNativeStackNavigator<SettingsStackParamList>();
 
@@ -16,6 +17,7 @@ export const SettingsStackNavigator = React.memo(function SettingsStackNavigator
   return (
     <Stack.Navigator initialRouteName="Settings" screenOptions={stackScreenOptions}>
       <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="UserProfile" component={UserProfileScreen} />
     </Stack.Navigator>
   );
 });

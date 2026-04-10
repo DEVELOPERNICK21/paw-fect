@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import {
   DarkTheme,
@@ -7,7 +7,16 @@ import {
   type Theme as NavigationTheme,
 } from '@react-navigation/native';
 
+import {
+  bootstrapLocalNotifications,
+  flushInitialNotificationNavigation,
+  subscribeNotificationNavigation,
+} from '../../infrastructure/notifications/notificationBootstrap';
+import { notificationService } from '../../infrastructure/notifications/notificationService';
 import { appOrchestrator } from '../../modules/app/appComposition';
+import { registerNotificationFeedSync } from '../../modules/notifications/bootstrap/registerNotificationFeedSync';
+import { useHomeQuickActionsUsageStore } from '../../modules/app/store/homeQuickActionsUsageStore';
+import { useNotificationFeedStore } from '../../modules/notifications/store/notificationFeedStore';
 import SplashScreen from '../../modules/app/ui/screens/SplashScreen';
 import {
   ensureAuthSessionListenerAttached,
@@ -46,6 +55,23 @@ export const RootNavigator: React.FC = () => {
   const { colors, isDarkMode } = useTheme();
   const [bootstrapped, setBootstrapped] = useState(false);
 
+  const hasCompletedOnboarding = settings?.onboardingCompleted ?? false;
+  const petGateActive =
+    isAuthenticated && hasCompletedOnboarding && !petsLoading && pets.length === 0;
+
+  const canNavigateNotificationRef = useRef(false);
+  const updateNotificationNavGate = useCallback((): void => {
+    canNavigateNotificationRef.current =
+      isAuthenticated &&
+      hasCompletedOnboarding &&
+      !petsLoading &&
+      pets.length > 0;
+  }, [isAuthenticated, hasCompletedOnboarding, petsLoading, pets.length]);
+
+  useEffect(() => {
+    updateNotificationNavGate();
+  }, [updateNotificationNavGate]);
+
   const navigationTheme: NavigationTheme = {
     ...(isDarkMode ? DarkTheme : DefaultTheme),
     colors: {
@@ -72,6 +98,30 @@ export const RootNavigator: React.FC = () => {
   }, [loadCurrentUser, loadSettings, loadPets]);
 
   useEffect(() => {
+    if (!bootstrapped) {
+      return;
+    }
+    void bootstrapLocalNotifications().catch(() => {});
+  }, [bootstrapped]);
+
+  useEffect(() => {
+    if (!bootstrapped) {
+      return;
+    }
+    const unsub = subscribeNotificationNavigation(navigationRef, () =>
+      canNavigateNotificationRef.current,
+    );
+    return unsub;
+  }, [bootstrapped]);
+
+  useEffect(() => {
+    if (!bootstrapped) {
+      return;
+    }
+    return registerNotificationFeedSync();
+  }, [bootstrapped]);
+
+  useEffect(() => {
     const sub = AppState.addEventListener('change', next => {
       if (next === 'active') {
         refreshProfile().catch(() => {});
@@ -87,11 +137,14 @@ export const RootNavigator: React.FC = () => {
     }
 
     if (!isAuthenticated) {
+      useNotificationFeedStore.getState().clearAll();
+      useHomeQuickActionsUsageStore.getState().reset();
       appOrchestrator.clearSessionData({
         resetPets,
         resetReminders,
         resetRecords,
       });
+      void notificationService.cancelAllNotifications();
       return;
     }
 
@@ -123,11 +176,6 @@ export const RootNavigator: React.FC = () => {
     return <SplashScreen />;
   }
 
-  const hasCompletedOnboarding = settings?.onboardingCompleted ?? false;
-
-  const petGateActive =
-    isAuthenticated && hasCompletedOnboarding && !petsLoading && pets.length === 0;
-
   let content: React.ReactElement = <AuthNavigator />;
   if (!hasCompletedOnboarding) {
     content = <OnboardingNavigator />;
@@ -138,7 +186,15 @@ export const RootNavigator: React.FC = () => {
   }
 
   return (
-    <NavigationContainer ref={navigationRef} theme={navigationTheme}>
+    <NavigationContainer
+      ref={navigationRef}
+      theme={navigationTheme}
+      onReady={() => {
+        void flushInitialNotificationNavigation(navigationRef, () =>
+          canNavigateNotificationRef.current,
+        );
+      }}
+    >
       {content}
     </NavigationContainer>
   );

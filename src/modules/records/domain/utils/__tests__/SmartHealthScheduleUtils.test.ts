@@ -1,5 +1,6 @@
 import {
   buildCompletionUpdate,
+  createNextRecurringRecord,
   generateBootstrapSchedule,
   resolveSmartStatus,
 } from '../SmartHealthScheduleUtils';
@@ -59,7 +60,7 @@ describe('SmartHealthScheduleUtils', () => {
     expect(records.find(r => r.type === 'deworming' && r.recurrenceType === 'quarterly')?.dueDate).toBe('2026-02-11');
   });
 
-  it('creates next recurring task from completion date', () => {
+  it('does not create a parallel recurring row when completing deworming', () => {
     const source: SmartHealthRecord = {
       id: 'r1',
       userId: 'u1',
@@ -78,8 +79,64 @@ describe('SmartHealthScheduleUtils', () => {
 
     expect(updated.status).toBe('completed');
     expect(updated.completedDate).toBe('2026-02-03');
-    expect(next?.dueDate).toBe('2026-05-03');
+    expect(next).toBeNull();
     expect(updated.recovery?.recoveryReason).toBe('late');
+  });
+
+  it('creates next recurring vaccination task from completion date', () => {
+    const source: SmartHealthRecord = {
+      id: 'r1',
+      userId: 'u1',
+      petId: 'p1',
+      type: 'vaccination',
+      key: 'DHPP_1',
+      family: 'DHPP',
+      category: 'core',
+      name: 'DHPP',
+      dueDate: '2026-02-01',
+      completedDate: null,
+      status: 'upcoming',
+      recurrenceType: 'quarterly',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+
+    const { updated, next } = buildCompletionUpdate(source, '2026-02-03');
+
+    expect(updated.status).toBe('completed');
+    expect(next?.dueDate).toBe('2026-05-03');
+  });
+
+  it('creates next recurring deworming by cadence using calendar months', () => {
+    const monthly: SmartHealthRecord = {
+      id: 'm1',
+      userId: 'u1',
+      petId: 'p1',
+      type: 'deworming',
+      key: 'DEWORM_2026-01-31',
+      family: 'Deworming',
+      category: 'core',
+      name: 'Deworming',
+      dueDate: '2026-01-31',
+      completedDate: null,
+      status: 'upcoming',
+      recurrenceType: 'quarterly',
+      cadence: 'monthly',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+
+    const everyTwoMonths: SmartHealthRecord = {
+      ...monthly,
+      id: 'm2',
+      cadence: 'every_2_months',
+    };
+
+    const n1 = createNextRecurringRecord(monthly, '2026-01-31');
+    const n2 = createNextRecurringRecord(everyTwoMonths, '2026-01-31');
+
+    expect(n1?.dueDate).toBe('2026-03-03');
+    expect(n2?.dueDate).toBe('2026-03-31');
   });
 
   it('recalculates records for missed and backdated events', () => {
@@ -108,7 +165,7 @@ describe('SmartHealthScheduleUtils', () => {
     const backdated = engine.recalculatePlanOnEvent({
       records,
       event: {
-        type: 'backdated_entry',
+        type: 'completion',
         recordId: recurring!.id,
         completedDate: '2026-03-01',
       },

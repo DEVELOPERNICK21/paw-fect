@@ -27,11 +27,14 @@ export type HealthStackParamList = {
 
 export type PetsStackParamList = {
   PetProfile: undefined;
+  PetSwitcher: undefined;
   AddPet: { petId?: string } | undefined;
   AddHealthDetails: { kind: 'weight' | 'vaccines' | 'conditions' } | undefined;
 };
 
-export type RemindersStackParamList = {
+export type NotificationsStackParamList = {
+  NotificationInbox: undefined;
+  NotificationDetail: { notificationId: string };
   ReminderList: undefined;
   AddReminder: undefined;
   ReminderDetail: { reminderId: string };
@@ -39,13 +42,14 @@ export type RemindersStackParamList = {
 
 export type SettingsStackParamList = {
   Settings: undefined;
+  UserProfile: undefined;
 };
 
 export type AppTabParamList = {
   HomeTab: NavigatorScreenParams<HomeStackParamList> | undefined;
   HealthTab: NavigatorScreenParams<HealthStackParamList> | undefined;
   PetsTab: NavigatorScreenParams<PetsStackParamList> | undefined;
-  RemindersTab: NavigatorScreenParams<RemindersStackParamList> | undefined;
+  NotificationsTab: NavigatorScreenParams<NotificationsStackParamList> | undefined;
   SettingsTab: NavigatorScreenParams<SettingsStackParamList> | undefined;
 };
 
@@ -69,12 +73,17 @@ export type HealthRecordsRootNavigation = CompositeNavigationProp<
   BottomTabNavigationProp<AppTabParamList>
 >;
 
+export type NotificationInboxRootNavigation = CompositeNavigationProp<
+  NativeStackNavigationProp<NotificationsStackParamList, 'NotificationInbox'>,
+  BottomTabNavigationProp<AppTabParamList>
+>;
+
 export type ReminderListRootNavigation = CompositeNavigationProp<
-  NativeStackNavigationProp<RemindersStackParamList, 'ReminderList'>,
+  NativeStackNavigationProp<NotificationsStackParamList, 'ReminderList'>,
   BottomTabNavigationProp<AppTabParamList>
 >;
 
 export type ReminderDetailRootNavigation = CompositeNavigationProp<
-  NativeStackNavigationProp<RemindersStackParamList, 'ReminderDetail'>,
+  NativeStackNavigationProp<NotificationsStackParamList, 'ReminderDetail'>,
   BottomTabNavigationProp<AppTabParamList>
 >;

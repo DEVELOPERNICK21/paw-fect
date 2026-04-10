@@ -1,7 +1,10 @@
 /**
  * Composition root for the pets module: wires repository implementations to use cases.
  */
+import { notificationService } from '../../infrastructure/notifications/notificationService';
+import { syncDailyRoutineNotificationsForPets } from '../../infrastructure/notifications/dailyCareNotifications';
 import { createPetRepository } from './data/repositories/PetRepositoryImpl';
+import type { Pet } from './domain/models/Pet';
 import { GetPets } from './domain/usecases/GetPets';
 import { GetPetById } from './domain/usecases/GetPetById';
 import { GetActivePetId } from './domain/usecases/GetActivePetId';
@@ -22,4 +25,10 @@ export const petComposition = {
   deletePet: new DeletePet(repository),
   setActivePet: new SetActivePet(repository),
   createPetProfile: new CreatePetProfile(),
+  syncDailyRoutineNotifications: async (pets: Pet[]): Promise<void> => {
+    await syncDailyRoutineNotificationsForPets(
+      pets.map(p => ({ id: p.id, name: p.name })),
+      notificationService,
+    );
+  },
 } as const;

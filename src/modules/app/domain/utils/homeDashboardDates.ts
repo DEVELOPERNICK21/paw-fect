@@ -77,6 +77,13 @@ export function daysUntilDate(dateStr: string, now: Date): number {
   return Math.round((end - start) / 86_400_000);
 }
 
+/** Calendar add for YYYY-MM-DD date keys (local). */
+export function addDaysToYmd(ymd: string, days: number): string {
+  const d = parseLocalDay(reminderDateKey(ymd));
+  d.setDate(d.getDate() + days);
+  return toYmd(d);
+}
+
 export function formatMilestoneSubtitle(dateStr: string, now: Date): string {
   const short = parseLocalDay(reminderDateKey(dateStr)).toLocaleDateString(
     undefined,

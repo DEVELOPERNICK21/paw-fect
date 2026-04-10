@@ -5,6 +5,7 @@ import { useAuthStore } from '../auth/store/authStore';
 import { createPetRepository } from '../pets/data/repositories/PetRepositoryImpl';
 import { createReminderRepository } from '../reminders/data/repositories/ReminderRepositoryImpl';
 import { createHealthRecordRepository } from '../records/data/repositories/HealthRecordRepositoryImpl';
+import { createSmartHealthRecordRepository } from '../records/data/repositories/SmartHealthRecordRepositoryImpl';
 
 import { AppOrchestrator } from './application/AppOrchestrator';
 import { HomeDashboardInvalidationHub } from './application/HomeDashboardInvalidationHub';
@@ -20,6 +21,7 @@ const homeDashboardInvalidationHub = new HomeDashboardInvalidationHub();
 const petRepository = createPetRepository();
 const reminderRepository = createReminderRepository();
 const healthRecordRepository = createHealthRecordRepository();
+const smartHealthRecordRepository = createSmartHealthRecordRepository();
 
 const buildHomeDashboardViewModel = new BuildHomeDashboardViewModel();
 
@@ -27,6 +29,7 @@ const observeHomeDashboard = new ObserveHomeDashboard(
   petRepository,
   reminderRepository,
   healthRecordRepository,
+  smartHealthRecordRepository,
   buildHomeDashboardViewModel,
   () => useAuthStore.getState().user?.id ?? null,
   homeDashboardInvalidationHub,

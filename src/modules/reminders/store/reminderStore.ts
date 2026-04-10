@@ -1,15 +1,10 @@
 import { create } from 'zustand';
 import type { Reminder } from '../domain/models/Reminder';
 import type { ReminderType } from '../domain/models/Reminder';
-import { createReminderRepository } from '../data/repositories/ReminderRepositoryImpl';
-import { GetReminders } from '../domain/usecases/GetReminders';
-import { CreateReminder } from '../domain/usecases/CreateReminder';
-import { UpdateReminder } from '../domain/usecases/UpdateReminder';
-import { DeleteReminder } from '../domain/usecases/DeleteReminder';
 import {
-  CreateReminderEntry,
   type CreateReminderEntryResult,
 } from '../domain/usecases/CreateReminderEntry';
+import { remindersComposition } from '../remindersComposition';
 
 export interface ReminderState {
   reminders: Reminder[];
@@ -24,17 +19,11 @@ export interface ReminderState {
     date: string;
     time: string;
     repeatEnabled: boolean;
+    notes?: string;
   }) => Promise<{ success: boolean; error?: string }>;
   updateReminder: (reminder: Reminder) => Promise<void>;
   deleteReminder: (id: string) => Promise<void>;
 }
-
-const repository = createReminderRepository();
-const getRemindersUseCase = new GetReminders(repository);
-const createReminderUseCase = new CreateReminder(repository);
-const updateReminderUseCase = new UpdateReminder(repository);
-const deleteReminderUseCase = new DeleteReminder(repository);
-const createReminderEntryUseCase = new CreateReminderEntry();
 
 export const useReminderStore = create<ReminderState>((set, get) => ({
   reminders: [],
@@ -44,8 +33,9 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
   loadReminders: async () => {
     set({ loading: true });
     try {
-      const reminders = await getRemindersUseCase.execute();
+      const reminders = await remindersComposition.getReminders.execute();
       set({ reminders, loading: false });
+      void remindersComposition.syncAllReminderNotifications(reminders).catch(() => {});
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('[reminderStore] loadReminders error', error);
@@ -56,9 +46,10 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
   createReminder: async (reminder: Reminder) => {
     set({ loading: true });
     try {
-      const created = await createReminderUseCase.execute(reminder);
+      const created = await remindersComposition.createReminder.execute(reminder);
       const { reminders } = get();
       set({ reminders: [...reminders, created], loading: false });
+      void remindersComposition.scheduleReminderNotifications(created).catch(() => {});
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('[reminderStore] createReminder error', error);
@@ -68,7 +59,7 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
 
   createReminderEntry: async (input) => {
     const result: CreateReminderEntryResult =
-      createReminderEntryUseCase.execute(input);
+      remindersComposition.createReminderEntry.execute(input);
     if (!result.ok) {
       return { success: false, error: result.errorMessage };
     }
@@ -79,12 +70,13 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
   updateReminder: async (reminder: Reminder) => {
     set({ loading: true });
     try {
-      const updated = await updateReminderUseCase.execute(reminder);
+      const updated = await remindersComposition.updateReminder.execute(reminder);
       const { reminders } = get();
       const next = reminders.map(existing =>
         existing.id === updated.id ? updated : existing,
       );
       set({ reminders: next, loading: false });
+      void remindersComposition.scheduleReminderNotifications(updated).catch(() => {});
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('[reminderStore] updateReminder error', error);
@@ -95,7 +87,8 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
   deleteReminder: async (id: string) => {
     set({ loading: true });
     try {
-      await deleteReminderUseCase.execute(id);
+      await remindersComposition.cancelReminderNotifications(id).catch(() => {});
+      await remindersComposition.deleteReminder.execute(id);
       const { reminders } = get();
       const next = reminders.filter(reminder => reminder.id !== id);
       set({ reminders: next, loading: false });

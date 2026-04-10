@@ -1,0 +1,39 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // User profile document
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+
+      // Pets collection
+      match /pets/{petId} {
+        allow read, write: if isOwner(userId);
+
+        // Smart schedule records
+        match /healthRecords/{recordId} {
+          allow read, write: if isOwner(userId);
+        }
+
+        // Manual logs added by user
+        match /manualHealthRecords/{recordId} {
+          allow read, write: if isOwner(userId);
+        }
+
+        // Smart schedule history
+        match /healthRecordHistory/{historyId} {
+          allow read, write: if isOwner(userId);
+        }
+      }
+    }
+  }
+}

@@ -4,6 +4,7 @@ import Svg, { Path } from 'react-native-svg';
 type IconName =
   | 'arrow_back'
   | 'check'
+  | 'close'
   | 'photo_camera'
   | 'pets'
   | 'vaccines'
@@ -61,6 +62,8 @@ type IconName =
 const PATHS: Record<IconName, string> = {
   arrow_back: 'M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z',
   check: 'M9 16.17 4.83 12 3.41 13.41 9 19 21 7 19.59 5.59z',
+  close:
+    'M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
   photo_camera:
     'M20 5h-3.17L15 3H9L7.17 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 13H4V7h4.05l1.83-2h4.24l1.83 2H20v11zm-8-2.5A4.5 4.5 0 1 0 12 6a4.5 4.5 0 0 0 0 9z',
   pets: 'M4.5 9A2.5 2.5 0 1 1 4.5 4a2.5 2.5 0 0 1 0 5zm15 0A2.5 2.5 0 1 1 19.5 4a2.5 2.5 0 0 1 0 5zM12 5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5zm0 19c-3.31 0-6-2.24-6-5 0-2.5 2.69-4.5 6-4.5s6 2 6 4.5c0 2.76-2.69 5-6 5z',

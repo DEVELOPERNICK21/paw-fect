@@ -1,13 +1,9 @@
 import { create } from 'zustand';
 import type { HealthRecord } from '../domain/models/HealthRecord';
-import { createHealthRecordRepository } from '../data/repositories/HealthRecordRepositoryImpl';
-import { GetRecords } from '../domain/usecases/GetRecords';
-import { CreateRecord } from '../domain/usecases/CreateRecord';
-import { DeleteRecord } from '../domain/usecases/DeleteRecord';
 import {
-  CreateRecordEntry,
   type CreateRecordEntryResult,
 } from '../domain/usecases/CreateRecordEntry';
+import { recordsComposition } from '../recordsComposition';
 
 export interface RecordState {
   records: HealthRecord[];
@@ -26,12 +22,6 @@ export interface RecordState {
   deleteRecord: (id: string) => Promise<void>;
 }
 
-const repository = createHealthRecordRepository();
-const getRecordsUseCase = new GetRecords(repository);
-const createRecordUseCase = new CreateRecord(repository);
-const deleteRecordUseCase = new DeleteRecord(repository);
-const createRecordEntryUseCase = new CreateRecordEntry();
-
 export const useRecordStore = create<RecordState>((set, get) => ({
   records: [],
   loading: false,
@@ -41,7 +31,7 @@ export const useRecordStore = create<RecordState>((set, get) => ({
   loadRecords: async () => {
     try {
       set({ loading: true, error: null });
-      const records = await getRecordsUseCase.execute();
+      const records = await recordsComposition.getRecords.execute();
       set({ records, loading: false, error: null });
     } catch (error) {
       set({
@@ -55,7 +45,7 @@ export const useRecordStore = create<RecordState>((set, get) => ({
 
   createRecord: async (record: HealthRecord) => {
     try {
-      const created = await createRecordUseCase.execute(record);
+      const created = await recordsComposition.createRecord.execute(record);
       const { records } = get();
       set({ records: [...records, created] });
     } catch (error) {
@@ -65,7 +55,8 @@ export const useRecordStore = create<RecordState>((set, get) => ({
   },
 
   createRecordEntry: async (input) => {
-    const result: CreateRecordEntryResult = createRecordEntryUseCase.execute(input);
+    const result: CreateRecordEntryResult =
+      recordsComposition.createRecordEntry.execute(input);
     if (!result.ok) {
       return { success: false, error: result.errorMessage };
     }
@@ -75,7 +66,7 @@ export const useRecordStore = create<RecordState>((set, get) => ({
 
   deleteRecord: async (id: string) => {
     try {
-      await deleteRecordUseCase.execute(id);
+      await recordsComposition.deleteRecord.execute(id);
       const { records } = get();
       const next = records.filter(record => record.id !== id);
       set({ records: next });

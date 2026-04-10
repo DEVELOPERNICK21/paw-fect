@@ -9,9 +9,10 @@ import type { SmartHealthRecord } from '../../domain/models/SmartHealthRecord';
 export interface SmartHealthRecordItemProps {
   record: SmartHealthRecord;
   onMarkDone?: () => void;
-  onRemind?: () => void;
   /** Reschedule / correct the planned date */
   onEditDate?: () => void;
+  /** Deworming: log skip with reason (handled by parent modal) */
+  onSkipDose?: () => void;
   variant?: 'default' | 'hero';
   primaryActionLabel?: string;
 }
@@ -29,8 +30,8 @@ function formatDate(isoDate: string): string {
 export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
   record,
   onMarkDone,
-  onRemind,
   onEditDate,
+  onSkipDose,
   variant = 'default',
   primaryActionLabel = 'Mark as Done',
 }) => {
@@ -43,6 +44,8 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
       ? colors.successSurface
       : record.status === 'missed'
       ? colors.brandTint10
+      : record.status === 'skipped'
+      ? colors.surfaceAlt
       : record.status === 'overdue'
       ? colors.brandTint20
       : record.status === 'locked'
@@ -52,6 +55,8 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
     record.status === 'completed'
       ? colors.success
       : record.status === 'missed'
+      ? colors.text.subdued
+      : record.status === 'skipped'
       ? colors.text.subdued
       : record.status === 'overdue'
       ? colors.danger
@@ -63,6 +68,8 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
       ? 'COMPLETED'
       : record.status === 'missed'
       ? 'MISSED'
+      : record.status === 'skipped'
+      ? 'SKIPPED'
       : record.status === 'overdue'
       ? 'OVERDUE'
       : record.status === 'locked'
@@ -80,6 +87,12 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
     if (record.status === 'missed') {
       return `Missed on ${formatDate(record.dueDate)}`;
     }
+    if (record.status === 'skipped') {
+      const note = record.skipReason?.trim();
+      return note
+        ? `Skipped (planned ${formatDate(record.dueDate)}) — ${note}`
+        : `Skipped (planned ${formatDate(record.dueDate)})`;
+    }
     if (record.status === 'locked') {
       return `Scheduled for ${formatDate(record.dueDate)}`;
     }
@@ -94,7 +107,9 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
       : '';
 
   const showActionRow =
-    record.status === 'overdue' || record.status === 'upcoming';
+    record.status === 'overdue' ||
+    record.status === 'upcoming' ||
+    record.status === 'missed';
   const showCompletedActions = record.status === 'completed' && onEditDate;
 
   return (
@@ -197,11 +212,11 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
               </AppText>
             </Pressable>
           ) : null}
-          {onRemind ? (
+          {onEditDate ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Remind me about ${record.name}`}
-              onPress={onRemind}
+              accessibilityLabel={`Reschedule ${record.name}`}
+              onPress={onEditDate}
               style={({ pressed }) => [
                 styles.actionBtn,
                 {
@@ -219,7 +234,33 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
                   { color: colors.text.secondary, fontFamily: fontFamilies.bold },
                 ]}
               >
-                Remind Me
+                Reschedule
+              </AppText>
+            </Pressable>
+          ) : null}
+          {record.type === 'deworming' && onSkipDose ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Skip ${record.name}`}
+              onPress={onSkipDose}
+              style={({ pressed }) => [
+                styles.actionBtn,
+                {
+                  borderRadius: radius.round,
+                  borderWidth: 1,
+                  borderColor: colors.borderSubtle,
+                  backgroundColor: colors.surface,
+                  opacity: pressed ? 0.9 : 1,
+                },
+              ]}
+            >
+              <AppText
+                style={[
+                  textStyles.caption,
+                  { color: colors.text.secondary, fontFamily: fontFamilies.bold },
+                ]}
+              >
+                Skip dose
               </AppText>
             </Pressable>
           ) : null}

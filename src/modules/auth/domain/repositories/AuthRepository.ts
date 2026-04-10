@@ -11,6 +11,10 @@ export interface AuthRepository {
   getCurrentUser(): Promise<User | null>;
   sendPasswordResetEmail(email: string): Promise<void>;
   processPasswordResetQueue(): Promise<void>;
+  updateUserProfile(input: {
+    displayName: string;
+    phoneNumber: string | null;
+  }): Promise<User>;
   subscribeSession(onChange: (user: User | null) => void): () => void;
   refreshProfileFromRemoteSession(): Promise<User | null>;
 }

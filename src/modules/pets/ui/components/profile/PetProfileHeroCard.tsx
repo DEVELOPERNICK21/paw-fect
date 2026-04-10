@@ -184,7 +184,7 @@ export const PetProfileHeroCard: React.FC<PetProfileHeroCardProps> = React.memo(
                 numberOfLines={1}
               >
                 {pet.name}
-              </AppText>{' '}
+              </AppText>
               <AppText
                 style={[
                   textStyles.caption,

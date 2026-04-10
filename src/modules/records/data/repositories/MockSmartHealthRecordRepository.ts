@@ -9,7 +9,9 @@ const mockHistoryDb = new Map<string, SmartHealthHistoryLog[]>();
 
 const keyFor = (userId: string, petId: string): string => `${userId}:${petId}`;
 
-export class MockSmartHealthRecordRepository implements SmartHealthRecordRepository {
+export class MockSmartHealthRecordRepository
+  implements SmartHealthRecordRepository
+{
   async listByPet(userId: string, petId: string): Promise<SmartHealthRecord[]> {
     const key = keyFor(userId, petId);
     return (mockRecordDb.get(key) ?? []).slice();
@@ -46,5 +48,24 @@ export class MockSmartHealthRecordRepository implements SmartHealthRecordReposit
       const existing = mockHistoryDb.get(key) ?? [];
       mockHistoryDb.set(key, [...existing, log]);
     }
+  }
+
+  async deleteOne(
+    userId: string,
+    petId: string,
+    recordId: string,
+  ): Promise<void> {
+    const key = keyFor(userId, petId);
+    const records = mockRecordDb.get(key) ?? [];
+    mockRecordDb.set(
+      key,
+      records.filter(r => r.id !== recordId),
+    );
+  }
+
+  async deleteAll(userId: string, petId: string): Promise<void> {
+    const key = keyFor(userId, petId);
+    mockRecordDb.delete(key);
+    mockHistoryDb.delete(key);
   }
 }

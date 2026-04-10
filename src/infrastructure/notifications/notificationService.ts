@@ -1,15 +1,29 @@
 import { Platform } from 'react-native';
 
+import { NotifeeNotificationService } from './notifeeNotificationService';
+
 export interface NotificationPayload {
   id: string;
   title: string;
   body: string;
   scheduledDate: Date;
-  data?: Record<string, unknown>;
+  /** String values only (OS notification payload contract). */
+  data?: Record<string, string>;
+  /** When set, OS repeats from the first fire time (Notifee daily repeat). */
+  repeat?: 'daily';
+}
+
+export interface ImmediateNotificationPayload {
+  /** Stable id replaces any previous notification with the same id. */
+  id: string;
+  title: string;
+  body: string;
+  data?: Record<string, string>;
 }
 
 export interface NotificationService {
   scheduleNotification(payload: NotificationPayload): Promise<void>;
+  displayImmediateNotification(payload: ImmediateNotificationPayload): Promise<void>;
   cancelNotification(id: string): Promise<void>;
   cancelAllNotifications(): Promise<void>;
 }
@@ -18,7 +32,17 @@ class NoopNotificationService implements NotificationService {
   async scheduleNotification(payload: NotificationPayload): Promise<void> {
     if (__DEV__) {
       // eslint-disable-next-line no-console
-      console.log('[NotificationService] scheduleNotification', {
+      console.log('[NotificationService] scheduleNotification (noop)', {
+        platform: Platform.OS,
+        payload,
+      });
+    }
+  }
+
+  async displayImmediateNotification(payload: ImmediateNotificationPayload): Promise<void> {
+    if (__DEV__) {
+      // eslint-disable-next-line no-console
+      console.log('[NotificationService] displayImmediateNotification (noop)', {
         platform: Platform.OS,
         payload,
       });
@@ -28,7 +52,7 @@ class NoopNotificationService implements NotificationService {
   async cancelNotification(id: string): Promise<void> {
     if (__DEV__) {
       // eslint-disable-next-line no-console
-      console.log('[NotificationService] cancelNotification', {
+      console.log('[NotificationService] cancelNotification (noop)', {
         platform: Platform.OS,
         id,
       });
@@ -38,13 +62,13 @@ class NoopNotificationService implements NotificationService {
   async cancelAllNotifications(): Promise<void> {
     if (__DEV__) {
       // eslint-disable-next-line no-console
-      console.log('[NotificationService] cancelAllNotifications', {
+      console.log('[NotificationService] cancelAllNotifications (noop)', {
         platform: Platform.OS,
       });
     }
   }
 }
 
+/** Real scheduling via Notifee; falls back to noop in test environments without native module. */
 export const notificationService: NotificationService =
-  new NoopNotificationService();
-
+  Platform.OS === 'web' ? new NoopNotificationService() : new NotifeeNotificationService();

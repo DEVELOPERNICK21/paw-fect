@@ -12,6 +12,10 @@ import type { User } from '../../domain/models/User';
  */
 export interface UserProfileRemoteDataSource {
   syncOnSignIn(user: User): Promise<User>;
+  updateProfile(
+    userId: string,
+    input: { displayName: string; phoneNumber: string | null },
+  ): Promise<User>;
 }
 
 class UserProfileRemoteDataSourceImpl implements UserProfileRemoteDataSource {
@@ -56,6 +60,38 @@ class UserProfileRemoteDataSourceImpl implements UserProfileRemoteDataSource {
     );
 
     return merged;
+  }
+
+  async updateProfile(
+    userId: string,
+    input: { displayName: string; phoneNumber: string | null },
+  ): Promise<User> {
+    const ref = firestore().collection('users').doc(userId);
+    const nowIso = new Date().toISOString();
+    await ref.set(
+      {
+        displayName: input.displayName,
+        phoneNumber: input.phoneNumber,
+        updatedAt: firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+    const snap = await ref.get();
+    const data = snap.data() as Record<string, unknown> | undefined;
+    return {
+      id: userId,
+      email: typeof data?.email === 'string' ? data.email : '',
+      displayName: typeof data?.displayName === 'string' ? data.displayName : null,
+      photoURL: typeof data?.photoURL === 'string' ? data.photoURL : null,
+      phoneNumber: typeof data?.phoneNumber === 'string' ? data.phoneNumber : null,
+      createdAt: typeof data?.createdAt === 'string' ? data.createdAt : nowIso,
+      lastLoginAt:
+        typeof data?.lastLoginAt === 'string' ? data.lastLoginAt : nowIso,
+      onboardingCompleted:
+        typeof data?.onboardingCompleted === 'boolean'
+          ? data.onboardingCompleted
+          : false,
+    };
   }
 }
 

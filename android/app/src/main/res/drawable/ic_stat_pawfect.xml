@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- White silhouette for status bar (Android tints this); matches in-app “pets” glyph. -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M4.5 9A2.5 2.5 0 1 1 4.5 4a2.5 2.5 0 0 1 0 5zm15 0A2.5 2.5 0 1 1 19.5 4a2.5 2.5 0 0 1 0 5zM12 5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5zm0 19c-3.31 0-6-2.24-6-5 0-2.5 2.69-4.5 6-4.5s6 2 6 4.5c0 2.76-2.69 5-6 5z" />
+</vector>

@@ -1,3 +1,5 @@
+import type { LifestyleRiskLevel, LifestyleType, PetRegion } from './CarePlanTemplate';
+
 export type SmartHealthRecordType = 'vaccination' | 'deworming';
 
 export type SmartHealthRecordStatus =
@@ -5,9 +7,16 @@ export type SmartHealthRecordStatus =
   | 'completed'
   | 'overdue'
   | 'locked'
-  | 'missed';
+  | 'missed'
+  | 'skipped';
 
 export type SmartHealthRecurrenceType = 'none' | 'yearly' | 'quarterly';
+
+export type DewormingCadence =
+  | 'every_14_days'
+  | 'monthly'
+  | 'every_2_months'
+  | 'every_3_months';
 
 export type PetStage = 'puppy' | 'adolescent' | 'adult';
 
@@ -93,6 +102,7 @@ export interface SmartHealthRecord {
   status: SmartHealthRecordStatus;
   isOptional?: boolean;
   recurrenceType: SmartHealthRecurrenceType;
+  cadence?: DewormingCadence; // for deworming: every_14_days, monthly, every_2_months, every_3_months
   riskLevel?: 'low' | 'medium' | 'high';
   lifestyleTriggers?: string[];
   doseNumber?: number;
@@ -109,6 +119,8 @@ export interface SmartHealthRecord {
     recoveredFrom: string | null;
     recoveryReason?: 'missed' | 'late' | 'manual_adjustment';
   };
+  /** User- or system-supplied note when status is `skipped` */
+  skipReason?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -118,19 +130,40 @@ export interface SmartHealthHistoryLog {
   userId: string;
   petId: string;
   recordId: string;
-  action: 'created' | 'completed' | 'rescheduled' | 'generated_next';
+  action:
+    | 'created'
+    | 'completed'
+    | 'rescheduled'
+    | 'generated_next'
+    | 'skipped';
   timestamp: string;
   meta?: Record<string, string>;
 }
 
+// In SmartHealthRecord.ts — add to BootstrapSmartScheduleInput
 export interface BootstrapSmartScheduleInput {
   userId: string;
   petId: string;
   petType: 'dog' | 'cat';
-  dateOfBirth: string; // YYYY-MM-DD
-  region?: 'IN' | 'US' | 'EU' | 'OTHER';
-  lifestyleType?: 'indoor' | 'outdoor' | 'mixed';
-  lifestyleRiskLevel?: 'low' | 'medium' | 'high';
-  lastVaccinationDate?: string;
+  dateOfBirth: string;
+  region?: PetRegion;
+  lifestyleType?: LifestyleType;
+  lifestyleRiskLevel?: LifestyleRiskLevel;
+  lastVaccinationDate?: string; // any vaccine
+  lastRabiesDate?: string; // FIX Bug 3: Rabies-specific
   lastDewormingDate?: string;
 }
+
+export const getCadenceDisplayLabel = (cadence?: DewormingCadence): string => {
+  if (!cadence) return '';
+  switch (cadence) {
+    case 'every_14_days':
+      return 'Every 2 weeks';
+    case 'monthly':
+      return 'Monthly';
+    case 'every_2_months':
+      return 'Every 2 months';
+    case 'every_3_months':
+      return 'Every 3 months';
+  }
+};

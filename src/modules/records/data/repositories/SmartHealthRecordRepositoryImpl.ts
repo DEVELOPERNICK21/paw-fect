@@ -27,6 +27,18 @@ export class SmartHealthRecordRepositoryImpl
   async appendHistory(logs: SmartHealthHistoryLog[]): Promise<void> {
     await this.remote.appendHistory(logs);
   }
+
+  async deleteOne(
+    userId: string,
+    petId: string,
+    recordId: string,
+  ): Promise<void> {
+    await this.remote.deleteOne(userId, petId, recordId);
+  }
+
+  async deleteAll(userId: string, petId: string): Promise<void> {
+    await this.remote.deleteAll(userId, petId);
+  }
 }
 
 export type SmartHealthRecordRepositoryAdapter = 'firebase' | 'mock';
@@ -41,7 +53,6 @@ export const createSmartHealthRecordRepository = (
   if (options?.adapter === 'mock') {
     return new MockSmartHealthRecordRepository();
   }
-    const remote = createSmartHealthRecordRemoteDataSource();
-    return new SmartHealthRecordRepositoryImpl(remote);
+  const remote = createSmartHealthRecordRemoteDataSource();
+  return new SmartHealthRecordRepositoryImpl(remote);
 };
-

@@ -70,13 +70,25 @@ export const AppNavigation = {
     );
   },
 
+  toNotificationInbox(): void {
+    if (!guardReady()) {
+      return;
+    }
+    navigationRef.dispatch(
+      CommonActions.navigate({
+        name: 'NotificationsTab',
+        params: { screen: 'NotificationInbox' },
+      }),
+    );
+  },
+
   toReminderList(): void {
     if (!guardReady()) {
       return;
     }
     navigationRef.dispatch(
       CommonActions.navigate({
-        name: 'RemindersTab',
+        name: 'NotificationsTab',
         params: { screen: 'ReminderList' },
       }),
     );
@@ -88,7 +100,7 @@ export const AppNavigation = {
     }
     navigationRef.dispatch(
       CommonActions.navigate({
-        name: 'RemindersTab',
+        name: 'NotificationsTab',
         params: { screen: 'AddReminder' },
       }),
     );

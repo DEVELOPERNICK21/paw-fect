@@ -1,12 +1,5 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import {
-  ActivityIndicator,
-  Dimensions,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Dimensions, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
@@ -14,13 +7,21 @@ import type { HomeRootNavigation } from '../../../../app/navigation/types';
 import { useAppTabBarInset } from '../../../../app/navigation/layout';
 import { AppNavigation } from '../../../../app/navigation/navigationService';
 import { AppText } from '../../../../shared/components/AppText';
-import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { useHomeDashboardStore } from '../../store/homeDashboardStore';
+import {
+  rankHomeQuickActions,
+  type HomeQuickActionId,
+  useHomeQuickActionsUsageStore,
+} from '../../store/homeQuickActionsUsageStore';
+import { usePetStore } from '../../../pets/store/petStore';
 
 import { HomeHeader } from '../../../../shared/components/HomeHeader';
+import { HomeAttentionBanner } from '../components/home/HomeAttentionBanner';
 import { HomeHealthSnapshotCard } from '../components/home/HomeHealthSnapshotCard';
+import { HomePetSwitcherBar } from '../components/home/HomePetSwitcherBar';
 import { HomePetSummaryCard } from '../components/home/HomePetSummaryCard';
+import { HomeQuickActionsRow } from '../components/home/HomeQuickActionsRow';
 import { TodayCareSection } from '../components/home/TodayCareSection';
 import { UpcomingSection } from '../components/home/UpcomingSection';
 
@@ -28,51 +29,107 @@ export const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeRootNavigation>();
   const tabBarInset = useAppTabBarInset();
   const theme = useTheme();
-  const { colors, spacing, textStyles, shadows, radius } = theme;
+  const { colors, spacing, textStyles, radius } = theme;
 
   const viewModel = useHomeDashboardStore(s => s.viewModel);
   const requestDashboardRefresh = useHomeDashboardStore(
     s => s.requestDashboardRefresh,
   );
+  const pets = usePetStore(s => s.pets);
+  const storeActivePetId = usePetStore(s => s.activePet?.id ?? null);
+  const setActivePet = usePetStore(s => s.setActivePet);
+  const loadPets = usePetStore(s => s.loadPets);
+  const recordQuickActionTap = useHomeQuickActionsUsageStore(s => s.recordTap);
+  const quickActionCounts = useHomeQuickActionsUsageStore(s => s.counts);
 
   useFocusEffect(
     useCallback(() => {
+      void loadPets().catch(() => {});
       requestDashboardRefresh();
-    }, [requestDashboardRefresh]),
+    }, [loadPets, requestDashboardRefresh]),
   );
-
-  const goSettings = useCallback(() => {
-    navigation.navigate('SettingsTab', { screen: 'Settings' });
-  }, [navigation]);
 
   const goPetProfile = useCallback(() => {
     navigation.navigate('PetsTab', { screen: 'PetProfile' });
   }, [navigation]);
 
+  const goUserProfile = useCallback(() => {
+    navigation.navigate('SettingsTab', { screen: 'UserProfile' });
+  }, [navigation]);
+
   const goAddReminder = useCallback(() => {
-    navigation.navigate('RemindersTab', { screen: 'AddReminder' });
+    navigation.navigate('NotificationsTab', { screen: 'AddReminder' });
   }, [navigation]);
 
-  const goReminderList = useCallback(() => {
-    navigation.navigate('RemindersTab', { screen: 'ReminderList' });
+  const goNotifications = useCallback(() => {
+    navigation.navigate('NotificationsTab', { screen: 'NotificationInbox' });
   }, [navigation]);
 
-  const goAddHealthRecord = useCallback(() => {
-    navigation.navigate('HealthTab', { screen: 'AddHealthRecord' });
+  const goLogWeight = useCallback(() => {
+    navigation.navigate('PetsTab', {
+      screen: 'AddHealthDetails',
+      params: { kind: 'weight' },
+    });
   }, [navigation]);
 
-  const goProfileOrSettings = useCallback(() => {
-    const pet = useHomeDashboardStore.getState().viewModel?.activePet;
-    if (pet) {
-      navigation.navigate('PetsTab', { screen: 'PetProfile' });
-      return;
-    }
-    navigation.navigate('SettingsTab', { screen: 'Settings' });
+  const goHealthRecords = useCallback(() => {
+    navigation.navigate('HealthTab', { screen: 'HealthRecords' });
   }, [navigation]);
 
   const viewportMinHeight = useMemo(
     () => Math.max(Dimensions.get('window').height, 884),
     [],
+  );
+
+  const quickActionPool = useMemo((): HomeQuickActionId[] => {
+    const base: HomeQuickActionId[] = [
+      'log_weight',
+      'alerts',
+      'pet_profile',
+      'user_profile',
+    ];
+    if (pets.length > 1) {
+      return [...base, 'pet_switcher'];
+    }
+    return base;
+  }, [pets.length]);
+
+  const orderedQuickActionIds = useMemo(
+    () => rankHomeQuickActions(quickActionPool, quickActionCounts).slice(0, 4),
+    [quickActionPool, quickActionCounts],
+  );
+
+  const handleQuickAction = useCallback(
+    (id: HomeQuickActionId) => {
+      recordQuickActionTap(id);
+      switch (id) {
+        case 'log_weight':
+          goLogWeight();
+          break;
+        case 'alerts':
+          goNotifications();
+          break;
+        case 'pet_profile':
+          goPetProfile();
+          break;
+        case 'user_profile':
+          goUserProfile();
+          break;
+        case 'pet_switcher':
+          navigation.navigate('PetsTab', { screen: 'PetSwitcher' });
+          break;
+        default:
+          break;
+      }
+    },
+    [
+      recordQuickActionTap,
+      goLogWeight,
+      goNotifications,
+      goPetProfile,
+      goUserProfile,
+      navigation,
+    ],
   );
 
   const showPetLoading =
@@ -95,8 +152,7 @@ export const HomeScreen: React.FC = () => {
       <View style={styles.root}>
         <HomeHeader
           title="Pawfect"
-          onPressMenu={goSettings}
-          onPressProfile={goProfileOrSettings}
+          onPressProfile={goUserProfile}
           theme={theme}
         />
 
@@ -145,13 +201,37 @@ export const HomeScreen: React.FC = () => {
             showsVerticalScrollIndicator={false}
           >
             {viewModel.activePet ? (
-              <HomePetSummaryCard
-                pet={viewModel.activePet}
-                healthStatusLine={viewModel.healthStatusLine}
-                nextMealLine={viewModel.nextMealLine}
-                onPressViewProfile={goPetProfile}
-                theme={theme}
-              />
+              <>
+                <HomePetSwitcherBar
+                  pets={pets}
+                  activePetId={storeActivePetId ?? viewModel.activePet.id}
+                  onSelectPet={petId => {
+                    void (async () => {
+                      await setActivePet(petId);
+                      requestDashboardRefresh();
+                    })();
+                  }}
+                  theme={theme}
+                />
+                <HomeAttentionBanner
+                  banner={viewModel.attentionBanner}
+                  onPress={goHealthRecords}
+                  theme={theme}
+                />
+                <HomePetSummaryCard
+                  pet={viewModel.activePet}
+                  healthStatusLine={viewModel.healthStatusLine}
+                  nextCareMilestoneLine={viewModel.nextCareMilestoneLine}
+                  lastActivityLine={viewModel.lastActivityLine}
+                  onPressViewProfile={goPetProfile}
+                  theme={theme}
+                />
+                <HomeQuickActionsRow
+                  orderedActionIds={orderedQuickActionIds}
+                  onPressAction={handleQuickAction}
+                  theme={theme}
+                />
+              </>
             ) : null}
 
             {viewModel.activePet ? (
@@ -160,20 +240,20 @@ export const HomeScreen: React.FC = () => {
                   items={viewModel.todayCare}
                   loading={viewModel.remindersLoading}
                   onPressAddReminder={goAddReminder}
-                  onPressViewSchedule={goReminderList}
+                  onPressViewSchedule={goNotifications}
                   theme={theme}
                 />
                 <HomeHealthSnapshotCard
                   weightLine={viewModel.weightLine}
                   activityLine={viewModel.activityLine}
                   heartLine={viewModel.heartLine}
-                  onPressLogActivity={goAddHealthRecord}
+                  onPressLogActivity={goLogWeight}
                   theme={theme}
                 />
                 <UpcomingSection
-                  items={viewModel.upcoming}
+                  items={viewModel.weekCarePreview}
                   loading={viewModel.remindersLoading}
-                  onPressAddReminder={goAddReminder}
+                  onPressOpenHealth={goHealthRecords}
                   theme={theme}
                 />
               </>
@@ -203,27 +283,6 @@ export const HomeScreen: React.FC = () => {
           </ScrollView>
         )}
 
-        {!showBlockingLoader && !showPetLoading && viewModel != null ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Add reminder"
-            onPress={goAddReminder}
-            style={[
-              styles.fab,
-              {
-                backgroundColor: colors.primary,
-                borderRadius: radius.round,
-                width: spacing['2xl'] + spacing.xl,
-                height: spacing['2xl'] + spacing.xl,
-                bottom: tabBarInset + spacing.lg,
-                right: spacing.lg,
-              },
-              shadows.lg,
-            ]}
-          >
-            <MaterialIcon name="add" size={24} color={colors.text.inverse} />
-          </Pressable>
-        ) : null}
       </View>
     </SafeAreaView>
   );
@@ -243,11 +302,6 @@ const styles = StyleSheet.create({
   },
   emptyPets: {
     borderWidth: 1,
-  },
-  fab: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   banner: {},
 });

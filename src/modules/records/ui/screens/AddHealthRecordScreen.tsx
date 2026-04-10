@@ -9,6 +9,7 @@ import { useAppTabBarInset } from '../../../../app/navigation/layout';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
 import { useTheme, type Theme } from '../../../../shared/hooks/useTheme';
 import { useRecordStore } from '../../store/recordStore';
+import { useSmartHealthRecordStore } from '../../store/smartHealthRecordStore';
 import { usePetStore } from '../../../pets/store/petStore';
 import { DatePickerField } from '../../../../shared/components/DatePickerField';
 import { Input } from '../../../../shared/components/Input';
@@ -87,6 +88,9 @@ export const AddHealthRecordScreen: React.FC = () => {
     if (!result.success) {
       setError(result.error ?? 'Unable to save health record.');
       return;
+    }
+    if (activePet) {
+      await useSmartHealthRecordStore.getState().loadPetRecords(activePet.id);
     }
     navigation.goBack();
   };

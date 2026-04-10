@@ -1,9 +1,6 @@
 import { create } from 'zustand';
 import type { Settings, ThemePreference } from '../domain/models/Settings';
-import { createSettingsRepository } from '../data/repositories/SettingsRepositoryImpl';
-import { GetSettings } from '../domain/usecases/GetSettings';
-import { UpdateSettings } from '../domain/usecases/UpdateSettings';
-import { SetThemeMode } from '../domain/usecases/SetThemeMode';
+import { settingsComposition } from '../settingsComposition';
 
 export interface SettingsState {
   settings: Settings | null;
@@ -12,17 +9,12 @@ export interface SettingsState {
   setThemeMode: (themeMode: ThemePreference) => Promise<void>;
 }
 
-const repository = createSettingsRepository();
-const getSettingsUseCase = new GetSettings(repository);
-const updateSettingsUseCase = new UpdateSettings(repository);
-const setThemeModeUseCase = new SetThemeMode();
-
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   settings: null,
 
   loadSettings: async () => {
     try {
-      const settings = await getSettingsUseCase.execute();
+      const settings = await settingsComposition.getSettings.execute();
       set({ settings });
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -32,7 +24,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   updateSettings: async (settings: Settings) => {
     try {
-      const updated = await updateSettingsUseCase.execute(settings);
+      const updated = await settingsComposition.updateSettings.execute(settings);
       set({ settings: updated });
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -45,9 +37,12 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       const currentSettings = get().settings;
       if (!currentSettings) return;
 
-      const nextSettings = setThemeModeUseCase.execute(currentSettings, themeMode);
+      const nextSettings = settingsComposition.setThemeMode.execute(
+        currentSettings,
+        themeMode,
+      );
       set({ settings: nextSettings });
-      await updateSettingsUseCase.execute(nextSettings);
+      await settingsComposition.updateSettings.execute(nextSettings);
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('[settingsStore] setThemeMode error', error);

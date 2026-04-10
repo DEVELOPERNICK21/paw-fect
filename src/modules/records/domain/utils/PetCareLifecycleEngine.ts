@@ -1,4 +1,5 @@
-import { createLocalId } from '../../../../shared/utils/id';
+// PetCareLifecycleEngine.ts — fully corrected
+
 import type {
   CarePlanContext,
   LifestyleType,
@@ -7,6 +8,7 @@ import type {
 } from '../models/CarePlanTemplate';
 import { CARE_PLAN_TEMPLATES } from '../models/CarePlanTemplates';
 import type { SmartHealthRecord } from '../models/SmartHealthRecord';
+import { dewormingEngine } from './DewormingEngine';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -44,6 +46,27 @@ const resolveStatus = (
   return 'upcoming';
 };
 
+export const nextDateFromCadence = (
+  anchorDate: string,
+  cadence: SmartHealthRecord['cadence'],
+): string => {
+  switch (cadence) {
+    case 'every_14_days':
+      return addDays(anchorDate, 14);
+    case 'monthly':
+      return addMonths(anchorDate, 1);
+    case 'every_2_months':
+      return addMonths(anchorDate, 2);
+    case 'every_3_months':
+    default:
+      return addMonths(anchorDate, 3);
+  }
+};
+
+// FIX Bug 6: dedup key must NOT include dueDate
+export const recordDedupeKey = (record: SmartHealthRecord): string =>
+  `${record.type}:${record.key ?? ''}`;
+
 const recordId = (
   petId: string,
   type: string,
@@ -70,6 +93,7 @@ const toSmartRecord = (params: {
   nowDate: string;
   category: 'core' | 'non-core';
   recurrenceType: SmartHealthRecord['recurrenceType'];
+  cadence?: SmartHealthRecord['cadence'];
   riskLevel?: SmartHealthRecord['riskLevel'];
   lifestyleTriggers?: string[];
   doseNumber?: number;
@@ -97,6 +121,7 @@ const toSmartRecord = (params: {
     completedDate: null,
     status: isLocked ? 'locked' : status,
     recurrenceType: params.recurrenceType,
+    cadence: params.cadence,
     riskLevel: params.riskLevel,
     lifestyleTriggers: params.lifestyleTriggers,
     doseNumber: params.doseNumber,
@@ -114,21 +139,14 @@ const toSmartRecord = (params: {
   };
 };
 
+// Catch-up series for adults with no vaccination history
 const dogAdultCoreCatchup = (): Array<{
   key: string;
   label: string;
   offsetWeeks: number;
 }> => [
-  {
-    key: 'DHPP_ADULT_START',
-    label: 'DHPP (Start Vaccination)',
-    offsetWeeks: 0,
-  },
-  {
-    key: 'DHPP_ADULT_FOLLOW_UP',
-    label: 'DHPP (Follow-up Dose)',
-    offsetWeeks: 3,
-  },
+  { key: 'DHPP_ADULT_START', label: 'DHPP (Start)', offsetWeeks: 0 },
+  { key: 'DHPP_ADULT_FOLLOW_UP', label: 'DHPP (Follow-up)', offsetWeeks: 3 },
 ];
 
 const catAdultCoreCatchup = (): Array<{
@@ -136,16 +154,8 @@ const catAdultCoreCatchup = (): Array<{
   label: string;
   offsetWeeks: number;
 }> => [
-  {
-    key: 'FVRCP_ADULT_START',
-    label: 'FVRCP (Start Vaccination)',
-    offsetWeeks: 0,
-  },
-  {
-    key: 'FVRCP_ADULT_FOLLOW_UP',
-    label: 'FVRCP (Follow-up Dose)',
-    offsetWeeks: 3,
-  },
+  { key: 'FVRCP_ADULT_START', label: 'FVRCP (Start)', offsetWeeks: 0 },
+  { key: 'FVRCP_ADULT_FOLLOW_UP', label: 'FVRCP (Follow-up)', offsetWeeks: 3 },
 ];
 
 export class PetCareLifecycleEngine {
@@ -167,6 +177,8 @@ export class PetCareLifecycleEngine {
     context: CarePlanContext;
     lastVaccinationDate?: string;
     lastDewormingDate?: string;
+    // FIX Bug 3: accept Rabies-specific last date separately
+    lastRabiesDate?: string;
   }): SmartHealthRecord[] {
     const { userId, petId, context } = input;
     const template = this.getTemplate(context.petType);
@@ -178,22 +190,20 @@ export class PetCareLifecycleEngine {
       Math.floor(daysBetween(dob, context.nowDate) / 7),
     );
 
-    // Determine pet stage
-    const stage: SmartHealthRecord['stage'] =
-      ageWeeks < 20 ? 'puppy' : ageWeeks < 52 ? 'adolescent' : 'adult';
+    // FIX Bug 1: puppy = under 52 weeks (1 year), not 20 weeks
+    const stage: SmartHealthRecord['stage'] = ageWeeks < 52 ? 'puppy' : 'adult';
 
     const hasVaccinationHistory = Boolean(input.lastVaccinationDate);
-    const hasDewormingHistory = Boolean(input.lastDewormingDate);
     const isAdultUnknownHistory = stage === 'adult' && !hasVaccinationHistory;
 
-    // Build dose sequence with dependencies
-    const buildDoseSequence = (
+    // FIX Bug 4: build dose sequence PER FAMILY, resetting prevId for each
+    const buildDoseSequenceForFamily = (
       rules: VaccineRule[],
-    ): { record: SmartHealthRecord; prevId: string | null }[] => {
-      const results: { record: SmartHealthRecord; prevId: string | null }[] =
-        [];
-      let prevId: string | null = null;
-
+      // FIX Bug 2: for adults, non-core dates anchor to nowDate, not DOB
+      dateAnchor: 'dob' | 'now',
+    ): SmartHealthRecord[] => {
+      // Group rules by family so dependencies are scoped within families
+      const byFamily = new Map<string, VaccineRule[]>();
       for (const rule of rules) {
         if (
           !shouldIncludeByLifestyle(
@@ -203,37 +213,62 @@ export class PetCareLifecycleEngine {
         ) {
           continue;
         }
+        const existing = byFamily.get(rule.family) ?? [];
+        existing.push(rule);
+        byFamily.set(rule.family, existing);
+      }
 
-        const record = toSmartRecord({
-          userId,
-          petId,
-          type: 'vaccination',
-          key: rule.key,
-          family: rule.family,
-          name: rule.label,
-          dueDate: addWeeks(dob, rule.ageWeeksMin),
-          nowDate: context.nowDate,
-          category: rule.category,
-          recurrenceType: 'none',
-          lifestyleTriggers: rule.lifestyleTriggers,
-          riskLevel: rule.riskLevel,
-          doseNumber: rule.doseNumber,
-          totalDoses: rule.totalDoses,
-          isOptional: rule.isOptional,
-          stage,
-          dependsOn: prevId,
-          contextLabel: isAdultUnknownHistory ? 'Catch-up Required' : undefined,
-        });
+      const results: SmartHealthRecord[] = [];
 
-        results.push({ record, prevId: record.id });
-        prevId = record.id;
+      for (const [, familyRules] of byFamily) {
+        // FIX Bug 4: reset prevId at the start of EACH family
+        let prevId: string | null = null;
+        let prevDueDate: string | null = null;
+
+        for (const rule of familyRules) {
+          // FIX Bug 7: use intervalWeeksFromPreviousDose when a prior dose exists
+          let dueDate: string;
+          if (
+            prevDueDate !== null &&
+            rule.intervalWeeksFromPreviousDose !== undefined
+          ) {
+            dueDate = addWeeks(prevDueDate, rule.intervalWeeksFromPreviousDose);
+          } else {
+            const anchor = dateAnchor === 'now' ? context.nowDate : dob;
+            dueDate = addWeeks(anchor, rule.ageWeeksMin);
+          }
+
+          const record = toSmartRecord({
+            userId,
+            petId,
+            type: 'vaccination',
+            key: rule.key,
+            family: rule.family,
+            name: rule.label,
+            dueDate,
+            nowDate: context.nowDate,
+            category: rule.category,
+            recurrenceType: 'none',
+            lifestyleTriggers: rule.lifestyleTriggers,
+            riskLevel: rule.riskLevel,
+            doseNumber: rule.doseNumber,
+            totalDoses: rule.totalDoses,
+            isOptional: rule.isOptional,
+            stage,
+            dependsOn: prevId,
+          });
+
+          results.push(record);
+          prevId = record.id;
+          prevDueDate = dueDate;
+        }
       }
 
       return results;
     };
 
     if (isAdultUnknownHistory) {
-      // Adult with no history - catch-up series
+      // Adult with no history — catch-up series anchored to today
       const catchupSeries =
         context.petType === 'dog'
           ? dogAdultCoreCatchup()
@@ -254,34 +289,42 @@ export class PetCareLifecycleEngine {
           recurrenceType: 'none',
           stage: 'adult',
           dependsOn: prevId,
-          contextLabel: 'Start Vaccination (No prior records)',
+          contextLabel: 'Start vaccination (no prior records)',
         });
         records.push(record);
         prevId = record.id;
       }
     } else {
-      // Normal puppy/adolescent series with dependencies
-      const sequenced = buildDoseSequence(template.coreSeries);
-      records.push(...sequenced.map(s => s.record));
+      // Normal puppy/adolescent series — dates from DOB
+      records.push(...buildDoseSequenceForFamily(template.coreSeries, 'dob'));
     }
 
+    // FIX Bug 8: 6-month booster anchors to the last REQUIRED (non-optional) dose's due date
     if (stage === 'puppy') {
-      const nonOptionalCore = template.coreSeries
+      const requiredCoreDoses = template.coreSeries
         .filter(rule => !rule.isOptional)
         .slice()
         .sort((a, b) => a.ageWeeksMin - b.ageWeeksMin);
-      const lastCore = nonOptionalCore[nonOptionalCore.length - 1];
-      if (lastCore) {
-        const lastCoreDue = addWeeks(dob, lastCore.ageWeeksMin);
+      const lastRequiredDose = requiredCoreDoses[requiredCoreDoses.length - 1];
+
+      if (lastRequiredDose) {
+        // Find the actual scheduled record so we use its real dueDate (not just DOB + weeks)
+        const lastRequiredRecord = records.find(
+          r => r.key === lastRequiredDose.key,
+        );
+        const boosterAnchor =
+          lastRequiredRecord?.dueDate ??
+          addWeeks(dob, lastRequiredDose.ageWeeksMin);
+
         records.push(
           toSmartRecord({
             userId,
             petId,
             type: 'vaccination',
-            key: `${lastCore.family.toUpperCase()}_BOOSTER_6MO`,
-            family: lastCore.family,
-            name: `${lastCore.family} Booster (6-month)`,
-            dueDate: addMonths(lastCoreDue, 6),
+            key: `${lastRequiredDose.family.toUpperCase()}_BOOSTER_6MO`,
+            family: lastRequiredDose.family,
+            name: `${lastRequiredDose.family} Booster (6-month)`,
+            dueDate: addMonths(boosterAnchor, 6),
             nowDate: context.nowDate,
             category: 'core',
             recurrenceType: 'yearly',
@@ -291,9 +334,11 @@ export class PetCareLifecycleEngine {
       }
     }
 
+    // Rabies first dose
     const rabiesFirstDue = isAdultUnknownHistory
       ? context.nowDate
       : addWeeks(dob, template.rabies.firstDoseAgeWeeksMin);
+
     records.push(
       toSmartRecord({
         userId,
@@ -309,10 +354,12 @@ export class PetCareLifecycleEngine {
       }),
     );
 
+    // FIX Bug 3: use lastRabiesDate specifically, not lastVaccinationDate
     const rabiesRepeatMonths =
       template.rabies.regionOverrides?.[context.region] ??
       template.rabies.repeatIntervalMonthsAfterBooster;
-    const rabiesBoosterAnchor = input.lastVaccinationDate ?? rabiesFirstDue;
+    const rabiesBoosterAnchor = input.lastRabiesDate ?? rabiesFirstDue;
+
     records.push(
       toSmartRecord({
         userId,
@@ -328,86 +375,94 @@ export class PetCareLifecycleEngine {
       }),
     );
 
-    // Add non-core vaccines (optional ones based on lifestyle/risk)
-    const nonCoreSequenced = buildDoseSequence(template.nonCoreSeries);
-    for (const { record } of nonCoreSequenced) {
-      records.push(record);
-    }
-
-    // Deworming schedule
-    const dewormDates =
-      stage === 'puppy'
-        ? template.deworming.startWeeks.map(week => addWeeks(dob, week))
-        : [];
-    const intervalByLifestyle =
-      context.lifestyleType === 'outdoor'
-        ? template.deworming.outdoorIntervalDays
-        : context.lifestyleType === 'mixed'
-        ? template.deworming.mixedIntervalDays
-        : template.deworming.indoorIntervalDays;
-    const riskInterval =
-      context.lifestyleRiskLevel === 'high'
-        ? 15
-        : context.lifestyleRiskLevel === 'medium'
-        ? 21
-        : 30;
-    const juvenileIntervalDays = Math.min(intervalByLifestyle, riskInterval);
-    const sixMonthDate = addMonths(dob, template.deworming.untilMonths);
-    const oneYearDate = addMonths(dob, 12);
-    const dewormSet = new Set(dewormDates);
-    let rolling = dewormDates[dewormDates.length - 1] ?? context.nowDate;
-    if (stage === 'puppy') {
-      while (rolling < sixMonthDate) {
-        rolling = addDays(rolling, juvenileIntervalDays);
-        if (rolling <= sixMonthDate) dewormSet.add(rolling);
-      }
-      while (rolling < oneYearDate) {
-        rolling = addMonths(rolling, template.deworming.adultIntervalMonths);
-        if (rolling <= oneYearDate) dewormSet.add(rolling);
-      }
-    } else if (!hasDewormingHistory) {
-      dewormSet.add(context.nowDate);
-      dewormSet.add(
-        addMonths(context.nowDate, template.deworming.adultIntervalMonths),
-      );
-    }
-    for (const dueDate of Array.from(dewormSet).sort()) {
-      records.push(
-        toSmartRecord({
-          userId,
-          petId,
-          type: 'deworming',
-          key: `DEWORM_${dueDate}`,
-          family: 'Deworming',
-          name: 'Deworming',
-          dueDate,
-          nowDate: context.nowDate,
-          category: 'core',
-          recurrenceType: 'none',
-        }),
-      );
-    }
-
-    const dewormIntervalDays = juvenileIntervalDays;
-    const dewormAnchor = input.lastDewormingDate ?? context.nowDate;
-    const recurringDue = addDays(dewormAnchor, dewormIntervalDays);
+    // FIX Bug 2: non-core vaccines for adults anchor to nowDate
+    const nonCoreAnchor: 'dob' | 'now' = stage === 'adult' ? 'now' : 'dob';
     records.push(
-      toSmartRecord({
+      ...buildDoseSequenceForFamily(template.nonCoreSeries, nonCoreAnchor),
+    );
+
+    const dewormingResult = dewormingEngine.execute({
+      petType: context.petType,
+      dateOfBirth: dob,
+      lifestyle: context.lifestyleType,
+      todayDate: context.nowDate,
+      lastDewormingDate: input.lastDewormingDate,
+      completionDates: input.lastDewormingDate ? [input.lastDewormingDate] : [],
+      hasPreviousDeworming: Boolean(input.lastDewormingDate),
+    });
+
+    const dewormingItems: Array<{
+      dueDate: string;
+      status: 'completed' | 'pending' | 'missed';
+      cadence?: SmartHealthRecord['cadence'];
+      recurrenceType: SmartHealthRecord['recurrenceType'];
+    }> = [];
+
+    if (dewormingResult.nextStep) {
+      dewormingItems.push({
+        dueDate: dewormingResult.nextStep.dueDate,
+        status: dewormingResult.nextStep.status,
+        cadence: dewormingResult.nextStep.cadence,
+        recurrenceType: 'quarterly',
+      });
+    }
+
+    for (const item of dewormingResult.upcoming) {
+      dewormingItems.push({
+        dueDate: item.dueDate,
+        status: item.status,
+        cadence: item.cadence,
+        recurrenceType: 'none',
+      });
+    }
+
+    for (const item of dewormingResult.completed) {
+      dewormingItems.push({
+        dueDate: item.dueDate,
+        status: item.status,
+        cadence: item.cadence,
+        recurrenceType: 'none',
+      });
+    }
+
+    const seenDeworm = new Set<string>();
+    for (const item of dewormingItems.sort((a, b) =>
+      a.dueDate.localeCompare(b.dueDate),
+    )) {
+      if (seenDeworm.has(item.dueDate)) continue;
+      seenDeworm.add(item.dueDate);
+
+      const base = toSmartRecord({
         userId,
         petId,
         type: 'deworming',
-        key: 'DEWORMING_RECURRING',
+        key: `DEWORM_${item.dueDate}`,
         family: 'Deworming',
         name: 'Deworming',
-        dueDate: recurringDue,
+        dueDate: item.dueDate,
         nowDate: context.nowDate,
         category: 'core',
-        recurrenceType: 'quarterly',
-      }),
-    );
+        recurrenceType: item.recurrenceType,
+        cadence: item.cadence,
+        stage,
+      });
+
+      records.push({
+        ...base,
+        status:
+          item.status === 'pending'
+            ? 'upcoming'
+            : item.status === 'missed'
+            ? 'missed'
+            : 'completed',
+        completedDate: item.status === 'completed' ? item.dueDate : null,
+      });
+    }
 
     return records.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
   }
+
+  // ── Query helpers (unchanged) ──────────────────────────────────────────
 
   getActionRequired(records: SmartHealthRecord[]): SmartHealthRecord | null {
     return this.getActionRequiredList(records, 1)[0] ?? null;
@@ -417,15 +472,20 @@ export class PetCareLifecycleEngine {
     records: SmartHealthRecord[],
     limit = 2,
   ): SmartHealthRecord[] {
-    const actionable = records
-      .filter(r => r.status === 'overdue' || r.status === 'upcoming')
+    return records
+      .filter(
+        r =>
+          r.status === 'overdue' ||
+          r.status === 'upcoming' ||
+          r.status === 'missed',
+      )
       .slice()
       .sort((a, b) => {
         if (a.status === 'overdue' && b.status !== 'overdue') return -1;
         if (b.status === 'overdue' && a.status !== 'overdue') return 1;
         return a.dueDate.localeCompare(b.dueDate);
-      });
-    return actionable.slice(0, limit);
+      })
+      .slice(0, limit);
   }
 
   getUpcoming(
@@ -437,7 +497,9 @@ export class PetCareLifecycleEngine {
       .filter(r => r.status === 'upcoming' || r.status === 'locked')
       .slice()
       .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+
     if (!dedupeByFamily) return sorted.slice(0, limit);
+
     const seen = new Set<string>();
     const deduped: SmartHealthRecord[] = [];
     for (const item of sorted) {
@@ -452,7 +514,12 @@ export class PetCareLifecycleEngine {
 
   getHistory(records: SmartHealthRecord[]): SmartHealthRecord[] {
     return records
-      .filter(r => r.status === 'completed' || r.status === 'missed')
+      .filter(
+        r =>
+          r.status === 'completed' ||
+          r.status === 'missed' ||
+          r.status === 'skipped',
+      )
       .slice()
       .sort((a, b) => {
         const ad = a.completedDate ?? a.dueDate;
@@ -464,11 +531,21 @@ export class PetCareLifecycleEngine {
   recalculatePlanOnEvent(params: {
     records: SmartHealthRecord[];
     event:
-      | { type: 'late_completion'; recordId: string; completedDate: string }
       | { type: 'missed'; recordId: string }
-      | { type: 'backdated_entry'; recordId: string; completedDate: string }
-      | { type: 'manual_adjustment'; recordId: string; dueDate: string };
+      | {
+          type: 'completion';
+          recordId: string;
+          completedDate: string;
+        }
+      | { type: 'manual_adjustment'; recordId: string; dueDate: string }
+      | {
+          type: 'skip_dose';
+          recordId: string;
+          reason: string;
+          petDateOfBirth?: string;
+        };
     contextNowDate: string;
+    petDateOfBirth?: string;
   }): SmartHealthRecord[] {
     const cloned = params.records.map(r => ({ ...r }));
     const target = cloned.find(r => r.id === params.event.recordId);
@@ -486,67 +563,166 @@ export class PetCareLifecycleEngine {
       return cloned;
     }
 
-    if (
-      params.event.type === 'late_completion' ||
-      params.event.type === 'backdated_entry'
-    ) {
-      target.completedDate = params.event.completedDate;
-      target.status = 'completed';
+    if (params.event.type === 'skip_dose') {
+      const cadence = target.cadence ?? 'every_3_months';
+      target.status = 'skipped';
+      target.completedDate = null;
+      target.skipReason = params.event.reason.trim();
       target.recovery = {
-        isRecovered: params.event.type === 'late_completion',
+        isRecovered: true,
         recoveredFrom: target.id,
-        recoveryReason:
-          params.event.type === 'late_completion'
-            ? 'late'
-            : 'manual_adjustment',
+        recoveryReason: 'manual_adjustment',
       };
       target.updatedAt = nowIso;
 
-      if (target.type === 'deworming' && target.recurrenceType !== 'none') {
-        const nextDate = addDays(params.event.completedDate, 30);
-        const existingNext = cloned.find(
-          r =>
-            r.petId === target.petId &&
-            r.type === 'deworming' &&
-            r.recurrenceType !== 'none' &&
-            r.status !== 'completed',
-        );
-        if (existingNext) {
-          existingNext.dueDate = nextDate;
-          existingNext.recommendedDate = nextDate;
-          existingNext.status = resolveStatus(nextDate, params.contextNowDate);
-          existingNext.recovery = {
-            isRecovered: true,
-            recoveredFrom: target.id,
-            recoveryReason: 'late',
-          };
-          existingNext.updatedAt = nowIso;
+      if (target.type === 'deworming') {
+        const dob =
+          params.event.petDateOfBirth ?? params.petDateOfBirth ?? undefined;
+
+        for (const r of cloned) {
+          if (r.type !== 'deworming' || r.id === target.id) continue;
+          if (r.petId !== target.petId) continue;
+          if (r.status === 'completed' || r.status === 'skipped') continue;
+          if (r.dueDate < target.dueDate) {
+            r.status = 'skipped';
+            r.skipReason = 'superseded_open_dose';
+            r.completedDate = null;
+            r.updatedAt = nowIso;
+          }
+        }
+
+        const lastCompleted = cloned
+          .filter(
+            r =>
+              r.type === 'deworming' &&
+              r.petId === target.petId &&
+              r.status === 'completed' &&
+              r.completedDate,
+          )
+          .map(r => r.completedDate as string)
+          .sort((a, b) => b.localeCompare(a))[0];
+
+        let cursor: string;
+        if (lastCompleted) {
+          cursor = nextDateFromCadence(lastCompleted, cadence);
+        } else if (dob) {
+          cursor = nextDateFromCadence(dob, cadence);
         } else {
-          cloned.push({
-            ...toSmartRecord({
-              userId: target.userId,
-              petId: target.petId,
-              type: 'deworming',
-              key: `DEWORM_RECOVERED_${nextDate}`,
-              family: 'Deworming',
-              name: target.name,
-              dueDate: nextDate,
-              nowDate: params.contextNowDate,
-              category: 'core',
-              recurrenceType: 'quarterly',
-            }),
-            id: createLocalId('smart-health'),
-            recovery: {
-              isRecovered: true,
-              recoveredFrom: target.id,
-              recoveryReason: 'late',
-            },
-          });
+          cursor = nextDateFromCadence(target.dueDate, cadence);
+        }
+
+        while (cursor <= target.dueDate) {
+          cursor = nextDateFromCadence(cursor, cadence);
+        }
+        while (cursor < params.contextNowDate) {
+          cursor = nextDateFromCadence(cursor, cadence);
+        }
+
+        const futureDeworming = cloned
+          .filter(
+            r =>
+              r.type === 'deworming' &&
+              r.petId === target.petId &&
+              r.id !== target.id &&
+              r.status !== 'completed' &&
+              r.status !== 'skipped' &&
+              r.dueDate >= target.dueDate,
+          )
+          .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+
+        for (const item of futureDeworming) {
+          item.dueDate = cursor;
+          item.recommendedDate = cursor;
+          item.key = `DEWORM_${cursor}`;
+          item.status = resolveStatus(cursor, params.contextNowDate);
+          item.updatedAt = nowIso;
+          cursor = nextDateFromCadence(cursor, item.cadence ?? cadence);
         }
       }
+
       return cloned.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
     }
 
+    if (params.event.type === 'completion') {
+      const completedDate = params.event.completedDate;
+      const isLate = completedDate > target.dueDate;
+      const isEarly = completedDate < target.dueDate;
+
+      target.completedDate = completedDate;
+      target.status = 'completed';
+      target.updatedAt = nowIso;
+      if (isLate) {
+        target.recovery = {
+          isRecovered: true,
+          recoveredFrom: target.id,
+          recoveryReason: 'late',
+        };
+      } else if (isEarly) {
+        target.recovery = {
+          isRecovered: true,
+          recoveredFrom: target.id,
+          recoveryReason: 'manual_adjustment',
+        };
+      } else {
+        target.recovery = {
+          isRecovered: false,
+          recoveredFrom: null,
+        };
+      }
+
+      if (target.type === 'deworming') {
+        for (const r of cloned) {
+          if (r.type !== 'deworming' || r.id === target.id) continue;
+          if (r.petId !== target.petId) continue;
+          if (r.status === 'completed' || r.status === 'skipped') continue;
+          if (r.dueDate < completedDate) {
+            r.status = 'skipped';
+            r.skipReason = 'superseded_by_completion';
+            r.completedDate = null;
+            r.updatedAt = nowIso;
+          }
+        }
+
+        const futureDeworming = cloned
+          .filter(
+            r =>
+              r.type === 'deworming' &&
+              r.petId === target.petId &&
+              r.id !== target.id &&
+              r.status !== 'completed' &&
+              r.status !== 'skipped' &&
+              r.dueDate >= target.dueDate,
+          )
+          .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+
+        let cursor = completedDate;
+        for (const item of futureDeworming) {
+          cursor = nextDateFromCadence(cursor, item.cadence ?? target.cadence);
+          item.dueDate = cursor;
+          item.recommendedDate = cursor;
+          item.key = `DEWORM_${cursor}`;
+          item.status = resolveStatus(cursor, params.contextNowDate);
+          item.updatedAt = nowIso;
+        }
+      }
+
+      const dependents = cloned.filter(r => r.dependsOn === target.id);
+      for (const dep of dependents) {
+        if (dep.status === 'locked') {
+          const newDue = addWeeks(completedDate, 3);
+          dep.dueDate = newDue;
+          dep.recommendedDate = newDue;
+          dep.status = resolveStatus(newDue, params.contextNowDate);
+          dep.dependsOn = null;
+          dep.isLocked = false;
+          dep.updatedAt = nowIso;
+        }
+      }
+
+      return cloned.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+    }
+
+    // manual_adjustment
     target.dueDate = params.event.dueDate;
     target.recommendedDate = params.event.dueDate;
     target.status = resolveStatus(params.event.dueDate, params.contextNowDate);

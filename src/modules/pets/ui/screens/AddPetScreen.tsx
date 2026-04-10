@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,13 +18,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Svg, { Path } from 'react-native-svg';
 
 import type { PetsStackParamList } from '../../../../app/navigation/types';
-import { useAuthStore } from '../../../auth/store/authStore';
-import {
-  getDewormingLocalDataSource,
-  saveDewormingOnboardingForPet,
-  useDewormingStore,
-} from '../../../records/store/dewormingStore';
 import { validateLastDewormingDate } from '../../../records/domain/utils/DewormingEngine';
+import { useSmartHealthRecordStore } from '../../../records/store/smartHealthRecordStore';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { usePetStore } from '../../store/petStore';
 import type {
@@ -99,10 +93,15 @@ export const AddPetScreen: React.FC = () => {
   const [hasPreviousDeworming, setHasPreviousDeworming] = useState(false);
   const [lastDewormingDate, setLastDewormingDate] = useState('');
   const [lastDewormingUnknown, setLastDewormingUnknown] = useState(false);
+  const [hasPreviousVaccination, setHasPreviousVaccination] = useState(false);
+  const [lastVaccinationDate, setLastVaccinationDate] = useState('');
+  const [lastVaccinationUnknown, setLastVaccinationUnknown] = useState(false);
+  const [hasPreviousRabies, setHasPreviousRabies] = useState(false);
+  const [lastRabiesDate, setLastRabiesDate] = useState('');
+  const [lastRabiesUnknown, setLastRabiesUnknown] = useState(false);
 
   const today = useMemo(() => new Date(), []);
   const todayIso = useMemo(() => today.toISOString().slice(0, 10), [today]);
-  const hydrateAndGenerate = useDewormingStore(s => s.hydrateAndGenerate);
 
   useEffect(() => {
     if (!isEditMode || !petId) {
@@ -141,19 +140,54 @@ export const AddPetScreen: React.FC = () => {
         setLifestyleType(pet.lifestyle?.type ?? 'indoor');
         setLifestyleRiskLevel(pet.lifestyle?.riskLevel ?? 'low');
         setRegion(pet.region ?? 'OTHER');
-        const uid = useAuthStore.getState().user?.id;
-        if (uid) {
-          void getDewormingLocalDataSource()
-            .getState(uid, pet.id)
-            .then(dw => {
-              if (cancelled) {
-                return;
-              }
-              setHasPreviousDeworming(dw.hasPreviousDeworming ?? false);
-              setLastDewormingUnknown(dw.lastDewormingUnknown ?? false);
-              setLastDewormingDate(dw.lastDewormingDate ?? '');
-            });
-        }
+        void useSmartHealthRecordStore
+          .getState()
+          .loadPetRecords(pet.id)
+          .then(() => {
+            if (cancelled) return;
+            const dewormDone = useSmartHealthRecordStore
+              .getState()
+              .records.filter(
+                r =>
+                  r.petId === pet.id &&
+                  r.type === 'deworming' &&
+                  r.status === 'completed',
+              )
+              .sort((a, b) => b.dueDate.localeCompare(a.dueDate));
+            if (dewormDone.length > 0) {
+              setHasPreviousDeworming(true);
+              setLastDewormingUnknown(false);
+              setLastDewormingDate(dewormDone[0]?.dueDate ?? '');
+            }
+            const vaccinationDone = useSmartHealthRecordStore
+              .getState()
+              .records.filter(
+                r =>
+                  r.petId === pet.id &&
+                  r.type === 'vaccination' &&
+                  r.status === 'completed',
+              )
+              .sort((a, b) =>
+                (b.completedDate ?? b.dueDate).localeCompare(a.completedDate ?? a.dueDate),
+              );
+            if (vaccinationDone.length > 0) {
+              setHasPreviousVaccination(true);
+              setLastVaccinationUnknown(false);
+              setLastVaccinationDate(
+                vaccinationDone[0]?.completedDate ?? vaccinationDone[0]?.dueDate ?? '',
+              );
+            }
+            const rabiesDone = vaccinationDone.filter(
+              r => r.family?.toLowerCase() === 'rabies',
+            );
+            if (rabiesDone.length > 0) {
+              setHasPreviousRabies(true);
+              setLastRabiesUnknown(false);
+              setLastRabiesDate(
+                rabiesDone[0]?.completedDate ?? rabiesDone[0]?.dueDate ?? '',
+              );
+            }
+          });
         setInitLoading(false);
       });
 
@@ -206,20 +240,24 @@ export const AddPetScreen: React.FC = () => {
       gender: gender || undefined,
       lifestyle: { type: lifestyleType, riskLevel: lifestyleRiskLevel },
       region,
+    },
+    {
+      lastDewormingDate:
+        hasPreviousDeworming && !lastDewormingUnknown
+          ? lastDewormingDate.trim() || undefined
+          : undefined,
+      lastVaccinationDate:
+        hasPreviousVaccination && !lastVaccinationUnknown
+          ? lastVaccinationDate.trim() || undefined
+          : undefined,
+      lastRabiesDate:
+        hasPreviousRabies && !lastRabiesUnknown
+          ? lastRabiesDate.trim() || undefined
+          : undefined,
     });
     if (!result.success) {
       setError(result.error ?? 'Unable to save changes.');
       return;
-    }
-    const uid = useAuthStore.getState().user?.id;
-    const updated = usePetStore.getState().activePet;
-    if (uid && updated) {
-      await saveDewormingOnboardingForPet(uid, updated.id, {
-        hasPreviousDeworming,
-        lastDewormingDate: lastDewormingUnknown ? null : lastDewormingDate.trim(),
-        lastDewormingUnknown,
-      });
-      await hydrateAndGenerate(updated);
     }
     if (navigation.canGoBack()) {
       navigation.goBack();
@@ -261,6 +299,46 @@ export const AddPetScreen: React.FC = () => {
           return;
         }
       }
+      if (hasPreviousVaccination && !lastVaccinationUnknown) {
+        if (!lastVaccinationDate.trim()) {
+          setError(
+            'Enter the last vaccination date or choose “I don’t know the date”.',
+          );
+          return;
+        }
+        const v = validateLastDewormingDate(
+          checkDob.value,
+          lastVaccinationDate.trim(),
+          todayIso,
+        );
+        if (!v.ok) {
+          setError(
+            v.code === 'before_dob'
+              ? 'Last vaccination cannot be before date of birth.'
+              : 'Last vaccination cannot be in the future.',
+          );
+          return;
+        }
+      }
+      if (hasPreviousRabies && !lastRabiesUnknown) {
+        if (!lastRabiesDate.trim()) {
+          setError('Enter the last rabies date or choose “I don’t know the date”.');
+          return;
+        }
+        const v = validateLastDewormingDate(
+          checkDob.value,
+          lastRabiesDate.trim(),
+          todayIso,
+        );
+        if (!v.ok) {
+          setError(
+            v.code === 'before_dob'
+              ? 'Last rabies shot cannot be before date of birth.'
+              : 'Last rabies shot cannot be in the future.',
+          );
+          return;
+        }
+      }
     }
 
     if (isEditMode && editBase) {
@@ -290,29 +368,38 @@ export const AddPetScreen: React.FC = () => {
           }
         }
       }
-
-      const uid = useAuthStore.getState().user?.id;
-      const dobChanged =
-        Boolean(dob.trim()) &&
-        Boolean(editBase.dob) &&
-        editBase.dob !== dob.trim();
-      if (uid && dobChanged) {
-        const dwState = await getDewormingLocalDataSource().getState(
-          uid,
-          editBase.id,
-        );
-        if (dwState.completionDates.length > 0) {
-          const proceed = await new Promise<boolean>(resolve => {
-            Alert.alert(
-              'Change date of birth?',
-              'Future deworming reminders will be recalculated from the new date. Your logged deworming history is kept.',
-              [
-                { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
-                { text: 'Continue', onPress: () => resolve(true) },
-              ],
+      if (hasPreviousVaccination && !lastVaccinationUnknown && dob.trim()) {
+        const check = parseAndValidateDob(dob);
+        if (check.ok && check.value && lastVaccinationDate.trim()) {
+          const v = validateLastDewormingDate(
+            check.value,
+            lastVaccinationDate.trim(),
+            todayIso,
+          );
+          if (!v.ok) {
+            setError(
+              v.code === 'before_dob'
+                ? 'Last vaccination cannot be before date of birth.'
+                : 'Last vaccination cannot be in the future.',
             );
-          });
-          if (!proceed) {
+            return;
+          }
+        }
+      }
+      if (hasPreviousRabies && !lastRabiesUnknown && dob.trim()) {
+        const check = parseAndValidateDob(dob);
+        if (check.ok && check.value && lastRabiesDate.trim()) {
+          const v = validateLastDewormingDate(
+            check.value,
+            lastRabiesDate.trim(),
+            todayIso,
+          );
+          if (!v.ok) {
+            setError(
+              v.code === 'before_dob'
+                ? 'Last rabies shot cannot be before date of birth.'
+                : 'Last rabies shot cannot be in the future.',
+            );
             return;
           }
         }
@@ -331,20 +418,22 @@ export const AddPetScreen: React.FC = () => {
       lifestyle: { type: lifestyleType, riskLevel: lifestyleRiskLevel },
       region,
       photo: isPetPhotoPlaceholderUri(photoUri) ? undefined : photoUri,
+      lastDewormingDate:
+        hasPreviousDeworming && !lastDewormingUnknown
+          ? lastDewormingDate.trim() || undefined
+          : undefined,
+      lastVaccinationDate:
+        hasPreviousVaccination && !lastVaccinationUnknown
+          ? lastVaccinationDate.trim() || undefined
+          : undefined,
+      lastRabiesDate:
+        hasPreviousRabies && !lastRabiesUnknown
+          ? lastRabiesDate.trim() || undefined
+          : undefined,
     });
     if (!result.success) {
       setError(result.error ?? 'Unable to save pet profile.');
       return;
-    }
-    const uid = useAuthStore.getState().user?.id;
-    const created = usePetStore.getState().activePet;
-    if (uid && created) {
-      await saveDewormingOnboardingForPet(uid, created.id, {
-        hasPreviousDeworming,
-        lastDewormingDate: lastDewormingUnknown ? null : lastDewormingDate.trim(),
-        lastDewormingUnknown,
-      });
-      await hydrateAndGenerate(created);
     }
     if (navigation.canGoBack()) {
       navigation.goBack();
@@ -534,6 +623,213 @@ export const AddPetScreen: React.FC = () => {
                     <DatePickerField
                       value={lastDewormingDate}
                       onChange={setLastDewormingDate}
+                      placeholder="YYYY-MM-DD"
+                      maximumDate={today}
+                    />
+                  </>
+                ) : null}
+              </View>
+            ) : null}
+          </View>
+
+          <View>
+            <Text
+              style={[styles.fieldLabelSm, { fontFamily: fontFamilies.semibold }]}
+            >
+              Has your pet received vaccinations before?
+            </Text>
+            <View style={styles.genderRow}>
+              <Pressable
+                style={[
+                  styles.genderChip,
+                  !hasPreviousVaccination ? styles.genderChipSelected : undefined,
+                ]}
+                onPress={() => {
+                  setHasPreviousVaccination(false);
+                  setLastVaccinationDate('');
+                  setLastVaccinationUnknown(false);
+                  setHasPreviousRabies(false);
+                  setLastRabiesDate('');
+                  setLastRabiesUnknown(false);
+                }}
+              >
+                <Text
+                  style={[
+                    styles.genderChipText,
+                    !hasPreviousVaccination
+                      ? styles.genderChipTextSelected
+                      : undefined,
+                    {
+                      fontFamily: !hasPreviousVaccination
+                        ? fontFamilies.bold
+                        : fontFamilies.medium,
+                    },
+                  ]}
+                >
+                  No
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.genderChip,
+                  hasPreviousVaccination ? styles.genderChipSelected : undefined,
+                ]}
+                onPress={() => setHasPreviousVaccination(true)}
+              >
+                <Text
+                  style={[
+                    styles.genderChipText,
+                    hasPreviousVaccination
+                      ? styles.genderChipTextSelected
+                      : undefined,
+                    {
+                      fontFamily: hasPreviousVaccination
+                        ? fontFamilies.bold
+                        : fontFamilies.medium,
+                    },
+                  ]}
+                >
+                  Yes
+                </Text>
+              </Pressable>
+            </View>
+            {hasPreviousVaccination ? (
+              <View style={{ marginTop: 12, gap: 10 }}>
+                <Pressable
+                  onPress={() => {
+                    setLastVaccinationUnknown(v => {
+                      const next = !v;
+                      if (next) {
+                        setLastVaccinationDate('');
+                      }
+                      return next;
+                    });
+                  }}
+                  style={styles.genderClear}
+                >
+                  <Text
+                    style={{
+                      fontFamily: fontFamilies.medium,
+                      color: lastVaccinationUnknown
+                        ? colors.accent
+                        : colors.text.subdued,
+                    }}
+                  >
+                    I don&apos;t know the date
+                  </Text>
+                </Pressable>
+                {!lastVaccinationUnknown ? (
+                  <>
+                    <Text
+                      style={[
+                        styles.fieldLabelSm,
+                        { fontFamily: fontFamilies.semibold },
+                      ]}
+                    >
+                      Last vaccination date
+                    </Text>
+                    <DatePickerField
+                      value={lastVaccinationDate}
+                      onChange={setLastVaccinationDate}
+                      placeholder="YYYY-MM-DD"
+                      maximumDate={today}
+                    />
+                  </>
+                ) : null}
+              </View>
+            ) : null}
+          </View>
+
+          <View>
+            <Text
+              style={[styles.fieldLabelSm, { fontFamily: fontFamilies.semibold }]}
+            >
+              Has your pet received rabies vaccine?
+            </Text>
+            <View style={styles.genderRow}>
+              <Pressable
+                style={[
+                  styles.genderChip,
+                  !hasPreviousRabies ? styles.genderChipSelected : undefined,
+                ]}
+                onPress={() => {
+                  setHasPreviousRabies(false);
+                  setLastRabiesDate('');
+                  setLastRabiesUnknown(false);
+                }}
+              >
+                <Text
+                  style={[
+                    styles.genderChipText,
+                    !hasPreviousRabies ? styles.genderChipTextSelected : undefined,
+                    {
+                      fontFamily: !hasPreviousRabies
+                        ? fontFamilies.bold
+                        : fontFamilies.medium,
+                    },
+                  ]}
+                >
+                  No
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.genderChip,
+                  hasPreviousRabies ? styles.genderChipSelected : undefined,
+                ]}
+                onPress={() => setHasPreviousRabies(true)}
+              >
+                <Text
+                  style={[
+                    styles.genderChipText,
+                    hasPreviousRabies ? styles.genderChipTextSelected : undefined,
+                    {
+                      fontFamily: hasPreviousRabies
+                        ? fontFamilies.bold
+                        : fontFamilies.medium,
+                    },
+                  ]}
+                >
+                  Yes
+                </Text>
+              </Pressable>
+            </View>
+            {hasPreviousRabies ? (
+              <View style={{ marginTop: 12, gap: 10 }}>
+                <Pressable
+                  onPress={() => {
+                    setLastRabiesUnknown(v => {
+                      const next = !v;
+                      if (next) {
+                        setLastRabiesDate('');
+                      }
+                      return next;
+                    });
+                  }}
+                  style={styles.genderClear}
+                >
+                  <Text
+                    style={{
+                      fontFamily: fontFamilies.medium,
+                      color: lastRabiesUnknown ? colors.accent : colors.text.subdued,
+                    }}
+                  >
+                    I don&apos;t know the date
+                  </Text>
+                </Pressable>
+                {!lastRabiesUnknown ? (
+                  <>
+                    <Text
+                      style={[
+                        styles.fieldLabelSm,
+                        { fontFamily: fontFamilies.semibold },
+                      ]}
+                    >
+                      Last rabies vaccine date
+                    </Text>
+                    <DatePickerField
+                      value={lastRabiesDate}
+                      onChange={setLastRabiesDate}
                       placeholder="YYYY-MM-DD"
                       maximumDate={today}
                     />

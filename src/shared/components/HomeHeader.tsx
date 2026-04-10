@@ -8,7 +8,8 @@ import { spacing as spacingTokens } from '../theme/spacing';
 
 export interface HomeHeaderProps {
   title?: string;
-  onPressMenu: () => void;
+  /** When omitted, the leading control is hidden (spacer keeps title centered). */
+  onPressMenu?: () => void;
   onPressProfile: () => void;
   theme: Theme;
 }
@@ -32,22 +33,26 @@ export const HomeHeader: React.FC<HomeHeaderProps> = React.memo(
       >
         <View style={[styles.row, { height: space('2xl') + space('2xl') }]}>
           <View style={[styles.side, { width: SIDE }]}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Open menu"
-              onPress={onPressMenu}
-              style={[
-                styles.iconBtn,
-                {
-                  borderRadius: radius.md,
-                  backgroundColor: colors.brandTint12,
-                  width: SIDE,
-                  height: SIDE,
-                },
-              ]}
-            >
-              <MaterialIcon name="menu" size={22} color={colors.accent} />
-            </Pressable>
+            {onPressMenu ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Open menu"
+                onPress={onPressMenu}
+                style={[
+                  styles.iconBtn,
+                  {
+                    borderRadius: radius.md,
+                    backgroundColor: colors.brandTint12,
+                    width: SIDE,
+                    height: SIDE,
+                  },
+                ]}
+              >
+                <MaterialIcon name="menu" size={22} color={colors.accent} />
+              </Pressable>
+            ) : (
+              <View style={{ width: SIDE, height: SIDE }} />
+            )}
           </View>
 
           <View style={styles.center}>
@@ -65,7 +70,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = React.memo(
           <View style={[styles.side, styles.sideEnd, { width: SIDE }]}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Profile"
+              accessibilityLabel="Your profile"
               onPress={onPressProfile}
               style={[
                 styles.iconBtn,

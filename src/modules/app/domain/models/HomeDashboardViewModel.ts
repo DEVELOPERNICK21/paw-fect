@@ -1,14 +1,24 @@
 import type { Pet } from '../../../pets/domain/models/Pet';
-import type { Reminder } from '../../../reminders/domain/models/Reminder';
+import type { Reminder, ReminderType } from '../../../reminders/domain/models/Reminder';
 
 export interface HomeDashboardTodayCareItem {
   reminder: Reminder;
   showCompletedCheck: boolean;
 }
 
-export interface HomeDashboardUpcomingItem {
-  reminder: Reminder;
-  milestoneSubtitle: string;
+/** Merged manual reminders + smart vaccination/deworming in the next 7 days. */
+export interface HomeDashboardWeekCareItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  kind: 'reminder' | 'vaccination' | 'deworming';
+  reminderType?: ReminderType;
+}
+
+export interface HomeDashboardAttentionBanner {
+  show: boolean;
+  headline: string;
+  subline: string;
 }
 
 /**
@@ -21,12 +31,16 @@ export interface HomeDashboardViewModel {
   hasAnyPet: boolean;
   activePet: Pet | null;
   healthStatusLine: string;
-  nextMealLine: string;
+  /** Nearest vaccination or deworming milestone by due date (replaces former “next meal”). */
+  nextCareMilestoneLine: string;
+  /** Latest health record one-liner for trust (“what we logged last”). */
+  lastActivityLine: string;
   weightLine: string;
   activityLine: string;
   heartLine: string;
+  attentionBanner: HomeDashboardAttentionBanner;
   todayCare: HomeDashboardTodayCareItem[];
-  upcoming: HomeDashboardUpcomingItem[];
+  weekCarePreview: HomeDashboardWeekCareItem[];
   lastError: string | null;
   isRefreshing: boolean;
 }

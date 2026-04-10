@@ -181,6 +181,34 @@ export class AuthRepositoryImpl implements AuthRepository {
     await this.local.setPendingPasswordResets(remaining);
   }
 
+  async updateUserProfile(input: {
+    displayName: string;
+    phoneNumber: string | null;
+  }): Promise<User> {
+    const current = await this.local.getUser();
+    if (!current) {
+      throw new Error('No signed-in user.');
+    }
+    const optimistic: User = {
+      ...current,
+      displayName: input.displayName,
+      phoneNumber: input.phoneNumber,
+    };
+    await this.local.setUser(optimistic);
+    try {
+      const remoteUser = await this.profile.updateProfile(current.id, input);
+      const merged: User = {
+        ...optimistic,
+        ...remoteUser,
+        email: remoteUser.email || optimistic.email,
+      };
+      await this.local.setUser(merged);
+      return merged;
+    } catch {
+      return optimistic;
+    }
+  }
+
   subscribeSession(onChange: (user: User | null) => void): () => void {
     return this.remote.watchAuthChanges(async session => {
       if (!session) {

@@ -9,11 +9,12 @@ import { PetProfileTodayCareRow } from './PetProfileTodayCareRow';
 export interface PetProfileTodayCareSectionProps {
   items: HomeDashboardTodayCareItem[];
   loading: boolean;
-  onPressViewCalendar: () => void;
+  /** Opens Health tab (smart schedules + notifications); not the manual reminders list. */
+  onPressOpenHealthSchedule: () => void;
 }
 
 export const PetProfileTodayCareSection: React.FC<PetProfileTodayCareSectionProps> =
-  React.memo(({ items, loading, onPressViewCalendar }) => {
+  React.memo(({ items, loading, onPressOpenHealthSchedule }) => {
     const theme = useTheme();
     const { colors, spacing, textStyles, fontFamilies } = theme;
 
@@ -30,9 +31,10 @@ export const PetProfileTodayCareSection: React.FC<PetProfileTodayCareSectionProp
           </AppText>
 
           <Pressable
-            onPress={onPressViewCalendar}
+            onPress={onPressOpenHealthSchedule}
             accessibilityRole="button"
             hitSlop={8}
+            accessibilityLabel="Open health schedule"
           >
             <AppText
               style={[
@@ -40,7 +42,7 @@ export const PetProfileTodayCareSection: React.FC<PetProfileTodayCareSectionProp
                 { color: colors.primary, fontFamily: fontFamilies.semibold },
               ]}
             >
-              View Calendar
+              Care schedule
             </AppText>
           </Pressable>
         </View>

@@ -10,11 +10,9 @@ Follow strictly:
 
 ## Task
 
-Create UI for the feature: Pet module profile
+Create UI for the feature: helth records
 
-Screen: PetProfileScreen.tsx
-
----
+## Screen: HealthRecordScreen
 
 ## Requirements
 

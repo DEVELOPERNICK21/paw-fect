@@ -1,3 +1,4 @@
+import type { SmartHealthRecord } from '../../models/SmartHealthRecord';
 import { PetCareLifecycleEngine } from '../PetCareLifecycleEngine';
 
 describe('PetCareLifecycleEngine', () => {
@@ -110,7 +111,7 @@ describe('PetCareLifecycleEngine', () => {
     const updated = engine.recalculatePlanOnEvent({
       records,
       event: {
-        type: 'late_completion',
+        type: 'completion',
         recordId: recurring!.id,
         completedDate: '2026-07-10',
       },
@@ -139,5 +140,196 @@ describe('PetCareLifecycleEngine', () => {
     expect(dhpp.some(r => r.name.includes('(1st)'))).toBe(false);
     const rabiesNow = records.find(r => r.key === 'RABIES_1');
     expect(rabiesNow?.dueDate).toBe('2026-04-01');
+  });
+
+  it('generates expected puppy deworming milestones for DOB 2026-03-26', () => {
+    const records = engine.generateInitialPlan({
+      userId: 'u5',
+      petId: 'p7',
+      context: {
+        petType: 'dog',
+        dateOfBirth: '2026-03-26',
+        nowDate: '2026-04-09',
+        region: 'OTHER',
+        lifestyleType: 'indoor',
+        lifestyleRiskLevel: 'low',
+      },
+    });
+
+    const deworming = records
+      .filter(r => r.type === 'deworming' && r.status !== 'completed')
+      .map(r => r.dueDate);
+
+    expect(deworming).toContain('2026-04-09');
+    expect(deworming).toContain('2026-04-23');
+    expect(deworming).toContain('2026-05-07');
+    expect(deworming).toContain('2026-05-21');
+  });
+
+  it('realigns future deworming dates from backdated completion anchor', () => {
+    const records = engine.generateInitialPlan({
+      userId: 'u6',
+      petId: 'p8',
+      context: {
+        petType: 'dog',
+        dateOfBirth: '2026-03-26',
+        nowDate: '2026-04-09',
+        region: 'OTHER',
+        lifestyleType: 'indoor',
+        lifestyleRiskLevel: 'low',
+      },
+    });
+
+    const next = records.find(
+      r => r.type === 'deworming' && r.dueDate === '2026-04-09',
+    );
+    expect(next).toBeDefined();
+
+    const updated = engine.recalculatePlanOnEvent({
+      records,
+      event: {
+        type: 'completion',
+        recordId: next!.id,
+        completedDate: '2026-04-07',
+      },
+      contextNowDate: '2026-04-09',
+    });
+
+    const future = updated
+      .filter(
+        r =>
+          r.type === 'deworming' &&
+          r.status !== 'completed' &&
+          r.dueDate >= '2026-04-08',
+      )
+      .map(r => r.dueDate);
+
+    expect(future).toContain('2026-04-21');
+    expect(future).toContain('2026-05-05');
+  });
+
+  it('supersedes older open deworming rows when completing a later dose', () => {
+    const records: SmartHealthRecord[] = [
+        {
+          id: 'p1-deworming-DEWORM_2026-06-01-2026-06-01',
+          userId: 'u1',
+          petId: 'p1',
+          type: 'deworming',
+          key: 'DEWORM_2026-06-01',
+          family: 'Deworming',
+          category: 'core',
+          name: 'Deworming',
+          dueDate: '2026-06-01',
+          completedDate: null,
+          status: 'overdue',
+          recurrenceType: 'none',
+          cadence: 'monthly',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+        {
+          id: 'p1-deworming-DEWORM_2026-07-01-2026-07-01',
+          userId: 'u1',
+          petId: 'p1',
+          type: 'deworming',
+          key: 'DEWORM_2026-07-01',
+          family: 'Deworming',
+          category: 'core',
+          name: 'Deworming',
+          dueDate: '2026-07-01',
+          completedDate: null,
+          status: 'overdue',
+          recurrenceType: 'none',
+          cadence: 'monthly',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ];
+
+    const updated = engine.recalculatePlanOnEvent({
+      records,
+      event: {
+        type: 'completion',
+        recordId: records[1]!.id,
+        completedDate: '2026-07-10',
+      },
+      contextNowDate: '2026-07-11',
+    });
+
+    const june = updated.find(r => r.id === records[0]!.id);
+    expect(june?.status).toBe('skipped');
+    expect(june?.skipReason).toBe('superseded_by_completion');
+  });
+
+  it('skip_dose realigns future deworming from last completion and DOB', () => {
+    const records: SmartHealthRecord[] = [
+        {
+          id: 'p1-deworming-DEWORM_2026-05-01-2026-05-01',
+          userId: 'u1',
+          petId: 'p1',
+          type: 'deworming',
+          key: 'DEWORM_2026-05-01',
+          family: 'Deworming',
+          category: 'core',
+          name: 'Deworming',
+          dueDate: '2026-05-01',
+          completedDate: '2026-05-01',
+          status: 'completed',
+          recurrenceType: 'none',
+          cadence: 'monthly',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+        {
+          id: 'p1-deworming-DEWORM_2026-06-01-2026-06-01',
+          userId: 'u1',
+          petId: 'p1',
+          type: 'deworming',
+          key: 'DEWORM_2026-06-01',
+          family: 'Deworming',
+          category: 'core',
+          name: 'Deworming',
+          dueDate: '2026-06-01',
+          completedDate: null,
+          status: 'overdue',
+          recurrenceType: 'none',
+          cadence: 'monthly',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+        {
+          id: 'p1-deworming-DEWORM_2026-07-01-2026-07-01',
+          userId: 'u1',
+          petId: 'p1',
+          type: 'deworming',
+          key: 'DEWORM_2026-07-01',
+          family: 'Deworming',
+          category: 'core',
+          name: 'Deworming',
+          dueDate: '2026-07-01',
+          completedDate: null,
+          status: 'upcoming',
+          recurrenceType: 'none',
+          cadence: 'monthly',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      ];
+
+    const updated = engine.recalculatePlanOnEvent({
+      records,
+      event: {
+        type: 'skip_dose',
+        recordId: records[1]!.id,
+        reason: 'Vet rescheduled',
+      },
+      contextNowDate: '2026-07-15',
+      petDateOfBirth: '2026-01-01',
+    });
+
+    const skipped = updated.find(r => r.id === records[1]!.id);
+    expect(skipped?.status).toBe('skipped');
+    const july = updated.find(r => r.id === records[2]!.id);
+    expect(july?.dueDate).toBe('2026-08-01');
   });
 });

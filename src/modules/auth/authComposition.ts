@@ -21,6 +21,8 @@ import { ValidateEmailAuthInput } from './domain/usecases/ValidateEmailAuthInput
 import { ValidatePhoneForLogin } from './domain/usecases/ValidatePhoneForLogin';
 import { ValidateEmailForReset } from './domain/usecases/ValidateEmailForReset';
 import { BuildUserProfileLabels } from './domain/usecases/BuildUserProfileLabels';
+import { UpdateUserProfile } from './domain/usecases/UpdateUserProfile';
+import { showLoginWelcomeNotification } from '../../infrastructure/notifications/loginWelcomeNotification';
 
 const repository = createAuthRepository();
 
@@ -43,4 +45,6 @@ export const authComposition = {
   validatePhoneForLogin: new ValidatePhoneForLogin(),
   validateEmailForReset: new ValidateEmailForReset(),
   buildUserProfileLabels: new BuildUserProfileLabels(),
+  updateUserProfile: new UpdateUserProfile(repository),
+  notifyLoginWelcome: showLoginWelcomeNotification,
 } as const;

@@ -6,7 +6,7 @@ import type { AppTabParamList } from './types';
 import { HealthStackNavigator } from './stacks/HealthStackNavigator';
 import { HomeStackNavigator } from './stacks/HomeStackNavigator';
 import { PetsStackNavigator } from './stacks/PetsStackNavigator';
-import { RemindersStackNavigator } from './stacks/RemindersStackNavigator';
+import { NotificationsStackNavigator } from './stacks/NotificationsStackNavigator';
 import { SettingsStackNavigator } from './stacks/SettingsStackNavigator';
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
@@ -55,7 +55,7 @@ export const AppNavigator = React.memo(function AppNavigator() {
           tabBarButton: () => null,
         }}
       />
-      <Tab.Screen name="RemindersTab" component={RemindersStackNavigator} />
+      <Tab.Screen name="NotificationsTab" component={NotificationsStackNavigator} />
       <Tab.Screen name="SettingsTab" component={SettingsStackNavigator} />
     </Tab.Navigator>
   );

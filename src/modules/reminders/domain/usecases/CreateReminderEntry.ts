@@ -7,7 +7,9 @@ interface Input {
   type: ReminderType;
   date: string;
   time: string;
+  /** When true, repeats yearly (e.g. annual vaccine). MVP add flow defaults to once. */
   repeatEnabled: boolean;
+  notes?: string;
 }
 
 export type CreateReminderEntryResult =
@@ -27,6 +29,7 @@ export class CreateReminderEntry {
     }
 
     const repeat: ReminderRepeat = input.repeatEnabled ? 'yearly' : 'once';
+    const notes = (input.notes ?? '').trim();
     return {
       ok: true,
       reminder: {
@@ -37,7 +40,7 @@ export class CreateReminderEntry {
         date,
         time,
         repeat,
-        notes: '',
+        notes,
         notificationId: null,
       },
     };

@@ -10,6 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@notifee/react-native": "^9.1.8",
     "@react-native-async-storage/async-storage": "^3.0.1",
     "@react-native-community/datetimepicker": "^9.1.0",
     "@react-native-firebase/app": "^23.8.8",

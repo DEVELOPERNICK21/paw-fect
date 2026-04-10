@@ -12,17 +12,34 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 
 import type {
+  NotificationsStackParamList,
   ReminderDetailRootNavigation,
-  RemindersStackParamList,
 } from '../../../../app/navigation/types';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
-import { icons } from '../../../../shared/assets/icons';
 import { useTheme, type Theme } from '../../../../shared/hooks/useTheme';
+import type { ReminderRepeat, ReminderType } from '../../domain/models/Reminder';
 import { useReminderStore } from '../../store/reminderStore';
 import { usePetStore } from '../../../pets/store/petStore';
+import type { IconName } from '../../../../shared/components/MaterialIcon';
 
 const DEFAULT_PHOTO =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuC4T6eRhkiOZPdpl07V4Q5wV6jkL73WtWv865dXMyC_LCdabfyMBnA8nnqKlwaTaYc50w-uH9jISkn0g-6VvT56t7XBnhl52Ct3dbrR3vTG-iGgXJJx_Y2gFyQ8KeIGu5rUE15weemEnWXOx3hqCKErqV3LyJohqMty6zhbH7qADyNlF9wUQP3zJLFNLA_AD1trh9WTvCYqxJ7uGYynvNdH7J87Ev23nr_6D9Vwf98Iq1qSSatYWugX9k9DCaSG27gv6bi_SK4Unvn0';
+
+const TYPE_ICON: Record<ReminderType, IconName> = {
+  vaccination: 'vaccines',
+  medication: 'pill',
+  grooming: 'content_cut',
+  checkup: 'stethoscope',
+  other: 'add_circle',
+};
+
+const REPEAT_LABEL: Record<ReminderRepeat, string> = {
+  once: 'One time',
+  daily: 'Daily',
+  weekly: 'Weekly',
+  monthly: 'Monthly',
+  yearly: 'Every year',
+};
 
 const createStyles = ({ colors }: Pick<Theme, 'colors'>) =>
   StyleSheet.create({
@@ -200,7 +217,7 @@ const createStyles = ({ colors }: Pick<Theme, 'colors'>) =>
 export const ReminderDetailScreen: React.FC = () => {
   const navigation = useNavigation<ReminderDetailRootNavigation>();
   const route =
-    useRoute<RouteProp<RemindersStackParamList, 'ReminderDetail'>>();
+    useRoute<RouteProp<NotificationsStackParamList, 'ReminderDetail'>>();
   const { fontFamilies, colors } = useTheme();
   const { reminders, deleteReminder } = useReminderStore();
   const { pets, loadPets } = usePetStore();
@@ -226,7 +243,7 @@ export const ReminderDetailScreen: React.FC = () => {
       return;
     }
     await deleteReminder(reminder.id);
-    navigation.navigate('RemindersTab', { screen: 'ReminderList' });
+    navigation.navigate('ReminderList');
   };
 
   if (!reminder) {
@@ -269,15 +286,9 @@ export const ReminderDetailScreen: React.FC = () => {
             />
           </Pressable>
           <Text style={[styles.headerTitle, { fontFamily: fontFamilies.bold }]}>
-            Reminder Details
+            Reminder
           </Text>
-          <Pressable style={styles.headerIcon}>
-            <MaterialIcon
-              name="more_vert"
-              size={22}
-              color={colors.text.heading}
-            />
-          </Pressable>
+          <View style={styles.headerIcon} />
         </View>
 
         <View style={styles.hero}>
@@ -288,7 +299,7 @@ export const ReminderDetailScreen: React.FC = () => {
             />
             <View style={styles.typeBadge}>
               <MaterialIcon
-                name="vaccines"
+                name={TYPE_ICON[reminder.type] ?? 'add_circle'}
                 size={14}
                 color={colors.text.inverse}
               />
@@ -379,11 +390,7 @@ export const ReminderDetailScreen: React.FC = () => {
           <View style={styles.detailCard}>
             <View style={styles.detailLeft}>
               <View style={styles.detailIconWrap}>
-                <MaterialIcon
-                  name="location_on"
-                  size={18}
-                  color={colors.accent}
-                />
+                <MaterialIcon name="repeat" size={18} color={colors.accent} />
               </View>
               <View>
                 <Text
@@ -392,7 +399,7 @@ export const ReminderDetailScreen: React.FC = () => {
                     { fontFamily: fontFamilies.bold },
                   ]}
                 >
-                  Location
+                  Repeats
                 </Text>
                 <Text
                   style={[
@@ -400,11 +407,10 @@ export const ReminderDetailScreen: React.FC = () => {
                     { fontFamily: fontFamilies.medium },
                   ]}
                 >
-                  Pawfect Veterinary Clinic
+                  {REPEAT_LABEL[reminder.repeat] ?? reminder.repeat}
                 </Text>
               </View>
             </View>
-            <MaterialIcon name="map" size={20} color={colors.accent} />
           </View>
 
           <View style={styles.notesCard}>
@@ -416,8 +422,9 @@ export const ReminderDetailScreen: React.FC = () => {
             <Text
               style={[styles.notesBody, { fontFamily: fontFamilies.regular }]}
             >
-              {reminder.notes ||
-                'Remember to bring prior medical history and vaccination record book.'}
+              {reminder.notes.trim()
+                ? reminder.notes
+                : 'No notes added.'}
             </Text>
           </View>
         </View>
@@ -427,11 +434,11 @@ export const ReminderDetailScreen: React.FC = () => {
             style={styles.primaryBtn}
             onPress={() => navigation.navigate('AddReminder')}
           >
-            <icons.editPencil width={18} height={18} />
+            <MaterialIcon name="add" size={18} color={colors.text.inverse} />
             <Text
               style={[styles.primaryText, { fontFamily: fontFamilies.bold }]}
             >
-              Edit Reminder
+              Add another reminder
             </Text>
           </Pressable>
           <Pressable style={styles.secondaryBtn} onPress={handleDelete}>

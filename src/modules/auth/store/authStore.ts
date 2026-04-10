@@ -9,6 +9,7 @@ import type { ValidateEmailAuthInputResult } from '../domain/usecases/ValidateEm
 import type { ValidatePhoneForLoginResult } from '../domain/usecases/ValidatePhoneForLogin';
 
 const ac = authComposition;
+const AUTH_ACTION_TIMEOUT_MS = 15000;
 
 export interface AuthState {
   user: User | null;
@@ -30,6 +31,10 @@ export interface AuthState {
   resendOtp: (phoneE164: string) => Promise<string | null>;
   sendPasswordResetEmail: (emailRaw: string) => Promise<void>;
   processPasswordResetQueue: () => Promise<void>;
+  updateUserProfile: (input: {
+    displayName: string;
+    phoneNumber: string | null;
+  }) => Promise<boolean>;
   refreshProfile: () => Promise<void>;
   clearAuthError: () => void;
   clearAuthNotice: () => void;
@@ -47,6 +52,22 @@ export const selectAuthProfileLabels = (state: AuthState): UserProfileLabels =>
 
 let sessionUnsubscribe: (() => void) | null = null;
 let logoutInFlight: Promise<void> | null = null;
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timeoutHandle = setTimeout(() => {
+      reject(new Error('Auth request timed out.'));
+    }, timeoutMs);
+  });
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle);
+    }
+  }
+}
 
 export const ensureAuthSessionListenerAttached = (): void => {
   if (sessionUnsubscribe !== null) {
@@ -88,8 +109,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (email: string, password: string) => {
     set({ loading: true, authError: null, authNotice: null, sessionStatus: 'idle' });
     try {
-      const user = await ac.executeAuthWithRetry.execute(() =>
-        ac.login.execute(email, password),
+      const user = await withTimeout(
+        ac.executeAuthWithRetry.execute(() => ac.login.execute(email, password)),
+        AUTH_ACTION_TIMEOUT_MS,
       );
       set({
         user,
@@ -99,6 +121,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isSessionReady: true,
         sessionStatus: 'authenticated',
       });
+      void ac.notifyLoginWelcome({
+        displayName: user.displayName,
+        email: user.email,
+      }).catch(() => {});
     } catch (error) {
       logUnexpectedAuthError('[authStore] login error', error);
       set({
@@ -116,8 +142,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signup: async (email: string, password: string) => {
     set({ loading: true, authError: null, authNotice: null, sessionStatus: 'idle' });
     try {
-      const user = await ac.executeAuthWithRetry.execute(() =>
-        ac.signup.execute(email, password),
+      const user = await withTimeout(
+        ac.executeAuthWithRetry.execute(() => ac.signup.execute(email, password)),
+        AUTH_ACTION_TIMEOUT_MS,
       );
       set({
         user,
@@ -127,6 +154,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isSessionReady: true,
         sessionStatus: 'authenticated',
       });
+      void ac.notifyLoginWelcome({
+        displayName: user.displayName,
+        email: user.email,
+      }).catch(() => {});
     } catch (error) {
       logUnexpectedAuthError('[authStore] signup error', error);
       set({
@@ -144,8 +175,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   loginWithGoogle: async () => {
     set({ loading: true, authError: null, authNotice: null, sessionStatus: 'idle' });
     try {
-      const user = await ac.executeAuthWithRetry.execute(() =>
-        ac.loginWithGoogle.execute(),
+      const user = await withTimeout(
+        ac.executeAuthWithRetry.execute(() => ac.loginWithGoogle.execute()),
+        AUTH_ACTION_TIMEOUT_MS,
       );
       set({
         user,
@@ -155,6 +187,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isSessionReady: true,
         sessionStatus: 'authenticated',
       });
+      void ac.notifyLoginWelcome({
+        displayName: user.displayName,
+        email: user.email,
+      }).catch(() => {});
       return true;
     } catch (error) {
       logUnexpectedAuthError('[authStore] loginWithGoogle error', error);
@@ -175,8 +211,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   requestOtp: async (phoneE164: string) => {
     set({ loading: true, authError: null });
     try {
-      const verificationId = await ac.executeAuthWithRetry.execute(() =>
-        ac.requestOtp.execute(phoneE164),
+      const verificationId = await withTimeout(
+        ac.executeAuthWithRetry.execute(() => ac.requestOtp.execute(phoneE164)),
+        AUTH_ACTION_TIMEOUT_MS,
       );
       set({ loading: false, authError: null });
       return verificationId;
@@ -205,6 +242,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isSessionReady: true,
         sessionStatus: 'authenticated',
       });
+      void ac.notifyLoginWelcome({
+        displayName: user.displayName,
+        email: user.email,
+      }).catch(() => {});
       return true;
     } catch (error) {
       logUnexpectedAuthError('[authStore] verifyOtp error', error);
@@ -225,8 +266,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   resendOtp: async (phoneE164: string) => {
     set({ loading: true, authError: null });
     try {
-      const verificationId = await ac.executeAuthWithRetry.execute(() =>
-        ac.resendOtp.execute(phoneE164),
+      const verificationId = await withTimeout(
+        ac.executeAuthWithRetry.execute(() => ac.resendOtp.execute(phoneE164)),
+        AUTH_ACTION_TIMEOUT_MS,
       );
       set({ loading: false, authError: null });
       return verificationId;
@@ -282,6 +324,47 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         '[authStore] processPasswordResetQueue error',
         error,
       );
+    }
+  },
+
+  updateUserProfile: async input => {
+    const currentUser = get().user;
+    if (!currentUser) {
+      set({ authError: 'Please sign in again.' });
+      return false;
+    }
+    set({ loading: true, authError: null, authNotice: null });
+    const prevUser = currentUser;
+    set({
+      user: {
+        ...currentUser,
+        displayName: input.displayName,
+        phoneNumber: input.phoneNumber,
+      },
+    });
+    try {
+      const updated = await withTimeout(
+        ac.updateUserProfile.execute(input),
+        AUTH_ACTION_TIMEOUT_MS,
+      );
+      set({
+        user: updated,
+        loading: false,
+        authNotice: 'Profile updated successfully.',
+        authError: null,
+      });
+      return true;
+    } catch (error) {
+      logUnexpectedAuthError('[authStore] updateUserProfile error', error);
+      set({
+        user: prevUser,
+        loading: false,
+        authError: ac.resolveAuthErrorMessage.execute(
+          error,
+          'Unable to update profile. Please retry.',
+        ),
+      });
+      return false;
     }
   },
 

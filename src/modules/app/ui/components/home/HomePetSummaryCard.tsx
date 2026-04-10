@@ -12,13 +12,21 @@ const DEFAULT_AVATAR_URI =
 export interface HomePetSummaryCardProps {
   pet: Pet;
   healthStatusLine: string;
-  nextMealLine: string;
+  nextCareMilestoneLine: string;
+  lastActivityLine: string;
   onPressViewProfile: () => void;
   theme: Theme;
 }
 
 export const HomePetSummaryCard: React.FC<HomePetSummaryCardProps> = React.memo(
-  ({ pet, healthStatusLine, nextMealLine, onPressViewProfile, theme }) => {
+  ({
+    pet,
+    healthStatusLine,
+    nextCareMilestoneLine,
+    lastActivityLine,
+    onPressViewProfile,
+    theme,
+  }) => {
     const { colors, radius, spacing, textStyles, fontSizes, fontFamilies } =
       theme;
     const uri = pet.photo?.trim() ? pet.photo : DEFAULT_AVATAR_URI;
@@ -183,18 +191,38 @@ export const HomePetSummaryCard: React.FC<HomePetSummaryCardProps> = React.memo(
                 { color: colors.text.secondary, fontFamily: fontFamilies.bold },
               ]}
             >
-              Next meal
+              Next care
             </AppText>
             <AppText
               style={[
                 textStyles.subtitle,
                 { color: colors.text.heading, fontFamily: fontFamilies.bold },
               ]}
-              numberOfLines={1}
+              numberOfLines={2}
             >
-              {nextMealLine}
+              {nextCareMilestoneLine}
             </AppText>
           </View>
+        </View>
+
+        <View style={{ gap: spacing.xs, width: '100%' }}>
+          <AppText
+            style={[
+              textStyles.footer,
+              { color: colors.text.secondary, fontFamily: fontFamilies.bold },
+            ]}
+          >
+            Last logged
+          </AppText>
+          <AppText
+            style={[
+              textStyles.caption,
+              { color: colors.text.body, fontFamily: fontFamilies.medium },
+            ]}
+            numberOfLines={2}
+          >
+            {lastActivityLine}
+          </AppText>
         </View>
 
         <Pressable onPress={onPressViewProfile} accessibilityRole="link">

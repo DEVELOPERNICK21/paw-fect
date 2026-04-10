@@ -6,18 +6,21 @@ import { PetCareLifecycleEngine } from '../domain/utils/PetCareLifecycleEngine';
 
 const lifecycleEngine = new PetCareLifecycleEngine();
 
-// Priority-based sorting: overdue > rabies (critical) > other vaccines > future
+const isActionable = (record: SmartHealthRecord): boolean =>
+  record.status === 'overdue' ||
+  record.status === 'missed' ||
+  record.status === 'upcoming';
+
+const isRabiesFamily = (record: SmartHealthRecord): boolean =>
+  record.family?.toLowerCase() === 'rabies';
+
+// Priority-based sorting: overdue/missed > rabies (critical) > upcoming > locked/future
 const sortByPriority = (records: SmartHealthRecord[]): SmartHealthRecord[] => {
   const priorityScore = (r: SmartHealthRecord): number => {
-    // Overdue = highest priority (0)
-    if (r.status === 'overdue') return 0;
-    // Rabies = critical (1)
-    if (r.family?.toLowerCase() === 'rabies') return 1;
-    // Locked = lower priority (100)
+    if (r.status === 'overdue' || r.status === 'missed') return 0;
+    if (isRabiesFamily(r) && r.status === 'upcoming') return 1;
     if (r.status === 'locked') return 100;
-    // Due soon (2)
     if (r.status === 'upcoming') return 2;
-    // Everything else (10)
     return 10;
   };
 
@@ -37,6 +40,13 @@ export interface SmartHealthSelectors {
   ) => SmartHealthRecord[];
   getNextActionTask: (records: SmartHealthRecord[]) => SmartHealthRecord | null;
   getUpcomingShortList: (
+    records: SmartHealthRecord[],
+    limit?: number,
+  ) => SmartHealthRecord[];
+  getNextVaccinationTask: (
+    records: SmartHealthRecord[],
+  ) => SmartHealthRecord | null;
+  getUpcomingVaccinations: (
     records: SmartHealthRecord[],
     limit?: number,
   ) => SmartHealthRecord[];
@@ -65,9 +75,8 @@ export const smartHealthSelectors: SmartHealthSelectors = {
     sortByPriority(records.filter(record => record.type === type)),
 
   getNextActionTask: records => {
-    // Get priority-sorted upcoming/overdue records
     const prioritized = sortByPriority(
-      records.filter(r => r.status === 'overdue' || r.status === 'upcoming'),
+      records.filter(record => isActionable(record)),
     );
     if (prioritized.length === 0) return null;
     return prioritized[0];
@@ -76,9 +85,27 @@ export const smartHealthSelectors: SmartHealthSelectors = {
   getUpcomingShortList: (records, limit = 3) => {
     const nextAction = smartHealthSelectors.getNextActionTask(records);
     return sortByPriority(
-      records.filter(r => r.status === 'overdue' || r.status === 'upcoming'),
+      records.filter(record => isActionable(record)),
     )
       .filter(r => r.id !== nextAction?.id)
+      .slice(0, limit);
+  },
+
+  getNextVaccinationTask: records => {
+    const vaccinations = records.filter(
+      record => record.type === 'vaccination' && isActionable(record),
+    );
+    if (vaccinations.length === 0) return null;
+    return sortByPriority(vaccinations)[0] ?? null;
+  },
+
+  getUpcomingVaccinations: (records, limit = 5) => {
+    const vaccinations = records.filter(
+      record => record.type === 'vaccination' && record.status === 'upcoming',
+    );
+    const nextVaccination = smartHealthSelectors.getNextVaccinationTask(records);
+    return sortByPriority(vaccinations)
+      .filter(record => record.id !== nextVaccination?.id)
       .slice(0, limit);
   },
 
@@ -120,7 +147,12 @@ export const smartHealthSelectors: SmartHealthSelectors = {
           (r.status === 'upcoming' || r.status === 'locked') &&
           r.dueDate > nextWeek,
       ),
-      history: sorted.filter(r => r.status === 'completed'),
+      history: sorted.filter(
+        r =>
+          r.status === 'completed' ||
+          r.status === 'missed' ||
+          r.status === 'skipped',
+      ),
     };
   },
 };

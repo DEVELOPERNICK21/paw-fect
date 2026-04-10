@@ -22,6 +22,9 @@ interface CreatePetProfileFormInput {
   lifestyle?: Pet['lifestyle'];
   region?: Pet['region'];
   photo?: string;
+  lastDewormingDate?: string;
+  lastVaccinationDate?: string;
+  lastRabiesDate?: string;
 }
 
 interface CreatePetProfileStoreResult {
@@ -40,7 +43,14 @@ export interface PetState {
   createPetProfile: (
     input: CreatePetProfileFormInput,
   ) => Promise<CreatePetProfileStoreResult>;
-  updatePet: (pet: Pet) => Promise<{ success: boolean; error?: string }>;
+  updatePet: (
+    pet: Pet,
+    options?: {
+      lastDewormingDate?: string;
+      lastVaccinationDate?: string;
+      lastRabiesDate?: string;
+    },
+  ) => Promise<{ success: boolean; error?: string }>;
   deletePet: (id: string) => Promise<{ success: boolean; error?: string }>;
   getPetById: (id: string) => Promise<Pet | null>;
   setActivePet: (petId: string | null) => Promise<void>;
@@ -88,6 +98,7 @@ export const usePetStore = create<PetState>((set, get) => ({
       }
 
       set({ pets, activePet, loading: false, loadError: null });
+      void pc.syncDailyRoutineNotifications(pets).catch(() => {});
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('[petStore] loadPets error', error);
@@ -106,9 +117,9 @@ export const usePetStore = create<PetState>((set, get) => ({
     try {
       const created = await pc.createPet.execute(userId, pet);
       const { pets } = get();
-      set({
-        pets: [...pets.filter(p => p.id !== created.id), created],
-      });
+      const next = [...pets.filter(p => p.id !== created.id), created];
+      set({ pets: next });
+      void pc.syncDailyRoutineNotifications(next).catch(() => {});
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('[petStore] createPet error', error);
@@ -144,12 +155,15 @@ export const usePetStore = create<PetState>((set, get) => ({
       region: result.pet.region,
       lifestyleType: result.pet.lifestyle?.type,
       lifestyleRiskLevel: result.pet.lifestyle?.riskLevel,
+      lastDewormingDate: input.lastDewormingDate,
+      lastVaccinationDate: input.lastVaccinationDate,
+      lastRabiesDate: input.lastRabiesDate,
     });
 
     return { success: true };
   },
 
-  updatePet: async (pet: Pet) => {
+  updatePet: async (pet: Pet, options?: { lastDewormingDate?: string }) => {
     const userId = requireUserId();
     if (!userId || pet.userId !== userId) {
       return { success: false, error: 'Please sign in again to update a pet.' };
@@ -162,10 +176,12 @@ export const usePetStore = create<PetState>((set, get) => ({
     try {
       const updated = await pc.updatePet.execute(userId, next);
       const { activePet } = get();
+      const nextPets = get().pets.map(p => (p.id === updated.id ? updated : p));
       set({
-        pets: get().pets.map(p => (p.id === updated.id ? updated : p)),
+        pets: nextPets,
         activePet: activePet?.id === updated.id ? updated : activePet,
       });
+      void pc.syncDailyRoutineNotifications(nextPets).catch(() => {});
 
       // Re-bootstrap health schedule if DOB changed
       const bootstrapHealthSchedule =
@@ -177,6 +193,9 @@ export const usePetStore = create<PetState>((set, get) => ({
         region: updated.region,
         lifestyleType: updated.lifestyle?.type,
         lifestyleRiskLevel: updated.lifestyle?.riskLevel,
+        lastDewormingDate: options?.lastDewormingDate,
+        lastVaccinationDate: options?.lastVaccinationDate,
+        lastRabiesDate: options?.lastRabiesDate,
       });
 
       return { success: true };
@@ -221,6 +240,7 @@ export const usePetStore = create<PetState>((set, get) => ({
     }
 
     set({ pets, activePet: nextActive });
+    void pc.syncDailyRoutineNotifications(pets).catch(() => {});
     return { success: true };
   },
 

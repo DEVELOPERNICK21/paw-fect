@@ -6,14 +6,11 @@ import type {
   SmartHealthRecord,
   SmartHealthRecordType,
 } from '../domain/models/SmartHealthRecord';
-import { createSmartHealthRecordRepository } from '../data/repositories/SmartHealthRecordRepositoryImpl';
-import { BootstrapSmartHealthSchedule } from '../domain/usecases/BootstrapSmartHealthSchedule';
-import { GetNextSmartHealthTask } from '../domain/usecases/GetNextSmartHealthTask';
-import { GetSmartHealthRecords } from '../domain/usecases/GetSmartHealthRecords';
-import { MarkSmartHealthRecordDone } from '../domain/usecases/MarkSmartHealthRecordDone';
-import { RescheduleSmartHealthRecord } from '../domain/usecases/RescheduleSmartHealthRecord';
-import { notificationService } from '../../../infrastructure/notifications/notificationService';
-import { PetCareLifecycleEngine } from '../domain/utils/PetCareLifecycleEngine';
+import { getTodayIsoDateLocal } from '../../../shared/utils/calendarDate';
+import { smartHealthSelectors } from './smartHealthSelectors';
+import { recordsComposition } from '../recordsComposition';
+
+const STORE_ACTION_TIMEOUT_MS = 15000;
 
 interface SmartHealthRecordState {
   records: SmartHealthRecord[];
@@ -25,10 +22,16 @@ interface SmartHealthRecordState {
   ) => Promise<void>;
   loadPetRecords: (petId: string) => Promise<void>;
   markAsDone: (recordId: string, completedDate?: string) => Promise<void>;
+  skipDewormingDose: (
+    recordId: string,
+    reason: string,
+    petDateOfBirth: string | undefined,
+  ) => Promise<void>;
   reschedule: (recordId: string, newDueDate: string) => Promise<void>;
-  remindTask: (recordId: string) => Promise<void>;
   getByType: (type: SmartHealthRecordType) => SmartHealthRecord[];
   getNextActionTask: (type: SmartHealthRecordType) => SmartHealthRecord | null;
+  getNextVaccinationTask: () => SmartHealthRecord | null;
+  getUpcomingVaccinations: (limit?: number) => SmartHealthRecord[];
   getUpcomingShortList: (
     type: SmartHealthRecordType,
     limit?: number,
@@ -45,53 +48,105 @@ interface SmartHealthRecordState {
   getOverdueCount: (type: SmartHealthRecordType) => number;
 }
 
-const repository = createSmartHealthRecordRepository();
-const bootstrapScheduleUseCase = new BootstrapSmartHealthSchedule(repository);
-const getRecordsUseCase = new GetSmartHealthRecords(repository);
-const getNextTaskUseCase = new GetNextSmartHealthTask();
-const markDoneUseCase = new MarkSmartHealthRecordDone(repository);
-const rescheduleUseCase = new RescheduleSmartHealthRecord(repository);
-const lifecycleEngine = new PetCareLifecycleEngine();
-
 function requireUserId(): string | null {
   return useAuthStore.getState().user?.id ?? null;
 }
 
-function dueToDate(dueDate: string): Date {
-  return new Date(`${dueDate}T09:00:00`);
+function smartHealthNotificationIds(recordId: string): [string, string, string] {
+  const base = `health-${recordId}`;
+  return [`${base}-d2`, `${base}-due`, `${base}-overdue`];
+}
+
+async function cancelSmartHealthNotifications(recordId: string): Promise<void> {
+  for (const id of smartHealthNotificationIds(recordId)) {
+    await recordsComposition.notificationService.cancelNotification(id);
+  }
 }
 
 async function scheduleDueNotifications(record: SmartHealthRecord): Promise<void> {
+  if (record.status === 'completed' || record.status === 'skipped') {
+    return;
+  }
   const baseId = `health-${record.id}`;
-  const dueDate = dueToDate(record.dueDate);
+  const dueDate = new Date(`${record.dueDate}T12:00:00.000Z`);
 
-  const threeDaysBefore = new Date(dueDate);
-  threeDaysBefore.setDate(threeDaysBefore.getDate() - 3);
+  const twoDaysBefore = new Date(dueDate);
+  twoDaysBefore.setUTCDate(twoDaysBefore.getUTCDate() - 2);
 
   const overdueDate = new Date(dueDate);
-  overdueDate.setDate(overdueDate.getDate() + 1);
+  overdueDate.setUTCDate(overdueDate.getUTCDate() + 1);
 
-  await notificationService.scheduleNotification({
-    id: `${baseId}-d3`,
+  const isOverdueContext = getTodayIsoDateLocal() > record.dueDate;
+
+  await recordsComposition.notificationService.scheduleNotification({
+    id: `${baseId}-d2`,
     title: `${record.name} due soon`,
-    body: `Health task due in 3 days for your pet.`,
-    scheduledDate: threeDaysBefore,
-    data: { recordId: record.id, type: record.type },
+    body: `${record.name} is due in 2 days. Tap to open health records.`,
+    scheduledDate: twoDaysBefore,
+    data: {
+      recordId: record.id,
+      type: String(record.type),
+      kind: 'smartHealth',
+    },
   });
-  await notificationService.scheduleNotification({
+  await recordsComposition.notificationService.scheduleNotification({
     id: `${baseId}-due`,
     title: `${record.name} is due today`,
     body: `Please complete this health task today.`,
     scheduledDate: dueDate,
-    data: { recordId: record.id, type: record.type },
+    data: {
+      recordId: record.id,
+      type: String(record.type),
+      kind: 'smartHealth',
+    },
   });
-  await notificationService.scheduleNotification({
+  await recordsComposition.notificationService.scheduleNotification({
     id: `${baseId}-overdue`,
     title: `${record.name} is overdue`,
-    body: `This health task is now overdue.`,
+    body: isOverdueContext
+      ? `This dose was missed — open the app to get back on track.`
+      : `This health task is now overdue.`,
     scheduledDate: overdueDate,
-    data: { recordId: record.id, type: record.type },
+    data: {
+      recordId: record.id,
+      type: String(record.type),
+      kind: 'smartHealth',
+    },
   });
+}
+
+function getSchedulableRecords(records: SmartHealthRecord[]): SmartHealthRecord[] {
+  return records.filter(
+    record =>
+      record.status !== 'completed' &&
+      record.status !== 'skipped' &&
+      (record.status === 'upcoming' ||
+        record.status === 'overdue' ||
+        record.status === 'locked' ||
+        record.status === 'missed'),
+  );
+}
+
+async function refreshDueNotifications(records: SmartHealthRecord[]): Promise<void> {
+  for (const item of getSchedulableRecords(records).slice(0, 12)) {
+    await scheduleDueNotifications(item);
+  }
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timeoutHandle = setTimeout(() => {
+      reject(new Error('Request timed out. Please try again.'));
+    }, timeoutMs);
+  });
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle);
+    }
+  }
 }
 
 export const useSmartHealthRecordStore = create<SmartHealthRecordState>(
@@ -110,14 +165,19 @@ export const useSmartHealthRecordStore = create<SmartHealthRecordState>(
       }
       set({ loading: true, error: null });
       try {
-        await bootstrapScheduleUseCase.execute({ ...input, userId });
-        const records = await getRecordsUseCase.execute(userId, input.petId);
+        await withTimeout(
+          recordsComposition.bootstrapSmartHealthSchedule.execute({
+            ...input,
+            userId,
+          }),
+          STORE_ACTION_TIMEOUT_MS,
+        );
+        const records = await withTimeout(
+          recordsComposition.getSmartHealthRecords.execute(userId, input.petId),
+          STORE_ACTION_TIMEOUT_MS,
+        );
         set({ records, loading: false, error: null });
-        for (const record of records) {
-          if (record.status !== 'completed') {
-            await scheduleDueNotifications(record);
-          }
-        }
+        void refreshDueNotifications(records).catch(() => {});
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('[smartHealthRecordStore] bootstrapPetSchedule error', error);
@@ -136,7 +196,10 @@ export const useSmartHealthRecordStore = create<SmartHealthRecordState>(
       }
       set({ loading: true, error: null });
       try {
-        const records = await getRecordsUseCase.execute(userId, petId);
+        const records = await withTimeout(
+          recordsComposition.getSmartHealthRecords.execute(userId, petId),
+          STORE_ACTION_TIMEOUT_MS,
+        );
         set({ records, loading: false, error: null });
       } catch (error) {
         // eslint-disable-next-line no-console
@@ -153,20 +216,25 @@ export const useSmartHealthRecordStore = create<SmartHealthRecordState>(
       if (!record) return;
       set({ loading: true, error: null });
       try {
-        await markDoneUseCase.execute(record, completedDate);
+        await cancelSmartHealthNotifications(recordId);
+        await withTimeout(
+          recordsComposition.markSmartHealthRecordDone.execute(
+            record,
+            completedDate,
+          ),
+          STORE_ACTION_TIMEOUT_MS,
+        );
         const userId = requireUserId();
         if (!userId) {
           set({ loading: false, error: 'Please sign in again.' });
           return;
         }
-        const records = await getRecordsUseCase.execute(userId, record.petId);
+        const records = await withTimeout(
+          recordsComposition.getSmartHealthRecords.execute(userId, record.petId),
+          STORE_ACTION_TIMEOUT_MS,
+        );
         set({ records, loading: false, error: null });
-        // Schedule notifications for any newly generated recurring items.
-        for (const item of records) {
-          if (item.status === 'upcoming' && item.recurrenceType !== 'none') {
-            await scheduleDueNotifications(item);
-          }
-        }
+        void refreshDueNotifications(records).catch(() => {});
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('[smartHealthRecordStore] markAsDone error', error);
@@ -177,97 +245,117 @@ export const useSmartHealthRecordStore = create<SmartHealthRecordState>(
       }
     },
 
-    reschedule: async (recordId, newDueDate) => {
+    skipDewormingDose: async (recordId, reason, petDateOfBirth) => {
       const record = get().records.find(item => item.id === recordId);
       if (!record) return;
       set({ loading: true, error: null });
       try {
-        await rescheduleUseCase.execute(record, newDueDate);
+        await cancelSmartHealthNotifications(recordId);
+        await withTimeout(
+          recordsComposition.skipSmartHealthRecord.execute(
+            record,
+            reason,
+            petDateOfBirth,
+          ),
+          STORE_ACTION_TIMEOUT_MS,
+        );
         const userId = requireUserId();
         if (!userId) {
           set({ loading: false, error: 'Please sign in again.' });
           return;
         }
-        const records = await getRecordsUseCase.execute(userId, record.petId);
+        const records = await withTimeout(
+          recordsComposition.getSmartHealthRecords.execute(userId, record.petId),
+          STORE_ACTION_TIMEOUT_MS,
+        );
         set({ records, loading: false, error: null });
+        void refreshDueNotifications(records).catch(() => {});
       } catch (error) {
         // eslint-disable-next-line no-console
-        console.error('[smartHealthRecordStore] reschedule error', error);
+        console.error('[smartHealthRecordStore] skipDewormingDose error', error);
         set({
           loading: false,
-          error: 'Unable to reschedule record.',
+          error: 'Unable to skip this dose.',
         });
       }
     },
-    remindTask: async recordId => {
+
+    reschedule: async (recordId, newDueDate) => {
       const record = get().records.find(item => item.id === recordId);
       if (!record) return;
+      set({ loading: true, error: null });
       try {
-        const reminderDate = new Date();
-        reminderDate.setMinutes(reminderDate.getMinutes() + 5);
-        await notificationService.scheduleNotification({
-          id: `health-remind-${record.id}-${Date.now()}`,
-          title: `Reminder: ${record.name}`,
-          body: `Don't forget this ${record.type} task.`,
-          scheduledDate: reminderDate,
-          data: { recordId: record.id, type: record.type },
-        });
+        await cancelSmartHealthNotifications(recordId);
+        await withTimeout(
+          recordsComposition.rescheduleSmartHealthRecord.execute(
+            record,
+            newDueDate,
+          ),
+          STORE_ACTION_TIMEOUT_MS,
+        );
+        const userId = requireUserId();
+        if (!userId) {
+          set({ loading: false, error: 'Please sign in again.' });
+          return;
+        }
+        const records = await withTimeout(
+          recordsComposition.getSmartHealthRecords.execute(userId, record.petId),
+          STORE_ACTION_TIMEOUT_MS,
+        );
+        set({ records, loading: false, error: null });
+        void refreshDueNotifications(records).catch(() => {});
       } catch (error) {
         // eslint-disable-next-line no-console
-        console.error('[smartHealthRecordStore] remindTask error', error);
+        console.error('[smartHealthRecordStore] reschedule error', error);
+        const message =
+          error instanceof Error && error.message.trim().length > 0
+            ? error.message
+            : 'Unable to reschedule record.';
         set({
-          error: 'Unable to set reminder right now.',
+          loading: false,
+          error: message,
         });
       }
     },
 
     getByType: type =>
-      get()
-        .records
-        .filter(record => record.type === type)
-        .slice()
-        .sort((a, b) => a.dueDate.localeCompare(b.dueDate)),
+      smartHealthSelectors.getByType(get().records, type),
     getNextActionTask: type => {
       const records = get().getByType(type);
-      return getNextTaskUseCase.execute(records);
+      return smartHealthSelectors.getNextActionTask(records);
     },
+    getNextVaccinationTask: () =>
+      smartHealthSelectors.getNextVaccinationTask(get().records),
+    getUpcomingVaccinations: (limit = 5) =>
+      smartHealthSelectors.getUpcomingVaccinations(get().records, limit),
     getUpcomingShortList: (type, limit = 3) => {
       const records = get().getByType(type);
-      const nextActionTask = get().getNextActionTask(type);
-      return records
-        .filter(record => record.status === 'overdue' || record.status === 'upcoming')
-        .filter(record => record.id !== nextActionTask?.id)
-        .slice(0, limit);
+      return smartHealthSelectors.getUpcomingShortList(records, limit);
     },
     getCompletedTasks: type =>
-      get()
-        .getByType(type)
-        .filter(record => record.status === 'completed'),
-    getFullSchedule: type => get().getByType(type),
+      smartHealthSelectors.getCompletedTasks(get().getByType(type)),
+    getFullSchedule: type => smartHealthSelectors.getFullSchedule(get().getByType(type)),
     getActionRequiredItem: type => {
       const records = get().getByType(type);
-      return lifecycleEngine.getActionRequired(records);
+      return smartHealthSelectors.getActionRequiredItems(records, 1)[0] ?? null;
     },
     getActionRequiredItems: (type, limit = 2) => {
       const records = get().getByType(type);
-      return lifecycleEngine.getActionRequiredList(records, limit);
+      return smartHealthSelectors.getActionRequiredItems(records, limit);
     },
     getUpcomingItems: (type, options) => {
       const records = get().getByType(type);
-      return lifecycleEngine.getUpcoming(
-        records,
-        options?.limit ?? 5,
-        options?.dedupeByFamily ?? true,
-      );
+      return smartHealthSelectors.getUpcomingItems(records, {
+        limit: options?.limit ?? 5,
+        dedupeByFamily: options?.dedupeByFamily ?? true,
+      });
     },
     getHistoryItems: type => {
       const records = get().getByType(type);
-      return lifecycleEngine.getHistory(records);
+      return smartHealthSelectors.getHistoryItems(records);
     },
     getOverdueCount: type =>
-      get()
-        .getByType(type)
-        .filter(record => record.status === 'overdue').length,
+      smartHealthSelectors.getOverdueCount(get().getByType(type)),
   }),
 );
 

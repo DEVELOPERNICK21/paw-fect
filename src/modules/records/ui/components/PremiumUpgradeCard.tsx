@@ -5,6 +5,7 @@ import { AppText } from '../../../../shared/components/AppText';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 
+/** Premium upsell at the bottom of the Health records scroll content. */
 export const PremiumUpgradeCard: React.FC = () => {
   const theme = useTheme();
   const {
@@ -145,4 +146,3 @@ const styles = StyleSheet.create({
     opacity: 0.13,
   },
 });
-
