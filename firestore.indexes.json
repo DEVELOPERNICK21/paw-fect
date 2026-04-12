@@ -1,0 +1,26 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "waitlist",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "contact_submissions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "pricing_plans",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "priceMonthly", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

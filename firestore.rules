@@ -11,6 +11,20 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    // Marketing / website collections — client SDK denied; Next.js uses Admin SDK only.
+    match /pricing_plans/{planId} {
+      allow read, write: if false;
+    }
+    match /contact_submissions/{id} {
+      allow read, write: if false;
+    }
+    match /waitlist/{id} {
+      allow read, write: if false;
+    }
+    match /site_content/{docId} {
+      allow read, write: if false;
+    }
+
     // User profile document
     match /users/{userId} {
       allow read, write: if isOwner(userId);
