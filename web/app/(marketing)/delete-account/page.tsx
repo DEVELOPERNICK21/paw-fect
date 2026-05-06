@@ -21,6 +21,7 @@ export default function DeleteAccountPage(): React.ReactElement {
         </p>
 
         <h2>How to request deletion</h2>
+
         <ol>
           <li>
             Send an email from the{' '}
