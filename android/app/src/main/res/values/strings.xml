@@ -1,3 +1,17 @@
 <resources>
     <string name="app_name">paw_fect</string>
+    <string name="widget_next_milestone_label">Pawfect · Next milestone</string>
+    <string name="widget_next_milestone_desc">Next vaccination or deworming for your pet</string>
+    <string name="widget_next_milestone_badge">Next milestone</string>
+    <string name="widget_upcoming_tasks_title">Upcoming tasks</string>
+    <string name="widget_upcoming_tasks_desc">Today\'s care reminders</string>
+    <string name="widget_open_app">Open Pawfect to set up your pet.</string>
+    <string name="widget_no_milestone">No upcoming milestone</string>
+    <string name="widget_tasks_empty">No tasks for today</string>
+    <string name="widget_paw_emoji">🐾</string>
+    <string name="widget_tasks_header">Tasks</string>
+    <string name="widget_tasks_kebab">⋮</string>
+    <string name="widget_tasks_menu_desc">More options</string>
+    <string name="widget_tasks_add_hint">+ Add New Task — open Pawfect</string>
+    <string name="widget_tasks_footer_when_list">Tap widget to manage tasks</string>
 </resources>

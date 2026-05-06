@@ -100,6 +100,16 @@ export const AddPetScreen: React.FC = () => {
   const [lastRabiesDate, setLastRabiesDate] = useState('');
   const [lastRabiesUnknown, setLastRabiesUnknown] = useState(false);
 
+  const toFriendlyAddPetError = (rawError?: string): string => {
+    if (!rawError) {
+      return 'Unable to save pet profile right now. Please try again.';
+    }
+    if (rawError === 'PET_LIMIT') {
+      return 'You have reached your current plan pet limit. Upgrade your plan to add more pets.';
+    }
+    return rawError;
+  };
+
   const today = useMemo(() => new Date(), []);
   const todayIso = useMemo(() => today.toISOString().slice(0, 10), [today]);
 
@@ -432,7 +442,7 @@ export const AddPetScreen: React.FC = () => {
           : undefined,
     });
     if (!result.success) {
-      setError(result.error ?? 'Unable to save pet profile.');
+      setError(toFriendlyAddPetError(result.error));
       return;
     }
     if (navigation.canGoBack()) {

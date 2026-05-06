@@ -1,4 +1,7 @@
-import type { SmartHealthRecord } from '../models/SmartHealthRecord';
+import type {
+  DewormingCadence,
+  SmartHealthRecord,
+} from '../models/SmartHealthRecord';
 import type { SmartHealthRecordRepository } from '../repositories/SmartHealthRecordRepository';
 import { requireValidDewormingComplete } from '../utils/DewormingEdgeCaseValidator';
 import { PetCareLifecycleEngine } from '../utils/PetCareLifecycleEngine';
@@ -7,19 +10,107 @@ import {
   createSmartHealthHistoryLog,
 } from '../utils/SmartHealthScheduleUtils';
 import { getTodayIsoDateLocal } from '../../../../shared/utils/calendarDate';
+import { assertDateNotBeforePetDob } from '../utils/healthRecordDateGuards';
+import {
+  validateLogDateForCadence,
+} from '../utils/DewormingEngine';
+import {
+  resolvePrerequisiteCompletedDate,
+  validateVaccinationLogDate,
+} from '../utils/vaccinationLogValidation';
+import { getLastCompletedDewormingIsoDate } from '../utils/smartHealthDewormingInference';
 
 export class MarkSmartHealthRecordDone {
   constructor(private readonly repository: SmartHealthRecordRepository) {}
   private readonly engine = new PetCareLifecycleEngine();
 
-  async execute(record: SmartHealthRecord, completedDate?: string): Promise<void> {
+  async execute(
+    record: SmartHealthRecord,
+    completedDate?: string,
+    petDateOfBirth?: string,
+  ): Promise<void> {
+    if (record.status === 'completed') {
+      return;
+    }
+
+    const normalizedCompletedDate = (completedDate ?? getTodayIsoDateLocal()).slice(0, 10);
+
+    assertDateNotBeforePetDob(
+      normalizedCompletedDate,
+      petDateOfBirth,
+      'Completion date',
+    );
+
     if (record.type === 'deworming') {
       requireValidDewormingComplete(record);
     }
 
-    const { updated, next, logs } = buildCompletionUpdate(record, completedDate);
     const allRecords = await this.repository.listByPet(record.userId, record.petId);
     const today = getTodayIsoDateLocal();
+
+    if (record.type === 'deworming' && petDateOfBirth) {
+      const lastCompletion = getLastCompletedDewormingIsoDate(
+        allRecords,
+        record.id,
+      );
+      const cadenceCheck = validateLogDateForCadence(
+        petDateOfBirth,
+        today,
+        normalizedCompletedDate,
+        (record.cadence ?? 'every_3_months') as DewormingCadence,
+        lastCompletion,
+        record.dueDate,
+      );
+      if (!cadenceCheck.ok) {
+        throw new Error(cadenceCheck.error);
+      }
+      if (cadenceCheck.warning) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          '[MarkSmartHealthRecordDone] deworming log inside warn tier:',
+          cadenceCheck.warning,
+        );
+      }
+    }
+
+    if (record.type === 'vaccination') {
+      const prerequisiteCompleted = resolvePrerequisiteCompletedDate(
+        allRecords,
+        record.dependsOn,
+      );
+      if (record.dependsOn && !prerequisiteCompleted) {
+        throw new Error(
+          'Complete the previous dose in this vaccine series before logging this one.',
+        );
+      }
+      if (petDateOfBirth) {
+        const vaxCheck = validateVaccinationLogDate({
+          petDateOfBirth,
+          today,
+          selectedDate: normalizedCompletedDate,
+          dueDate: record.dueDate,
+          prerequisiteCompletedDate: prerequisiteCompleted,
+          isAnnualBooster: record.recurrenceType === 'yearly',
+        });
+        if (!vaxCheck.ok) {
+          throw new Error(vaxCheck.error);
+        }
+        if (vaxCheck.warning) {
+          // eslint-disable-next-line no-console
+          console.warn(
+            '[MarkSmartHealthRecordDone] vaccination log inside warn tier:',
+            vaxCheck.warning,
+          );
+        }
+      } else if (normalizedCompletedDate < record.dueDate) {
+        throw new Error('Vaccination cannot be logged before the due date.');
+      }
+    }
+
+    const { updated, next, logs } = buildCompletionUpdate(
+      record,
+      normalizedCompletedDate,
+    );
     const completed = updated.completedDate ?? updated.dueDate;
 
     const recalculated = this.engine.recalculatePlanOnEvent({
@@ -29,7 +120,7 @@ export class MarkSmartHealthRecordDone {
         recordId: record.id,
         completedDate: completed,
       },
-      contextNowDate: today,
+      contextNowDate: getTodayIsoDateLocal(),
     });
 
     const persistedTarget = recalculated.find(r => r.id === record.id);

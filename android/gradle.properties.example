@@ -1,0 +1,8 @@
+# Copy these signing keys into your local `android/gradle.properties`.
+# Do not commit real passwords or private keystore paths.
+
+# Release upload keystore config (Google Play)
+PAWFECT_UPLOAD_STORE_FILE=app/pawfect-upload-key.keystore
+PAWFECT_UPLOAD_KEY_ALIAS=pawfect-upload
+PAWFECT_UPLOAD_STORE_PASSWORD=replace_with_store_password
+PAWFECT_UPLOAD_KEY_PASSWORD=replace_with_key_password

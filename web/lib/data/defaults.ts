@@ -61,7 +61,7 @@ export const defaultSiteContent = (): SiteContentMarketing => ({
   ],
   appStoreUrl: "https://apps.apple.com/",
   playStoreUrl: "https://play.google.com/store",
-  privacyLastUpdated: "2026-04-01",
+  privacyLastUpdated: "2026-05-06",
 });
 
 export const defaultPricingPlans = (): Omit<PricingPlan, "id">[] => [

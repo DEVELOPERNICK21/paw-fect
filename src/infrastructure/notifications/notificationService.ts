@@ -9,8 +9,8 @@ export interface NotificationPayload {
   scheduledDate: Date;
   /** String values only (OS notification payload contract). */
   data?: Record<string, string>;
-  /** When set, OS repeats from the first fire time (Notifee daily repeat). */
-  repeat?: 'daily';
+  /** When set, OS repeats from the first fire time (Notifee repeat). */
+  repeat?: 'daily' | 'weekly';
 }
 
 export interface ImmediateNotificationPayload {

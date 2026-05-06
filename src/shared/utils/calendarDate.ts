@@ -20,3 +20,16 @@ export function getTodayIsoDateLocal(): string {
 export function getTodayIsoDateUtc(): string {
   return new Date().toISOString().slice(0, 10);
 }
+
+/**
+ * Whole calendar days between two YYYY-MM-DD strings using UTC date parts (no local TZ drift on DST boundaries).
+ */
+export function calendarDaysBetweenIsoDates(fromIso: string, toIso: string): number {
+  const from = fromIso.slice(0, 10);
+  const to = toIso.slice(0, 10);
+  const [y0, m0, d0] = from.split('-').map(Number);
+  const [y1, m1, d1] = to.split('-').map(Number);
+  const t0 = Date.UTC(y0, (m0 ?? 1) - 1, d0 ?? 1);
+  const t1 = Date.UTC(y1, (m1 ?? 1) - 1, d1 ?? 1);
+  return Math.round((t1 - t0) / 86400000);
+}

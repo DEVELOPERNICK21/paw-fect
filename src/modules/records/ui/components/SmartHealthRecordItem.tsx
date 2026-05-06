@@ -5,6 +5,7 @@ import { AppText } from '../../../../shared/components/AppText';
 import { icons } from '../../../../shared/assets/icons';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import type { SmartHealthRecord } from '../../domain/models/SmartHealthRecord';
+import { cadenceDisplayLabel } from '../../domain/utils/DewormingEngine';
 
 export interface SmartHealthRecordItemProps {
   record: SmartHealthRecord;
@@ -99,11 +100,12 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
     return `Due on ${formatDate(record.dueDate)}`;
   })();
 
-  const cadenceSuffix =
+  const dewormingCadenceHint =
     record.type === 'deworming' &&
-    record.recurrenceType === 'quarterly' &&
-    record.status !== 'completed'
-      ? ' · Every 3 months'
+    record.cadence &&
+    record.status !== 'completed' &&
+    record.status !== 'skipped'
+      ? ` · ${cadenceDisplayLabel(record.cadence)}`
       : '';
 
   const showActionRow =
@@ -118,8 +120,10 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
         styles.card,
         {
           borderRadius: radius.lg,
-          backgroundColor: variant === 'hero' ? colors.surface : colors.surfaceAlt,
-          borderColor: variant === 'hero' ? colors.brandTint10 : colors.borderSubtle,
+          backgroundColor:
+            variant === 'hero' ? colors.surface : colors.surfaceAlt,
+          borderColor:
+            variant === 'hero' ? colors.brandTint10 : colors.borderSubtle,
           padding: space('md'),
         },
       ]}
@@ -181,13 +185,18 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
             numberOfLines={2}
           >
             {detailLine}
-            {cadenceSuffix}
+            {dewormingCadenceHint}
           </AppText>
         </View>
       </View>
 
       {showActionRow ? (
-        <View style={[styles.actionRow, { marginTop: space('md'), gap: space('sm') }]}>
+        <View
+          style={[
+            styles.actionRow,
+            { marginTop: space('md'), gap: space('sm') },
+          ]}
+        >
           {onMarkDone ? (
             <Pressable
               accessibilityRole="button"
@@ -231,7 +240,10 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
               <AppText
                 style={[
                   textStyles.caption,
-                  { color: colors.text.secondary, fontFamily: fontFamilies.bold },
+                  {
+                    color: colors.text.secondary,
+                    fontFamily: fontFamilies.bold,
+                  },
                 ]}
               >
                 Reschedule
@@ -257,7 +269,10 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
               <AppText
                 style={[
                   textStyles.caption,
-                  { color: colors.text.secondary, fontFamily: fontFamilies.bold },
+                  {
+                    color: colors.text.secondary,
+                    fontFamily: fontFamilies.bold,
+                  },
                 ]}
               >
                 Skip dose

@@ -27,7 +27,7 @@ export const petComposition = {
   createPetProfile: new CreatePetProfile(),
   syncDailyRoutineNotifications: async (pets: Pet[]): Promise<void> => {
     await syncDailyRoutineNotificationsForPets(
-      pets.map(p => ({ id: p.id, name: p.name })),
+      pets.map(p => ({ id: p.id, name: p.name, type: p.type })),
       notificationService,
     );
   },

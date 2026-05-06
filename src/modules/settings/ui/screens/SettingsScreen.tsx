@@ -266,6 +266,26 @@ export const SettingsScreen: React.FC = () => {
               </View>
               <MaterialIcon name="chevron_right" size={20} color={colors.text.subdued} />
             </Pressable>
+
+            <Pressable
+              style={styles.actionRow}
+              onPress={() => navigation.navigate('SmartSchedule')}
+            >
+              <View style={styles.rowLeft}>
+                <View style={styles.rowIcon}>
+                  <MaterialIcon name="pets" size={20} color={colors.accent} />
+                </View>
+                <View>
+                  <Text style={[styles.rowTitle, { fontFamily: fontFamilies.semibold }]}>
+                    Smart daily schedule
+                  </Text>
+                  <Text style={[styles.rowSubtitle, { fontFamily: fontFamilies.medium }]}>
+                    Dog/cat activity and care plan
+                  </Text>
+                </View>
+              </View>
+              <MaterialIcon name="chevron_right" size={20} color={colors.text.subdued} />
+            </Pressable>
           </View>
         </View>
 

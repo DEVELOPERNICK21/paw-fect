@@ -1,7 +1,10 @@
 /**
- * Example input/output for pure timeline API:
+ * Example input/output for the standalone timeline helpers:
  * generateDewormingTimeline(pet, history, today)
- * + projectDewormingTimelineSections(timeline)
+ * + projectDewormingTimelineSections(timeline).
+ *
+ * The in-app Health screen uses persisted smart rows via
+ * projectDewormingFromSmartRecords (single source of truth).
  */
 
 export const examplePetInput = {

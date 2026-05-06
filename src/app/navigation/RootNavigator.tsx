@@ -26,6 +26,7 @@ import { useSettingsStore } from '../../modules/settings/store/settingsStore';
 import { usePetStore } from '../../modules/pets/store/petStore';
 import { useReminderStore } from '../../modules/reminders/store/reminderStore';
 import { useRecordStore } from '../../modules/records/store/recordStore';
+import { useSubscriptionStore } from '../../modules/subscription/store/subscriptionStore';
 import { useTheme } from '../../shared/hooks/useTheme';
 
 import { AppNavigator } from './AppNavigator';
@@ -45,6 +46,9 @@ export const RootNavigator: React.FC = () => {
   const userId = useAuthStore(state => state.user?.id);
   const { settings, loadSettings } = useSettingsStore();
   const loadPets = usePetStore(state => state.loadPets);
+  const resyncDailyRoutineNotifications = usePetStore(
+    state => state.resyncDailyRoutineNotifications,
+  );
   const pets = usePetStore(state => state.pets);
   const petsLoading = usePetStore(state => state.loading);
   const resetPets = usePetStore(state => state.reset);
@@ -101,8 +105,15 @@ export const RootNavigator: React.FC = () => {
     if (!bootstrapped) {
       return;
     }
-    void bootstrapLocalNotifications().catch(() => {});
-  }, [bootstrapped]);
+    void (async () => {
+      try {
+        await bootstrapLocalNotifications();
+        await resyncDailyRoutineNotifications();
+      } catch {
+        // noop
+      }
+    })();
+  }, [bootstrapped, resyncDailyRoutineNotifications]);
 
   useEffect(() => {
     if (!bootstrapped) {
@@ -125,11 +136,37 @@ export const RootNavigator: React.FC = () => {
     const sub = AppState.addEventListener('change', next => {
       if (next === 'active') {
         refreshProfile().catch(() => {});
+        if (
+          useAuthStore.getState().isAuthenticated &&
+          useAuthStore.getState().user?.id
+        ) {
+          void useSubscriptionStore.getState().refreshBootstrap();
+        }
         void processPasswordResetQueue();
       }
     });
     return () => sub.remove();
   }, [processPasswordResetQueue, refreshProfile]);
+
+  useEffect(() => {
+    if (!isSessionReady) {
+      return undefined;
+    }
+
+    const subscriptionApi = useSubscriptionStore.getState();
+
+    if (!isAuthenticated || !userId) {
+      subscriptionApi.stopListening();
+      return undefined;
+    }
+
+    subscriptionApi.startListening(userId);
+    void subscriptionApi.refreshBootstrap();
+
+    return () => {
+      subscriptionApi.stopListening();
+    };
+  }, [isAuthenticated, isSessionReady, userId]);
 
   useEffect(() => {
     if (!isSessionReady) {

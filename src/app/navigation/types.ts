@@ -25,11 +25,16 @@ export type HealthStackParamList = {
   AddHealthRecord: undefined;
 };
 
+export type PaywallRouteParams = {
+  source?: 'pet_limit' | 'settings';
+};
+
 export type PetsStackParamList = {
   PetProfile: undefined;
   PetSwitcher: undefined;
   AddPet: { petId?: string } | undefined;
   AddHealthDetails: { kind: 'weight' | 'vaccines' | 'conditions' } | undefined;
+  Paywall: PaywallRouteParams | undefined;
 };
 
 export type NotificationsStackParamList = {
@@ -43,6 +48,8 @@ export type NotificationsStackParamList = {
 export type SettingsStackParamList = {
   Settings: undefined;
   UserProfile: undefined;
+  SmartSchedule: undefined;
+  Paywall: PaywallRouteParams | undefined;
 };
 
 export type AppTabParamList = {

@@ -1,6 +1,18 @@
 pluginManagement { includeBuild("../node_modules/@react-native/gradle-plugin") }
 plugins { id("com.facebook.react.settings") }
-extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autolinkLibrariesFromCommand() }
+// Include app/build.gradle so a change to namespace / applicationId invalidates autolinking cache
+// (otherwise android/build/generated/autolinking/autolinking.json keeps a stale packageName).
+extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
+  ex.autolinkLibrariesFromCommand(
+      ["npx", "@react-native-community/cli", "config"],
+      new File(rootDir.parentFile, ".").canonicalFile,
+      files(
+          "../yarn.lock",
+          "../package-lock.json",
+          "../package.json",
+          "../react-native.config.js",
+          "app/build.gradle"))
+}
 rootProject.name = 'paw_fect'
 include ':app'
 includeBuild('../node_modules/@react-native/gradle-plugin')

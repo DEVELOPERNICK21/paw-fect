@@ -4,15 +4,32 @@ require Pod::Executable.execute_command('node', ['-p',
     "react-native/scripts/react_native_pods.rb",
     {paths: [process.argv[1]]},
   )', __dir__]).strip
+require 'fileutils'
+
+# RNFirebase + Firebase iOS SDK: Firebase.h imports FirebaseAuth-Swift.h when Auth is present.
+# Static-library integration leaves that generated header unreachable — use static frameworks.
+# https://github.com/invertase/react-native-firebase/issues/8215
+$RNFirebaseAsStaticFramework = true
+
+def ensure_grpc_modulemap_symlink
+  grpc_modulemap_src = File.join(__dir__, 'Pods', 'Target Support Files', 'gRPC-Core', 'gRPC-Core.modulemap')
+  grpc_modulemap_dest_dir = File.join(__dir__, 'Pods', 'Headers', 'Private', 'grpc')
+  grpc_modulemap_dest = File.join(grpc_modulemap_dest_dir, 'gRPC-Core.modulemap')
+  return unless File.exist?(grpc_modulemap_src)
+
+  FileUtils.mkdir_p(grpc_modulemap_dest_dir)
+  should_link = !File.exist?(grpc_modulemap_dest) ||
+                File.realpath(grpc_modulemap_dest) != File.realpath(grpc_modulemap_src)
+  FileUtils.ln_sf(grpc_modulemap_src, grpc_modulemap_dest) if should_link
+end
 
 platform :ios, min_ios_version_supported
 prepare_react_native_project!
+use_modular_headers!
 
-linkage = ENV['USE_FRAMEWORKS']
-if linkage != nil
-  Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
-  use_frameworks! :linkage => linkage.to_sym
-end
+framework_linkage = ENV['USE_FRAMEWORKS'] == 'dynamic' ? :dynamic : :static
+Pod::UI.puts "Configuring Pod with #{framework_linkage}ally linked Frameworks".green
+use_frameworks! :linkage => framework_linkage
 
 target 'paw_fect' do
   config = use_native_modules!
@@ -30,5 +47,13 @@ target 'paw_fect' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+
+    # CocoaPods sometimes leaves gRPC-Core.modulemap only in Target Support Files
+    # while RNFirebase/Firestore compilers expect it under Headers/Private/grpc.
+    ensure_grpc_modulemap_symlink
   end
+end
+
+post_integrate do |_installer|
+  ensure_grpc_modulemap_symlink
 end

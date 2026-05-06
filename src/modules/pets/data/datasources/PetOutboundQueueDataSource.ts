@@ -71,6 +71,13 @@ class PetOutboundQueueDataSourceImpl implements PetOutboundQueueDataSource {
     entry: Omit<PetQueueEntry, 'id'>,
   ): Promise<void> {
     const all = await this.getAll(userId);
+    if (
+      entry.op === 'delete' &&
+      entry.petId &&
+      all.some(e => e.op === 'delete' && e.petId === entry.petId)
+    ) {
+      return;
+    }
     all.push({
       ...entry,
       id: createLocalId('pq'),

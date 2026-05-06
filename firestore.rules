@@ -11,6 +11,25 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    function billingKeys() {
+      return [
+        'subscription',
+        'entitlement',
+        'trialEndsAt',
+        'trialConsumed',
+        'razorpayCustomerId',
+        'entitlementBootstrapAt'
+      ];
+    }
+
+    function clientWritesBillingFields() {
+      return request.resource.data.keys().hasAny(billingKeys());
+    }
+
+    function clientUpdatesBillingFields() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasAny(billingKeys());
+    }
+
     // Marketing / website collections — client SDK denied; Next.js uses Admin SDK only.
     match /pricing_plans/{planId} {
       allow read, write: if false;
@@ -25,9 +44,22 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Razorpay subscription id → Firebase uid (server-managed).
+    match /razorpaySubscriptionIndex/{subscriptionId} {
+      allow read, write: if false;
+    }
+
+    // Webhook audit log (server-managed).
+    match /subscription_webhook_events/{eventId} {
+      allow read, write: if false;
+    }
+
     // User profile document
     match /users/{userId} {
-      allow read, write: if isOwner(userId);
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && !clientWritesBillingFields();
+      allow update: if isOwner(userId) && !clientUpdatesBillingFields();
+      allow delete: if isOwner(userId);
 
       // Pets collection
       match /pets/{petId} {

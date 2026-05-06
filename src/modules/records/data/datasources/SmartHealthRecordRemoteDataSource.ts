@@ -4,6 +4,8 @@ import {
   doc,
   getDocs,
   getFirestore,
+  limit,
+  query,
   setDoc,
   writeBatch,
 } from '@react-native-firebase/firestore';
@@ -126,12 +128,16 @@ class SmartHealthRecordRemoteDataSourceImpl
 
   async deleteAll(userId: string, petId: string): Promise<void> {
     const colRef = this.healthRecordsCollection(userId, petId);
-    const snap = await getDocs(colRef);
-    const batch = writeBatch(this.db);
-    for (const snapshotDoc of snap.docs) {
-      batch.delete(snapshotDoc.ref);
+    const chunk = 450;
+    while (true) {
+      const snap = await getDocs(query(colRef, limit(chunk)));
+      if (snap.empty) return;
+      const batch = writeBatch(this.db);
+      for (const snapshotDoc of snap.docs) {
+        batch.delete(snapshotDoc.ref);
+      }
+      await batch.commit();
     }
-    await batch.commit();
   }
 }
 

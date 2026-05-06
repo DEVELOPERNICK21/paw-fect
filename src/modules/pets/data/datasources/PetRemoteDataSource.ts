@@ -6,9 +6,11 @@ import {
   collection,
   deleteDoc,
   doc,
-  getDoc,
   getDocs,
+  getDoc,
   getFirestore,
+  limit,
+  query,
   setDoc,
   writeBatch,
 } from '@react-native-firebase/firestore';
@@ -45,19 +47,25 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
     return payload;
   }
 
+  /** Firestore batches max 500 ops; delete in chunks to avoid silent failures. */
+  private static readonly DELETE_CHUNK = 450;
+
   private async deleteCollectionDocs(
     userId: string,
     petId: string,
     childCollection: string,
   ): Promise<void> {
     const subRef = collection(this.db, 'users', userId, 'pets', petId, childCollection);
-    const snap = await getDocs(subRef);
-    if (snap.empty) return;
-    const batch = writeBatch(this.db);
-    for (const d of snap.docs) {
-      batch.delete(d.ref);
+    const chunk = PetRemoteDataSourceImpl.DELETE_CHUNK;
+    while (true) {
+      const snap = await getDocs(query(subRef, limit(chunk)));
+      if (snap.empty) return;
+      const batch = writeBatch(this.db);
+      for (const d of snap.docs) {
+        batch.delete(d.ref);
+      }
+      await batch.commit();
     }
-    await batch.commit();
   }
 
   async fetchPets(): Promise<Pet[]> {

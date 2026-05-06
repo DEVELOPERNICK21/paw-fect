@@ -11,6 +11,7 @@ import { AppOrchestrator } from './application/AppOrchestrator';
 import { HomeDashboardInvalidationHub } from './application/HomeDashboardInvalidationHub';
 import { BuildHomeDashboardViewModel } from './domain/usecases/BuildHomeDashboardViewModel';
 import { ObserveHomeDashboard } from './domain/usecases/ObserveHomeDashboard';
+import { syncDeviceHomeWidgets } from '../../infrastructure/widgets/syncDeviceHomeWidgets';
 import {
   registerHomeDashboardRefresh,
   useHomeDashboardStore,
@@ -38,7 +39,12 @@ const observeHomeDashboard = new ObserveHomeDashboard(
 /** Single app orchestrator: start/stop dashboard observation, explicit invalidation. */
 export const appOrchestrator = new AppOrchestrator(
   observeHomeDashboard,
-  (vm) => useHomeDashboardStore.getState().setViewModel(vm),
+  (vm) => {
+    useHomeDashboardStore.getState().setViewModel(vm);
+    if (vm.activePet != null) {
+      syncDeviceHomeWidgets(vm, vm.activePet);
+    }
+  },
   homeDashboardInvalidationHub,
 );
 

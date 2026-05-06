@@ -21,13 +21,21 @@ interface SmartHealthRecordState {
     input: Omit<BootstrapSmartScheduleInput, 'userId'>,
   ) => Promise<void>;
   loadPetRecords: (petId: string) => Promise<void>;
-  markAsDone: (recordId: string, completedDate?: string) => Promise<void>;
+  markAsDone: (
+    recordId: string,
+    completedDate?: string,
+    petDateOfBirth?: string,
+  ) => Promise<void>;
   skipDewormingDose: (
     recordId: string,
     reason: string,
     petDateOfBirth: string | undefined,
   ) => Promise<void>;
-  reschedule: (recordId: string, newDueDate: string) => Promise<void>;
+  reschedule: (
+    recordId: string,
+    newDueDate: string,
+    petDateOfBirth?: string,
+  ) => Promise<void>;
   getByType: (type: SmartHealthRecordType) => SmartHealthRecord[];
   getNextActionTask: (type: SmartHealthRecordType) => SmartHealthRecord | null;
   getNextVaccinationTask: () => SmartHealthRecord | null;
@@ -201,6 +209,7 @@ export const useSmartHealthRecordStore = create<SmartHealthRecordState>(
           STORE_ACTION_TIMEOUT_MS,
         );
         set({ records, loading: false, error: null });
+        void refreshDueNotifications(records).catch(() => {});
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('[smartHealthRecordStore] loadPetRecords error', error);
@@ -211,7 +220,7 @@ export const useSmartHealthRecordStore = create<SmartHealthRecordState>(
       }
     },
 
-    markAsDone: async (recordId, completedDate) => {
+    markAsDone: async (recordId, completedDate, petDateOfBirth) => {
       const record = get().records.find(item => item.id === recordId);
       if (!record) return;
       set({ loading: true, error: null });
@@ -221,6 +230,7 @@ export const useSmartHealthRecordStore = create<SmartHealthRecordState>(
           recordsComposition.markSmartHealthRecordDone.execute(
             record,
             completedDate,
+            petDateOfBirth,
           ),
           STORE_ACTION_TIMEOUT_MS,
         );
@@ -280,7 +290,7 @@ export const useSmartHealthRecordStore = create<SmartHealthRecordState>(
       }
     },
 
-    reschedule: async (recordId, newDueDate) => {
+    reschedule: async (recordId, newDueDate, petDateOfBirth) => {
       const record = get().records.find(item => item.id === recordId);
       if (!record) return;
       set({ loading: true, error: null });
@@ -290,6 +300,7 @@ export const useSmartHealthRecordStore = create<SmartHealthRecordState>(
           recordsComposition.rescheduleSmartHealthRecord.execute(
             record,
             newDueDate,
+            petDateOfBirth,
           ),
           STORE_ACTION_TIMEOUT_MS,
         );
@@ -315,6 +326,7 @@ export const useSmartHealthRecordStore = create<SmartHealthRecordState>(
           loading: false,
           error: message,
         });
+        throw error instanceof Error ? error : new Error(message);
       }
     },
 

@@ -1,4 +1,4 @@
-package com.paw_fect
+package app.pawfect
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

@@ -102,6 +102,14 @@ export class PetRepositoryImpl implements PetRepository {
     // Load local first so we can protect pending local edits from being overwritten by remote snapshots.
     await this.processOutboundQueue(userId);
 
+    const queueEntries = await this.queue.getAll(userId);
+    /** Remote deletes can lag behind local removal; never resurrect pets awaiting server delete. */
+    const pendingDeletePetIds = new Set(
+      queueEntries
+        .filter(e => e.op === 'delete' && typeof e.petId === 'string')
+        .map(e => e.petId as string),
+    );
+
     const localAfter = await this.local.getPets(userId);
     const pendingIds = new Set(
       localAfter.filter(p => (p.syncStatus ?? 'synced') !== 'synced').map(p => p.id),
@@ -127,6 +135,9 @@ export class PetRepositoryImpl implements PetRepository {
 
       for (const remotePet of remoteNormalized) {
         if (pendingIds.has(remotePet.id)) {
+          continue;
+        }
+        if (pendingDeletePetIds.has(remotePet.id)) {
           continue;
         }
         mergedMap.set(remotePet.id, remotePet);

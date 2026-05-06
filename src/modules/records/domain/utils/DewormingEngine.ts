@@ -1,3 +1,4 @@
+import { calendarDaysBetweenIsoDates } from '../../../../shared/utils/calendarDate';
 import type { LifestyleType } from '../models/CarePlanTemplate';
 
 export type DewormingSymptom =
@@ -57,9 +58,10 @@ export interface DewormingValidationResult {
   code?: DewormingValidationCode;
 }
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
 const toIsoDateOnly = (value: string): string => value.slice(0, 10);
+
+/** Minimum age (calendar days after DOB) before protocol-first deworm logs — aligns early milestones with vet schedules. */
+export const MIN_DEWORM_AGE_DAYS = 14;
 
 export const validateLastDewormingDate = (
   dateOfBirth: string,
@@ -95,12 +97,6 @@ const addMonths = (date: string, months: number): string => {
   return toIsoDateOnly(d.toISOString());
 };
 
-const daysBetween = (from: string, to: string): number => {
-  const a = new Date(`${from}T00:00:00`).getTime();
-  const b = new Date(`${to}T00:00:00`).getTime();
-  return Math.floor((b - a) / DAY_MS);
-};
-
 const getCalendarAgeMonths = (dateOfBirth: string, asOf: string): number => {
   const [y0, m0, d0] = dateOfBirth.split('-').map(Number);
   const [y1, m1, d1] = asOf.split('-').map(Number);
@@ -121,7 +117,7 @@ const eightWeekDate = (dob: string): string => addWeeks(dob, 8);
 const sixMonthDate = (dob: string): string => addMonths(dob, 6);
 
 const getAgeInWeeks = (dob: string, asOf: string): number =>
-  Math.floor(daysBetween(dob, asOf) / 7);
+  Math.floor(calendarDaysBetweenIsoDates(dob, asOf) / 7);
 
 const phaseAtDate = (dob: string, d: string): 'early' | 'growth' | 'adult' => {
   const w8 = eightWeekDate(dob);
@@ -264,6 +260,13 @@ const calculateFirstDueDate = (
   if (windowStart < d0) {
     windowStart = d0;
   }
+  const protocolMin = addDays(d0, MIN_DEWORM_AGE_DAYS);
+  if (windowStart < protocolMin) {
+    windowStart = protocolMin;
+  }
+  if (windowEnd < windowStart) {
+    windowEnd = windowStart;
+  }
 
   return {
     min: windowStart,
@@ -343,16 +346,33 @@ const getCadenceMinDays = (cadence: DewormingCadenceKind): number => {
   }
 };
 
-const getCadenceMaxDays = (cadence: DewormingCadenceKind): number => {
+/**
+ * Windowed late tiers (relative to the dose's expected date — scheduled due, or
+ * `last completion + cadence interval` when no scheduled row is supplied):
+ *  - within ±2 days        → ideal
+ *  - +3 .. +5 days late    → acceptable
+ *  - +6 .. +7 days late    → warn (accept with vet-check nudge)
+ *  - +8 days or more late  → reject (gap too wide for protective coverage)
+ *
+ * Lower bound is the safety constraint `last completion + min cadence days`.
+ */
+const DEWORM_IDEAL_TOLERANCE_DAYS = 2;
+const DEWORM_ACCEPTABLE_LATE_DAYS = 5;
+const DEWORM_WARN_LATE_DAYS = 7;
+
+const addCadenceInterval = (
+  date: string,
+  cadence: DewormingCadenceKind,
+): string => {
   switch (cadence) {
     case 'every_14_days':
-      return 16;
+      return addDays(date, 14);
     case 'monthly':
-      return 31;
+      return addMonths(date, 1);
     case 'every_2_months':
-      return 62;
+      return addMonths(date, 2);
     case 'every_3_months':
-      return 93;
+      return addMonths(date, 3);
   }
 };
 
@@ -360,40 +380,72 @@ const validateRegularDose = (
   selected: string,
   baseline: string,
   cadence: DewormingCadenceKind,
-): { ok: true } | { ok: false; error: string } => {
+  scheduledDueDate?: string,
+):
+  | { ok: true; tier: 'ideal' | 'acceptable' | 'warn'; warning?: string }
+  | { ok: false; error: string } => {
   const minDays = getCadenceMinDays(cadence);
-  const maxDays = getCadenceMaxDays(cadence);
   const minDate = addDays(baseline, minDays);
-  const maxDate = addDays(baseline, maxDays);
 
   if (selected < minDate) {
     return {
       ok: false,
       error: `For ${cadenceDisplayLabel(
         cadence,
-      )}, choose a date on or after ${formatDisplayDate(minDate)}.`,
+      )}, choose a date on or after ${formatDisplayDate(
+        minDate,
+      )} (minimum spacing after the last logged dose).`,
     };
   }
 
-  if (selected > maxDate) {
+  const anchor = scheduledDueDate
+    ? toIsoDateOnly(scheduledDueDate)
+    : addCadenceInterval(baseline, cadence);
+
+  const daysFromAnchor = calendarDaysBetweenIsoDates(anchor, selected);
+
+  if (daysFromAnchor > DEWORM_WARN_LATE_DAYS) {
     return {
       ok: false,
-      error: `Date cannot be more than ${cadenceDisplayLabel(
-        cadence,
-      ).toLowerCase()} after previous dose.`,
+      error: `This is more than a week past the planned date (${formatDisplayDate(
+        anchor,
+      )}). The protective gap is too wide — please consult your vet before logging.`,
     };
   }
 
-  return { ok: true };
+  if (daysFromAnchor > DEWORM_ACCEPTABLE_LATE_DAYS) {
+    return {
+      ok: true,
+      tier: 'warn',
+      warning: `This dose is ${daysFromAnchor} days after the planned date (${formatDisplayDate(
+        anchor,
+      )}). It's still acceptable, but consider checking in with your vet so the schedule can be reset cleanly.`,
+    };
+  }
+
+  if (Math.abs(daysFromAnchor) <= DEWORM_IDEAL_TOLERANCE_DAYS) {
+    return { ok: true, tier: 'ideal' };
+  }
+
+  return { ok: true, tier: 'acceptable' };
 };
 
+/**
+ * Validates a deworming **log** date.
+ *
+ * @param scheduledDueDate Optional **current row’s due date**. When set, upper bounds widen so
+ * overdue doses (due vs last completion drift) still validate in real life.
+ */
 export const validateLogDateForCadence = (
   dob: string,
   today: string,
   selectedDate: string,
   cadence: DewormingCadenceKind,
   lastCompletionDate?: string,
-): { ok: true } | { ok: false; error: string } => {
+  scheduledDueDate?: string,
+):
+  | { ok: true; tier?: 'ideal' | 'acceptable' | 'warn'; warning?: string }
+  | { ok: false; error: string } => {
   const s = toIsoDateOnly(selectedDate);
   const t = toIsoDateOnly(today);
   const d0 = toIsoDateOnly(dob);
@@ -405,11 +457,28 @@ export const validateLogDateForCadence = (
   if (!step2.ok) return step2;
 
   if (!lastCompletionDate) {
-    return validateFirstDose(s, d0, t, cadence);
+    const first = validateFirstDose(s, d0, t, cadence);
+    if (!first.ok) return first;
+    return { ok: true };
   }
 
   const baseline = toIsoDateOnly(lastCompletionDate);
-  return validateRegularDose(s, baseline, cadence);
+  const reg = validateRegularDose(s, baseline, cadence, scheduledDueDate);
+  if (!reg.ok) return reg;
+
+  const rollMin = getMinimumLogDate(d0, t, cadence);
+  if (s < rollMin) {
+    return {
+      ok: false,
+      error: `For ${cadenceDisplayLabel(
+        cadence,
+      )}, pick a date on or after ${formatDisplayDate(
+        rollMin,
+      )} (too far in the past for this interval).`,
+    };
+  }
+
+  return reg;
 };
 
 const attachCadence = (
@@ -702,11 +771,17 @@ export class DewormingEngine {
           urgency = 'critical';
           riskLevel = 'high';
         } else if (primary.status === 'missed') {
-          const daysOverdue = daysBetween(primary.dueDate, today);
+          const daysOverdue = calendarDaysBetweenIsoDates(
+            primary.dueDate,
+            today,
+          );
           urgency = daysOverdue > 15 ? 'critical' : 'high';
           riskLevel = daysOverdue > 15 ? 'high' : 'medium';
         } else {
-          const daysUntil = daysBetween(today, primary.dueDate);
+          const daysUntil = calendarDaysBetweenIsoDates(
+            today,
+            primary.dueDate,
+          );
           if (daysUntil <= 0) {
             urgency = 'high';
             riskLevel = 'medium';

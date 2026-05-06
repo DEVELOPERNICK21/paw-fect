@@ -91,6 +91,32 @@ describe('PetCareLifecycleEngine', () => {
     expect(rabies?.dueDate).toBe('2027-03-01');
   });
 
+  it('uses booster-only core path for adults with vaccination history', () => {
+    const records = engine.generateInitialPlan({
+      userId: 'u2',
+      petId: 'adult-dog',
+      context: {
+        petType: 'dog',
+        dateOfBirth: '2024-01-01',
+        nowDate: '2026-03-01',
+        region: 'IN',
+        lifestyleType: 'indoor',
+        lifestyleRiskLevel: 'low',
+      },
+      lastVaccinationDate: '2026-01-15',
+    });
+
+    const dhppRows = records.filter(r => r.family === 'DHPP');
+    expect(dhppRows.some(r => r.name === 'DHPP Booster')).toBe(true);
+    expect(dhppRows.some(r => r.name.includes('(1st)'))).toBe(false);
+    expect(dhppRows.some(r => r.name.includes('(2nd)'))).toBe(false);
+
+    const rabiesFirstDose = records.find(r => r.key === 'RABIES_1');
+    expect(rabiesFirstDose).toBeUndefined();
+    const rabiesBooster = records.find(r => r.name === 'Rabies Booster');
+    expect(rabiesBooster?.dueDate).toBe('2027-01-15');
+  });
+
   it('updates recurring deworming after late completion', () => {
     const records = engine.generateInitialPlan({
       userId: 'u3',
@@ -135,11 +161,42 @@ describe('PetCareLifecycleEngine', () => {
       },
     });
     const dhpp = records.filter(r => r.family === 'DHPP');
-    expect(dhpp.some(r => r.name === 'DHPP (Start Vaccination)')).toBe(true);
-    expect(dhpp.some(r => r.name === 'DHPP (Follow-up Dose)')).toBe(true);
+    expect(dhpp.some(r => r.name === 'DHPP (Start)')).toBe(true);
+    expect(dhpp.some(r => r.name === 'DHPP (Follow-up)')).toBe(true);
     expect(dhpp.some(r => r.name.includes('(1st)'))).toBe(false);
     const rabiesNow = records.find(r => r.key === 'RABIES_1');
     expect(rabiesNow?.dueDate).toBe('2026-04-01');
+  });
+
+  it('keeps schedules distinct across pets with same timeline', () => {
+    const firstPet = engine.generateInitialPlan({
+      userId: 'u7',
+      petId: 'pet-a',
+      context: {
+        petType: 'cat',
+        dateOfBirth: '2026-01-01',
+        nowDate: '2026-05-01',
+        region: 'US',
+        lifestyleType: 'indoor',
+        lifestyleRiskLevel: 'low',
+      },
+    });
+    const secondPet = engine.generateInitialPlan({
+      userId: 'u7',
+      petId: 'pet-b',
+      context: {
+        petType: 'cat',
+        dateOfBirth: '2026-01-01',
+        nowDate: '2026-05-01',
+        region: 'US',
+        lifestyleType: 'indoor',
+        lifestyleRiskLevel: 'low',
+      },
+    });
+
+    const firstIds = new Set(firstPet.map(r => r.id));
+    const overlap = secondPet.some(r => firstIds.has(r.id));
+    expect(overlap).toBe(false);
   });
 
   it('generates expected puppy deworming milestones for DOB 2026-03-26', () => {

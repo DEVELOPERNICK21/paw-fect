@@ -104,3 +104,27 @@ export function formatMilestoneSubtitle(dateStr: string, now: Date): string {
   }
   return `In ${d} days • ${short}`;
 }
+
+/** Long form for milestone widget, e.g. "15 Apr 2026". */
+export function formatMilestoneDateLong(dateStr: string): string {
+  return parseLocalDay(reminderDateKey(dateStr)).toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+/** Short badge text for countdown pill, e.g. "in 12 days". */
+export function formatMilestoneCountdownBadge(dateStr: string, now: Date): string {
+  const d = daysUntilDate(dateStr, now);
+  if (d < 0) {
+    return 'Overdue';
+  }
+  if (d === 0) {
+    return 'Today';
+  }
+  if (d === 1) {
+    return 'in 1 day';
+  }
+  return `in ${d} days`;
+}

@@ -1,16 +1,15 @@
 import type { SmartHealthRecord } from '../models/SmartHealthRecord';
 import type { SmartHealthRecordRepository } from '../repositories/SmartHealthRecordRepository';
-import { getTodayIsoDateLocal } from '../../../../shared/utils/calendarDate';
+import {
+  calendarDaysBetweenIsoDates,
+  getTodayIsoDateLocal,
+} from '../../../../shared/utils/calendarDate';
+import { assertDateNotBeforePetDob } from '../utils/healthRecordDateGuards';
 import { buildRescheduleUpdate } from '../utils/SmartHealthScheduleUtils';
 import { PetCareLifecycleEngine } from '../utils/PetCareLifecycleEngine';
+import { getLastCompletedDewormingIsoDate } from '../utils/smartHealthDewormingInference';
 
 const toIsoDateOnly = (value: string): string => value.slice(0, 10);
-
-const daysBetween = (from: string, to: string): number => {
-  const a = new Date(`${from}T00:00:00`).getTime();
-  const b = new Date(`${to}T00:00:00`).getTime();
-  return Math.floor((b - a) / (24 * 60 * 60 * 1000));
-};
 
 const minGapDaysByCadence = (
   cadence: SmartHealthRecord['cadence'],
@@ -33,29 +32,33 @@ export class RescheduleSmartHealthRecord {
   constructor(private readonly repository: SmartHealthRecordRepository) {}
   private readonly engine = new PetCareLifecycleEngine();
 
-  async execute(record: SmartHealthRecord, newDueDate: string): Promise<void> {
+  async execute(
+    record: SmartHealthRecord,
+    newDueDate: string,
+    petDateOfBirth?: string,
+  ): Promise<void> {
+    if (record.status === 'completed') {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[RescheduleSmartHealthRecord] Ignoring reschedule for completed record ${record.id}.`,
+      );
+      return;
+    }
+
     const allRecords = await this.repository.listByPet(record.userId, record.petId);
     const today = getTodayIsoDateLocal();
     const nextDueDate = toIsoDateOnly(newDueDate);
+
+    assertDateNotBeforePetDob(nextDueDate, petDateOfBirth, 'Due date');
 
     if (record.type === 'deworming' && nextDueDate < today) {
       throw new Error('Cannot reschedule deworming to a past date.');
     }
 
     if (record.type === 'deworming') {
-      const lastCompleted = allRecords
-        .filter(
-          item =>
-            item.type === 'deworming' &&
-            item.status === 'completed' &&
-            item.id !== record.id,
-        )
-        .sort((a, b) =>
-          (b.completedDate ?? b.dueDate).localeCompare(a.completedDate ?? a.dueDate),
-        )[0];
-      const baseline = lastCompleted?.completedDate ?? lastCompleted?.dueDate;
+      const baseline = getLastCompletedDewormingIsoDate(allRecords, record.id);
       const minGap = minGapDaysByCadence(record.cadence);
-      if (baseline && minGap !== null && daysBetween(baseline, nextDueDate) < minGap) {
+      if (baseline && minGap !== null && calendarDaysBetweenIsoDates(baseline, nextDueDate) < minGap) {
         throw new Error(
           `This schedule is too close to the last deworming dose. Keep at least ${minGap} days gap.`,
         );

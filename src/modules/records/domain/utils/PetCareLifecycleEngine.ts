@@ -158,6 +158,21 @@ const catAdultCoreCatchup = (): Array<{
   { key: 'FVRCP_ADULT_FOLLOW_UP', label: 'FVRCP (Follow-up)', offsetWeeks: 3 },
 ];
 
+const adultCoreBooster = (
+  petType: 'dog' | 'cat',
+): { key: string; family: string; name: string } =>
+  petType === 'dog'
+    ? {
+        key: 'DHPP_ADULT_BOOSTER',
+        family: 'DHPP',
+        name: 'DHPP Booster',
+      }
+    : {
+        key: 'FVRCP_ADULT_BOOSTER',
+        family: 'FVRCP',
+        name: 'FVRCP Booster',
+      };
+
 export class PetCareLifecycleEngine {
   private familyKey(record: SmartHealthRecord): string {
     if (record.family?.trim()) return record.family.trim().toLowerCase();
@@ -195,6 +210,7 @@ export class PetCareLifecycleEngine {
 
     const hasVaccinationHistory = Boolean(input.lastVaccinationDate);
     const isAdultUnknownHistory = stage === 'adult' && !hasVaccinationHistory;
+    const isAdultKnownHistory = stage === 'adult' && hasVaccinationHistory;
 
     // FIX Bug 4: build dose sequence PER FAMILY, resetting prevId for each
     const buildDoseSequenceForFamily = (
@@ -294,6 +310,26 @@ export class PetCareLifecycleEngine {
         records.push(record);
         prevId = record.id;
       }
+    } else if (stage === 'adult' && hasVaccinationHistory) {
+      // Adult with known history — schedule next annual core booster from last shot.
+      const lastVaccinationDate = input.lastVaccinationDate ?? context.nowDate;
+      const coreBooster = adultCoreBooster(context.petType);
+      records.push(
+        toSmartRecord({
+          userId,
+          petId,
+          type: 'vaccination',
+          key: coreBooster.key,
+          family: coreBooster.family,
+          name: coreBooster.name,
+          dueDate: addMonths(lastVaccinationDate, 12),
+          nowDate: context.nowDate,
+          category: 'core',
+          recurrenceType: 'yearly',
+          stage: 'adult',
+          contextLabel: 'Booster due (history available)',
+        }),
+      );
     } else {
       // Normal puppy/adolescent series — dates from DOB
       records.push(...buildDoseSequenceForFamily(template.coreSeries, 'dob'));
@@ -334,31 +370,41 @@ export class PetCareLifecycleEngine {
       }
     }
 
-    // Rabies first dose
-    const rabiesFirstDue = isAdultUnknownHistory
-      ? context.nowDate
-      : addWeeks(dob, template.rabies.firstDoseAgeWeeksMin);
+    const shouldScheduleRabiesFirstDose =
+      !isAdultKnownHistory && !input.lastRabiesDate;
 
-    records.push(
-      toSmartRecord({
-        userId,
-        petId,
-        type: 'vaccination',
-        key: template.rabies.key,
-        family: template.rabies.family,
-        name: template.rabies.label,
-        dueDate: rabiesFirstDue,
-        nowDate: context.nowDate,
-        category: 'core',
-        recurrenceType: 'none',
-      }),
-    );
+    let rabiesFirstDue: string | null = null;
+    if (shouldScheduleRabiesFirstDose) {
+      // Rabies first dose
+      rabiesFirstDue = isAdultUnknownHistory
+        ? context.nowDate
+        : addWeeks(dob, template.rabies.firstDoseAgeWeeksMin);
+
+      records.push(
+        toSmartRecord({
+          userId,
+          petId,
+          type: 'vaccination',
+          key: template.rabies.key,
+          family: template.rabies.family,
+          name: template.rabies.label,
+          dueDate: rabiesFirstDue,
+          nowDate: context.nowDate,
+          category: 'core',
+          recurrenceType: 'none',
+        }),
+      );
+    }
 
     // FIX Bug 3: use lastRabiesDate specifically, not lastVaccinationDate
     const rabiesRepeatMonths =
       template.rabies.regionOverrides?.[context.region] ??
       template.rabies.repeatIntervalMonthsAfterBooster;
-    const rabiesBoosterAnchor = input.lastRabiesDate ?? rabiesFirstDue;
+    const rabiesBoosterAnchor =
+      input.lastRabiesDate ??
+      rabiesFirstDue ??
+      input.lastVaccinationDate ??
+      context.nowDate;
 
     records.push(
       toSmartRecord({

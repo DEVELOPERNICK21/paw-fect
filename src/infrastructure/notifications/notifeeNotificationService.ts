@@ -59,7 +59,9 @@ export class NotifeeNotificationService implements NotificationService {
   async scheduleNotification(payload: NotificationPayload): Promise<void> {
     const ts = payload.scheduledDate.getTime();
     const isRepeatingDaily = payload.repeat === 'daily';
-    if (Number.isNaN(ts) || (!isRepeatingDaily && ts <= Date.now() + 1500)) {
+    const isRepeatingWeekly = payload.repeat === 'weekly';
+    const isRepeating = isRepeatingDaily || isRepeatingWeekly;
+    if (Number.isNaN(ts) || (!isRepeating && ts <= Date.now() + 1500)) {
       if (__DEV__) {
         // eslint-disable-next-line no-console
         console.log('[NotifeeNotificationService] skip schedule (past/near)', {
@@ -82,6 +84,8 @@ export class NotifeeNotificationService implements NotificationService {
     };
     if (isRepeatingDaily) {
       trigger.repeatFrequency = RepeatFrequency.DAILY;
+    } else if (isRepeatingWeekly) {
+      trigger.repeatFrequency = RepeatFrequency.WEEKLY;
     }
 
     try {

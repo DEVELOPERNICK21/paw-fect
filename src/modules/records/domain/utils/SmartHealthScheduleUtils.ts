@@ -5,6 +5,7 @@ import type {
   SmartHealthRecordStatus,
 } from '../models/SmartHealthRecord';
 import { createLocalId } from '../../../../shared/utils/id';
+import { getTodayIsoDateLocal } from '../../../../shared/utils/calendarDate';
 import type { CarePlanContext } from '../models/CarePlanTemplate';
 import { PetCareLifecycleEngine } from './PetCareLifecycleEngine';
 
@@ -115,8 +116,7 @@ function createHistory(
 export function generateBootstrapSchedule(
   input: BootstrapSmartScheduleInput,
 ): { records: SmartHealthRecord[]; logs: SmartHealthHistoryLog[] } {
-  const nowIso = new Date().toISOString();
-  const todayDate = nowIso.slice(0, 10);
+  const todayDate = getTodayIsoDateLocal();
   const logs: SmartHealthHistoryLog[] = [];
   const context: CarePlanContext = {
     petType: input.petType,

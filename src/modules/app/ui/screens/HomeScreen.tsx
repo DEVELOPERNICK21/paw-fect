@@ -19,10 +19,11 @@ import { usePetStore } from '../../../pets/store/petStore';
 import { HomeHeader } from '../../../../shared/components/HomeHeader';
 import { HomeAttentionBanner } from '../components/home/HomeAttentionBanner';
 import { HomeHealthSnapshotCard } from '../components/home/HomeHealthSnapshotCard';
-import { HomePetSwitcherBar } from '../components/home/HomePetSwitcherBar';
+import { HomeNextMilestoneWidget } from '../components/home/HomeNextMilestoneWidget';
 import { HomePetSummaryCard } from '../components/home/HomePetSummaryCard';
+import { HomePetSwitcherBar } from '../components/home/HomePetSwitcherBar';
 import { HomeQuickActionsRow } from '../components/home/HomeQuickActionsRow';
-import { TodayCareSection } from '../components/home/TodayCareSection';
+import { HomeUpcomingTasksWidget } from '../components/home/HomeUpcomingTasksWidget';
 import { UpcomingSection } from '../components/home/UpcomingSection';
 
 export const HomeScreen: React.FC = () => {
@@ -191,6 +192,7 @@ export const HomeScreen: React.FC = () => {
             contentContainerStyle={[
               styles.scrollContent,
               {
+                flexGrow: 1,
                 minHeight: viewportMinHeight,
                 paddingHorizontal: spacing.lg,
                 paddingTop: spacing.lg,
@@ -231,18 +233,6 @@ export const HomeScreen: React.FC = () => {
                   onPressAction={handleQuickAction}
                   theme={theme}
                 />
-              </>
-            ) : null}
-
-            {viewModel.activePet ? (
-              <>
-                <TodayCareSection
-                  items={viewModel.todayCare}
-                  loading={viewModel.remindersLoading}
-                  onPressAddReminder={goAddReminder}
-                  onPressViewSchedule={goNotifications}
-                  theme={theme}
-                />
                 <HomeHealthSnapshotCard
                   weightLine={viewModel.weightLine}
                   activityLine={viewModel.activityLine}
@@ -254,6 +244,27 @@ export const HomeScreen: React.FC = () => {
                   items={viewModel.weekCarePreview}
                   loading={viewModel.remindersLoading}
                   onPressOpenHealth={goHealthRecords}
+                  theme={theme}
+                />
+                <View
+                  style={{
+                    flexGrow: 1,
+                    minHeight: spacing.md,
+                  }}
+                />
+                <HomeNextMilestoneWidget
+                  pet={viewModel.activePet}
+                  milestone={viewModel.nextMilestone}
+                  onPressOpenHealth={goHealthRecords}
+                  onPressPet={goPetProfile}
+                  theme={theme}
+                />
+                <HomeUpcomingTasksWidget
+                  items={viewModel.todayCare}
+                  loading={viewModel.remindersLoading}
+                  onPressAddTask={goAddReminder}
+                  onPressRow={goNotifications}
+                  onPressViewSchedule={goNotifications}
                   theme={theme}
                 />
               </>

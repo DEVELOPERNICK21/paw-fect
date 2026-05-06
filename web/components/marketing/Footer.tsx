@@ -69,6 +69,14 @@ export function Footer(): React.ReactElement {
                     Terms &amp; Conditions
                   </Link>
                 </li>
+                <li>
+                  <Link
+                    href="/delete-account"
+                    className="text-stone-700 transition hover:text-primary dark:text-stone-300 dark:hover:text-primary"
+                  >
+                    Delete account
+                  </Link>
+                </li>
                 <li className="text-stone-500">Cookies: analytics only</li>
               </ul>
             </div>

@@ -1,6 +1,7 @@
 import {
   DewormingEngine,
   getCadenceForDueDate,
+  MIN_DEWORM_AGE_DAYS,
   validateLastDewormingDate,
   validateLogDateForCadence,
 } from '../DewormingEngine';
@@ -228,12 +229,14 @@ describe('DewormingEngine', () => {
       );
     });
 
-    it('rejects log date outside rolling window for monthly cadence', () => {
+    it('rejects repeat-dose log outside rolling window for monthly cadence', () => {
       const v = validateLogDateForCadence(
         '2026-01-01',
         '2026-04-10',
-        '2026-02-01',
+        '2025-08-01',
         'monthly',
+        '2026-03-15',
+        '2026-04-01',
       );
       expect(v.ok).toBe(false);
     });
@@ -246,6 +249,161 @@ describe('DewormingEngine', () => {
         'monthly',
       );
       expect(v.ok).toBe(true);
+    });
+
+    it('allows overdue monthly log when scheduled due widens upper bound', () => {
+      const v = validateLogDateForCadence(
+        '2026-01-01',
+        '2026-05-10',
+        '2026-05-05',
+        'monthly',
+        '2026-03-01',
+        '2026-05-01',
+      );
+      expect(v.ok).toBe(true);
+    });
+
+    it('rejects repeat dose log far before rolling minimum', () => {
+      const v = validateLogDateForCadence(
+        '2026-01-01',
+        '2026-05-10',
+        '2025-01-01',
+        'every_3_months',
+        '2026-03-01',
+        '2026-05-01',
+      );
+      expect(v.ok).toBe(false);
+    });
+
+    it('DW-03: rejects first-dose log before minimum protocol age (14 days after DOB)', () => {
+      const v = validateLogDateForCadence(
+        '2026-01-01',
+        '2026-02-15',
+        '2026-01-10',
+        'every_14_days',
+        undefined,
+        undefined,
+      );
+      expect(v.ok).toBe(false);
+      expect(MIN_DEWORM_AGE_DAYS).toBe(14);
+    });
+
+    it('DW-04: rejects log far after last dose even when scheduled row widened upper bound (vet consult)', () => {
+      const v = validateLogDateForCadence(
+        '2019-01-01',
+        '2020-12-05',
+        '2020-12-01',
+        'monthly',
+        '2020-01-15',
+        '2020-06-01',
+      );
+      expect(v.ok).toBe(false);
+      if (!v.ok) {
+        expect(v.error).toMatch(/consult your vet/i);
+      }
+    });
+
+    describe('windowed late tiers (deworming)', () => {
+      it('returns tier=ideal when log is on the scheduled due date', () => {
+        const v = validateLogDateForCadence(
+          '2025-01-01',
+          '2026-04-01',
+          '2026-04-01',
+          'monthly',
+          '2026-03-01',
+          '2026-04-01',
+        );
+        expect(v).toEqual({ ok: true, tier: 'ideal' });
+      });
+
+      it('returns tier=ideal within ±2 days of scheduled due date', () => {
+        const minus2 = validateLogDateForCadence(
+          '2025-01-01',
+          '2026-04-10',
+          '2026-03-30',
+          'monthly',
+          '2026-03-01',
+          '2026-04-01',
+        );
+        const plus2 = validateLogDateForCadence(
+          '2025-01-01',
+          '2026-04-10',
+          '2026-04-03',
+          'monthly',
+          '2026-03-01',
+          '2026-04-01',
+        );
+        expect(minus2.ok).toBe(true);
+        if (minus2.ok) expect(minus2.tier).toBe('ideal');
+        expect(plus2.ok).toBe(true);
+        if (plus2.ok) expect(plus2.tier).toBe('ideal');
+      });
+
+      it('returns tier=acceptable in the +3..+5 day window', () => {
+        const plus5 = validateLogDateForCadence(
+          '2025-01-01',
+          '2026-04-10',
+          '2026-04-06',
+          'monthly',
+          '2026-03-01',
+          '2026-04-01',
+        );
+        expect(plus5.ok).toBe(true);
+        if (plus5.ok) expect(plus5.tier).toBe('acceptable');
+      });
+
+      it('returns tier=warn with a warning message in the +6..+7 day window', () => {
+        const plus7 = validateLogDateForCadence(
+          '2025-01-01',
+          '2026-04-10',
+          '2026-04-08',
+          'monthly',
+          '2026-03-01',
+          '2026-04-01',
+        );
+        expect(plus7.ok).toBe(true);
+        if (plus7.ok) {
+          expect(plus7.tier).toBe('warn');
+          expect(plus7.warning).toMatch(/vet/i);
+        }
+      });
+
+      it('rejects with vet-consult message at +8 days late or more', () => {
+        const plus8 = validateLogDateForCadence(
+          '2025-01-01',
+          '2026-04-30',
+          '2026-04-09',
+          'monthly',
+          '2026-03-01',
+          '2026-04-01',
+        );
+        expect(plus8.ok).toBe(false);
+        if (!plus8.ok) expect(plus8.error).toMatch(/consult your vet/i);
+      });
+
+      it('falls back to last-completion + cadence when no scheduled due is supplied', () => {
+        const ideal = validateLogDateForCadence(
+          '2025-01-01',
+          '2026-04-15',
+          '2026-04-02',
+          'monthly',
+          '2026-03-01',
+          undefined,
+        );
+        expect(ideal.ok).toBe(true);
+        if (ideal.ok) expect(ideal.tier).toBe('ideal');
+
+        const warn = validateLogDateForCadence(
+          '2025-01-01',
+          '2026-04-15',
+          '2026-04-08',
+          'monthly',
+          '2026-03-01',
+          undefined,
+        );
+        expect(warn.ok).toBe(true);
+        if (warn.ok) expect(warn.tier).toBe('warn');
+      });
     });
   });
 

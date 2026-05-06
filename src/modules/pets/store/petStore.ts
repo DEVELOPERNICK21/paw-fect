@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 
 import { useAuthStore } from '../../auth/store/authStore';
+import { useSubscriptionStore } from '../../subscription/store/subscriptionStore';
+import { getPetAccess } from '../../../shared/subscription/petAccess';
 import { useSmartHealthRecordStore } from '../../records/store/smartHealthRecordStore';
 import { petComposition } from '../petComposition';
 import type { Pet } from '../domain/models/Pet';
@@ -38,6 +40,7 @@ export interface PetState {
   loading: boolean;
   loadError: string | null;
   reset: () => void;
+  resyncDailyRoutineNotifications: () => Promise<void>;
   loadPets: () => Promise<void>;
   createPet: (pet: Pet) => Promise<void>;
   createPetProfile: (
@@ -63,6 +66,16 @@ export const usePetStore = create<PetState>((set, get) => ({
   loadError: null,
   reset: () =>
     set({ pets: [], activePet: null, loading: false, loadError: null }),
+
+  resyncDailyRoutineNotifications: async () => {
+    const pets = get().pets;
+    try {
+      await pc.syncDailyRoutineNotifications(pets);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('[petStore] resyncDailyRoutineNotifications error', error);
+    }
+  },
 
   loadPets: async () => {
     const userId = requireUserId();
@@ -135,6 +148,11 @@ export const usePetStore = create<PetState>((set, get) => ({
       };
     }
 
+    const maxPets = useSubscriptionStore.getState().entitlement.maxPets;
+    if (get().pets.length >= maxPets) {
+      return { success: false, error: 'PET_LIMIT' };
+    }
+
     const result: CreatePetProfileUseCaseResult = pc.createPetProfile.execute({
       ...input,
       userId,
@@ -167,6 +185,15 @@ export const usePetStore = create<PetState>((set, get) => ({
     const userId = requireUserId();
     if (!userId || pet.userId !== userId) {
       return { success: false, error: 'Please sign in again to update a pet.' };
+    }
+    const maxPets = useSubscriptionStore.getState().entitlement.maxPets;
+    const { pets } = get();
+    if (getPetAccess(pets, maxPets, pet.id) === 'read_only') {
+      return {
+        success: false,
+        error:
+          'This pet is view-only on your current plan. Upgrade or remove another pet to edit.',
+      };
     }
     const next: Pet = {
       ...pet,
@@ -241,6 +268,12 @@ export const usePetStore = create<PetState>((set, get) => ({
 
     set({ pets, activePet: nextActive });
     void pc.syncDailyRoutineNotifications(pets).catch(() => {});
+
+    useSmartHealthRecordStore.getState().reset();
+    if (nextActive?.id) {
+      void useSmartHealthRecordStore.getState().loadPetRecords(nextActive.id);
+    }
+
     return { success: true };
   },
 

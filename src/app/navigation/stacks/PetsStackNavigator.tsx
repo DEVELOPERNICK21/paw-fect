@@ -6,6 +6,7 @@ import PetProfileScreen from '../../../modules/pets/ui/screens/PetProfileScreen'
 import PetSwitcherScreen from '../../../modules/pets/ui/screens/PetSwitcherScreen';
 import AddPetScreen from '../../../modules/pets/ui/screens/AddPetScreen';
 import AddHealthDetailsScreen from '../../../modules/pets/ui/screens/AddHealthDetailsScreen';
+import { PaywallScreen } from '../../../modules/subscription/ui/screens/PaywallScreen';
 
 const Stack = createNativeStackNavigator<PetsStackParamList>();
 
@@ -22,6 +23,7 @@ export const PetsStackNavigator = React.memo(function PetsStackNavigator() {
       <Stack.Screen name="PetSwitcher" component={PetSwitcherScreen} />
       <Stack.Screen name="AddPet" component={AddPetScreen} />
       <Stack.Screen name="AddHealthDetails" component={AddHealthDetailsScreen} />
+      <Stack.Screen name="Paywall" component={PaywallScreen} />
     </Stack.Navigator>
   );
 });

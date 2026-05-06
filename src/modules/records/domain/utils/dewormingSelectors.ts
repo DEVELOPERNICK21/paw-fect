@@ -3,6 +3,7 @@ import type {
   DewormingRecord,
   DewormingStatusResult,
 } from '../models/SmartHealthRecord';
+import { getTodayIsoDateLocal } from '../../../../shared/utils/calendarDate';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -30,7 +31,7 @@ export function computeDewormingStatus(
   schedule: DewormingSchedule,
   records: DewormingRecord[],
 ): DewormingStatusResult {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getTodayIsoDateLocal();
 
   // Find record linked to this schedule or with matching date
   const matchingRecord = records.find(

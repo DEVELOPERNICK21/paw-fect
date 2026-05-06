@@ -5,12 +5,15 @@ import type { HealthRecord } from '../../../records/domain/models/HealthRecord';
 import type { SmartHealthRecord } from '../../../records/domain/models/SmartHealthRecord';
 import type {
   HomeDashboardAttentionBanner,
+  HomeDashboardNextMilestone,
   HomeDashboardTodayCareItem,
   HomeDashboardWeekCareItem,
   HomeDashboardViewModel,
 } from '../models/HomeDashboardViewModel';
 import {
   addDaysToYmd,
+  formatMilestoneCountdownBadge,
+  formatMilestoneDateLong,
   formatMilestoneSubtitle,
   isReminderTimeInPastForToday,
   parseLocalDay,
@@ -276,6 +279,20 @@ export class BuildHomeDashboardViewModel {
       now,
     );
 
+    const nextMilestone: HomeDashboardNextMilestone | null =
+      nextCareRecord == null
+        ? null
+        : {
+            title: nextCareRecord.name,
+            dueDateYmd: reminderDateKey(nextCareRecord.dueDate),
+            dueDateLabel: formatMilestoneDateLong(nextCareRecord.dueDate),
+            countdownLabel: formatMilestoneCountdownBadge(
+              nextCareRecord.dueDate,
+              now,
+            ),
+            kind: nextCareRecord.type,
+          };
+
     const lastActivityLine =
       activePet != null
         ? lastActivityLineForPet(records, activePet.id)
@@ -307,6 +324,7 @@ export class BuildHomeDashboardViewModel {
       activePet,
       healthStatusLine,
       nextCareMilestoneLine,
+      nextMilestone,
       lastActivityLine,
       weightLine,
       activityLine: '—',
@@ -330,6 +348,7 @@ export function createLoggedOutHomeDashboardViewModel(): HomeDashboardViewModel 
     activePet: null,
     healthStatusLine: 'No data yet',
     nextCareMilestoneLine: '—',
+    nextMilestone: null,
     lastActivityLine: '—',
     weightLine: '—',
     activityLine: '—',

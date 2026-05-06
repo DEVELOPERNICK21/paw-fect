@@ -54,6 +54,11 @@ export class BootstrapSmartHealthSchedule {
     });
 
     for (const stale of staleDeworming) {
+      if (stale.petId !== input.petId) {
+        throw new Error(
+          `[bootstrap-smart-health] Refusing to delete deworming record with mismatched petId: expected ${input.petId}, got ${stale.petId}`,
+        );
+      }
       await this.repository.deleteOne(input.userId, input.petId, stale.id);
     }
 

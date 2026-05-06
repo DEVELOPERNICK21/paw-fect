@@ -132,6 +132,17 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     ) {
       return new AuthError('configuration', message);
     }
+    // Android Google Sign-In: ApiException DEVELOPER_ERROR (10) — wrong package / SHA-1 / OAuth client
+    if (
+      code === '10' ||
+      loweredMessage.includes('developer_error') ||
+      loweredMessage.includes('12501')
+    ) {
+      return new AuthError(
+        'configuration',
+        'Google Sign-In setup mismatch. In Firebase, add the correct SHA-1 (and SHA-256) for this build’s signing key under the Android app app.pawfect, download google-services.json, rebuild, and reinstall.',
+      );
+    }
     return new AuthError('unknown', fallbackMessage);
   }
 
@@ -197,9 +208,22 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       this.configureGoogleSignIn();
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const signInResult = await GoogleSignin.signIn();
-      const idToken = signInResult.data?.idToken;
+
+      if (signInResult.type === 'cancelled') {
+        throw new AuthError('cancelled', 'Sign-in cancelled.');
+      }
+
+      let idToken = signInResult.data.idToken ?? null;
+      // Android sometimes omits idToken on the initial account object; refresh via getTokens().
       if (!idToken) {
-        throw new Error('Google Sign-In failed to return a valid token.');
+        const tokens = await GoogleSignin.getTokens();
+        idToken = tokens.idToken ?? null;
+      }
+
+      if (!idToken) {
+        throw new Error(
+          'Google Sign-In did not return an ID token. Confirm GOOGLE_WEB_CLIENT_ID matches the Web client in Firebase and that SHA-1 fingerprints are registered for app.pawfect.',
+        );
       }
 
       const googleCredential = GoogleAuthProvider.credential(idToken);

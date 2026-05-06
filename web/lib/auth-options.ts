@@ -17,15 +17,30 @@ export const authOptions: NextAuthOptions = {
         const hash = process.env.ADMIN_PASSWORD_HASH;
 
         if (!email || !password || !adminEmail || !hash) {
+          console.log("[auth][credentials] reject: missing input/env", {
+            hasEmail: Boolean(email),
+            hasPassword: Boolean(password),
+            hasAdminEmail: Boolean(adminEmail),
+            hasPasswordHash: Boolean(hash),
+          });
           return null;
         }
         if (email !== adminEmail) {
+          console.log("[auth][credentials] reject: email mismatch", {
+            providedEmail: email,
+            expectedEmail: adminEmail,
+          });
           return null;
         }
         const ok = await compare(password, hash);
         if (!ok) {
+          console.log("[auth][credentials] reject: password mismatch", {
+            receivedPasswordLength: password.length,
+            expectedHashPrefix: hash.slice(0, 7),
+          });
           return null;
         }
+        console.log("[auth][credentials] success");
         return { id: "admin", email: adminEmail, name: "Admin" };
       },
     }),

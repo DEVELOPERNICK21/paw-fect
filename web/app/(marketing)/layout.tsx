@@ -1,3 +1,4 @@
+import { ChatbaseChatbot } from "@/components/marketing/ChatbaseChatbot";
 import { Footer } from "@/components/marketing/Footer";
 import { Navbar } from "@/components/marketing/Navbar";
 import { StickyMobileCta } from "@/components/marketing/StickyMobileCta";
@@ -21,6 +22,7 @@ export default function MarketingLayout({
       </main>
       <Footer />
       <StickyMobileCta />
+      <ChatbaseChatbot />
     </>
   );
 }

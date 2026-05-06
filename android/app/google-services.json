@@ -7,17 +7,17 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:119015458250:android:6c13fde35d69552a5bfb33",
+        "mobilesdk_app_id": "1:119015458250:android:babd600e056029cf5bfb33",
         "android_client_info": {
-          "package_name": "com.paw_fect"
+          "package_name": "app.pawfect"
         }
       },
       "oauth_client": [
         {
-          "client_id": "119015458250-3vg7ktre9fkmq6nmthg22h8u34ksbou9.apps.googleusercontent.com",
+          "client_id": "119015458250-hdk6a9npa945c0o2qb37s9d7kq608ms9.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.paw_fect",
+            "package_name": "app.pawfect",
             "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
           }
         },

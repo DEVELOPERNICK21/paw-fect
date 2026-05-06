@@ -69,7 +69,14 @@ export const PetSwitcherScreen: React.FC = () => {
         text: 'Delete',
         style: 'destructive',
         onPress: () => {
-          void deletePet(pet.id);
+          void deletePet(pet.id).then(result => {
+            if (!result.success) {
+              Alert.alert(
+                'Could not delete',
+                result.error ?? 'Try again when you have a stable connection.',
+              );
+            }
+          });
         },
       },
     ]);
