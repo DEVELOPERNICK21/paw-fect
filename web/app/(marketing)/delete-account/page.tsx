@@ -14,7 +14,7 @@ export default function DeleteAccountPage(): React.ReactElement {
         <p className="not-prose text-sm font-medium uppercase tracking-wide text-stone-500">
           Pawfect
         </p>
-        <h1>Delete your Pawfect account and data</h1>
+        <h1>Delete your Pawfect account and data.</h1>
         <p className="text-sm text-stone-500">
           This page explains how users of the <strong>Pawfect</strong> mobile
           app can request account deletion and what happens to their data.
