@@ -4,7 +4,6 @@ import {
   Alert,
   Platform,
   Pressable,
-  Share,
   StyleSheet,
   Text,
   ToastAndroid,
@@ -13,22 +12,22 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import ViewShot, { type ViewShotRef } from 'react-native-view-shot';
+import type { CanvasRef } from '@shopify/react-native-skia';
+import Share from 'react-native-share';
 
 import type { PetsStackParamList } from '../../../../app/navigation/types';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { useAuthStore } from '../../../auth/store/authStore';
 import { petComposition } from '../../petComposition';
 import type { PetHealthCardViewModel } from '../../domain/models/PetHealthCardViewModel';
-import { PetHealthShareCard } from '../components/share/PetHealthShareCard';
+import { captureCanvasPngDataUri } from '../components/share/exportPetHealthShareCardImage';
 import {
+  PREVIEW_HEIGHT,
+  PREVIEW_WIDTH,
   SHARE_CARD_HEIGHT,
   SHARE_CARD_WIDTH,
-} from '../components/share/PetHealthShareCard.styles';
-
-const PREVIEW_TARGET_WIDTH = 320;
-const PREVIEW_SCALE = PREVIEW_TARGET_WIDTH / SHARE_CARD_WIDTH;
-const PREVIEW_HEIGHT = SHARE_CARD_HEIGHT * PREVIEW_SCALE;
+} from '../components/share/petHealthShareCardLayout';
+import { PetHealthShareCardSkia } from '../components/share/PetHealthShareCardSkia';
 
 export const PetHealthCardShareScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -37,7 +36,7 @@ export const PetHealthCardShareScreen: React.FC = () => {
   const { colors, fontFamilies } = useTheme();
   const userId = useAuthStore(s => s.user?.id);
 
-  const captureRef = useRef<ViewShotRef | null>(null);
+  const exportCanvasRef = useRef<CanvasRef | null>(null);
 
   const [viewModel, setViewModel] = useState<PetHealthCardViewModel | null>(
     null,
@@ -75,19 +74,20 @@ export const PetHealthCardShareScreen: React.FC = () => {
     }
     setSharing(true);
     try {
-      const uri = await captureRef.current?.capture();
-      if (!uri) {
-        throw new Error('capture returned empty uri');
-      }
+      const dataUri = await captureCanvasPngDataUri(exportCanvasRef.current);
       const message = buildShareMessage(viewModel);
-      await Share.share({
+      await Share.open({
         title: `${viewModel.pet.name} — Paw-fect`,
-        message:
-          Platform.OS === 'android' ? `${message}\n${uri}` : message,
-        url: Platform.OS === 'ios' ? uri : undefined,
+        message,
+        url: dataUri,
+        type: 'image/png',
+        filename: 'paw-fect-health-card.png',
+        failOnCancel: false,
       });
-    } catch {
-      notifyShareFailure();
+    } catch (error) {
+      if (!isShareCancelled(error)) {
+        notifyShareFailure();
+      }
     } finally {
       setSharing(false);
     }
@@ -151,43 +151,31 @@ export const PetHealthCardShareScreen: React.FC = () => {
               style={[
                 styles.previewClip,
                 {
-                  width: PREVIEW_TARGET_WIDTH,
+                  width: PREVIEW_WIDTH,
                   height: PREVIEW_HEIGHT,
                   borderColor: colors.borderSubtle,
                 },
               ]}
             >
-              <View
-                style={[
-                  styles.previewScaled,
-                  {
-                    width: SHARE_CARD_WIDTH,
-                    height: SHARE_CARD_HEIGHT,
-                    transform: [{ scale: PREVIEW_SCALE }],
-                    transformOrigin: 'top left',
-                  },
-                ]}
-              >
-                <PetHealthShareCard viewModel={viewModel} />
-              </View>
+              <PetHealthShareCardSkia
+                viewModel={viewModel}
+                width={PREVIEW_WIDTH}
+                height={PREVIEW_HEIGHT}
+              />
             </View>
 
             <View
-              style={styles.captureHost}
+              style={styles.exportHost}
               pointerEvents="none"
               accessibilityElementsHidden
               importantForAccessibility="no-hide-descendants"
             >
-              <ViewShot
-                ref={captureRef}
-                options={{ format: 'png', quality: 1, result: 'tmpfile' }}
-                style={{
-                  width: SHARE_CARD_WIDTH,
-                  height: SHARE_CARD_HEIGHT,
-                }}
-              >
-                <PetHealthShareCard viewModel={viewModel} />
-              </ViewShot>
+              <PetHealthShareCardSkia
+                ref={exportCanvasRef}
+                viewModel={viewModel}
+                width={SHARE_CARD_WIDTH}
+                height={SHARE_CARD_HEIGHT}
+              />
             </View>
 
             <Pressable
@@ -250,6 +238,18 @@ function buildShareMessage(vm: PetHealthCardViewModel): string {
   ].join('\n');
 }
 
+function isShareCancelled(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  const message = error.message.toLowerCase();
+  return (
+    message.includes('user did not share') ||
+    message.includes('cancel') ||
+    message.includes('dismiss')
+  );
+}
+
 function notifyShareFailure(): void {
   const msg = 'Could not share the card. Please try again.';
   if (Platform.OS === 'android') {
@@ -295,16 +295,9 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     marginBottom: 28,
   },
-  /** Top-left anchor so scale-down fits the preview clip rect. */
-  previewScaled: {
+  exportHost: {
     position: 'absolute',
-    left: 0,
-    top: 0,
-  },
-  /** Off-screen full-size raster source for ViewShot.capture() */
-  captureHost: {
-    position: 'absolute',
-    left: -8000,
+    left: -SHARE_CARD_WIDTH - 64,
     top: 0,
     width: SHARE_CARD_WIDTH,
     height: SHARE_CARD_HEIGHT,
