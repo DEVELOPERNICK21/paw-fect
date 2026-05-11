@@ -2933,6 +2933,28 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - react-native-view-shot (5.1.0):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - React-NativeModulesApple (0.84.1):
     - hermes-engine
     - React-callinvoker
@@ -3580,6 +3602,7 @@ DEPENDENCIES:
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
   - react-native-razorpay (from `../node_modules/react-native-razorpay`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
+  - react-native-view-shot (from `../node_modules/react-native-view-shot`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
   - React-networking (from `../node_modules/react-native/ReactCommon/react/networking`)
   - React-oscompat (from `../node_modules/react-native/ReactCommon/oscompat`)
@@ -3744,6 +3767,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-razorpay"
   react-native-safe-area-context:
     :path: "../node_modules/react-native-safe-area-context"
+  react-native-view-shot:
+    :path: "../node_modules/react-native-view-shot"
   React-NativeModulesApple:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios"
   React-networking:
@@ -3902,6 +3927,7 @@ SPEC CHECKSUMS:
   React-microtasksnativemodule: 7ccd4c74006eec09a2df88ca31ba8b0c22c50a4d
   react-native-razorpay: 376ba84b614ef8a22b5701df4ffee10f4c116d14
   react-native-safe-area-context: 90476586077446d5eab1d41ac3e767b016ac41d6
+  react-native-view-shot: 238ede164f336c8a894fde2e6cdde654bea6685d
   React-NativeModulesApple: 5ba0903927f6b8d335a091700e9fda143980f819
   React-networking: ad2727500e93943a43da70d3b162454af151469c
   React-oscompat: ff26abf0ae3e3fdbe47b44224571e3fc7226a573
@@ -3945,8 +3971,8 @@ SPEC CHECKSUMS:
   RNNotifee: 5e3b271e8ea7456a36eec994085543c9adca9168
   RNScreens: ca829379d20b0d1ff41a0b87bc37bdc50276cef5
   RNSVG: 4a9f0b92f0a95bf3af7f787fd36a9c762d4d3d42
-  Yoga: 846fbe6f595136be802ad81d05688ff748839764
+  Yoga: 54ad1f177695cddea2c5090897cce963a0650d93
 
 PODFILE CHECKSUM: b085b7279384f6418396ddf1220255ae0ff12b70
 
-COCOAPODS: 1.16.2
+COCOAPODS: 1.15.2
