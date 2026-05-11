@@ -316,7 +316,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "app.pawfect";
+				PRODUCT_BUNDLE_IDENTIFIER = app.pawfect;
 				PRODUCT_NAME = paw_fect;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -345,7 +345,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "app.pawfect";
+				PRODUCT_BUNDLE_IDENTIFIER = app.pawfect;
 				PRODUCT_NAME = paw_fect;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_VERSION = 5.0;

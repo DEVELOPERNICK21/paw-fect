@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import type { PetsStackParamList } from '../types';
 import PetProfileScreen from '../../../modules/pets/ui/screens/PetProfileScreen';
+import PetHealthCardShareScreen from '../../../modules/pets/ui/screens/PetHealthCardShareScreen';
 import PetSwitcherScreen from '../../../modules/pets/ui/screens/PetSwitcherScreen';
 import AddPetScreen from '../../../modules/pets/ui/screens/AddPetScreen';
 import AddHealthDetailsScreen from '../../../modules/pets/ui/screens/AddHealthDetailsScreen';
@@ -24,6 +25,10 @@ export const PetsStackNavigator = React.memo(function PetsStackNavigator() {
       <Stack.Screen name="AddPet" component={AddPetScreen} />
       <Stack.Screen name="AddHealthDetails" component={AddHealthDetailsScreen} />
       <Stack.Screen name="Paywall" component={PaywallScreen} />
+      <Stack.Screen
+        name="PetHealthCardShare"
+        component={PetHealthCardShareScreen}
+      />
     </Stack.Navigator>
   );
 });

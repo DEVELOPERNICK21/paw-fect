@@ -35,6 +35,7 @@ export type PetsStackParamList = {
   AddPet: { petId?: string } | undefined;
   AddHealthDetails: { kind: 'weight' | 'vaccines' | 'conditions' } | undefined;
   Paywall: PaywallRouteParams | undefined;
+  PetHealthCardShare: { petId: string };
 };
 
 export type NotificationsStackParamList = {

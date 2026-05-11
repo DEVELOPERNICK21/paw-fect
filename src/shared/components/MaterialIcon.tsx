@@ -1,5 +1,6 @@
 import React from 'react';
 import Svg, { Path } from 'react-native-svg';
+import { useTheme } from '../hooks/useTheme';
 
 type IconName =
   | 'arrow_back'
@@ -57,7 +58,8 @@ type IconName =
   | 'expand_more'
   | 'warning'
   | 'error'
-  | 'success';
+  | 'success'
+  | 'share';
 
 const PATHS: Record<IconName, string> = {
   arrow_back: 'M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z',
@@ -151,6 +153,8 @@ const PATHS: Record<IconName, string> = {
     'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z',
   success:
     'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z',
+  share:
+    'M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.23.81 2.01.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.82 9 6.04 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.78 0 1.47-.31 2.01-.81l7.06 4.11c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z',
 };
 
 interface MaterialIconProps {
@@ -162,11 +166,14 @@ interface MaterialIconProps {
 export const MaterialIcon: React.FC<MaterialIconProps> = ({
   name,
   size = 24,
-  color = '#0F172A',
-}) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24">
-    <Path d={PATHS[name]} fill={color} />
-  </Svg>
-);
+  color,
+}) => {
+  const { colors } = useTheme();
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path d={PATHS[name]} fill={color ?? colors.text.heading} />
+    </Svg>
+  );
+};
 
 export type { IconName };

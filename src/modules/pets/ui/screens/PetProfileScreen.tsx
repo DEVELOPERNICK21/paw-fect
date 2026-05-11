@@ -34,15 +34,13 @@ import { useRecordStore } from '../../../records/store/recordStore';
 
 import { getLatestWeightDisplayForPet } from '../../../../shared/utils/healthRecordWeight';
 import { isPetPhotoPlaceholderUri } from '../../domain/utils/petPhotoPlaceholder';
+import { resolvePetAvatarSource } from '../../../../shared/utils/petDisplayPhoto';
 import {
   formatPetAgeLabel,
   formatPetBirthdayLabel,
 } from '../../domain/utils/petDobDisplay';
 import { getPawsitiveTip } from '../../domain/utils/getPawsitiveTip';
 import type { HealthRecord } from '../../../records/domain/models/HealthRecord';
-
-const FALLBACK_IMAGE =
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuAQXZRqux3dGiKVHxg69tsjQga2xzb_Z44MMFEOFTW1lkUd8j1zSaK6EKRCHN9n9PX6s6XdsbTaJqSwqhhSOG2KITXiPsnHHNzGMbccqz_MCcJEaxfYujRzatpy05j5j3o37UTqn0RlfNQ7en9mHWZZPMAd014HsyIn9qbrvdaa482zs4BhKiuI2OFZxAv6h0wGYRDxyTTVxIA7D8xBrCujbnv8b8Qs-WZGBgxxsmBN2dtSukXRhVKftZOZptWGBrodXRCxgTLQWlQR';
 
 export const PetProfileScreen: React.FC = () => {
   const navigation = useNavigation<PetProfileRootNavigation>();
@@ -97,6 +95,13 @@ export const PetProfileScreen: React.FC = () => {
     }
     navigation.navigate('AddPet', { petId: effectivePet.id });
   }, [navigation, effectivePet]);
+
+  const goShareHealthCard = useCallback(() => {
+    if (!petId) {
+      return;
+    }
+    navigation.navigate('PetHealthCardShare', { petId });
+  }, [navigation, petId]);
 
   const goAddPet = useCallback(() => {
     navigation.navigate('AddPet');
@@ -169,6 +174,13 @@ export const PetProfileScreen: React.FC = () => {
     const p = effectivePet?.photo?.trim();
     return !!p && !isPetPhotoPlaceholderUri(p);
   }, [effectivePet?.photo]);
+
+  const heroPhotoSource = useMemo(() => {
+    if (!effectivePet) {
+      return null;
+    }
+    return resolvePetAvatarSource(effectivePet);
+  }, [effectivePet?.id, effectivePet?.photo, effectivePet?.type]);
 
   const dobOk = useMemo(() => {
     const raw = effectivePet?.dob?.trim();
@@ -333,11 +345,29 @@ export const PetProfileScreen: React.FC = () => {
       <View style={styles.listHeader}>
         <PetProfileHeroCard
           pet={effectivePet}
-          photoUri={effectivePet.photo ?? FALLBACK_IMAGE}
+          photoSource={heroPhotoSource!}
           breedLabel={breedLabel}
           ageLine={ageLabel}
           locationLine={locationLine}
           onPressEdit={goEditPet}
+        />
+
+        <Button
+          title="Share health card"
+          variant="secondary"
+          onPress={goShareHealthCard}
+          disabled={!petId}
+          style={{
+            marginTop: spacingTokens.md,
+            width: '100%',
+          }}
+          textStyle={[
+            textStyles.control,
+            { fontFamily: fontFamilies.bold },
+          ]}
+          leftAccessory={
+            <MaterialIcon name="share" size={18} color={colors.primary} />
+          }
         />
 
         <PetProfileQuickStatsRow
@@ -544,6 +574,7 @@ export const PetProfileScreen: React.FC = () => {
     );
   }, [
     effectivePet,
+    heroPhotoSource,
     breedLabel,
     ageLabel,
     locationLine,
