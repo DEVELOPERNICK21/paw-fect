@@ -13,6 +13,7 @@ import {
   subscribeNotificationNavigation,
 } from '../../infrastructure/notifications/notificationBootstrap';
 import { notificationService } from '../../infrastructure/notifications/notificationService';
+import '../../modules/app/application/registerAppSessionPortSync';
 import { appOrchestrator } from '../../modules/app/appComposition';
 import { registerNotificationFeedSync } from '../../modules/notifications/bootstrap/registerNotificationFeedSync';
 import { useHomeQuickActionsUsageStore } from '../../modules/app/store/homeQuickActionsUsageStore';
@@ -25,7 +26,9 @@ import {
 import { useSettingsStore } from '../../modules/settings/store/settingsStore';
 import { usePetStore } from '../../modules/pets/store/petStore';
 import { useReminderStore } from '../../modules/reminders/store/reminderStore';
+import { MilestoneCelebrationsHost } from '../../modules/app/ui/components/celebration/MilestoneCelebrationsHost';
 import { useRecordStore } from '../../modules/records/store/recordStore';
+import { useSmartHealthRecordStore } from '../../modules/records/store/smartHealthRecordStore';
 import { useSubscriptionStore } from '../../modules/subscription/store/subscriptionStore';
 import { useTheme } from '../../shared/hooks/useTheme';
 
@@ -176,6 +179,7 @@ export const RootNavigator: React.FC = () => {
     if (!isAuthenticated) {
       useNotificationFeedStore.getState().clearAll();
       useHomeQuickActionsUsageStore.getState().reset();
+      useSmartHealthRecordStore.getState().reset();
       appOrchestrator.clearSessionData({
         resetPets,
         resetReminders,
@@ -232,7 +236,10 @@ export const RootNavigator: React.FC = () => {
         );
       }}
     >
-      {content}
+      <>
+        {content}
+        <MilestoneCelebrationsHost />
+      </>
     </NavigationContainer>
   );
 };

@@ -1,22 +1,33 @@
 import { create } from 'zustand';
 
-import { useAuthStore } from '../../auth/store/authStore';
+import { getAppSessionUserId } from '../../../shared/session/appSessionPorts';
 import type {
   BootstrapSmartScheduleInput,
   SmartHealthRecord,
   SmartHealthRecordType,
 } from '../domain/models/SmartHealthRecord';
+import type { MilestoneShareKind } from '../domain/utils/isMilestoneCompletion';
+import { isMilestoneCompletion } from '../domain/utils/isMilestoneCompletion';
 import { getTodayIsoDateLocal } from '../../../shared/utils/calendarDate';
 import { smartHealthSelectors } from './smartHealthSelectors';
 import { recordsComposition } from '../recordsComposition';
 
 const STORE_ACTION_TIMEOUT_MS = 15000;
 
+export interface MilestoneShareEvent {
+  petId: string;
+  recordId: string;
+  kind: MilestoneShareKind;
+}
+
 interface SmartHealthRecordState {
   records: SmartHealthRecord[];
   loading: boolean;
   error: string | null;
+  /** One-shot queue for post-completion share prompts (drained by app shell). */
+  milestoneEvents: MilestoneShareEvent[];
   reset: () => void;
+  consumeMilestoneEvent: () => MilestoneShareEvent | undefined;
   bootstrapPetSchedule: (
     input: Omit<BootstrapSmartScheduleInput, 'userId'>,
   ) => Promise<void>;
@@ -57,7 +68,7 @@ interface SmartHealthRecordState {
 }
 
 function requireUserId(): string | null {
-  return useAuthStore.getState().user?.id ?? null;
+  return getAppSessionUserId();
 }
 
 function smartHealthNotificationIds(recordId: string): [string, string, string] {
@@ -162,8 +173,25 @@ export const useSmartHealthRecordStore = create<SmartHealthRecordState>(
     records: [],
     loading: false,
     error: null,
+    milestoneEvents: [],
 
-    reset: () => set({ records: [], loading: false, error: null }),
+    reset: () =>
+      set({
+        records: [],
+        loading: false,
+        error: null,
+        milestoneEvents: [],
+      }),
+
+    consumeMilestoneEvent: () => {
+      const queue = get().milestoneEvents;
+      if (queue.length === 0) {
+        return undefined;
+      }
+      const [next, ...rest] = queue;
+      set({ milestoneEvents: rest });
+      return next;
+    },
 
     bootstrapPetSchedule: async input => {
       const userId = requireUserId();
@@ -243,7 +271,28 @@ export const useSmartHealthRecordStore = create<SmartHealthRecordState>(
           recordsComposition.getSmartHealthRecords.execute(userId, record.petId),
           STORE_ACTION_TIMEOUT_MS,
         );
-        set({ records, loading: false, error: null });
+        const refreshed = records.find(item => item.id === recordId);
+        let milestoneEvents = get().milestoneEvents;
+        if (refreshed?.status === 'completed') {
+          const petRecords = records.filter(r => r.petId === refreshed.petId);
+          const milestone = isMilestoneCompletion(refreshed, petRecords);
+          if (milestone) {
+            milestoneEvents = [
+              ...milestoneEvents,
+              {
+                petId: refreshed.petId,
+                recordId: refreshed.id,
+                kind: milestone.kind,
+              },
+            ];
+          }
+        }
+        set({
+          records,
+          loading: false,
+          error: null,
+          milestoneEvents,
+        });
         void refreshDueNotifications(records).catch(() => {});
       } catch (error) {
         // eslint-disable-next-line no-console
