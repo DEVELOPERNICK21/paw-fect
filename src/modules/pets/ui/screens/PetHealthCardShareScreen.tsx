@@ -164,6 +164,7 @@ export const PetHealthCardShareScreen: React.FC = () => {
                     width: SHARE_CARD_WIDTH,
                     height: SHARE_CARD_HEIGHT,
                     transform: [{ scale: PREVIEW_SCALE }],
+                    transformOrigin: 'top left',
                   },
                 ]}
               >

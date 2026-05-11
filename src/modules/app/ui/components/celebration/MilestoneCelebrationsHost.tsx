@@ -35,15 +35,18 @@ export const MilestoneCelebrationsHost: React.FC = () => {
     if (!isAuthenticated) {
       return;
     }
-    let event = useSmartHealthRecordStore.getState().consumeMilestoneEvent();
-    while (event) {
+    for (;;) {
+      const event = useSmartHealthRecordStore
+        .getState()
+        .consumeMilestoneEvent();
+      if (!event) {
+        return;
+      }
       if (shownPetIdsThisSession.current.has(event.petId)) {
-        event = useSmartHealthRecordStore.getState().consumeMilestoneEvent();
         continue;
       }
       const pet = pets.find(p => p.id === event.petId);
       if (!pet) {
-        event = useSmartHealthRecordStore.getState().consumeMilestoneEvent();
         continue;
       }
       shownPetIdsThisSession.current.add(event.petId);
