@@ -53,11 +53,7 @@ import {
   SHARE_CARD_WIDTH,
   SUBLINE_GAP,
 } from './petHealthShareCardLayout';
-
-const FONT_BOLD = require('../../../../../shared/assets/fonts/PlusJakartaSans-Bold.ttf');
-const FONT_MEDIUM = require('../../../../../shared/assets/fonts/PlusJakartaSans-Medium.ttf');
-const FONT_EXTRA_BOLD = require('../../../../../shared/assets/fonts/PlusJakartaSans-ExtraBold.ttf');
-const FONT_SEMIBOLD = require('../../../../../shared/assets/fonts/PlusJakartaSans-SemiBold.ttf');
+import { SHARE_CARD_TYPE } from './petHealthShareCardTypography';
 
 export interface PetHealthShareCardSkiaProps {
   viewModel: PetHealthCardViewModel;
@@ -77,23 +73,56 @@ export const PetHealthShareCardSkia = React.forwardRef<
   const resolvedPhoto = RNImage.resolveAssetSource(viewModel.pet.photoSource);
   const photo = useImage(resolvedPhoto?.uri ?? null);
 
-  const fontKicker = useFont(FONT_BOLD, 22 * scale);
-  const fontTagline = useFont(FONT_MEDIUM, 24 * scale);
-  const fontName = useFont(FONT_EXTRA_BOLD, 50 * scale);
-  const fontSubline = useFont(FONT_MEDIUM, 26 * scale);
-  const fontSection = useFont(FONT_BOLD, 30 * scale);
-  const fontIntro = useFont(FONT_MEDIUM, 26 * scale);
-  const fontGlanceLabel = useFont(FONT_SEMIBOLD, 20 * scale);
-  const fontGlanceValue = useFont(FONT_BOLD, 24 * scale);
-  const fontRowTitle = useFont(FONT_BOLD, 28 * scale);
-  const fontRowMeta = useFont(FONT_MEDIUM, 24 * scale);
-  const fontEmptyTitle = useFont(FONT_BOLD, 38 * scale);
-  const fontEmptySub = useFont(FONT_MEDIUM, 28 * scale);
-  const fontFooterUrl = useFont(FONT_MEDIUM, 24 * scale);
-  const fontFooterBrand = useFont(FONT_BOLD, 28 * scale);
-  const fontCta = useFont(FONT_BOLD, 26 * scale);
-  const fontFooterHint = useFont(FONT_MEDIUM, 22 * scale);
-  const fontEmoji = useFont(FONT_MEDIUM, 38 * scale);
+  const fontKicker = useFont(SHARE_CARD_TYPE.kicker.file, SHARE_CARD_TYPE.kicker.size * scale);
+  const fontTagline = useFont(SHARE_CARD_TYPE.tagline.file, SHARE_CARD_TYPE.tagline.size * scale);
+  const fontName = useFont(SHARE_CARD_TYPE.petName.file, SHARE_CARD_TYPE.petName.size * scale);
+  const fontSubline = useFont(
+    SHARE_CARD_TYPE.petSubline.file,
+    SHARE_CARD_TYPE.petSubline.size * scale,
+  );
+  const fontSection = useFont(
+    SHARE_CARD_TYPE.sectionTitle.file,
+    SHARE_CARD_TYPE.sectionTitle.size * scale,
+  );
+  const fontIntro = useFont(SHARE_CARD_TYPE.intro.file, SHARE_CARD_TYPE.intro.size * scale);
+  const fontGlanceLabel = useFont(
+    SHARE_CARD_TYPE.glanceLabel.file,
+    SHARE_CARD_TYPE.glanceLabel.size * scale,
+  );
+  const fontGlanceValue = useFont(
+    SHARE_CARD_TYPE.glanceValue.file,
+    SHARE_CARD_TYPE.glanceValue.size * scale,
+  );
+  const fontRowTitle = useFont(
+    SHARE_CARD_TYPE.rowTitle.file,
+    SHARE_CARD_TYPE.rowTitle.size * scale,
+  );
+  const fontRowMeta = useFont(
+    SHARE_CARD_TYPE.rowMeta.file,
+    SHARE_CARD_TYPE.rowMeta.size * scale,
+  );
+  const fontEmptyTitle = useFont(
+    SHARE_CARD_TYPE.emptyTitle.file,
+    SHARE_CARD_TYPE.emptyTitle.size * scale,
+  );
+  const fontEmptySub = useFont(
+    SHARE_CARD_TYPE.emptySub.file,
+    SHARE_CARD_TYPE.emptySub.size * scale,
+  );
+  const fontFooterUrl = useFont(
+    SHARE_CARD_TYPE.footerUrl.file,
+    SHARE_CARD_TYPE.footerUrl.size * scale,
+  );
+  const fontFooterBrand = useFont(
+    SHARE_CARD_TYPE.footerBrand.file,
+    SHARE_CARD_TYPE.footerBrand.size * scale,
+  );
+  const fontCta = useFont(SHARE_CARD_TYPE.cta.file, SHARE_CARD_TYPE.cta.size * scale);
+  const fontFooterHint = useFont(
+    SHARE_CARD_TYPE.footerHint.file,
+    SHARE_CARD_TYPE.footerHint.size * scale,
+  );
+  const fontEmoji = useFont(SHARE_CARD_TYPE.emoji.file, SHARE_CARD_TYPE.emoji.size * scale);
 
   const cardClip = useMemo(
     () =>

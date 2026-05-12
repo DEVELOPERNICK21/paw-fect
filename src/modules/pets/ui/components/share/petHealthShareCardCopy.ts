@@ -5,7 +5,7 @@ import type {
 } from '../../../domain/models/PetHealthCardViewModel';
 
 export function shareCardKicker(): string {
-  return 'PET HEALTH UPDATE';
+  return 'Pet health update';
 }
 
 export function shareCardTagline(): string {

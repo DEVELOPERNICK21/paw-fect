@@ -166,7 +166,7 @@ export const PetHealthCardShareScreen: React.FC = () => {
             <Text
               style={[
                 styles.caption,
-                { color: colors.text.heading, fontFamily: fontFamilies.bold },
+                { color: colors.text.heading, fontFamily: fontFamilies.semibold },
               ]}
             >
               Share a simple care summary
@@ -174,7 +174,7 @@ export const PetHealthCardShareScreen: React.FC = () => {
             <Text
               style={[
                 styles.captionSub,
-                { color: colors.text.body, fontFamily: fontFamilies.medium },
+                { color: colors.text.body, fontFamily: fontFamilies.regular },
               ]}
             >
               New readers see your pet&apos;s name, what care is due next, and how

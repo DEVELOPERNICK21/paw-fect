@@ -46,7 +46,7 @@ export const BODY_PADDING_TOP = 40;
 export const SECTION_GAP = 20;
 export const ROW_GAP = 18;
 export const ROW_HEIGHT = 118;
-export const INTRO_LINE_HEIGHT = 34;
+export const INTRO_LINE_HEIGHT = 36;
 export const GLANCE_ROW_HEIGHT = 78;
 
 export const PREVIEW_WIDTH = 320;
