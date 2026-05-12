@@ -14,13 +14,18 @@ import type { RouteProp } from '@react-navigation/native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { CanvasRef } from '@shopify/react-native-skia';
 import Share from 'react-native-share';
+import ViewShot, { type ViewShotRef } from 'react-native-view-shot';
 
 import type { PetsStackParamList } from '../../../../app/navigation/types';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { useAuthStore } from '../../../auth/store/authStore';
 import { petComposition } from '../../petComposition';
 import type { PetHealthCardViewModel } from '../../domain/models/PetHealthCardViewModel';
-import { captureCanvasPngDataUri } from '../components/share/exportPetHealthShareCardImage';
+import {
+  buildShareSheetOptions,
+  captureShareCardPngUri,
+  waitForPaintFrames,
+} from '../components/share/exportPetHealthShareCardImage';
 import {
   PREVIEW_HEIGHT,
   PREVIEW_WIDTH,
@@ -33,16 +38,20 @@ export const PetHealthCardShareScreen: React.FC = () => {
   const navigation = useNavigation();
   const route =
     useRoute<RouteProp<PetsStackParamList, 'PetHealthCardShare'>>();
-  const { colors, fontFamilies } = useTheme();
+  const { colors, fontFamilies, shadows } = useTheme();
   const userId = useAuthStore(s => s.user?.id);
 
   const exportCanvasRef = useRef<CanvasRef | null>(null);
+  const exportShotRef = useRef<ViewShotRef | null>(null);
+  const exportReadyRef = useRef(false);
 
   const [viewModel, setViewModel] = useState<PetHealthCardViewModel | null>(
     null,
   );
   const [loadError, setLoadError] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
+  const [preparingShare, setPreparingShare] = useState(false);
+  const [previewPressed, setPreviewPressed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -68,27 +77,43 @@ export const PetHealthCardShareScreen: React.FC = () => {
     };
   }, [route.params.petId, userId]);
 
+  useEffect(() => {
+    exportReadyRef.current = false;
+  }, [viewModel]);
+
+  const markExportReady = useCallback(() => {
+    exportReadyRef.current = true;
+  }, []);
+
   const handleShare = useCallback(async () => {
     if (!viewModel || sharing) {
       return;
     }
     setSharing(true);
+    setPreparingShare(true);
     try {
-      const dataUri = await captureCanvasPngDataUri(exportCanvasRef.current);
-      const message = buildShareMessage(viewModel);
-      await Share.open({
-        title: `${viewModel.pet.name} — Paw-fect`,
-        message,
-        url: dataUri,
-        type: 'image/png',
-        filename: 'paw-fect-health-card.png',
-        failOnCancel: false,
+      if (!exportReadyRef.current) {
+        await waitForPaintFrames(4);
+      }
+      const imageUri = await captureShareCardPngUri({
+        canvasRef: exportCanvasRef.current,
+        viewShotRef: exportShotRef.current,
       });
+      const title = `${viewModel.pet.name} — Paw-fect`;
+      const message = buildShareMessage(viewModel);
+      await Share.open(
+        buildShareSheetOptions({
+          title,
+          message,
+          imageUri,
+        }),
+      );
     } catch (error) {
       if (!isShareCancelled(error)) {
         notifyShareFailure();
       }
     } finally {
+      setPreparingShare(false);
       setSharing(false);
     }
   }, [sharing, viewModel]);
@@ -147,35 +172,62 @@ export const PetHealthCardShareScreen: React.FC = () => {
               Looking good?
             </Text>
 
-            <View
+            <Pressable
+              onPressIn={() => setPreviewPressed(true)}
+              onPressOut={() => setPreviewPressed(false)}
               style={[
-                styles.previewClip,
+                styles.previewPressable,
                 {
-                  width: PREVIEW_WIDTH,
-                  height: PREVIEW_HEIGHT,
-                  borderColor: colors.borderSubtle,
+                  transform: [{ scale: previewPressed ? 0.985 : 1 }],
                 },
               ]}
+              accessibilityRole="image"
+              accessibilityLabel="Pet health card preview"
             >
-              <PetHealthShareCardSkia
-                viewModel={viewModel}
-                width={PREVIEW_WIDTH}
-                height={PREVIEW_HEIGHT}
-              />
-            </View>
+              <View
+                style={[
+                  styles.previewClip,
+                  {
+                    width: PREVIEW_WIDTH,
+                    height: PREVIEW_HEIGHT,
+                    borderColor: colors.borderSubtle,
+                    ...shadows.md,
+                  },
+                ]}
+              >
+                <PetHealthShareCardSkia
+                  viewModel={viewModel}
+                  width={PREVIEW_WIDTH}
+                  height={PREVIEW_HEIGHT}
+                />
+              </View>
+            </Pressable>
 
             <View
-              style={styles.exportHost}
+              style={[
+                styles.exportHost,
+                preparingShare ? styles.exportHostActive : null,
+              ]}
               pointerEvents="none"
               accessibilityElementsHidden
               importantForAccessibility="no-hide-descendants"
             >
-              <PetHealthShareCardSkia
-                ref={exportCanvasRef}
-                viewModel={viewModel}
-                width={SHARE_CARD_WIDTH}
-                height={SHARE_CARD_HEIGHT}
-              />
+              <ViewShot
+                ref={exportShotRef}
+                options={{ format: 'png', quality: 1, result: 'tmpfile' }}
+                style={{
+                  width: SHARE_CARD_WIDTH,
+                  height: SHARE_CARD_HEIGHT,
+                }}
+              >
+                <PetHealthShareCardSkia
+                  ref={exportCanvasRef}
+                  viewModel={viewModel}
+                  width={SHARE_CARD_WIDTH}
+                  height={SHARE_CARD_HEIGHT}
+                  onReady={markExportReady}
+                />
+              </ViewShot>
             </View>
 
             <Pressable
@@ -284,24 +336,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
+    overflow: 'hidden',
   },
   caption: {
     fontSize: 14,
     marginBottom: 16,
   },
+  previewPressable: {
+    marginBottom: 28,
+  },
   previewClip: {
     overflow: 'hidden',
     borderRadius: 24,
     borderWidth: StyleSheet.hairlineWidth,
-    marginBottom: 28,
   },
   exportHost: {
     position: 'absolute',
-    left: -SHARE_CARD_WIDTH - 64,
-    top: 0,
-    width: SHARE_CARD_WIDTH,
-    height: SHARE_CARD_HEIGHT,
-    opacity: 1,
+    left: 0,
+    right: 0,
+    top: '50%',
+    marginTop: -(SHARE_CARD_HEIGHT / 2),
+    alignItems: 'center',
+    opacity: 0.01,
+    zIndex: -1,
+  },
+  exportHostActive: {
+    opacity: 0.02,
   },
   shareBtn: {
     paddingHorizontal: 48,

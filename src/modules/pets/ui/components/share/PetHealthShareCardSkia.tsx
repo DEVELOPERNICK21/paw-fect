@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Image as RNImage, StyleSheet, View } from 'react-native';
 import {
   Canvas,
@@ -61,13 +61,14 @@ export interface PetHealthShareCardSkiaProps {
   viewModel: PetHealthCardViewModel;
   width?: number;
   height?: number;
+  onReady?: () => void;
 }
 
 export const PetHealthShareCardSkia = React.forwardRef<
   CanvasRef,
   PetHealthShareCardSkiaProps
 >(function PetHealthShareCardSkia(
-  { viewModel, width = SHARE_CARD_WIDTH, height = SHARE_CARD_HEIGHT },
+  { viewModel, width = SHARE_CARD_WIDTH, height = SHARE_CARD_HEIGHT, onReady },
   ref,
 ) {
   const scale = width / SHARE_CARD_WIDTH;
@@ -109,7 +110,7 @@ export const PetHealthShareCardSkia = React.forwardRef<
   const nameTop = avatarCenterY + avatarRadius + AVATAR_BORDER * scale + NAME_GAP * scale;
   const nameBaseline = nameTop + (fontName?.getSize() ?? 0) * 0.82;
   const sublineBaseline =
-    nameBaseline + (fontSubline?.getSize() ?? 0) * 0.35 + SUBLINE_GAP * scale;
+    nameBaseline + (fontName?.getSize() ?? 0) * 0.18 + SUBLINE_GAP * scale;
 
   const bodyTop = HERO_HEIGHT * scale;
   const footerTop = height - FOOTER_HEIGHT * scale;
@@ -135,6 +136,15 @@ export const PetHealthShareCardSkia = React.forwardRef<
     fontFooterUrl &&
     fontFooterBrand &&
     fontEmoji;
+
+  const photoPending = Boolean(resolvedPhoto?.uri) && photo === null;
+
+  useEffect(() => {
+    if (!fontsReady || photoPending) {
+      return;
+    }
+    onReady?.();
+  }, [fontsReady, onReady, photoPending]);
 
   if (!fontsReady) {
     return <View style={[styles.placeholder, { width, height }]} />;

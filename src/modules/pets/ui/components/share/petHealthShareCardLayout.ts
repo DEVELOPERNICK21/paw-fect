@@ -25,7 +25,7 @@ export const AVATAR_SIZE = 160;
 export const AVATAR_BORDER = 4;
 export const HERO_PADDING_TOP = 72;
 export const NAME_GAP = 16;
-export const SUBLINE_GAP = 12;
+export const SUBLINE_GAP = 24;
 
 export const BODY_PADDING_X = 72;
 export const BODY_PADDING_TOP = 40;
