@@ -166,10 +166,19 @@ export const PetHealthCardShareScreen: React.FC = () => {
             <Text
               style={[
                 styles.caption,
+                { color: colors.text.heading, fontFamily: fontFamilies.bold },
+              ]}
+            >
+              Share your pet&apos;s care plan
+            </Text>
+            <Text
+              style={[
+                styles.captionSub,
                 { color: colors.text.body, fontFamily: fontFamilies.medium },
               ]}
             >
-              Looking good?
+              Recipients see who your pet is, what is due next, and how to follow
+              the same schedule in Paw-fect.
             </Text>
 
             <Pressable
@@ -339,8 +348,16 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   caption: {
+    fontSize: 18,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  captionSub: {
     fontSize: 14,
-    marginBottom: 16,
+    lineHeight: 20,
+    marginBottom: 18,
+    textAlign: 'center',
+    maxWidth: 320,
   },
   previewPressable: {
     marginBottom: 28,
