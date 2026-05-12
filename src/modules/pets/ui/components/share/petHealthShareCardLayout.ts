@@ -2,8 +2,8 @@ export const SHARE_CARD_WIDTH = 1080;
 export const SHARE_CARD_HEIGHT = 1350;
 
 export const SHARE_CARD_RADIUS = 32;
-export const HERO_HEIGHT = 560;
-export const FOOTER_HEIGHT = 200;
+export const HERO_HEIGHT = 500;
+export const FOOTER_HEIGHT = 220;
 
 export const PALETTE = {
   heroBase: '#0B2820',
@@ -35,16 +35,19 @@ export const CHIP_DONE_FG = '#1A5E30';
 export const CHIP_OVERDUE_BG = '#FFE4E4';
 export const CHIP_OVERDUE_FG = '#8A1A1A';
 
-export const AVATAR_SIZE = 148;
+export const AVATAR_SIZE = 132;
 export const AVATAR_BORDER = 5;
-export const HERO_PADDING_TOP = 40;
-export const NAME_GAP = 14;
-export const SUBLINE_GAP = 22;
+export const HERO_PADDING_TOP = 34;
+export const NAME_GAP = 16;
+export const SUBLINE_GAP = 28;
 
 export const BODY_PADDING_X = 56;
-export const BODY_PADDING_TOP = 36;
-export const SECTION_GAP = 18;
-export const ROW_GAP = 16;
+export const BODY_PADDING_TOP = 40;
+export const SECTION_GAP = 20;
+export const ROW_GAP = 18;
+export const ROW_HEIGHT = 118;
+export const INTRO_LINE_HEIGHT = 34;
+export const GLANCE_ROW_HEIGHT = 78;
 
 export const PREVIEW_WIDTH = 320;
 export const PREVIEW_HEIGHT = Math.round(

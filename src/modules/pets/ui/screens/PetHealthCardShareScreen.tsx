@@ -169,7 +169,7 @@ export const PetHealthCardShareScreen: React.FC = () => {
                 { color: colors.text.heading, fontFamily: fontFamilies.bold },
               ]}
             >
-              Share your pet&apos;s care plan
+              Share a simple care summary
             </Text>
             <Text
               style={[
@@ -177,8 +177,8 @@ export const PetHealthCardShareScreen: React.FC = () => {
                 { color: colors.text.body, fontFamily: fontFamilies.medium },
               ]}
             >
-              Recipients see who your pet is, what is due next, and how to follow
-              the same schedule in Paw-fect.
+              New readers see your pet&apos;s name, what care is due next, and how
+              to get Paw-fect without opening the app.
             </Text>
 
             <Pressable
