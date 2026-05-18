@@ -10,10 +10,12 @@ import {
   Users,
   Mail,
   Settings,
+  Smartphone,
 } from "lucide-react";
 
 const links = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
+  { href: "/dashboard/app", label: "App metrics", icon: Smartphone },
   { href: "/dashboard/pricing", label: "Pricing plans", icon: Tag },
   { href: "/dashboard/content", label: "Site content", icon: FileText },
   { href: "/dashboard/waitlist", label: "Waitlist", icon: Users },

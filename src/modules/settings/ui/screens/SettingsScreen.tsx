@@ -18,6 +18,14 @@ import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
 import { UserAvatar } from '../../../../shared/components/UserAvatar';
 import { icons } from '../../../../shared/assets/icons';
 import { APP_VERSION_LABEL } from '../../../../shared/constants/appMeta';
+import {
+  countPendingReminderNotifications,
+  countPendingTriggerNotifications,
+  ensureNotificationsReady,
+  scheduleNotificationSelfTest,
+} from '../../../../infrastructure/notifications/notificationDiagnostics';
+import { notificationService } from '../../../../infrastructure/notifications/notificationService';
+import { resyncAllLocalNotifications } from '../../../../infrastructure/notifications/resyncLocalNotifications';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { spacing } from '../../../../shared/theme/spacing';
 import { radius } from '../../../../shared/theme/radius';
@@ -28,6 +36,7 @@ import {
 } from '../../../auth/store/authStore';
 import type { Pet } from '../../../pets/domain/models/Pet';
 import { usePetStore } from '../../../pets/store/petStore';
+import { useReminderStore } from '../../../reminders/store/reminderStore';
 import { useSettingsStore } from '../../store/settingsStore';
 
 export const SettingsScreen: React.FC = () => {
@@ -40,6 +49,7 @@ export const SettingsScreen: React.FC = () => {
   const pets = usePetStore(s => s.pets);
   const loadPets = usePetStore(s => s.loadPets);
   const deletePet = usePetStore(s => s.deletePet);
+  const loadReminders = useReminderStore(s => s.loadReminders);
   const profileLabels = useAuthProfileLabels();
   const avatarSize = spacing['4xl'] * 2;
   const [deletePickerVisible, setDeletePickerVisible] = useState(false);
@@ -52,7 +62,61 @@ export const SettingsScreen: React.FC = () => {
     if (!settings) {
       return;
     }
-    updateSettings({ ...settings, notificationsEnabled: !settings.notificationsEnabled }).catch(() => {});
+    const nextEnabled = !settings.notificationsEnabled;
+    void (async () => {
+      await updateSettings({ ...settings, notificationsEnabled: nextEnabled });
+      if (!nextEnabled) {
+        await notificationService.cancelAllNotifications();
+        return;
+      }
+      const granted = await ensureNotificationsReady({
+        promptExactAlarmIfDisabled: true,
+      });
+      if (!granted) {
+        Alert.alert(
+          'Notifications blocked',
+          'Allow notifications for Paw-fect and enable Alarms & reminders in system settings, then try again.',
+        );
+        return;
+      }
+      await loadReminders();
+      await resyncAllLocalNotifications();
+    })();
+  };
+
+  const handleNotificationTest = () => {
+    void (async () => {
+      if (!settings?.notificationsEnabled) {
+        Alert.alert(
+          'Notifications are off',
+          'Turn on Push Notifications in Settings first.',
+        );
+        return;
+      }
+      const granted = await ensureNotificationsReady();
+      if (!granted) {
+        Alert.alert(
+          'Notifications blocked',
+          'Allow notifications for Paw-fect in system settings, then try again.',
+        );
+        return;
+      }
+      try {
+        const when = await scheduleNotificationSelfTest();
+        const pending = await countPendingTriggerNotifications();
+        const reminderPending = await countPendingReminderNotifications();
+        Alert.alert(
+          'Test scheduled',
+          `You should get a test alert around ${when.toLocaleTimeString()}. ${pending} scheduled alert(s) are queued on this device (${reminderPending} reminder).`,
+        );
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'Could not schedule a test notification.';
+        Alert.alert('Test failed', message);
+      }
+    })();
   };
 
   const toggleEmail = () => {
@@ -191,6 +255,23 @@ export const SettingsScreen: React.FC = () => {
               />
             </View>
 
+            <Pressable style={styles.actionRow} onPress={handleNotificationTest}>
+              <View style={styles.rowLeft}>
+                <View style={styles.rowIcon}>
+                  <MaterialIcon name="schedule" size={20} color={colors.accent} />
+                </View>
+                <View>
+                  <Text style={[styles.rowTitle, { fontFamily: fontFamilies.semibold }]}>
+                    Send test notification
+                  </Text>
+                  <Text style={[styles.rowSubtitle, { fontFamily: fontFamilies.medium }]}>
+                    Fires in about 2 minutes
+                  </Text>
+                </View>
+              </View>
+              <MaterialIcon name="chevron_right" size={20} color={colors.accent} />
+            </Pressable>
+
             <View style={styles.row}>
               <View style={styles.rowLeft}>
                 <View style={styles.rowIcon}>
@@ -266,32 +347,30 @@ export const SettingsScreen: React.FC = () => {
               </View>
               <MaterialIcon name="chevron_right" size={20} color={colors.text.subdued} />
             </Pressable>
-
-            <Pressable
-              style={styles.actionRow}
-              onPress={() => navigation.navigate('SmartSchedule')}
-            >
-              <View style={styles.rowLeft}>
-                <View style={styles.rowIcon}>
-                  <MaterialIcon name="pets" size={20} color={colors.accent} />
-                </View>
-                <View>
-                  <Text style={[styles.rowTitle, { fontFamily: fontFamilies.semibold }]}>
-                    Smart daily schedule
-                  </Text>
-                  <Text style={[styles.rowSubtitle, { fontFamily: fontFamilies.medium }]}>
-                    Dog/cat activity and care plan
-                  </Text>
-                </View>
-              </View>
-              <MaterialIcon name="chevron_right" size={20} color={colors.text.subdued} />
-            </Pressable>
           </View>
         </View>
 
         <View style={styles.group}>
           <Text style={[styles.groupTitle, { fontFamily: fontFamilies.bold }]}>ACCOUNT & PETS</Text>
           <View style={styles.groupCard}>
+            <Pressable
+              style={styles.actionRow}
+              onPress={() => navigation.navigate('Paywall', { source: 'settings' })}
+            >
+              <View style={styles.rowLeft}>
+                <View style={styles.rowIcon}>
+                  <MaterialIcon name="workspace_premium" size={20} color={colors.accent} />
+                </View>
+                <View>
+                  <Text style={[styles.rowTitle, { fontFamily: fontFamilies.semibold }]}>PawCare plans</Text>
+                  <Text style={[styles.rowSubtitle, { fontFamily: fontFamilies.medium }]}>
+                    Upgrade or manage your subscription
+                  </Text>
+                </View>
+              </View>
+              <MaterialIcon name="chevron_right" size={20} color={colors.text.subdued} />
+            </Pressable>
+
             <Pressable style={styles.actionRow} onPress={handleDeletePetProfilePress}>
               <View style={styles.rowLeft}>
                 <View style={[styles.rowIcon, styles.dangerIcon]}>

@@ -12,14 +12,27 @@ export type PetHealthCardSnapshot =
   | { kind: 'items'; items: PetHealthCardItem[] }
   | { kind: 'empty'; speciesEmoji: string };
 
+export interface PetHealthCardHighlight {
+  emoji: string;
+  title: string;
+  detail: string;
+}
+
 export interface PetHealthCardViewModel {
   pet: {
     name: string;
     breedLabel: string | null;
     ageLabel: string | null;
     photoSource: ImageSourcePropType;
+    speciesEmoji: string;
+    speciesLabel: string;
+    genderLabel: string | null;
   };
   snapshot: PetHealthCardSnapshot;
+  /** Short share-worthy moments pet parents like to post. */
+  highlights: PetHealthCardHighlight[];
+  /** Hero stat chips derived from highlights. */
+  glance: Array<{ label: string; value: string }>;
   footer: {
     /** Visible URL printed on the card footer (kept short, no token). */
     urlLabel: string;

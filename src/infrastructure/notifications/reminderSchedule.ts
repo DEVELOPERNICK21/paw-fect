@@ -1,4 +1,7 @@
 import type { NotificationService } from './notificationService';
+import { parseReminderLocalDateTime } from '../../shared/utils/reminderDateTime';
+
+export { parseReminderLocalDateTime } from '../../shared/utils/reminderDateTime';
 
 export interface ReminderScheduleInput {
   id: string;
@@ -8,43 +11,12 @@ export interface ReminderScheduleInput {
   time: string;
 }
 
-export function reminderNotificationIds(reminderId: string): [string, string] {
-  return [`reminder-${reminderId}-24h`, `reminder-${reminderId}-1h`];
-}
-
-/**
- * Parse reminder date (YYYY-MM-DD) and time (`09:00 AM` or `14:30`) in local timezone.
- */
-export function parseReminderLocalDateTime(
-  dateYmd: string,
-  timeStr: string,
-): Date | null {
-  const parts = dateYmd.trim().split('-').map(Number);
-  if (parts.length !== 3 || parts.some(n => Number.isNaN(n))) {
-    return null;
-  }
-  const [y, mo, d] = parts;
-  const t = timeStr.trim();
-  const m12 = t.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-  if (m12) {
-    let hour = parseInt(m12[1], 10);
-    const min = parseInt(m12[2], 10);
-    const ap = m12[3].toUpperCase();
-    if (ap === 'PM' && hour !== 12) {
-      hour += 12;
-    }
-    if (ap === 'AM' && hour === 12) {
-      hour = 0;
-    }
-    return new Date(y, mo - 1, d, hour, min, 0, 0);
-  }
-  const m24 = t.match(/^(\d{1,2}):(\d{2})$/);
-  if (m24) {
-    const hour = parseInt(m24[1], 10);
-    const min = parseInt(m24[2], 10);
-    return new Date(y, mo - 1, d, hour, min, 0, 0);
-  }
-  return null;
+export function reminderNotificationIds(reminderId: string): [string, string, string] {
+  return [
+    `reminder-${reminderId}-24h`,
+    `reminder-${reminderId}-1h`,
+    `reminder-${reminderId}-due`,
+  ];
 }
 
 export async function cancelReminderNotifications(
@@ -59,24 +31,25 @@ export async function cancelReminderNotifications(
 export async function syncReminderNotifications(
   reminder: ReminderScheduleInput,
   service: NotificationService,
-): Promise<void> {
+): Promise<number> {
   await cancelReminderNotifications(reminder.id, service);
   const event = parseReminderLocalDateTime(reminder.date, reminder.time);
   if (event == null) {
-    return;
+    return 0;
   }
   const eventMs = event.getTime();
-  if (eventMs <= Date.now()) {
-    return;
+  if (eventMs <= Date.now() + 1500) {
+    return 0;
   }
 
   const titleBase = reminder.title.trim() || 'Reminder';
-  const [id24, id1] = reminderNotificationIds(reminder.id);
+  const [id24, id1, idDue] = reminderNotificationIds(reminder.id);
   const data: Record<string, string> = {
     kind: 'reminder',
     reminderId: reminder.id,
     petId: reminder.petId,
   };
+  let scheduled = 0;
 
   const t24 = new Date(eventMs - 24 * 60 * 60 * 1000);
   if (t24.getTime() > Date.now() + 1500) {
@@ -87,6 +60,7 @@ export async function syncReminderNotifications(
       scheduledDate: t24,
       data,
     });
+    scheduled += 1;
   }
 
   const t1 = new Date(eventMs - 60 * 60 * 1000);
@@ -98,14 +72,26 @@ export async function syncReminderNotifications(
       scheduledDate: t1,
       data,
     });
+    scheduled += 1;
   }
+
+  await service.scheduleNotification({
+    id: idDue,
+    title: titleBase,
+    body: `Due now (${reminder.time}). Tap to open.`,
+    scheduledDate: event,
+    data,
+  });
+  scheduled += 1;
+
+  return scheduled;
 }
 
 export async function syncAllReminderNotifications(
   reminders: ReminderScheduleInput[],
   service: NotificationService,
 ): Promise<void> {
-  for (const r of reminders) {
-    await syncReminderNotifications(r, service);
+  for (const reminder of reminders) {
+    await syncReminderNotifications(reminder, service);
   }
 }

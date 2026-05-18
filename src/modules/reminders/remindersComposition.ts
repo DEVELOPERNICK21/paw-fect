@@ -1,4 +1,5 @@
 import { notificationService } from '../../infrastructure/notifications/notificationService';
+import { ensureNotificationsReady } from '../../infrastructure/notifications/notificationDiagnostics';
 import {
   cancelReminderNotifications,
   syncAllReminderNotifications,
@@ -31,13 +32,21 @@ export const remindersComposition = {
   updateReminder: new UpdateReminder(repository),
   deleteReminder: new DeleteReminder(repository),
   createReminderEntry: new CreateReminderEntry(),
-  scheduleReminderNotifications: async (r: Reminder): Promise<void> => {
-    await syncReminderNotifications(toReminderScheduleInput(r), notificationService);
+  scheduleReminderNotifications: async (r: Reminder): Promise<number> => {
+    const granted = await ensureNotificationsReady();
+    if (!granted) {
+      return 0;
+    }
+    return syncReminderNotifications(toReminderScheduleInput(r), notificationService);
   },
   cancelReminderNotifications: async (reminderId: string): Promise<void> => {
     await cancelReminderNotifications(reminderId, notificationService);
   },
   syncAllReminderNotifications: async (reminders: Reminder[]): Promise<void> => {
+    const granted = await ensureNotificationsReady();
+    if (!granted) {
+      return;
+    }
     await syncAllReminderNotifications(
       reminders.map(toReminderScheduleInput),
       notificationService,

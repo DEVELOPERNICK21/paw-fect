@@ -3,6 +3,15 @@ apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 apply plugin: "com.google.gms.google-services"
 
+/*
+ * Google Sign-In / Firebase: register every certificate that signs the APK users run.
+ * - Debug: keytool -list -v -keystore android/app/debug.keystore -alias androiddebugkey -storepass android
+ * - Release (upload key): your pawfect-upload-key.keystore
+ * - Play Store installs: Play Console → Release → App integrity → "App signing key certificate" SHA-1/256
+ *   (differs from upload key). Add all fingerprints in Firebase → Project settings → Android app →
+ *   Add fingerprint, then download google-services.json into android/app/.
+ */
+
 /**
  * This is the configuration block to customize your React Native Android app.
  * By default you don't need to apply any configuration, just uncomment the lines you need.
@@ -83,7 +92,7 @@ android {
         applicationId "app.pawfect"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 3
+        versionCode 8
         versionName "1.0"
         missingDimensionStrategy "store", "play"
     }

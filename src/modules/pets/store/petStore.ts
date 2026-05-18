@@ -1,18 +1,22 @@
 import { create } from 'zustand';
 
-import { useAuthStore } from '../../auth/store/authStore';
-import { useSubscriptionStore } from '../../subscription/store/subscriptionStore';
+import {
+  getAppSessionMaxPets,
+  getAppSessionUserId,
+} from '../../../shared/session/appSessionPorts';
 import { getPetAccess } from '../../../shared/subscription/petAccess';
-import { useSmartHealthRecordStore } from '../../records/store/smartHealthRecordStore';
+import { getPetCoordinationPorts } from './petCoordinationPorts';
+import { recordsComposition } from '../../records/recordsComposition';
 import { petComposition } from '../petComposition';
 import type { Pet } from '../domain/models/Pet';
 import type { PetType } from '../domain/models/Pet';
+import type { PetHealthMilestones } from '../domain/ports/PetHealthCoordinationPort';
 import type { CreatePetProfileResult as CreatePetProfileUseCaseResult } from '../domain/usecases/CreatePetProfile';
 
 const pc = petComposition;
 
 function requireUserId(): string | null {
-  return useAuthStore.getState().user?.id ?? null;
+  return getAppSessionUserId();
 }
 
 interface CreatePetProfileFormInput {
@@ -41,6 +45,7 @@ export interface PetState {
   loadError: string | null;
   reset: () => void;
   resyncDailyRoutineNotifications: () => Promise<void>;
+  resyncCareNotifications: () => Promise<void>;
   loadPets: () => Promise<void>;
   createPet: (pet: Pet) => Promise<void>;
   createPetProfile: (
@@ -57,6 +62,11 @@ export interface PetState {
   deletePet: (id: string) => Promise<{ success: boolean; error?: string }>;
   getPetById: (id: string) => Promise<Pet | null>;
   setActivePet: (petId: string | null) => Promise<void>;
+  /**
+   * Reads last completed health milestones for a pet via the coordination port.
+   * UI uses this for prefilling edit forms; it never inspects records data shapes.
+   */
+  getLastHealthMilestones: (petId: string) => Promise<PetHealthMilestones>;
 }
 
 export const usePetStore = create<PetState>((set, get) => ({
@@ -74,6 +84,26 @@ export const usePetStore = create<PetState>((set, get) => ({
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('[petStore] resyncDailyRoutineNotifications error', error);
+    }
+  },
+
+  resyncCareNotifications: async () => {
+    const userId = requireUserId();
+    if (!userId) {
+      return;
+    }
+    const pets = get().pets;
+    if (pets.length === 0) {
+      return;
+    }
+    try {
+      await recordsComposition.syncDueNotificationsForPets(
+        userId,
+        pets.map(pet => pet.id),
+      );
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('[petStore] resyncCareNotifications error', error);
     }
   },
 
@@ -112,6 +142,12 @@ export const usePetStore = create<PetState>((set, get) => ({
 
       set({ pets, activePet, loading: false, loadError: null });
       void pc.syncDailyRoutineNotifications(pets).catch(() => {});
+      void recordsComposition
+        .syncDueNotificationsForPets(
+          userId,
+          pets.map(pet => pet.id),
+        )
+        .catch(() => {});
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('[petStore] loadPets error', error);
@@ -148,7 +184,7 @@ export const usePetStore = create<PetState>((set, get) => ({
       };
     }
 
-    const maxPets = useSubscriptionStore.getState().entitlement.maxPets;
+    const maxPets = getAppSessionMaxPets();
     if (get().pets.length >= maxPets) {
       return { success: false, error: 'PET_LIMIT' };
     }
@@ -164,9 +200,7 @@ export const usePetStore = create<PetState>((set, get) => ({
     await get().setActivePet(result.pet.id);
 
     // Bootstrap health schedule for new pet
-    const bootstrapHealthSchedule =
-      useSmartHealthRecordStore.getState().bootstrapPetSchedule;
-    await bootstrapHealthSchedule({
+    await getPetCoordinationPorts().bootstrapPetHealthSchedule({
       petId: result.pet.id,
       petType: result.pet.type,
       dateOfBirth: result.pet.dob ?? new Date().toISOString().slice(0, 10),
@@ -181,12 +215,19 @@ export const usePetStore = create<PetState>((set, get) => ({
     return { success: true };
   },
 
-  updatePet: async (pet: Pet, options?: { lastDewormingDate?: string }) => {
+  updatePet: async (
+    pet: Pet,
+    options?: {
+      lastDewormingDate?: string;
+      lastVaccinationDate?: string;
+      lastRabiesDate?: string;
+    },
+  ) => {
     const userId = requireUserId();
     if (!userId || pet.userId !== userId) {
       return { success: false, error: 'Please sign in again to update a pet.' };
     }
-    const maxPets = useSubscriptionStore.getState().entitlement.maxPets;
+    const maxPets = getAppSessionMaxPets();
     const { pets } = get();
     if (getPetAccess(pets, maxPets, pet.id) === 'read_only') {
       return {
@@ -211,9 +252,7 @@ export const usePetStore = create<PetState>((set, get) => ({
       void pc.syncDailyRoutineNotifications(nextPets).catch(() => {});
 
       // Re-bootstrap health schedule if DOB changed
-      const bootstrapHealthSchedule =
-        useSmartHealthRecordStore.getState().bootstrapPetSchedule;
-      await bootstrapHealthSchedule({
+      await getPetCoordinationPorts().bootstrapPetHealthSchedule({
         petId: updated.id,
         petType: updated.type,
         dateOfBirth: updated.dob ?? new Date().toISOString().slice(0, 10),
@@ -269,10 +308,9 @@ export const usePetStore = create<PetState>((set, get) => ({
     set({ pets, activePet: nextActive });
     void pc.syncDailyRoutineNotifications(pets).catch(() => {});
 
-    useSmartHealthRecordStore.getState().reset();
-    if (nextActive?.id) {
-      void useSmartHealthRecordStore.getState().loadPetRecords(nextActive.id);
-    }
+    await getPetCoordinationPorts().resyncHealthRecordsAfterPetRemoval(
+      nextActive?.id,
+    );
 
     return { success: true };
   },
@@ -299,6 +337,16 @@ export const usePetStore = create<PetState>((set, get) => ({
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('[petStore] setActivePet error', error);
+    }
+  },
+
+  getLastHealthMilestones: async (petId: string) => {
+    try {
+      return await getPetCoordinationPorts().getLastHealthMilestones(petId);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('[petStore] getLastHealthMilestones error', error);
+      return {};
     }
   },
 }));

@@ -4,6 +4,10 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { PetsStackParamList } from '../types';
 import PetProfileScreen from '../../../modules/pets/ui/screens/PetProfileScreen';
 import PetHealthCardShareScreen from '../../../modules/pets/ui/screens/PetHealthCardShareScreen';
+import DayViewScreen from '../../../modules/schedule/ui/screens/DayViewScreen';
+import ScheduleSetupScreen from '../../../modules/schedule/ui/screens/ScheduleSetupScreen';
+import ScheduleWeekViewScreen from '../../../modules/schedule/ui/screens/ScheduleWeekViewScreen';
+import WellnessScoreScreen from '../../../modules/schedule/ui/screens/WellnessScoreScreen';
 import PetSwitcherScreen from '../../../modules/pets/ui/screens/PetSwitcherScreen';
 import AddPetScreen from '../../../modules/pets/ui/screens/AddPetScreen';
 import AddHealthDetailsScreen from '../../../modules/pets/ui/screens/AddHealthDetailsScreen';
@@ -29,6 +33,10 @@ export const PetsStackNavigator = React.memo(function PetsStackNavigator() {
         name="PetHealthCardShare"
         component={PetHealthCardShareScreen}
       />
+      <Stack.Screen name="DayView" component={DayViewScreen} />
+      <Stack.Screen name="ScheduleSetup" component={ScheduleSetupScreen} />
+      <Stack.Screen name="ScheduleWeekView" component={ScheduleWeekViewScreen} />
+      <Stack.Screen name="WellnessScore" component={WellnessScoreScreen} />
     </Stack.Navigator>
   );
 });

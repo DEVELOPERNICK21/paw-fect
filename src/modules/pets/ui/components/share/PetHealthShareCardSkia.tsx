@@ -7,7 +7,6 @@ import {
   Image,
   Rect,
   RoundedRect,
-  Skia,
   Text,
   rect,
   rrect,
@@ -17,7 +16,9 @@ import {
 } from '@shopify/react-native-skia';
 import type { SkFont } from '@shopify/react-native-skia';
 
+import { images } from '../../../../../shared/assets/images';
 import type {
+  PetHealthCardHighlight,
   PetHealthCardItem,
   PetHealthCardViewModel,
 } from '../../../domain/models/PetHealthCardViewModel';
@@ -28,32 +29,37 @@ import {
   plainTaskName,
   shareCardFooterCta,
   shareCardFooterHint,
+  shareCardHighlightsSectionTitle,
   shareCardIntro,
-  shareCardKicker,
+  shareCardPetSubline,
   shareCardSectionTitle,
   shareCardTagline,
 } from './petHealthShareCardCopy';
 import {
-  AVATAR_BORDER,
-  AVATAR_SIZE,
   BODY_PADDING_TOP,
   BODY_PADDING_X,
   FOOTER_HEIGHT,
-  GLANCE_ROW_HEIGHT,
+  HEADER_TOP,
   HERO_HEIGHT,
-  HERO_PADDING_TOP,
+  HERO_STAT_HEIGHT,
+  HIGHLIGHT_ROW_HEIGHT,
   INTRO_LINE_HEIGHT,
-  NAME_GAP,
+  LOGO_GAP,
+  LOGO_SIZE,
+  MAX_BODY_HIGHLIGHTS,
   PALETTE,
+  PET_IMAGE_HEIGHT,
+  PET_IMAGE_RADIUS,
   ROW_GAP,
   ROW_HEIGHT,
   SECTION_GAP,
   SHARE_CARD_HEIGHT,
   SHARE_CARD_RADIUS,
   SHARE_CARD_WIDTH,
-  SUBLINE_GAP,
 } from './petHealthShareCardLayout';
 import { SHARE_CARD_TYPE } from './petHealthShareCardTypography';
+
+const BRAND_LABEL = 'Paw-fect';
 
 export interface PetHealthShareCardSkiaProps {
   viewModel: PetHealthCardViewModel;
@@ -71,9 +77,11 @@ export const PetHealthShareCardSkia = React.forwardRef<
 ) {
   const scale = width / SHARE_CARD_WIDTH;
   const resolvedPhoto = RNImage.resolveAssetSource(viewModel.pet.photoSource);
+  const resolvedLogo = RNImage.resolveAssetSource(images.appIcon);
   const photo = useImage(resolvedPhoto?.uri ?? null);
+  const logo = useImage(resolvedLogo?.uri ?? null);
 
-  const fontKicker = useFont(SHARE_CARD_TYPE.kicker.file, SHARE_CARD_TYPE.kicker.size * scale);
+  const fontBrand = useFont(SHARE_CARD_TYPE.brand.file, SHARE_CARD_TYPE.brand.size * scale);
   const fontTagline = useFont(SHARE_CARD_TYPE.tagline.file, SHARE_CARD_TYPE.tagline.size * scale);
   const fontName = useFont(SHARE_CARD_TYPE.petName.file, SHARE_CARD_TYPE.petName.size * scale);
   const fontSubline = useFont(
@@ -134,23 +142,32 @@ export const PetHealthShareCardSkia = React.forwardRef<
     [height, scale, width],
   );
 
-  const avatarRadius = (AVATAR_SIZE / 2) * scale;
-  const avatarCenterX = width / 2;
-  const avatarCenterY =
-    HERO_PADDING_TOP * scale + 88 * scale + avatarRadius + AVATAR_BORDER * scale;
-
-  const subline = formatSubline(
-    viewModel.pet.breedLabel,
-    viewModel.pet.ageLabel,
-  );
+  const subline = shareCardPetSubline(viewModel);
 
   const bodyTop = HERO_HEIGHT * scale;
   const footerTop = height - FOOTER_HEIGHT * scale;
   const bodyHeight = footerTop - bodyTop;
   const contentWidth = width - BODY_PADDING_X * scale * 2;
+  const logoSize = LOGO_SIZE * scale;
+  const logoX = BODY_PADDING_X * scale;
+  const logoY = HEADER_TOP * scale;
+  const photoX = BODY_PADDING_X * scale;
+  const photoY = logoY + logoSize + 24 * scale;
+  const photoWidth = contentWidth;
+  const photoHeight = PET_IMAGE_HEIGHT * scale;
+  const photoRadius = PET_IMAGE_RADIUS * scale;
+  const photoClip = useMemo(
+    () =>
+      rrect(
+        rect(photoX, photoY, photoWidth, photoHeight),
+        photoRadius,
+        photoRadius,
+      ),
+    [photoHeight, photoRadius, photoWidth, photoX, photoY],
+  );
 
   const fontsReady =
-    fontKicker &&
+    fontBrand &&
     fontTagline &&
     fontName &&
     fontSubline &&
@@ -174,57 +191,63 @@ export const PetHealthShareCardSkia = React.forwardRef<
     }
 
     const introLines = wrapText(shareCardIntro(viewModel), fontIntro, contentWidth);
-    const sectionTop = bodyTop + BODY_PADDING_TOP * scale;
-    const sectionBaseline = sectionTop + fontSection.getSize() * 0.82;
-    let cursorY = sectionBaseline + SECTION_GAP * scale;
-    const introStartY = cursorY;
-    cursorY += introLines.length * INTRO_LINE_HEIGHT * scale;
-    const hasItems = viewModel.snapshot.kind === 'items';
-    const glanceTop = hasItems ? cursorY + 18 * scale : 0;
-    const firstRowTop = hasItems
-      ? glanceTop + GLANCE_ROW_HEIGHT * scale + 22 * scale
-      : cursorY + 18 * scale;
-    const itemCount =
-      viewModel.snapshot.kind === 'items' ? viewModel.snapshot.items.length : 0;
-    const rowsBottom =
-      firstRowTop + itemCount * (ROW_HEIGHT * scale + ROW_GAP * scale);
+    const highlights =
+      viewModel.snapshot.kind === 'empty'
+        ? []
+        : viewModel.highlights.slice(0, MAX_BODY_HIGHLIGHTS);
+    let contentTop = bodyTop + BODY_PADDING_TOP * scale;
+
+    const highlightsTitleBaseline =
+      highlights.length > 0
+        ? contentTop + fontSection.getSize() * 0.82
+        : null;
+    const highlightsFirstRowTop =
+      highlightsTitleBaseline != null
+        ? highlightsTitleBaseline + SECTION_GAP * scale
+        : null;
+
+    if (highlightsTitleBaseline != null && highlightsFirstRowTop != null) {
+      contentTop =
+        highlightsFirstRowTop +
+        highlights.length * (HIGHLIGHT_ROW_HEIGHT * scale + ROW_GAP * scale) +
+        28 * scale;
+    }
+
+    const careSectionBaseline = contentTop + fontSection.getSize() * 0.82;
+    const introStartY = careSectionBaseline + SECTION_GAP * scale;
+    const firstRowTop =
+      introStartY + introLines.length * INTRO_LINE_HEIGHT * scale + 32 * scale;
 
     return {
       introLines,
       introStartY,
-      sectionBaseline,
-      glanceTop,
+      careSectionBaseline,
+      highlightsTitleBaseline,
+      highlightsFirstRowTop,
+      highlights,
       firstRowTop,
-      rowsBottom,
-      hasItems,
     };
   }, [bodyTop, contentWidth, fontsReady, scale, viewModel]);
 
   const photoPending = Boolean(resolvedPhoto?.uri) && photo === null;
+  const logoPending = Boolean(resolvedLogo?.uri) && logo === null;
 
   useEffect(() => {
-    if (!fontsReady || photoPending || !layout) {
+    if (!fontsReady || photoPending || logoPending || !layout) {
       return;
     }
     onReady?.();
-  }, [fontsReady, layout, onReady, photoPending]);
+  }, [fontsReady, layout, logoPending, onReady, photoPending]);
 
   if (!fontsReady || !layout) {
     return <View style={[styles.placeholder, { width, height }]} />;
   }
 
-  const kicker = shareCardKicker();
   const tagline = shareCardTagline();
-  const kickerWidth = fontKicker.measureText(kicker).width + 48 * scale;
-  const kickerX = (width - kickerWidth) / 2;
   const taglineWidth = fontTagline.measureText(tagline).width;
   const nameWidth = fontName.measureText(viewModel.pet.name).width;
   const sublineWidth = subline ? fontSubline.measureText(subline).width : 0;
-  const nameTop =
-    avatarCenterY + avatarRadius + AVATAR_BORDER * scale + NAME_GAP * scale;
-  const nameBaseline = nameTop + fontName.getSize() * 0.82;
-  const sublineBaseline =
-    nameBaseline + fontName.getSize() * 0.2 + SUBLINE_GAP * scale;
+  const statsTop = photoY + photoHeight + 20 * scale;
   const glanceCards = glanceStats(viewModel);
   const footerCta = shareCardFooterCta();
   const footerHint = shareCardFooterHint();
@@ -244,89 +267,111 @@ export const PetHealthShareCardSkia = React.forwardRef<
         <Rect x={0} y={0} width={width} height={bodyTop} color={PALETTE.heroBase} />
         <Circle
           cx={width * 0.86}
-          cy={68 * scale}
+          cy={72 * scale}
           r={150 * scale}
           color={PALETTE.heroGlowOrange}
         />
         <Circle
           cx={width * 0.12}
-          cy={200 * scale}
-          r={120 * scale}
+          cy={280 * scale}
+          r={140 * scale}
           color={PALETTE.heroGlowMint}
         />
 
         <RoundedRect
-          x={kickerX}
-          y={34 * scale}
-          width={kickerWidth}
-          height={42 * scale}
-          r={21 * scale}
-          color={PALETTE.accent}
+          x={logoX - 6 * scale}
+          y={logoY - 6 * scale}
+          width={logoSize + 12 * scale}
+          height={logoSize + 12 * scale}
+          r={18 * scale}
+          color="rgba(255, 255, 255, 0.14)"
         />
+        {logo ? (
+          <Image
+            image={logo}
+            x={logoX}
+            y={logoY}
+            width={logoSize}
+            height={logoSize}
+            fit="cover"
+          />
+        ) : null}
         <Text
-          x={kickerX + 24 * scale}
-          y={34 * scale + 30 * scale}
-          text={kicker}
-          font={fontKicker}
+          x={logoX + logoSize + LOGO_GAP * scale}
+          y={logoY + logoSize * 0.72}
+          text={BRAND_LABEL}
+          font={fontBrand}
           color={PALETTE.white}
         />
         <Text
           x={(width - taglineWidth) / 2}
-          y={88 * scale}
+          y={photoY - 14 * scale}
           text={tagline}
           font={fontTagline}
           color={PALETTE.mint}
         />
 
-        <Circle
-          cx={avatarCenterX}
-          cy={avatarCenterY}
-          r={avatarRadius + AVATAR_BORDER * scale}
+        <RoundedRect
+          x={photoX - 4 * scale}
+          y={photoY - 4 * scale}
+          width={photoWidth + 8 * scale}
+          height={photoHeight + 8 * scale}
+          r={photoRadius + 4 * scale}
           color={PALETTE.accentSoft}
         />
-        <Circle
-          cx={avatarCenterX}
-          cy={avatarCenterY}
-          r={avatarRadius}
-          color={PALETTE.mintDeep}
-        />
-
-        {photo ? (
-          <Group
-            clip={Skia.Path.Make().addCircle(
-              avatarCenterX,
-              avatarCenterY,
-              avatarRadius,
-            )}
-          >
+        <Group clip={photoClip}>
+          {photo ? (
             <Image
               image={photo}
-              x={avatarCenterX - avatarRadius}
-              y={avatarCenterY - avatarRadius}
-              width={avatarRadius * 2}
-              height={avatarRadius * 2}
+              x={photoX}
+              y={photoY}
+              width={photoWidth}
+              height={photoHeight}
               fit="cover"
             />
-          </Group>
-        ) : null}
-
-        <Text
-          x={(width - nameWidth) / 2}
-          y={nameBaseline}
-          text={viewModel.pet.name}
-          font={fontName}
-          color={PALETTE.white}
-        />
-
-        {subline ? (
-          <Text
-            x={(width - sublineWidth) / 2}
-            y={sublineBaseline}
-            text={subline}
-            font={fontSubline}
-            color={PALETTE.mint}
+          ) : (
+            <RoundedRect
+              x={photoX}
+              y={photoY}
+              width={photoWidth}
+              height={photoHeight}
+              r={photoRadius}
+              color={PALETTE.mintDeep}
+            />
+          )}
+          <Rect
+            x={photoX}
+            y={photoY + photoHeight - 120 * scale}
+            width={photoWidth}
+            height={120 * scale}
+            color={PALETTE.photoOverlay}
           />
-        ) : null}
+          <Text
+            x={(width - nameWidth) / 2}
+            y={photoY + photoHeight - 54 * scale}
+            text={viewModel.pet.name}
+            font={fontName}
+            color={PALETTE.white}
+          />
+          {subline ? (
+            <Text
+              x={(width - sublineWidth) / 2}
+              y={photoY + photoHeight - 22 * scale}
+              text={subline}
+              font={fontSubline}
+              color={PALETTE.mint}
+            />
+          ) : null}
+        </Group>
+
+        <HeroStatsRow
+          width={width}
+          scale={scale}
+          top={statsTop}
+          cards={glanceCards}
+          fontLabel={fontGlanceLabel}
+          fontValue={fontGlanceValue}
+        />
 
         <Rect
           x={0}
@@ -336,9 +381,48 @@ export const PetHealthShareCardSkia = React.forwardRef<
           color={PALETTE.surface}
         />
 
+        {layout.highlightsTitleBaseline != null ? (
+          <>
+            <RoundedRect
+              x={BODY_PADDING_X * scale}
+              y={layout.highlightsTitleBaseline - 34 * scale}
+              width={10 * scale}
+              height={38 * scale}
+              r={5 * scale}
+              color={PALETTE.mintDeep}
+            />
+            <Text
+              x={BODY_PADDING_X * scale + 22 * scale}
+              y={layout.highlightsTitleBaseline}
+              text={shareCardHighlightsSectionTitle()}
+              font={fontSection}
+              color={PALETTE.ink}
+            />
+          </>
+        ) : null}
+
+        {layout.highlightsTitleBaseline != null &&
+        layout.highlightsFirstRowTop != null
+          ? layout.highlights.map((highlight, index) => (
+              <ShareHighlightRow
+                key={`${highlight.title}-${index}`}
+                highlight={highlight}
+                width={width}
+                rowTop={
+                  layout.highlightsFirstRowTop! +
+                  index * (HIGHLIGHT_ROW_HEIGHT * scale + ROW_GAP * scale)
+                }
+                scale={scale}
+                fontRowTitle={fontRowTitle}
+                fontRowMeta={fontRowMeta}
+                fontEmoji={fontEmoji}
+              />
+            ))
+          : null}
+
         <RoundedRect
           x={BODY_PADDING_X * scale}
-          y={layout.sectionBaseline - 34 * scale}
+          y={layout.careSectionBaseline - 34 * scale}
           width={10 * scale}
           height={38 * scale}
           r={5 * scale}
@@ -346,7 +430,7 @@ export const PetHealthShareCardSkia = React.forwardRef<
         />
         <Text
           x={BODY_PADDING_X * scale + 22 * scale}
-          y={layout.sectionBaseline}
+          y={layout.careSectionBaseline}
           text={shareCardSectionTitle()}
           font={fontSection}
           color={PALETTE.ink}
@@ -362,17 +446,6 @@ export const PetHealthShareCardSkia = React.forwardRef<
             color={PALETTE.inkSoft}
           />
         ))}
-
-        {layout.hasItems ? (
-          <GlanceRow
-            width={width}
-            scale={scale}
-            top={layout.glanceTop}
-            cards={glanceCards}
-            fontLabel={fontGlanceLabel}
-            fontValue={fontGlanceValue}
-          />
-        ) : null}
 
         {viewModel.snapshot.kind === 'items' ? (
           viewModel.snapshot.items.map((item, index) => (
@@ -455,7 +528,7 @@ export const PetHealthShareCardSkia = React.forwardRef<
 
 PetHealthShareCardSkia.displayName = 'PetHealthShareCardSkia';
 
-const GlanceRow: React.FC<{
+const HeroStatsRow: React.FC<{
   width: number;
   scale: number;
   top: number;
@@ -478,27 +551,84 @@ const GlanceRow: React.FC<{
               x={x}
               y={top}
               width={cardWidth}
-              height={GLANCE_ROW_HEIGHT * scale}
+              height={HERO_STAT_HEIGHT * scale}
               r={18 * scale}
-              color={PALETTE.surfaceAlt}
+              color="rgba(255, 255, 255, 0.12)"
             />
             <Text
               x={x + 16 * scale}
               y={top + 28 * scale}
               text={card.label}
               font={fontLabel}
-              color={PALETTE.inkMuted}
+              color={PALETTE.mint}
             />
             <Text
               x={x + 16 * scale}
-              y={top + 58 * scale}
+              y={top + 56 * scale}
               text={card.value}
               font={fontValue}
-              color={PALETTE.ink}
+              color={PALETTE.white}
             />
           </Group>
         );
       })}
+    </>
+  );
+};
+
+const ShareHighlightRow: React.FC<{
+  highlight: PetHealthCardHighlight;
+  width: number;
+  rowTop: number;
+  scale: number;
+  fontRowTitle: SkFont;
+  fontRowMeta: SkFont;
+  fontEmoji: SkFont;
+}> = ({ highlight, width, rowTop, scale, fontRowTitle, fontRowMeta, fontEmoji }) => {
+  const cardX = BODY_PADDING_X * scale;
+  const cardWidth = width - BODY_PADDING_X * scale * 2;
+  const rowHeight = HIGHLIGHT_ROW_HEIGHT * scale;
+  const iconWidth = fontEmoji.measureText(highlight.emoji).width;
+
+  return (
+    <>
+      <RoundedRect
+        x={cardX}
+        y={rowTop}
+        width={cardWidth}
+        height={rowHeight}
+        r={22 * scale}
+        color={PALETTE.surfaceCard}
+      />
+      <RoundedRect
+        x={cardX + 16 * scale}
+        y={rowTop + 14 * scale}
+        width={58 * scale}
+        height={58 * scale}
+        r={29 * scale}
+        color={PALETTE.accentSoft}
+      />
+      <Text
+        x={cardX + 16 * scale + (58 * scale - iconWidth) / 2}
+        y={rowTop + 14 * scale + 42 * scale}
+        text={highlight.emoji}
+        font={fontEmoji}
+        color={PALETTE.accentDark}
+      />
+      <Text
+        x={cardX + 92 * scale}
+        y={rowTop + 34 * scale}
+        text={highlight.title}
+        font={fontRowTitle}
+        color={PALETTE.ink}
+      />
+      <Text
+        x={cardX + 92 * scale}
+        y={rowTop + 64 * scale}
+        text={highlight.detail}
+        font={fontRowMeta}
+        color={PALETTE.inkSoft}
+      />
     </>
   );
 };
@@ -676,13 +806,6 @@ const EmptyState: React.FC<{
     </>
   );
 };
-
-function formatSubline(breed: string | null, age: string | null): string | null {
-  if (breed && age) {
-    return `${breed} · ${age}`;
-  }
-  return breed ?? age ?? null;
-}
 
 function centerTextX(text: string, font: SkFont, width: number): number {
   return (width - font.measureText(text).width) / 2;

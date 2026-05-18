@@ -5,7 +5,7 @@ describe('CreateReminderEntry', () => {
     petId: 'p1',
     title: ' Test ',
     type: 'other' as const,
-    date: '2026-01-01',
+    date: '2030-01-01',
     time: '10:00',
     repeatEnabled: false,
   };

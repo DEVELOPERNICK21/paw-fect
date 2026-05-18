@@ -11,6 +11,7 @@ jest.mock('@notifee/react-native', () => {
       displayNotification: jest.fn(async () => 'mock-id'),
       getTriggerNotifications: jest.fn(async () => []),
       onBackgroundEvent: jest.fn(() => noop),
+      setNotificationCategories: jest.fn(() => Promise.resolve()),
       onForegroundEvent: jest.fn(() => noop),
       getInitialNotification: jest.fn(async () => null),
     },

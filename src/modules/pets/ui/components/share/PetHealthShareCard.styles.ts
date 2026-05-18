@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 
 export const SHARE_CARD_WIDTH = 1080;
-export const SHARE_CARD_HEIGHT = 1350;
+export const SHARE_CARD_HEIGHT = 1920;
 
 const HERO_GREEN = '#1a3a2a';
 const HERO_BORDER = '#4caf82';

@@ -23,6 +23,7 @@ import { MaterialIcon } from '../../../shared/components/MaterialIcon';
 import { useTheme } from '../../../shared/hooks/useTheme';
 import type { Theme } from '../../../shared/hooks/useTheme';
 import { icons } from '../../../shared/assets/icons';
+import { resolvePetAvatarSource } from '../../../shared/utils/petDisplayPhoto';
 
 export { TAB_BAR_VISUAL_HEIGHT as APP_TAB_BAR_HEIGHT } from '../layout';
 
@@ -34,14 +35,12 @@ const BAR_ROW_MIN_HEIGHT = 56;
 const ORBIT_AVATAR = 52;
 const ORBIT_ITEM_WIDTH = 76;
 
-const DEFAULT_PET_PHOTO_URI =
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuBTjI_FvulIIoJ18XpSIFocjA8fpzab0a4wQoqoigyYdaaJu9-ejR25ixQ2yFX6DVC1P-mzS0rAiIakDqbxX5LGdE0DWkYnYtpIxTgGc4Jyl0WbK2XEsp-jNAw9IUkBT_scs8_GotU6SyC81FS6h7rWgfhYACVrVI1vQpUS76pgAm3E7Ndcuubyf0UWWRj-UDGGtUNpLJyDXtLY7-SVYO_3-XMutK67MzPnT0o_QnAG8_FiMxX44sexZnAbMMEC-G6Cj-8y0VAgtMSD';
-
 type TabIconName =
   | 'home'
   | 'monitor_heart'
   | 'stethoscope'
   | 'notifications'
+  | 'analytics'
   | 'schedule'
   | 'settings';
 
@@ -293,7 +292,7 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
         navigation.navigate('HealthTab', { screen: 'HealthRecords' });
         break;
       case 'NotificationsTab':
-        navigation.navigate('NotificationsTab', { screen: 'NotificationInbox' });
+        navigation.navigate('NotificationsTab', { screen: 'WellnessHub' });
         break;
       case 'SettingsTab':
         navigation.navigate('SettingsTab', { screen: 'Settings' });
@@ -514,9 +513,9 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
 
         <View style={styles.side}>
           <TabSlot
-            label="Notifications"
-            accessibilityLabel="Notifications"
-            icon="notifications"
+            label="Wellness"
+            accessibilityLabel="Wellness"
+            icon="analytics"
             active={currentKey === 'notifications'}
             onPress={() => jumpToTabRoot('NotificationsTab')}
             fontFamilies={fontFamilies}
@@ -663,7 +662,7 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
               inputRange: [0, 1],
               outputRange: [0, 1],
             });
-            const uri = pet.photo?.trim() ? pet.photo : DEFAULT_PET_PHOTO_URI;
+            const avatarSource = resolvePetAvatarSource(pet);
             return (
               <Animated.View
                 key={pet.id}
@@ -694,7 +693,7 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
                     ]}
                   >
                     <Image
-                      source={{ uri }}
+                      source={avatarSource}
                       style={radialStyles.avatarImg}
                       accessibilityIgnoresInvertColors
                     />

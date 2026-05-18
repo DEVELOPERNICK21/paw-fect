@@ -1,4 +1,6 @@
+import { ensureNotificationsReady } from '../../infrastructure/notifications/notificationDiagnostics';
 import { notificationService } from '../../infrastructure/notifications/notificationService';
+import { syncAllSmartHealthDueNotifications } from '../../infrastructure/notifications/smartHealthNotificationSchedule';
 import { createHealthRecordRepository } from './data/repositories/HealthRecordRepositoryImpl';
 import { createSmartHealthRecordRepository } from './data/repositories/SmartHealthRecordRepositoryImpl';
 import { BootstrapSmartHealthSchedule } from './domain/usecases/BootstrapSmartHealthSchedule';
@@ -13,6 +15,7 @@ import { SkipSmartHealthRecord } from './domain/usecases/SkipSmartHealthRecord';
 
 const healthRecordRepository = createHealthRecordRepository();
 const smartHealthRepository = createSmartHealthRecordRepository();
+const getSmartHealthRecords = new GetSmartHealthRecords(smartHealthRepository);
 
 export const recordsComposition = {
   getRecords: new GetRecords(healthRecordRepository),
@@ -22,11 +25,26 @@ export const recordsComposition = {
   bootstrapSmartHealthSchedule: new BootstrapSmartHealthSchedule(
     smartHealthRepository,
   ),
-  getSmartHealthRecords: new GetSmartHealthRecords(smartHealthRepository),
+  getSmartHealthRecords,
   markSmartHealthRecordDone: new MarkSmartHealthRecordDone(smartHealthRepository),
   rescheduleSmartHealthRecord: new RescheduleSmartHealthRecord(
     smartHealthRepository,
   ),
   skipSmartHealthRecord: new SkipSmartHealthRecord(smartHealthRepository),
   notificationService,
+  syncDueNotificationsForPets: async (
+    userId: string,
+    petIds: string[],
+  ): Promise<void> => {
+    const granted = await ensureNotificationsReady();
+    if (!granted) {
+      return;
+    }
+    const records = (
+      await Promise.all(
+        petIds.map(petId => getSmartHealthRecords.execute(userId, petId)),
+      )
+    ).flat();
+    await syncAllSmartHealthDueNotifications(records, notificationService);
+  },
 } as const;

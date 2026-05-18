@@ -1,8 +1,10 @@
-import React from 'react';
-import { Animated, Pressable, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ImageSourcePropType } from 'react-native';
+import { Animated, Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../../../../../shared/components/AppText';
 import { Button } from '../../../../../shared/components/Button';
+import { MaterialIcon } from '../../../../../shared/components/MaterialIcon';
 import { icons } from '../../../../../shared/assets/icons';
 import type { Pet } from '../../../domain/models/Pet';
 import type { Theme } from '../../../../../shared/hooks/useTheme';
@@ -10,17 +12,18 @@ import type { Theme } from '../../../../../shared/hooks/useTheme';
 import { useTheme } from '../../../../../shared/hooks/useTheme';
 import { spacing as spacingTokens } from '../../../../../shared/theme/spacing';
 import { radius as radiusTokens } from '../../../../../shared/theme/radius';
-import { useCallback, useRef } from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import { colors } from '../../../../../shared/theme/colors';
+import { resolvePetAvatarSource } from '../../../../../shared/utils/petDisplayPhoto';
 
 export interface PetProfileHeroCardProps {
   pet: Pet;
-  photoUri: string;
+  photoSource: ImageSourcePropType;
   breedLabel: string;
   ageLine: string;
   locationLine?: string;
   onPressEdit: () => void;
+  onPressShare?: () => void;
 }
 
 const BreedPill: React.FC<{ label: string; theme: Theme }> = React.memo(
@@ -71,7 +74,22 @@ const BreedPill: React.FC<{ label: string; theme: Theme }> = React.memo(
 BreedPill.displayName = 'BreedPill';
 
 export const PetProfileHeroCard: React.FC<PetProfileHeroCardProps> = React.memo(
-  ({ pet, photoUri, breedLabel, ageLine, locationLine, onPressEdit }) => {
+  ({ pet, photoSource, breedLabel, ageLine, locationLine, onPressEdit, onPressShare }) => {
+    const bundledOnly = useMemo(
+      () => resolvePetAvatarSource({ type: pet.type, photo: null }),
+      [pet.type],
+    );
+    const [displaySource, setDisplaySource] =
+      useState<ImageSourcePropType>(photoSource);
+
+    useEffect(() => {
+      setDisplaySource(photoSource);
+    }, [photoSource]);
+
+    const onHeroImageError = useCallback(() => {
+      setDisplaySource(bundledOnly);
+    }, [bundledOnly]);
+
     const theme = useTheme();
     const {
       colors,
@@ -81,16 +99,12 @@ export const PetProfileHeroCard: React.FC<PetProfileHeroCardProps> = React.memo(
       fontFamilies,
       shadows: thShadows,
     } = theme;
-    const heroHeight = spacing['6xl'] * 7.1;
+    const heroHeight = Math.round(spacing['6xl'] * 7.1);
 
     const glow = useRef(new Animated.Value(0)).current;
     const glowOpacity = glow.interpolate({
       inputRange: [0, 1],
       outputRange: [0, 1],
-    });
-    const photoScale = glow.interpolate({
-      inputRange: [0, 1],
-      outputRange: [1, 1.02],
     });
 
     const handlePressIn = useCallback(() => {
@@ -125,39 +139,60 @@ export const PetProfileHeroCard: React.FC<PetProfileHeroCardProps> = React.memo(
             },
           ]}
         >
-          <Animated.Image
-            source={{ uri: photoUri }}
-            style={[
-              styles.heroImage,
-              {
-                transform: [{ scale: photoScale }],
-              },
-            ]}
-            resizeMode="cover"
-          />
+          <View style={styles.heroImage} collapsable={false}>
+            <Image
+              source={displaySource}
+              style={styles.heroImageInner}
+              resizeMode="cover"
+              fadeDuration={0}
+              onError={onHeroImageError}
+            />
+          </View>
+          {/*
+           * Keep scrim only at the bottom so the photo stays sharp; heavy full-card
+           * shadow + dark gradient was reading as “blurry” on Android.
+           */}
           <LinearGradient
             colors={[
-              'rgba(0,0,0,0)', // top transparent
-              'rgba(0,0,0,0.15)',
-              'rgba(0,0,0,0.35)',
-              'rgba(0,0,0,0.65)', // bottom dark
+              'rgba(0,0,0,0)',
+              'rgba(0,0,0,0.08)',
+              'rgba(0,0,0,0.32)',
             ]}
-            locations={[0, 0.4, 0.7, 1]}
+            locations={[0, 0.5, 1]}
             style={styles.bottomGradient}
+            pointerEvents="none"
           />
           <Animated.View
             pointerEvents="none"
             style={[
               styles.glowOverlay,
-              thShadows.lg,
               {
                 backgroundColor: colors.brandTint20,
                 borderColor: colors.accent,
                 opacity: glowOpacity,
-                shadowColor: colors.accent,
               },
             ]}
           />
+
+          {onPressShare ? (
+            <Pressable
+              onPress={onPressShare}
+              accessibilityRole="button"
+              accessibilityLabel="Share health card"
+              style={[
+                styles.shareFab,
+                thShadows.sm,
+                {
+                  top: spacing.md,
+                  right: spacing.md,
+                  backgroundColor: colors.surface,
+                  borderColor: colors.borderSubtle,
+                },
+              ]}
+            >
+              <MaterialIcon name="share" size={20} color={colors.primary} />
+            </Pressable>
+          ) : null}
 
           <View
             style={[
@@ -229,6 +264,11 @@ const styles = StyleSheet.create({
   heroImage: {
     ...StyleSheet.absoluteFillObject,
   },
+  heroImageInner: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+  },
   scrim: {
     ...StyleSheet.absoluteFillObject,
   },
@@ -242,6 +282,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'column',
     justifyContent: 'space-between',
+    zIndex: 2,
   },
   top: {
     alignItems: 'center',
@@ -285,6 +326,16 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: '55%', // critical — don’t cover full image
+    height: '28%',
+  },
+  shareFab: {
+    position: 'absolute',
+    zIndex: 3,
+    width: spacingTokens['4xl'],
+    height: spacingTokens['4xl'],
+    borderRadius: radiusTokens.round,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

@@ -13,6 +13,7 @@ import {
   subscribeNotificationNavigation,
 } from '../../infrastructure/notifications/notificationBootstrap';
 import { notificationService } from '../../infrastructure/notifications/notificationService';
+import { resyncAllLocalNotifications } from '../../infrastructure/notifications/resyncLocalNotifications';
 import '../../modules/app/application/registerAppSessionPortSync';
 import { appOrchestrator } from '../../modules/app/appComposition';
 import { registerNotificationFeedSync } from '../../modules/notifications/bootstrap/registerNotificationFeedSync';
@@ -49,9 +50,6 @@ export const RootNavigator: React.FC = () => {
   const userId = useAuthStore(state => state.user?.id);
   const { settings, loadSettings } = useSettingsStore();
   const loadPets = usePetStore(state => state.loadPets);
-  const resyncDailyRoutineNotifications = usePetStore(
-    state => state.resyncDailyRoutineNotifications,
-  );
   const pets = usePetStore(state => state.pets);
   const petsLoading = usePetStore(state => state.loading);
   const resetPets = usePetStore(state => state.reset);
@@ -111,12 +109,12 @@ export const RootNavigator: React.FC = () => {
     void (async () => {
       try {
         await bootstrapLocalNotifications();
-        await resyncDailyRoutineNotifications();
+        await resyncAllLocalNotifications();
       } catch {
         // noop
       }
     })();
-  }, [bootstrapped, resyncDailyRoutineNotifications]);
+  }, [bootstrapped]);
 
   useEffect(() => {
     if (!bootstrapped) {
@@ -144,12 +142,18 @@ export const RootNavigator: React.FC = () => {
           useAuthStore.getState().user?.id
         ) {
           void useSubscriptionStore.getState().refreshBootstrap();
+          void loadReminders();
+          void resyncAllLocalNotifications();
         }
         void processPasswordResetQueue();
       }
     });
     return () => sub.remove();
-  }, [processPasswordResetQueue, refreshProfile]);
+  }, [
+    loadReminders,
+    processPasswordResetQueue,
+    refreshProfile,
+  ]);
 
   useEffect(() => {
     if (!isSessionReady) {
@@ -189,14 +193,17 @@ export const RootNavigator: React.FC = () => {
       return;
     }
 
-    void appOrchestrator.syncAuthenticatedDataStores({
-      resetPets,
-      resetReminders,
-      resetRecords,
-      loadPets,
-      loadReminders,
-      loadRecords,
-    });
+    void (async () => {
+      await appOrchestrator.syncAuthenticatedDataStores({
+        resetPets,
+        resetReminders,
+        resetRecords,
+        loadPets,
+        loadReminders,
+        loadRecords,
+      });
+      await resyncAllLocalNotifications();
+    })();
 
     return () => {
       appOrchestrator.stopHomeDashboardObservation();

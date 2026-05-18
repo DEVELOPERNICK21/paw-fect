@@ -22,6 +22,7 @@ import type {
   NotificationService,
 } from './notificationService';
 import { emitNotificationFeedEvent } from './notificationFeedEvents';
+import { useSettingsStore } from '../../modules/settings/store/settingsStore';
 
 function channelIdForPayload(data?: Record<string, string>): string {
   if (data?.reminderId != null && data.reminderId.length > 0) {
@@ -30,7 +31,7 @@ function channelIdForPayload(data?: Record<string, string>): string {
   if (data?.kind === 'dailyRoutine') {
     return PAWFECT_CHANNEL_ROUTINES;
   }
-  if (data?.kind === 'loginWelcome') {
+  if (data?.kind === 'loginWelcome' || data?.kind === 'notificationTest') {
     return PAWFECT_CHANNEL_GENERAL;
   }
   return PAWFECT_CHANNEL_CARE;
@@ -57,6 +58,12 @@ const androidBrandedAppearance = {
 
 export class NotifeeNotificationService implements NotificationService {
   async scheduleNotification(payload: NotificationPayload): Promise<void> {
+    const notificationsEnabled =
+      useSettingsStore.getState().settings?.notificationsEnabled ?? true;
+    if (!notificationsEnabled) {
+      return;
+    }
+
     const ts = payload.scheduledDate.getTime();
     const isRepeatingDaily = payload.repeat === 'daily';
     const isRepeatingWeekly = payload.repeat === 'weekly';
@@ -88,6 +95,12 @@ export class NotifeeNotificationService implements NotificationService {
       trigger.repeatFrequency = RepeatFrequency.WEEKLY;
     }
 
+    const androidActions =
+      payload.actions?.map(action => ({
+        title: action.title,
+        pressAction: { id: action.pressActionId },
+      })) ?? [];
+
     try {
       await notifee.cancelNotification(payload.id);
       await notifee.createTriggerNotification(
@@ -104,9 +117,15 @@ export class NotifeeNotificationService implements NotificationService {
               id: 'default',
               launchActivity: 'default',
             },
+            ...(androidActions.length > 0 ? { actions: androidActions } : {}),
           },
           ios: {
             sound: 'default',
+            ...(payload.actions != null && payload.actions.length > 0
+              ? {
+                  categoryId: 'care_schedule',
+                }
+              : {}),
           },
         },
         trigger,
@@ -116,7 +135,11 @@ export class NotifeeNotificationService implements NotificationService {
     } catch (error) {
       if (__DEV__) {
         // eslint-disable-next-line no-console
-        console.warn('[NotifeeNotificationService] schedule failed', error);
+        console.warn('[NotifeeNotificationService] schedule failed', {
+          id: payload.id,
+          scheduledDate: payload.scheduledDate.toISOString(),
+          error,
+        });
       }
     }
   }
@@ -124,6 +147,12 @@ export class NotifeeNotificationService implements NotificationService {
   async displayImmediateNotification(
     payload: ImmediateNotificationPayload,
   ): Promise<void> {
+    const notificationsEnabled =
+      useSettingsStore.getState().settings?.notificationsEnabled ?? true;
+    if (!notificationsEnabled) {
+      return;
+    }
+
     const data = normalizeData(payload.data);
     const channelId = channelIdForPayload(data);
     try {

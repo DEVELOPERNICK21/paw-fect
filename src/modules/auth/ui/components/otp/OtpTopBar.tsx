@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 
-import { OTP_COLORS } from '../../screens/OtpScreen.styles';
+import { useTheme } from '../../../../../shared/hooks/useTheme';
 import { MaterialIcon } from '../../../../../shared/components/MaterialIcon';
 
 type OtpTopBarProps = {
@@ -9,6 +9,26 @@ type OtpTopBarProps = {
 };
 
 export const OtpTopBar: React.FC<OtpTopBarProps> = ({ onBack }) => {
+  const { colors, radius, shadows, spacing } = useTheme();
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        backButton: {
+          width: 52,
+          height: 52,
+          borderRadius: radius.lg + spacing.xs,
+          borderWidth: 1,
+          borderColor: colors.borderSubtle,
+          backgroundColor: colors.surface,
+          alignItems: 'center',
+          justifyContent: 'center',
+          ...shadows.md,
+        },
+      }),
+    [colors.borderSubtle, colors.surface, radius.lg, shadows.md, spacing.xs],
+  );
+
   return (
     <Pressable
       onPress={onBack}
@@ -19,28 +39,10 @@ export const OtpTopBar: React.FC<OtpTopBarProps> = ({ onBack }) => {
       <MaterialIcon
         name="arrow_back"
         size={26}
-        color={OTP_COLORS.onSurface}
+        color={colors.text.heading}
       />
     </Pressable>
   );
 };
-
-const styles = StyleSheet.create({
-  backButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: OTP_COLORS.outline,
-    backgroundColor: OTP_COLORS.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 4,
-  },
-});
 
 export default OtpTopBar;

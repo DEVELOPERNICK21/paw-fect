@@ -8,9 +8,12 @@ import type {
 } from '../domain/models/SmartHealthRecord';
 import type { MilestoneShareKind } from '../domain/utils/isMilestoneCompletion';
 import { isMilestoneCompletion } from '../domain/utils/isMilestoneCompletion';
-import { getTodayIsoDateLocal } from '../../../shared/utils/calendarDate';
 import { smartHealthSelectors } from './smartHealthSelectors';
 import { recordsComposition } from '../recordsComposition';
+import {
+  cancelSmartHealthNotificationsForRecord,
+  syncAllSmartHealthDueNotifications,
+} from '../../../infrastructure/notifications/smartHealthNotificationSchedule';
 
 const STORE_ACTION_TIMEOUT_MS = 15000;
 
@@ -71,85 +74,11 @@ function requireUserId(): string | null {
   return getAppSessionUserId();
 }
 
-function smartHealthNotificationIds(recordId: string): [string, string, string] {
-  const base = `health-${recordId}`;
-  return [`${base}-d2`, `${base}-due`, `${base}-overdue`];
-}
-
-async function cancelSmartHealthNotifications(recordId: string): Promise<void> {
-  for (const id of smartHealthNotificationIds(recordId)) {
-    await recordsComposition.notificationService.cancelNotification(id);
-  }
-}
-
-async function scheduleDueNotifications(record: SmartHealthRecord): Promise<void> {
-  if (record.status === 'completed' || record.status === 'skipped') {
-    return;
-  }
-  const baseId = `health-${record.id}`;
-  const dueDate = new Date(`${record.dueDate}T12:00:00.000Z`);
-
-  const twoDaysBefore = new Date(dueDate);
-  twoDaysBefore.setUTCDate(twoDaysBefore.getUTCDate() - 2);
-
-  const overdueDate = new Date(dueDate);
-  overdueDate.setUTCDate(overdueDate.getUTCDate() + 1);
-
-  const isOverdueContext = getTodayIsoDateLocal() > record.dueDate;
-
-  await recordsComposition.notificationService.scheduleNotification({
-    id: `${baseId}-d2`,
-    title: `${record.name} due soon`,
-    body: `${record.name} is due in 2 days. Tap to open health records.`,
-    scheduledDate: twoDaysBefore,
-    data: {
-      recordId: record.id,
-      type: String(record.type),
-      kind: 'smartHealth',
-    },
-  });
-  await recordsComposition.notificationService.scheduleNotification({
-    id: `${baseId}-due`,
-    title: `${record.name} is due today`,
-    body: `Please complete this health task today.`,
-    scheduledDate: dueDate,
-    data: {
-      recordId: record.id,
-      type: String(record.type),
-      kind: 'smartHealth',
-    },
-  });
-  await recordsComposition.notificationService.scheduleNotification({
-    id: `${baseId}-overdue`,
-    title: `${record.name} is overdue`,
-    body: isOverdueContext
-      ? `This dose was missed — open the app to get back on track.`
-      : `This health task is now overdue.`,
-    scheduledDate: overdueDate,
-    data: {
-      recordId: record.id,
-      type: String(record.type),
-      kind: 'smartHealth',
-    },
-  });
-}
-
-function getSchedulableRecords(records: SmartHealthRecord[]): SmartHealthRecord[] {
-  return records.filter(
-    record =>
-      record.status !== 'completed' &&
-      record.status !== 'skipped' &&
-      (record.status === 'upcoming' ||
-        record.status === 'overdue' ||
-        record.status === 'locked' ||
-        record.status === 'missed'),
-  );
-}
-
 async function refreshDueNotifications(records: SmartHealthRecord[]): Promise<void> {
-  for (const item of getSchedulableRecords(records).slice(0, 12)) {
-    await scheduleDueNotifications(item);
-  }
+  await syncAllSmartHealthDueNotifications(
+    records,
+    recordsComposition.notificationService,
+  );
 }
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
@@ -253,7 +182,10 @@ export const useSmartHealthRecordStore = create<SmartHealthRecordState>(
       if (!record) return;
       set({ loading: true, error: null });
       try {
-        await cancelSmartHealthNotifications(recordId);
+        await cancelSmartHealthNotificationsForRecord(
+          recordId,
+          recordsComposition.notificationService,
+        );
         await withTimeout(
           recordsComposition.markSmartHealthRecordDone.execute(
             record,
@@ -309,7 +241,10 @@ export const useSmartHealthRecordStore = create<SmartHealthRecordState>(
       if (!record) return;
       set({ loading: true, error: null });
       try {
-        await cancelSmartHealthNotifications(recordId);
+        await cancelSmartHealthNotificationsForRecord(
+          recordId,
+          recordsComposition.notificationService,
+        );
         await withTimeout(
           recordsComposition.skipSmartHealthRecord.execute(
             record,
@@ -344,7 +279,10 @@ export const useSmartHealthRecordStore = create<SmartHealthRecordState>(
       if (!record) return;
       set({ loading: true, error: null });
       try {
-        await cancelSmartHealthNotifications(recordId);
+        await cancelSmartHealthNotificationsForRecord(
+          recordId,
+          recordsComposition.notificationService,
+        );
         await withTimeout(
           recordsComposition.rescheduleSmartHealthRecord.execute(
             record,

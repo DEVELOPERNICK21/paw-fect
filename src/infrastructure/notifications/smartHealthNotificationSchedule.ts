@@ -1,0 +1,134 @@
+import type { SmartHealthRecord } from '../../modules/records/domain/models/SmartHealthRecord';
+import { getTodayIsoDateLocal } from '../../shared/utils/calendarDate';
+import type { NotificationService } from './notificationService';
+
+const MAX_SCHEDULED_RECORDS = 12;
+const DUE_HOUR = 9;
+const DUE_MINUTE = 0;
+
+export function smartHealthNotificationIds(
+  recordId: string,
+): [string, string, string] {
+  const base = `health-${recordId}`;
+  return [`${base}-d2`, `${base}-due`, `${base}-overdue`];
+}
+
+export function localDateOnCalendarDay(
+  ymd: string,
+  hour: number,
+  minute: number,
+): Date {
+  const parts = ymd.split('-').map(Number);
+  if (parts.length !== 3 || parts.some(n => Number.isNaN(n))) {
+    return new Date(Number.NaN);
+  }
+  const [y, mo, d] = parts;
+  return new Date(y, mo - 1, d, hour, minute, 0, 0);
+}
+
+export async function cancelSmartHealthNotificationsForRecord(
+  recordId: string,
+  service: NotificationService,
+): Promise<void> {
+  for (const id of smartHealthNotificationIds(recordId)) {
+    await service.cancelNotification(id);
+  }
+}
+
+export async function scheduleSmartHealthDueNotifications(
+  record: SmartHealthRecord,
+  service: NotificationService,
+): Promise<void> {
+  if (record.status === 'completed' || record.status === 'skipped') {
+    await cancelSmartHealthNotificationsForRecord(record.id, service);
+    return;
+  }
+
+  await cancelSmartHealthNotificationsForRecord(record.id, service);
+
+  const dueDate = localDateOnCalendarDay(record.dueDate, DUE_HOUR, DUE_MINUTE);
+  const twoDaysBefore = new Date(dueDate);
+  twoDaysBefore.setDate(twoDaysBefore.getDate() - 2);
+
+  const overdueDate = new Date(dueDate);
+  overdueDate.setDate(overdueDate.getDate() + 1);
+
+  const isOverdueContext = getTodayIsoDateLocal() > record.dueDate;
+  const data: Record<string, string> = {
+    recordId: record.id,
+    type: String(record.type),
+    kind: 'smartHealth',
+  };
+
+  const [idD2, idDue, idOverdue] = smartHealthNotificationIds(record.id);
+  const slots: Array<{
+    id: string;
+    title: string;
+    body: string;
+    scheduledDate: Date;
+  }> = [
+    {
+      id: idD2,
+      title: `${record.name} due soon`,
+      body: `${record.name} is due in 2 days. Tap to open health records.`,
+      scheduledDate: twoDaysBefore,
+    },
+    {
+      id: idDue,
+      title: `${record.name} is due today`,
+      body: 'Please complete this health task today.',
+      scheduledDate: dueDate,
+    },
+    {
+      id: idOverdue,
+      title: `${record.name} is overdue`,
+      body: isOverdueContext
+        ? 'This dose was missed — open the app to get back on track.'
+        : 'This health task is now overdue.',
+      scheduledDate: overdueDate,
+    },
+  ];
+
+  for (const slot of slots) {
+    if (slot.scheduledDate.getTime() <= Date.now() + 1500) {
+      continue;
+    }
+    await service.scheduleNotification({
+      id: slot.id,
+      title: slot.title,
+      body: slot.body,
+      scheduledDate: slot.scheduledDate,
+      data,
+    });
+  }
+}
+
+function getSchedulableRecords(records: SmartHealthRecord[]): SmartHealthRecord[] {
+  return records.filter(
+    record =>
+      record.status !== 'completed' &&
+      record.status !== 'skipped' &&
+      (record.status === 'upcoming' ||
+        record.status === 'overdue' ||
+        record.status === 'locked' ||
+        record.status === 'missed'),
+  );
+}
+
+export async function syncAllSmartHealthDueNotifications(
+  records: SmartHealthRecord[],
+  service: NotificationService,
+): Promise<void> {
+  const schedulable = getSchedulableRecords(records);
+  const schedulableIds = new Set(schedulable.map(record => record.id));
+
+  for (const record of records) {
+    if (!schedulableIds.has(record.id)) {
+      await cancelSmartHealthNotificationsForRecord(record.id, service);
+    }
+  }
+
+  for (const record of schedulable.slice(0, MAX_SCHEDULED_RECORDS)) {
+    await scheduleSmartHealthDueNotifications(record, service);
+  }
+}

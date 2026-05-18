@@ -10,35 +10,7 @@ export const defaultSiteContent = (): SiteContentMarketing => ({
     "Works offline",
     "India-first",
   ],
-  testimonials: [
-    {
-      id: "1",
-      name: "Priya S.",
-      petName: "Max",
-      species: "Dog",
-      quote:
-        "Max got his Rabies booster on exactly the right day. Pawfect sent me a reminder 5 days before and again on the day. My vet was impressed we had the records ready.",
-      stars: 5,
-    },
-    {
-      id: "2",
-      name: "Arjun M.",
-      petName: "Milo",
-      species: "Cat",
-      quote:
-        "The deworming timeline caught up with Milo's outdoor habits. I used to guess dates — now I just follow the app.",
-      stars: 5,
-    },
-    {
-      id: "3",
-      name: "Neha K.",
-      petName: "Bruno",
-      species: "Dog",
-      quote:
-        "Offline mode saved me at the clinic with no signal. Synced everything when I got home.",
-      stars: 5,
-    },
-  ],
+  testimonials: [],
   pricingFaqs: [
     {
       id: "1",

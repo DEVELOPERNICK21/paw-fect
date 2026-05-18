@@ -22,6 +22,13 @@ import {
 } from '@react-native-google-signin/google-signin';
 import { getGoogleWebClientId } from '../../../../shared/constants/authConfig';
 
+/** Shown when Android OAuth client / SHA-1 does not match (common for Play App Signing). */
+const GOOGLE_ANDROID_SIGNING_SETUP_MESSAGE =
+  'Google Sign-In failed: this build’s signing certificate is not registered in Firebase. ' +
+  'For apps from the Play Store, open Play Console → Release → App integrity → App signing key certificate, ' +
+  'copy SHA-1 and SHA-256, then Firebase Console → Project settings → Your apps → Android (app.pawfect) → Add fingerprint. ' +
+  'Add your upload keystore SHA-1 too for testing release builds locally. Download google-services.json into android/app/ and rebuild.';
+
 interface AuthResponse {
   user: User;
   token: string;
@@ -73,7 +80,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   private toAuthError(error: unknown, fallbackMessage: string): AuthError {
-    const code = (error as { code?: string })?.code ?? '';
+    const rawCode = (error as { code?: string | number })?.code;
+    const code = rawCode != null ? String(rawCode) : '';
     const message = (error as { message?: string })?.message ?? fallbackMessage;
     const loweredMessage = message.toLowerCase();
 
@@ -132,16 +140,19 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     ) {
       return new AuthError('configuration', message);
     }
-    // Android Google Sign-In: ApiException DEVELOPER_ERROR (10) — wrong package / SHA-1 / OAuth client
-    if (
+    // Android Google Sign-In: ApiException DEVELOPER_ERROR (10) — package / SHA-1 / OAuth client (Play App Signing SHA-1 is often missing)
+    const looksLikeAndroidOAuthMismatch =
       code === '10' ||
       loweredMessage.includes('developer_error') ||
-      loweredMessage.includes('12501')
-    ) {
-      return new AuthError(
-        'configuration',
-        'Google Sign-In setup mismatch. In Firebase, add the correct SHA-1 (and SHA-256) for this build’s signing key under the Android app app.pawfect, download google-services.json, rebuild, and reinstall.',
-      );
+      loweredMessage.includes('de_pr') ||
+      loweredMessage.includes('apiexception') && loweredMessage.includes(' 10') ||
+      loweredMessage.includes('12501') ||
+      loweredMessage.includes('sign_in_failed') ||
+      loweredMessage.includes('sha-1') ||
+      loweredMessage.includes('sha1');
+
+    if (looksLikeAndroidOAuthMismatch) {
+      return new AuthError('configuration', GOOGLE_ANDROID_SIGNING_SETUP_MESSAGE);
     }
     return new AuthError('unknown', fallbackMessage);
   }

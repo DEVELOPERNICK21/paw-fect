@@ -27,6 +27,8 @@ yarn-error.log*
 
 # local env files
 .env*.local
+# Filled copy for Vercel "Import .env" (never commit secrets)
+.env.vercel
 
 # vercel
 .vercel

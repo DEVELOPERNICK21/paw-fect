@@ -12,12 +12,15 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import type { NotificationsStackParamList } from '../../../../app/navigation/types';
+import { useAppTabBarInset } from '../../../../app/navigation/layout';
 import { AppText } from '../../../../shared/components/AppText';
 import { DatePickerField } from '../../../../shared/components/DatePickerField';
+import { TimePickerField } from '../../../../shared/components/TimePickerField';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
 import { useTheme, type Theme } from '../../../../shared/hooks/useTheme';
 import { useReminderStore } from '../../store/reminderStore';
 import { usePetStore } from '../../../pets/store/petStore';
+import { resolvePetAvatarSource } from '../../../../shared/utils/petDisplayPhoto';
 
 function pad2(n: number): string {
   return String(n).padStart(2, '0');
@@ -34,7 +37,7 @@ const createStyles = ({
 }: Pick<Theme, 'colors' | 'spacing' | 'radius'>) =>
   StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: colors.backgroundAlt },
-    scrollContent: { paddingBottom: spacing['2xl'] },
+    scrollContent: {},
     header: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -68,24 +71,27 @@ const createStyles = ({
       paddingTop: spacing.md,
       textAlignVertical: 'top',
     },
-    row: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.md },
-    half: { flex: 1 },
-    timeRow: {
-      minHeight: 48,
-      borderRadius: radius.md,
+    scheduleCard: {
+      marginTop: spacing.lg,
+      borderRadius: radius.lg,
       borderWidth: 1,
       borderColor: colors.borderSubtle,
       backgroundColor: colors.surface,
-      paddingHorizontal: spacing.md,
+      padding: spacing.md,
+      gap: spacing.md,
+    },
+    scheduleHeader: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.sm,
     },
-    timeInput: {
-      flex: 1,
-      fontSize: 16,
-      color: colors.text.heading,
-      padding: 0,
+    scheduleIconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: radius.round,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.brandTint10,
     },
     petRow: {
       flexDirection: 'row',
@@ -144,6 +150,7 @@ export const AddReminderScreen: React.FC = () => {
     >();
   const theme = useTheme();
   const { colors, spacing, textStyles, fontFamilies, radius } = theme;
+  const tabBarInset = useAppTabBarInset();
   const { createReminderEntry, loading } = useReminderStore();
   const { pets, activePet, loadPets } = usePetStore();
 
@@ -214,6 +221,7 @@ export const AddReminderScreen: React.FC = () => {
           {
             paddingHorizontal: spacing.lg,
             paddingTop: spacing.sm,
+            paddingBottom: tabBarInset + spacing.lg,
           },
         ]}
         keyboardShouldPersistTaps="handled"
@@ -300,46 +308,55 @@ export const AddReminderScreen: React.FC = () => {
               />
             </View>
 
-            <View style={styles.row}>
-              <View style={styles.half}>
+            <View style={styles.scheduleCard}>
+              <View style={styles.scheduleHeader}>
+                <View style={styles.scheduleIconWrap}>
+                  <MaterialIcon name="event" size={18} color={colors.accent} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <AppText
+                    style={[
+                      textStyles.body,
+                      { color: colors.text.heading, fontFamily: fontFamilies.bold },
+                    ]}
+                  >
+                    When
+                  </AppText>
+                  <AppText
+                    style={[
+                      textStyles.caption,
+                      { color: colors.text.secondary, marginTop: 2 },
+                    ]}
+                  >
+                    Pick the day and time for this reminder.
+                  </AppText>
+                </View>
+              </View>
+
+              <View>
                 <AppText
                   style={[
                     textStyles.footer,
                     styles.fieldLabel,
-                    {
-                      color: colors.text.body,
-                      fontFamily: fontFamilies.semibold,
-                    },
+                    { color: colors.text.body, fontFamily: fontFamilies.semibold },
                   ]}
                 >
                   Date
                 </AppText>
                 <DatePickerField value={date} onChange={setDate} />
               </View>
-              <View style={styles.half}>
+
+              <View>
                 <AppText
                   style={[
                     textStyles.footer,
                     styles.fieldLabel,
-                    {
-                      color: colors.text.body,
-                      fontFamily: fontFamilies.semibold,
-                    },
+                    { color: colors.text.body, fontFamily: fontFamilies.semibold },
                   ]}
                 >
                   Time
                 </AppText>
-                <View style={styles.timeRow}>
-                  <TextInput
-                    value={time}
-                    onChangeText={setTime}
-                    placeholder="09:00"
-                    placeholderTextColor={colors.input.placeholder}
-                    style={[styles.timeInput, { fontFamily: fontFamilies.regular }]}
-                    accessibilityLabel="Time"
-                  />
-                  <MaterialIcon name="schedule" size={20} color={colors.accent} />
-                </View>
+                <TimePickerField value={time} onChange={setTime} />
               </View>
             </View>
 
@@ -379,14 +396,10 @@ export const AddReminderScreen: React.FC = () => {
                         accessibilityRole="radio"
                         accessibilityState={{ selected }}
                       >
-                        {pet.photo ? (
-                          <Image
-                            source={{ uri: pet.photo }}
-                            style={styles.petAvatar}
-                          />
-                        ) : (
-                          <MaterialIcon name="pets" size={22} color={colors.accent} />
-                        )}
+                        <Image
+                          source={resolvePetAvatarSource(pet)}
+                          style={styles.petAvatar}
+                        />
                         <AppText
                           style={[
                             textStyles.footer,
@@ -410,7 +423,8 @@ export const AddReminderScreen: React.FC = () => {
               <AppText
                 style={[textStyles.caption, { color: colors.text.secondary, flex: 1 }]}
               >
-                We&apos;ll notify you before this time so nothing slips through.
+                We&apos;ll notify you the day before, an hour before, and at the
+                scheduled time.
               </AppText>
             </View>
 

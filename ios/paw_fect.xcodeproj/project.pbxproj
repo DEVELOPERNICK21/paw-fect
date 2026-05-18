@@ -11,6 +11,9 @@
 		3BC31E7E3AC74DE6B35CAEFE /* PlusJakartaSans-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F826C11D1AA84548B307516C /* PlusJakartaSans-SemiBold.ttf */; };
 		4216F6AF49F1780103C68C87 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
+		A1WIDGET0000000000000001 /* WidgetDataModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1WIDGET0000000000000011 /* WidgetDataModule.swift */; };
+		A1WIDGET0000000000000002 /* WidgetDataModule.m in Sources */ = {isa = PBXBuildFile; fileRef = A1WIDGET0000000000000012 /* WidgetDataModule.m */; };
+		A1WIDGET0000000000000003 /* WidgetGlanceStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1WIDGET0000000000000013 /* WidgetGlanceStorage.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		84C594A388641DE9DE31D003 /* Pods_paw_fect.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 83BAB8C78F03E0D632C87895 /* Pods_paw_fect.framework */; };
 		AD4F9BC7E1574C6EABA547EA /* PlusJakartaSans-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3DACAB269A7049139966337F /* PlusJakartaSans-ExtraBold.ttf */; };
@@ -28,6 +31,10 @@
 		3DACAB269A7049139966337F /* PlusJakartaSans-ExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "PlusJakartaSans-ExtraBold.ttf"; path = "../src/shared/assets/fonts/PlusJakartaSans-ExtraBold.ttf"; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-paw_fect.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-paw_fect.release.xcconfig"; path = "Target Support Files/Pods-paw_fect/Pods-paw_fect.release.xcconfig"; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = paw_fect/AppDelegate.swift; sourceTree = "<group>"; };
+		A1WIDGET0000000000000011 /* WidgetDataModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WidgetDataModule.swift; path = paw_fect/WidgetDataModule.swift; sourceTree = "<group>"; };
+		A1WIDGET0000000000000012 /* WidgetDataModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = WidgetDataModule.m; path = paw_fect/WidgetDataModule.m; sourceTree = "<group>"; };
+		A1WIDGET0000000000000013 /* WidgetGlanceStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WidgetGlanceStorage.swift; path = paw_fect/WidgetGlanceStorage.swift; sourceTree = "<group>"; };
+		A1WIDGET0000000000000014 /* paw_fect.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = paw_fect.entitlements; path = paw_fect/paw_fect.entitlements; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = paw_fect/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		83BAB8C78F03E0D632C87895 /* Pods_paw_fect.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_paw_fect.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D4B8C2E01A5E4F12B6D70001 /* PlusJakartaSans-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "PlusJakartaSans-Bold.ttf"; path = "../src/shared/assets/fonts/PlusJakartaSans-Bold.ttf"; sourceTree = "<group>"; };
@@ -54,6 +61,10 @@
 			children = (
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				761780EC2CA45674006654EE /* AppDelegate.swift */,
+				A1WIDGET0000000000000011 /* WidgetDataModule.swift */,
+				A1WIDGET0000000000000012 /* WidgetDataModule.m */,
+				A1WIDGET0000000000000013 /* WidgetGlanceStorage.swift */,
+				A1WIDGET0000000000000014 /* paw_fect.entitlements */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */,
@@ -290,6 +301,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				761780ED2CA45674006654EE /* AppDelegate.swift in Sources */,
+				A1WIDGET0000000000000001 /* WidgetDataModule.swift in Sources */,
+				A1WIDGET0000000000000002 /* WidgetDataModule.m in Sources */,
+				A1WIDGET0000000000000003 /* WidgetGlanceStorage.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -302,6 +316,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = paw_fect/paw_fect.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = paw_fect/Info.plist;
@@ -332,6 +347,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = paw_fect/paw_fect.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = paw_fect/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;

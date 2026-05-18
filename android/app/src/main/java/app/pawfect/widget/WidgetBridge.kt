@@ -13,6 +13,8 @@ object WidgetBridge {
     val mgr = AppWidgetManager.getInstance(context)
     triggerUpdate(context, mgr, NextMilestoneWidgetProvider::class.java)
     triggerUpdate(context, mgr, UpcomingTasksWidgetProvider::class.java)
+    triggerUpdate(context, mgr, NextUpLockWidgetProvider::class.java)
+    triggerUpdate(context, mgr, CareProgressLockWidgetProvider::class.java)
   }
 
   private fun triggerUpdate(

@@ -2,6 +2,11 @@ import { Platform } from 'react-native';
 
 import { NotifeeNotificationService } from './notifeeNotificationService';
 
+export interface NotificationActionButton {
+  title: string;
+  pressActionId: string;
+}
+
 export interface NotificationPayload {
   id: string;
   title: string;
@@ -11,6 +16,8 @@ export interface NotificationPayload {
   data?: Record<string, string>;
   /** When set, OS repeats from the first fire time (Notifee repeat). */
   repeat?: 'daily' | 'weekly';
+  /** Android notification action buttons (e.g. Done / Snooze). */
+  actions?: NotificationActionButton[];
 }
 
 export interface ImmediateNotificationPayload {

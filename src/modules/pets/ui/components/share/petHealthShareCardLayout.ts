@@ -1,9 +1,10 @@
+/** 9:16 export canvas sized for Instagram Stories. */
 export const SHARE_CARD_WIDTH = 1080;
-export const SHARE_CARD_HEIGHT = 1350;
+export const SHARE_CARD_HEIGHT = 1920;
 
 export const SHARE_CARD_RADIUS = 32;
-export const HERO_HEIGHT = 500;
-export const FOOTER_HEIGHT = 220;
+export const HERO_HEIGHT = 900;
+export const FOOTER_HEIGHT = 232;
 
 export const PALETTE = {
   heroBase: '#0B2820',
@@ -26,6 +27,7 @@ export const PALETTE = {
   divider: 'rgba(15, 26, 20, 0.08)',
   footerInk: '#F4F8F5',
   footerMuted: '#B8C8BE',
+  photoOverlay: 'rgba(11, 40, 32, 0.42)',
 };
 
 export const CHIP_DUE_BG = '#FFF1DF';
@@ -35,21 +37,26 @@ export const CHIP_DONE_FG = '#1A5E30';
 export const CHIP_OVERDUE_BG = '#FFE4E4';
 export const CHIP_OVERDUE_FG = '#8A1A1A';
 
-export const AVATAR_SIZE = 132;
-export const AVATAR_BORDER = 5;
-export const HERO_PADDING_TOP = 34;
-export const NAME_GAP = 16;
-export const SUBLINE_GAP = 28;
+export const HEADER_TOP = 36;
+export const LOGO_SIZE = 68;
+export const LOGO_GAP = 16;
+export const PET_IMAGE_HEIGHT = 500;
+export const PET_IMAGE_RADIUS = 28;
+export const NAME_GAP = 18;
+export const SUBLINE_GAP = 24;
+export const HERO_STAT_HEIGHT = 72;
 
 export const BODY_PADDING_X = 56;
 export const BODY_PADDING_TOP = 40;
-export const SECTION_GAP = 20;
-export const ROW_GAP = 18;
+export const SECTION_GAP = 22;
+export const ROW_GAP = 22;
 export const ROW_HEIGHT = 118;
-export const INTRO_LINE_HEIGHT = 36;
-export const GLANCE_ROW_HEIGHT = 78;
+export const HIGHLIGHT_ROW_HEIGHT = 88;
+export const INTRO_LINE_HEIGHT = 38;
+export const MAX_BODY_HIGHLIGHTS = 1;
 
-export const PREVIEW_WIDTH = 320;
-export const PREVIEW_HEIGHT = Math.round(
-  (PREVIEW_WIDTH * SHARE_CARD_HEIGHT) / SHARE_CARD_WIDTH,
+export const PREVIEW_MAX_HEIGHT = 460;
+export const PREVIEW_WIDTH = Math.round(
+  (PREVIEW_MAX_HEIGHT * SHARE_CARD_WIDTH) / SHARE_CARD_HEIGHT,
 );
+export const PREVIEW_HEIGHT = PREVIEW_MAX_HEIGHT;

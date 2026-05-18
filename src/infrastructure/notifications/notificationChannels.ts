@@ -22,7 +22,7 @@ export async function ensureNotificationChannels(): Promise<void> {
   await notifee.createChannel({
     id: PAWFECT_CHANNEL_REMINDERS,
     name: 'Reminders',
-    importance: AndroidImportance.DEFAULT,
+    importance: AndroidImportance.HIGH,
     sound: 'default',
     vibration: true,
   });

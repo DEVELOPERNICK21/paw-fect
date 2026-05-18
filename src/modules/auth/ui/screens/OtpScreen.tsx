@@ -16,7 +16,7 @@ import { useTheme } from '../../../../shared/hooks/useTheme';
 import { OtpTopBar } from '../components/otp/OtpTopBar';
 import { OtpBrandBadge } from '../components/otp/OtpBrandBadge';
 import { OtpDigitRow } from '../components/otp/OtpDigitRow';
-import { OTP_COLORS, otpScreenStyles as styles } from './OtpScreen.styles';
+import { createOtpScreenStyles } from './OtpScreen.styles';
 import { Button } from '../../../../shared/components/Button';
 import { AppText } from '../../../../shared/components/AppText';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
@@ -28,7 +28,12 @@ export const OtpScreen: React.FC = () => {
   const navigation = useNavigation<OtpNavigation>();
   const route = useRoute<OtpRoute>();
   const insets = useSafeAreaInsets();
-  const { fontFamilies } = useTheme();
+  const theme = useTheme();
+  const { fontFamilies, colors } = theme;
+  const styles = useMemo(
+    () => createOtpScreenStyles(theme),
+    [theme.themeMode, theme.selectedThemeMode],
+  );
   const verifyOtp = useAuthStore(state => state.verifyOtp);
   const resendOtp = useAuthStore(state => state.resendOtp);
   const authError = useAuthStore(state => state.authError);
@@ -186,7 +191,7 @@ export const OtpScreen: React.FC = () => {
                   <MaterialIcon
                     name="schedule"
                     size={16}
-                    color={OTP_COLORS.primary}
+                    color={colors.primary}
                   />
                 </View>
                 <AppText

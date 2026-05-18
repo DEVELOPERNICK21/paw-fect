@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import {
+  Alert,
   Image,
   Pressable,
   ScrollView,
@@ -15,15 +16,14 @@ import type {
   NotificationsStackParamList,
   ReminderDetailRootNavigation,
 } from '../../../../app/navigation/types';
+import { useAppTabBarInset } from '../../../../app/navigation/layout';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
 import { useTheme, type Theme } from '../../../../shared/hooks/useTheme';
 import type { ReminderRepeat, ReminderType } from '../../domain/models/Reminder';
 import { useReminderStore } from '../../store/reminderStore';
 import { usePetStore } from '../../../pets/store/petStore';
 import type { IconName } from '../../../../shared/components/MaterialIcon';
-
-const DEFAULT_PHOTO =
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuC4T6eRhkiOZPdpl07V4Q5wV6jkL73WtWv865dXMyC_LCdabfyMBnA8nnqKlwaTaYc50w-uH9jISkn0g-6VvT56t7XBnhl52Ct3dbrR3vTG-iGgXJJx_Y2gFyQ8KeIGu5rUE15weemEnWXOx3hqCKErqV3LyJohqMty6zhbH7qADyNlF9wUQP3zJLFNLA_AD1trh9WTvCYqxJ7uGYynvNdH7J87Ev23nr_6D9Vwf98Iq1qSSatYWugX9k9DCaSG27gv6bi_SK4Unvn0';
+import { resolvePetAvatarSource } from '../../../../shared/utils/petDisplayPhoto';
 
 const TYPE_ICON: Record<ReminderType, IconName> = {
   vaccination: 'vaccines',
@@ -44,7 +44,7 @@ const REPEAT_LABEL: Record<ReminderRepeat, string> = {
 const createStyles = ({ colors }: Pick<Theme, 'colors'>) =>
   StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: colors.backgroundAlt },
-    content: { minHeight: 884, paddingBottom: 30 },
+    content: { paddingBottom: 24 },
     header: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -181,7 +181,7 @@ const createStyles = ({ colors }: Pick<Theme, 'colors'>) =>
       height: 56,
       borderRadius: 12,
       borderWidth: 2,
-      borderColor: colors.border,
+      borderColor: colors.danger + '55',
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
@@ -189,7 +189,7 @@ const createStyles = ({ colors }: Pick<Theme, 'colors'>) =>
       backgroundColor: colors.backgroundAlt,
     },
     secondaryText: {
-      color: colors.text.secondary,
+      color: colors.danger,
       fontSize: 16,
       lineHeight: 24,
     },
@@ -219,14 +219,16 @@ export const ReminderDetailScreen: React.FC = () => {
   const route =
     useRoute<RouteProp<NotificationsStackParamList, 'ReminderDetail'>>();
   const { fontFamilies, colors } = useTheme();
-  const { reminders, deleteReminder } = useReminderStore();
+  const tabBarInset = useAppTabBarInset();
+  const { reminders, deleteReminder, loadReminders } = useReminderStore();
   const { pets, loadPets } = usePetStore();
 
   const styles = useMemo(() => createStyles({ colors }), [colors]);
 
   useEffect(() => {
     loadPets().catch(() => {});
-  }, [loadPets]);
+    loadReminders().catch(() => {});
+  }, [loadPets, loadReminders]);
 
   const reminder = useMemo(
     () => reminders.find(item => item.id === route.params.reminderId),
@@ -237,14 +239,34 @@ export const ReminderDetailScreen: React.FC = () => {
     [pets, reminder?.petId],
   );
 
-  const handleDelete = async () => {
+  const confirmDelete = useCallback(async () => {
     if (!reminder) {
       navigation.goBack();
       return;
     }
     await deleteReminder(reminder.id);
     navigation.navigate('ReminderList');
-  };
+  }, [deleteReminder, navigation, reminder]);
+
+  const handleDelete = useCallback(() => {
+    if (!reminder) {
+      return;
+    }
+    Alert.alert(
+      'Delete reminder?',
+      `Remove "${reminder.title}"? Scheduled alerts will be cancelled.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            void confirmDelete();
+          },
+        },
+      ],
+    );
+  }, [confirmDelete, reminder]);
 
   if (!reminder) {
     return (
@@ -269,9 +291,12 @@ export const ReminderDetailScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: tabBarInset + 24 },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
@@ -294,7 +319,10 @@ export const ReminderDetailScreen: React.FC = () => {
         <View style={styles.hero}>
           <View style={styles.photoWrap}>
             <Image
-              source={{ uri: pet?.photo ?? DEFAULT_PHOTO }}
+              source={resolvePetAvatarSource({
+                type: pet?.type ?? 'dog',
+                photo: pet?.photo,
+              })}
               style={styles.photo}
             />
             <View style={styles.typeBadge}>
@@ -442,7 +470,7 @@ export const ReminderDetailScreen: React.FC = () => {
             </Text>
           </Pressable>
           <Pressable style={styles.secondaryBtn} onPress={handleDelete}>
-            <MaterialIcon name="delete" size={18} color={colors.text.body} />
+            <MaterialIcon name="delete" size={18} color={colors.danger} />
             <Text
               style={[styles.secondaryText, { fontFamily: fontFamilies.bold }]}
             >

@@ -5,9 +5,7 @@ import type { Pet } from '../../../../pets/domain/models/Pet';
 import { AppText } from '../../../../../shared/components/AppText';
 import type { Theme } from '../../../../../shared/hooks/useTheme';
 import { lineHeights } from '../../../../../shared/theme/typography';
-
-const DEFAULT_AVATAR_URI =
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuBTjI_FvulIIoJ18XpSIFocjA8fpzab0a4wQoqoigyYdaaJu9-ejR25ixQ2yFX6DVC1P-mzS0rAiIakDqbxX5LGdE0DWkYnYtpIxTgGc4Jyl0WbK2XEsp-jNAw9IUkBT_scs8_GotU6SyC81FS6h7rWgfhYACVrVI1vQpUS76pgAm3E7Ndcuubyf0UWWRj-UDGGtUNpLJyDXtLY7-SVYO_3-XMutK67MzPnT0o_QnAG8_FiMxX44sexZnAbMMEC-G6Cj-8y0VAgtMSD';
+import { resolvePetAvatarSource } from '../../../../../shared/utils/petDisplayPhoto';
 
 export interface HomePetSummaryCardProps {
   pet: Pet;
@@ -29,7 +27,7 @@ export const HomePetSummaryCard: React.FC<HomePetSummaryCardProps> = React.memo(
   }) => {
     const { colors, radius, spacing, textStyles, fontSizes, fontFamilies } =
       theme;
-    const uri = pet.photo?.trim() ? pet.photo : DEFAULT_AVATAR_URI;
+    const avatarSource = resolvePetAvatarSource(pet);
     const avatarSize = spacing['5xl'] + spacing['5xl'];
 
     return (
@@ -70,7 +68,7 @@ export const HomePetSummaryCard: React.FC<HomePetSummaryCardProps> = React.memo(
             }}
           >
             <Image
-              source={{ uri }}
+              source={avatarSource}
               style={[
                 styles.avatar,
                 {

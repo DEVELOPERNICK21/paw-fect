@@ -1,4 +1,10 @@
 declare module '@notifee/react-native' {
+  export enum AndroidNotificationSetting {
+    NOT_SUPPORTED = -1,
+    DISABLED = 0,
+    ENABLED = 1,
+  }
+
   export const AndroidImportance: {
     readonly DEFAULT: number;
     readonly HIGH: number;
@@ -30,6 +36,15 @@ declare module '@notifee/react-native' {
     PROVISIONAL = 2,
   }
 
+  export interface AndroidNotificationSettings {
+    alarm: AndroidNotificationSetting;
+  }
+
+  export interface NotificationSettings {
+    authorizationStatus: AuthorizationStatus;
+    android: AndroidNotificationSettings;
+  }
+
   export interface TimestampTrigger {
     type: number;
     timestamp: number;
@@ -54,10 +69,17 @@ declare module '@notifee/react-native' {
         id: string;
         launchActivity?: string;
       };
+      actions?: NotificationAction[];
     };
     ios?: {
       sound?: string;
+      categoryId?: string;
     };
+  }
+
+  export interface NotificationAction {
+    title: string;
+    pressAction: { id: string };
   }
 
   export interface EventDetail {
@@ -66,6 +88,9 @@ declare module '@notifee/react-native' {
       title?: string;
       body?: string;
       data?: Record<string, string>;
+    };
+    pressAction?: {
+      id?: string;
     };
   }
 
@@ -82,7 +107,9 @@ declare module '@notifee/react-native' {
       sound?: string;
       vibration?: boolean;
     }): Promise<string>;
-    requestPermission(): Promise<{ authorizationStatus: AuthorizationStatus }>;
+    requestPermission(): Promise<NotificationSettings>;
+    getNotificationSettings(): Promise<NotificationSettings>;
+    openAlarmPermissionSettings(): Promise<void>;
     cancelNotification(id: string): Promise<void>;
     cancelAllNotifications(): Promise<void>;
     displayNotification(request: NotificationRequest): Promise<string>;
@@ -103,6 +130,16 @@ declare module '@notifee/react-native' {
     getInitialNotification(): Promise<{
       notification?: { data?: Record<string, string> };
     } | null>;
+    setNotificationCategories(
+      categories: Array<{
+        id: string;
+        actions: Array<{
+          id: string;
+          title: string;
+          foreground?: boolean;
+        }>;
+      }>,
+    ): Promise<void>;
   }
 
   const notifee: Module;

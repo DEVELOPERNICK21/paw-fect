@@ -72,6 +72,10 @@ describe('BuildPetHealthCardViewModel', () => {
     expect(vm.pet.name).toBe('Bruno');
     expect(vm.pet.breedLabel).toBe('Golden Retriever');
     expect(vm.pet.ageLabel).toBe('2 yrs 4 mo');
+    expect(vm.pet.speciesLabel).toBe('Dog');
+    expect(vm.pet.genderLabel).toBeNull();
+    expect(vm.highlights.length).toBeGreaterThan(0);
+    expect(vm.glance.length).toBeGreaterThan(0);
     expect(vm.snapshot.kind).toBe('items');
     if (vm.snapshot.kind !== 'items') throw new Error();
     expect(vm.snapshot.items).toHaveLength(3);

@@ -353,7 +353,10 @@ export const AddHealthDetailsScreen: React.FC = () => {
 
           {error ? (
             <Text
-              style={[styles.errorText, { fontFamily: fontFamilies.regular }]}
+              style={[
+                styles.errorText,
+                { fontFamily: fontFamilies.regular, color: colors.danger },
+              ]}
             >
               {error}
             </Text>
@@ -431,7 +434,6 @@ const styles = StyleSheet.create({
   unitChipText: { fontSize: 13, lineHeight: 18 },
   errorText: {
     marginTop: 6,
-    color: '#EF4444' as string,
     fontSize: 13,
     lineHeight: 18,
   },

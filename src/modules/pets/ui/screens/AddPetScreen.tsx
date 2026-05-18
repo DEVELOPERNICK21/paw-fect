@@ -19,7 +19,6 @@ import Svg, { Path } from 'react-native-svg';
 
 import type { PetsStackParamList } from '../../../../app/navigation/types';
 import { validateLastDewormingDate } from '../../../records/domain/utils/DewormingEngine';
-import { useSmartHealthRecordStore } from '../../../records/store/smartHealthRecordStore';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { usePetStore } from '../../store/petStore';
 import type {
@@ -52,13 +51,13 @@ export {};
 interface IconProps {
   kind: IconKind;
   size?: number;
-  color?: string;
+  color: string;
 }
 
 const MaterialIcon: React.FC<IconProps> = ({
   kind,
   size = 20,
-  color = '#0F172A',
+  color,
 }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24">
     <Path d={ICON_PATHS[kind]} fill={color} />
@@ -73,6 +72,7 @@ export const AddPetScreen: React.FC = () => {
   const isEditMode = petId != null && petId.length > 0;
 
   const { colors, fontFamilies } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const createPetProfile = usePetStore(s => s.createPetProfile);
   const updatePet = usePetStore(s => s.updatePet);
 
@@ -150,52 +150,25 @@ export const AddPetScreen: React.FC = () => {
         setLifestyleType(pet.lifestyle?.type ?? 'indoor');
         setLifestyleRiskLevel(pet.lifestyle?.riskLevel ?? 'low');
         setRegion(pet.region ?? 'OTHER');
-        void useSmartHealthRecordStore
+        void usePetStore
           .getState()
-          .loadPetRecords(pet.id)
-          .then(() => {
+          .getLastHealthMilestones(pet.id)
+          .then(milestones => {
             if (cancelled) return;
-            const dewormDone = useSmartHealthRecordStore
-              .getState()
-              .records.filter(
-                r =>
-                  r.petId === pet.id &&
-                  r.type === 'deworming' &&
-                  r.status === 'completed',
-              )
-              .sort((a, b) => b.dueDate.localeCompare(a.dueDate));
-            if (dewormDone.length > 0) {
+            if (milestones.lastDewormingDate) {
               setHasPreviousDeworming(true);
               setLastDewormingUnknown(false);
-              setLastDewormingDate(dewormDone[0]?.dueDate ?? '');
+              setLastDewormingDate(milestones.lastDewormingDate);
             }
-            const vaccinationDone = useSmartHealthRecordStore
-              .getState()
-              .records.filter(
-                r =>
-                  r.petId === pet.id &&
-                  r.type === 'vaccination' &&
-                  r.status === 'completed',
-              )
-              .sort((a, b) =>
-                (b.completedDate ?? b.dueDate).localeCompare(a.completedDate ?? a.dueDate),
-              );
-            if (vaccinationDone.length > 0) {
+            if (milestones.lastVaccinationDate) {
               setHasPreviousVaccination(true);
               setLastVaccinationUnknown(false);
-              setLastVaccinationDate(
-                vaccinationDone[0]?.completedDate ?? vaccinationDone[0]?.dueDate ?? '',
-              );
+              setLastVaccinationDate(milestones.lastVaccinationDate);
             }
-            const rabiesDone = vaccinationDone.filter(
-              r => r.family?.toLowerCase() === 'rabies',
-            );
-            if (rabiesDone.length > 0) {
+            if (milestones.lastRabiesDate) {
               setHasPreviousRabies(true);
               setLastRabiesUnknown(false);
-              setLastRabiesDate(
-                rabiesDone[0]?.completedDate ?? rabiesDone[0]?.dueDate ?? '',
-              );
+              setLastRabiesDate(milestones.lastRabiesDate);
             }
           });
         setInitLoading(false);
@@ -442,6 +415,10 @@ export const AddPetScreen: React.FC = () => {
           : undefined,
     });
     if (!result.success) {
+      if (result.error === 'PET_LIMIT') {
+        navigation.navigate('Paywall', { source: 'pet_limit' });
+        return;
+      }
       setError(toFriendlyAddPetError(result.error));
       return;
     }
@@ -507,7 +484,10 @@ export const AddPetScreen: React.FC = () => {
 
         <View style={styles.avatarSection}>
           <View
-            style={[styles.profileImageWrap, { backgroundColor: '#FFF5EB' }]}
+            style={[
+              styles.profileImageWrap,
+              { backgroundColor: colors.brandTint5 },
+            ]}
           >
             {petType === 'dog' ? (
               <icons.dogIcon width={80} height={80} />
@@ -892,7 +872,11 @@ export const AddPetScreen: React.FC = () => {
                     </Text>
                     {selected ? (
                       <View style={styles.checkBadge}>
-                        <MaterialIcon kind="check" size={12} color="#FFFFFF" />
+                        <MaterialIcon
+                          kind="check"
+                          size={12}
+                          color={colors.text.inverse}
+                        />
                       </View>
                     ) : null}
                   </Pressable>
@@ -1133,10 +1117,11 @@ export const AddPetScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
+  StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F8F7F6',
+    backgroundColor: colors.backgroundAlt,
     marginBottom: spacing['6xl'],
   },
   initCenter: {
@@ -1154,7 +1139,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 8,
-    backgroundColor: '#F8F7F6',
+    backgroundColor: colors.backgroundAlt,
   },
   headerIconButton: {
     width: 48,
@@ -1169,7 +1154,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 24,
     letterSpacing: -0.27,
-    color: '#0F172A',
+    color: colors.text.heading,
     paddingRight: 48,
   },
   headerRightSpacer: {
@@ -1186,14 +1171,14 @@ const styles = StyleSheet.create({
     height: 128,
     borderRadius: 64,
     borderWidth: 4,
-    borderColor: 'rgba(238, 140, 43, 0.2)',
+    borderColor: colors.brandTint20,
     overflow: 'visible',
     alignItems: 'center',
     justifyContent: 'center',
   },
   petTypeDisplayText: {
     fontSize: 36,
-    color: '#EE8C2B',
+    color: colors.accent,
   },
   profileImage: {
     width: 120,
@@ -1211,9 +1196,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#F8F7F6',
-    backgroundColor: '#EE8C2B',
-    shadowColor: '#000',
+    borderColor: colors.backgroundAlt,
+    backgroundColor: colors.accent,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -1223,7 +1208,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     lineHeight: 28,
     letterSpacing: -0.33,
-    color: '#0F172A',
+    color: colors.text.heading,
   },
   uploadSubtitle: {
     fontSize: 16,
@@ -1238,31 +1223,31 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 16,
     lineHeight: 24,
-    color: '#0F172A',
+    color: colors.text.heading,
     marginBottom: 8,
   },
   fieldLabelSm: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#0F172A',
+    color: colors.text.heading,
     marginBottom: 8,
   },
   textInput: {
     height: 56,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.borderSubtle,
+    backgroundColor: colors.surface,
     paddingHorizontal: 15,
     fontSize: 16,
     lineHeight: 24,
-    color: '#0F172A',
+    color: colors.text.heading,
   },
   sectionLabel: {
     fontSize: 18,
     lineHeight: 24,
     letterSpacing: -0.27,
-    color: '#0F172A',
+    color: colors.text.heading,
     marginBottom: 16,
   },
   genderRow: { flexDirection: 'row', gap: 10, marginTop: 10, flexWrap: 'wrap' },
@@ -1271,12 +1256,12 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.borderSubtle,
+    backgroundColor: colors.surface,
   },
-  genderChipSelected: { backgroundColor: '#EE8C2B', borderColor: '#EE8C2B' },
-  genderChipText: { fontSize: 14, lineHeight: 18, color: '#64748B' },
-  genderChipTextSelected: { color: '#FFFFFF' },
+  genderChipSelected: { backgroundColor: colors.accent, borderColor: colors.accent },
+  genderChipText: { fontSize: 14, lineHeight: 18, color: colors.text.secondary },
+  genderChipTextSelected: { color: colors.text.inverse },
   genderClear: { paddingTop: 10, alignSelf: 'flex-start' },
   petTypeGrid: {
     flexDirection: 'row',
@@ -1292,10 +1277,10 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
   },
   petTypeCardSelected: {
-    borderColor: '#EE8C2B',
+    borderColor: colors.accent,
   },
   petTypeImage: {
     flex: 1,
@@ -1314,7 +1299,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
     fontSize: 14,
     lineHeight: 20,
-    color: '#0F172A',
+    color: colors.text.heading,
   },
   checkBadge: {
     position: 'absolute',
@@ -1323,14 +1308,14 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#EE8C2B',
+    backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 3,
   },
   errorText: {
     marginTop: 10,
-    color: '#EF4444',
+    color: colors.danger,
     fontSize: 14,
     lineHeight: 18,
   },
@@ -1343,12 +1328,12 @@ const styles = StyleSheet.create({
   ctaButton: {
     height: 56,
     borderRadius: 12,
-    backgroundColor: '#EE8C2B',
+    backgroundColor: colors.accent,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    shadowColor: '#EE8C2B',
+    shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.2,
     shadowRadius: 12,
@@ -1358,7 +1343,7 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   ctaText: {
-    color: '#FFFFFF',
+    color: colors.text.inverse,
     fontSize: 16,
     lineHeight: 24,
   },

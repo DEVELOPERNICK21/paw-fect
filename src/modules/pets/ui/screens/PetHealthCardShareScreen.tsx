@@ -32,6 +32,7 @@ import {
   SHARE_CARD_HEIGHT,
   SHARE_CARD_WIDTH,
 } from '../components/share/petHealthShareCardLayout';
+import { PetHealthShareCardPreview } from '../components/share/PetHealthShareCardPreview';
 import { PetHealthShareCardSkia } from '../components/share/PetHealthShareCardSkia';
 
 export const PetHealthCardShareScreen: React.FC = () => {
@@ -51,7 +52,6 @@ export const PetHealthCardShareScreen: React.FC = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
   const [preparingShare, setPreparingShare] = useState(false);
-  const [previewPressed, setPreviewPressed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -181,36 +181,13 @@ export const PetHealthCardShareScreen: React.FC = () => {
               to get Paw-fect without opening the app.
             </Text>
 
-            <Pressable
-              onPressIn={() => setPreviewPressed(true)}
-              onPressOut={() => setPreviewPressed(false)}
-              style={[
-                styles.previewPressable,
-                {
-                  transform: [{ scale: previewPressed ? 0.985 : 1 }],
-                },
-              ]}
-              accessibilityRole="image"
-              accessibilityLabel="Pet health card preview"
-            >
-              <View
-                style={[
-                  styles.previewClip,
-                  {
-                    width: PREVIEW_WIDTH,
-                    height: PREVIEW_HEIGHT,
-                    borderColor: colors.borderSubtle,
-                    ...shadows.md,
-                  },
-                ]}
-              >
-                <PetHealthShareCardSkia
-                  viewModel={viewModel}
-                  width={PREVIEW_WIDTH}
-                  height={PREVIEW_HEIGHT}
-                />
-              </View>
-            </Pressable>
+            <PetHealthShareCardPreview
+              viewModel={viewModel}
+              width={PREVIEW_WIDTH}
+              height={PREVIEW_HEIGHT}
+              borderColor={colors.borderSubtle}
+              shadowStyle={shadows.md}
+            />
 
             <View
               style={[
@@ -279,19 +256,20 @@ export const PetHealthCardShareScreen: React.FC = () => {
 export default PetHealthCardShareScreen;
 
 function buildShareMessage(vm: PetHealthCardViewModel): string {
+  const prideLine = vm.highlights[0]?.detail;
   if (vm.snapshot.kind === 'empty') {
     const species =
       vm.snapshot.speciesEmoji === '🐈' ? 'cats' : 'dogs';
     return [
       `Just added ${vm.pet.name} to Paw-fect 🐾`,
-      `Auto-scheduled vaccines and deworming for ${species}.`,
+      prideLine ?? `Auto-scheduled vaccines and deworming for ${species}.`,
       `Track your pet's health: ${vm.footer.shareUrl}`,
     ].join('\n');
   }
   const next = vm.snapshot.items.find(i => i.status !== 'done');
   const nextLine = next
     ? `Next up: ${next.label} (${next.detail})`
-    : 'On track 💛';
+  : prideLine ?? 'On track 💛';
   return [
     `${vm.pet.name} on Paw-fect 🐾`,
     nextLine,
@@ -358,14 +336,6 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     textAlign: 'center',
     maxWidth: 320,
-  },
-  previewPressable: {
-    marginBottom: 28,
-  },
-  previewClip: {
-    overflow: 'hidden',
-    borderRadius: 24,
-    borderWidth: StyleSheet.hairlineWidth,
   },
   exportHost: {
     position: 'absolute',

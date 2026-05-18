@@ -9,9 +9,12 @@ import { createSmartHealthRecordRepository } from '../records/data/repositories/
 
 import { AppOrchestrator } from './application/AppOrchestrator';
 import { HomeDashboardInvalidationHub } from './application/HomeDashboardInvalidationHub';
+import type { HomeDashboardViewModel } from './domain/models/HomeDashboardViewModel';
 import { BuildHomeDashboardViewModel } from './domain/usecases/BuildHomeDashboardViewModel';
 import { ObserveHomeDashboard } from './domain/usecases/ObserveHomeDashboard';
-import { syncDeviceHomeWidgets } from '../../infrastructure/widgets/syncDeviceHomeWidgets';
+import { syncDeviceGlanceSurfaces } from '../../infrastructure/widgets/syncDeviceGlanceSurfaces';
+import { getTodayIsoDateLocal } from '../../shared/utils/calendarDate';
+import { scheduleComposition } from '../schedule/scheduleComposition';
 import {
   registerHomeDashboardRefresh,
   useHomeDashboardStore,
@@ -37,12 +40,36 @@ const observeHomeDashboard = new ObserveHomeDashboard(
 );
 
 /** Single app orchestrator: start/stop dashboard observation, explicit invalidation. */
+async function pushGlanceSurfacesForDashboard(
+  vm: HomeDashboardViewModel,
+): Promise<void> {
+  const pet = vm.activePet;
+  if (pet == null) {
+    return;
+  }
+  const userId = useAuthStore.getState().user?.id ?? null;
+  if (userId == null) {
+    syncDeviceGlanceSurfaces({ pet, viewModel: vm });
+    return;
+  }
+  const schedule = await scheduleComposition.buildDailySchedule.execute({
+    userId,
+    petId: pet.id,
+    date: getTodayIsoDateLocal(),
+  });
+  syncDeviceGlanceSurfaces({
+    pet,
+    viewModel: vm,
+    schedule: schedule ?? undefined,
+  });
+}
+
 export const appOrchestrator = new AppOrchestrator(
   observeHomeDashboard,
-  (vm) => {
+  vm => {
     useHomeDashboardStore.getState().setViewModel(vm);
     if (vm.activePet != null) {
-      syncDeviceHomeWidgets(vm, vm.activePet);
+      void pushGlanceSurfacesForDashboard(vm);
     }
   },
   homeDashboardInvalidationHub,

@@ -126,6 +126,13 @@ export const PetProfileScreen: React.FC = () => {
     navigation.navigate('HealthTab', { screen: 'HealthRecords' });
   }, [navigation]);
 
+  const goDaySchedule = useCallback(() => {
+    if (!petId) {
+      return;
+    }
+    navigation.navigate('DayView', { petId });
+  }, [navigation, petId]);
+
   const todayCare = dashboardVm?.todayCare ?? [];
   const todayCareLoading = dashboardVm == null;
 
@@ -350,24 +357,7 @@ export const PetProfileScreen: React.FC = () => {
           ageLine={ageLabel}
           locationLine={locationLine}
           onPressEdit={goEditPet}
-        />
-
-        <Button
-          title="Share health card"
-          variant="secondary"
-          onPress={goShareHealthCard}
-          disabled={!petId}
-          style={{
-            marginTop: spacingTokens.md,
-            width: '100%',
-          }}
-          textStyle={[
-            textStyles.control,
-            { fontFamily: fontFamilies.bold },
-          ]}
-          leftAccessory={
-            <MaterialIcon name="share" size={18} color={colors.primary} />
-          }
+          onPressShare={goShareHealthCard}
         />
 
         <PetProfileQuickStatsRow
@@ -549,7 +539,7 @@ export const PetProfileScreen: React.FC = () => {
         <PetProfileTodayCareSection
           items={todayCare}
           loading={todayCareLoading}
-          onPressOpenHealthSchedule={goHealthRecords}
+          onPressOpenHealthSchedule={goDaySchedule}
         />
 
         <PetProfileTipCard title={tip.title} body={tip.body} />
@@ -579,6 +569,7 @@ export const PetProfileScreen: React.FC = () => {
     ageLabel,
     locationLine,
     goEditPet,
+    goShareHealthCard,
     pets,
     setActivePet,
     goPetSwitcher,

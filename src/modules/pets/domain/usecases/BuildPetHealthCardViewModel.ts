@@ -5,6 +5,7 @@ import { resolvePetAvatarSource } from '../../../../shared/utils/petDisplayPhoto
 import type { SmartHealthRecord } from '../../../records/domain/models/SmartHealthRecord';
 import type { Pet } from '../models/Pet';
 import type {
+  PetHealthCardHighlight,
   PetHealthCardItem,
   PetHealthCardItemStatus,
   PetHealthCardSnapshot,
@@ -56,12 +57,31 @@ export class BuildPetHealthCardViewModel {
     const breedLabel =
       pet.breed && pet.breed.trim().length > 0 ? pet.breed.trim() : null;
     const ageLabel = formatPetAgeShareLabel(pet.dob, now);
+    const species = speciesMeta(pet.type);
+    const genderLabel = formatGenderShareLabel(pet.gender);
 
     const snapshot = buildSnapshot(records, pet.type, now);
+    const highlights = buildShareHighlights({
+      pet,
+      records,
+      ageLabel,
+      now,
+    });
+    const glance = highlightsToGlance(highlights);
 
     return {
-      pet: { name: pet.name, breedLabel, ageLabel, photoSource },
+      pet: {
+        name: pet.name,
+        breedLabel,
+        ageLabel,
+        photoSource,
+        speciesEmoji: species.emoji,
+        speciesLabel: species.label,
+        genderLabel,
+      },
       snapshot,
+      highlights,
+      glance,
       footer: {
         urlLabel: SHARE_URL_DISPLAY,
         brandLabel: BRAND_LABEL,
@@ -141,4 +161,103 @@ function buildUpcomingItem(
 
 function buildCompletedItem(rec: SmartHealthRecord): PetHealthCardItem {
   return { label: rec.name, status: 'done', detail: 'Done ✓' };
+}
+
+function speciesMeta(type: Pet['type']): { emoji: string; label: string } {
+  return type === 'cat'
+    ? { emoji: '🐈', label: 'Cat' }
+    : { emoji: '🐕', label: 'Dog' };
+}
+
+function formatGenderShareLabel(gender: Pet['gender']): string | null {
+  if (gender === 'male') {
+    return 'Good boy';
+  }
+  if (gender === 'female') {
+    return 'Good girl';
+  }
+  return null;
+}
+
+function buildShareHighlights(input: {
+  pet: Pet;
+  records: SmartHealthRecord[];
+  ageLabel: string | null;
+  now: Date;
+}): PetHealthCardHighlight[] {
+  const { pet, records, ageLabel, now } = input;
+  const completed = records.filter(record => record.status === 'completed');
+  const recent = pickRecentCompleted(records, now);
+  const upcoming = pickNextUpcoming(records);
+  const highlights: PetHealthCardHighlight[] = [];
+
+  if (recent[0]) {
+    highlights.push({
+      emoji: '🏆',
+      title: 'Latest win',
+      detail: `Finished ${recent[0].name}`,
+    });
+  }
+
+  if (completed.length > 0) {
+    highlights.push({
+      emoji: '✅',
+      title: 'Care logged',
+      detail: `${completed.length} health task${completed.length === 1 ? '' : 's'} done`,
+    });
+  }
+
+  if (ageLabel) {
+    highlights.push({
+      emoji: '🎂',
+      title: 'Growing up',
+      detail: ageLabel,
+    });
+  } else if (pet.breed?.trim()) {
+    highlights.push({
+      emoji: speciesMeta(pet.type).emoji,
+      title: pet.type === 'cat' ? 'My cat' : 'My dog',
+      detail: pet.breed.trim(),
+    });
+  }
+
+  if (upcoming) {
+    const next = buildUpcomingItem(upcoming, now);
+    highlights.push({
+      emoji: '📅',
+      title: 'On deck',
+      detail: `${next.label} · ${next.detail}`,
+    });
+  }
+
+  if (highlights.length === 0) {
+    return [
+      {
+        emoji: '✨',
+        title: 'New on Paw-fect',
+        detail: `${pet.name}'s care plan is loading`,
+      },
+      {
+        emoji: '💉',
+        title: 'Auto schedule',
+        detail: 'Vaccines and deworming added for you',
+      },
+      {
+        emoji: '💛',
+        title: 'Worth sharing',
+        detail: 'Show family the plan is on the way',
+      },
+    ];
+  }
+
+  return highlights.slice(0, 3);
+}
+
+function highlightsToGlance(
+  highlights: PetHealthCardHighlight[],
+): Array<{ label: string; value: string }> {
+  return highlights.slice(0, 3).map(highlight => ({
+    label: highlight.title,
+    value: highlight.detail,
+  }));
 }

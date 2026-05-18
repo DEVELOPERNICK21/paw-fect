@@ -2,7 +2,10 @@ import { Card } from "@/components/ui/Card";
 import type { Testimonial } from "@/types";
 import { Star } from "lucide-react";
 
-export function TestimonialsSection({ items }: { items: Testimonial[] }): React.ReactElement {
+export function TestimonialsSection({ items }: { items: Testimonial[] }): React.ReactElement | null {
+  if (items.length === 0) {
+    return null;
+  }
   return (
     <section className="relative overflow-hidden bg-paw-pattern py-24 dark:bg-stone-900/30 md:py-32">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

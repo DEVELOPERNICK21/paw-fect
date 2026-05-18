@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { OTP_COLORS } from '../../screens/OtpScreen.styles';
+import { useTheme } from '../../../../../shared/hooks/useTheme';
 import { AppText } from '../../../../../shared/components/AppText';
 
 type OtpDigitRowProps = {
@@ -17,6 +17,60 @@ export const OtpDigitRow: React.FC<OtpDigitRowProps> = ({
   onPress,
   fontFamilyBold,
 }) => {
+  const { colors, radius, fontSizes, shadows, spacing } = useTheme();
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        row: {
+          width: '100%',
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        },
+        box: {
+          width: spacing.xl + spacing.lg + spacing.xs,
+          height: spacing['5xl'],
+          borderRadius: radius.lg,
+          borderWidth: 1,
+          borderColor: colors.borderSubtle,
+          backgroundColor: colors.surface,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        boxActive: {
+          borderColor: colors.primary,
+          backgroundColor: colors.surface,
+          ...shadows.sm,
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: spacing.xs },
+          shadowOpacity: 0.15,
+          shadowRadius: spacing.sm,
+          elevation: 2,
+        },
+        value: {
+          fontSize: fontSizes.lg + spacing.xxs,
+          lineHeight: spacing.xl,
+        },
+        valueDigit: {
+          color: colors.text.heading,
+        },
+        valuePlaceholder: {
+          color: colors.borderSubtle,
+        },
+      }),
+    [
+      colors.borderSubtle,
+      colors.primary,
+      colors.surface,
+      colors.text.heading,
+      fontSizes.lg,
+      radius.lg,
+      shadows.sm,
+      spacing,
+    ],
+  );
+
   return (
     <Pressable style={styles.row} onPress={onPress}>
       {Array.from({ length: 6 }).map((_, index) => {
@@ -43,43 +97,5 @@ export const OtpDigitRow: React.FC<OtpDigitRowProps> = ({
     </Pressable>
   );
 };
-
-const styles = StyleSheet.create({
-  row: {
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  box: {
-    width: 42,
-    height: 56,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: OTP_COLORS.outline,
-    backgroundColor: OTP_COLORS.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  boxActive: {
-    borderColor: OTP_COLORS.primary,
-    backgroundColor: OTP_COLORS.surface,
-    shadowColor: OTP_COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  value: {
-    fontSize: 20,
-    lineHeight: 24,
-  },
-  valueDigit: {
-    color: OTP_COLORS.onSurface,
-  },
-  valuePlaceholder: {
-    color: OTP_COLORS.outline,
-  },
-});
 
 export default OtpDigitRow;

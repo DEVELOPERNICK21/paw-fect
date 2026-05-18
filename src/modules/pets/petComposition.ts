@@ -2,6 +2,7 @@
  * Composition root for the pets module: wires repository implementations to use cases.
  */
 import { useSmartHealthRecordStore } from '../records/store/smartHealthRecordStore';
+import { ensureNotificationsReady } from '../../infrastructure/notifications/notificationDiagnostics';
 import { notificationService } from '../../infrastructure/notifications/notificationService';
 import { syncDailyRoutineNotificationsForPets } from '../../infrastructure/notifications/dailyCareNotifications';
 import { createPetRepository } from './data/repositories/PetRepositoryImpl';
@@ -82,6 +83,10 @@ export const petComposition = {
   setActivePet: new SetActivePet(repository),
   createPetProfile: new CreatePetProfile(),
   syncDailyRoutineNotifications: async (pets: Pet[]): Promise<void> => {
+    const granted = await ensureNotificationsReady();
+    if (!granted) {
+      return;
+    }
     await syncDailyRoutineNotificationsForPets(
       pets.map(p => ({ id: p.id, name: p.name, type: p.type })),
       notificationService,

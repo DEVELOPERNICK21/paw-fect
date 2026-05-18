@@ -93,14 +93,24 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       }
 
       type Purchase = {
+        id?: string;
         purchaseToken?: string;
         transactionReceipt?: string;
       };
       type IapModule = {
         initConnection: () => Promise<boolean>;
-        requestSubscription: (input: {
+        requestSubscription?: (input: {
           sku: string;
           subscriptionOffers?: Array<{ sku: string; offerToken: string }>;
+        }) => Promise<Purchase>;
+        requestPurchase?: (input: {
+          request: {
+            android: {
+              skus: string[];
+              subscriptionOffers?: Array<{ sku: string; offerToken: string }>;
+            };
+          };
+          type: 'subs' | 'in-app';
         }) => Promise<Purchase>;
         finishTransaction: (params: {
           purchase: Purchase;
@@ -111,7 +121,18 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       const iap = require('react-native-iap') as IapModule;
 
       await iap.initConnection();
-      const purchase = await iap.requestSubscription({ sku: productId });
+      const purchase = iap.requestPurchase
+        ? await iap.requestPurchase({
+            request: { android: { skus: [productId] } },
+            type: 'subs',
+          })
+        : iap.requestSubscription
+          ? await iap.requestSubscription({ sku: productId })
+          : (() => {
+              throw new Error(
+                'In-app purchase module is missing purchase functions. Rebuild the app.',
+              );
+            })();
       const purchaseToken =
         purchase.purchaseToken ?? purchase.transactionReceipt ?? null;
       if (!purchaseToken) {

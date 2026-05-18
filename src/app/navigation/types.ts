@@ -36,9 +36,14 @@ export type PetsStackParamList = {
   AddHealthDetails: { kind: 'weight' | 'vaccines' | 'conditions' } | undefined;
   Paywall: PaywallRouteParams | undefined;
   PetHealthCardShare: { petId: string };
+  DayView: { petId?: string; blockId?: string } | undefined;
+  ScheduleSetup: { petId: string };
+  ScheduleWeekView: { petId: string };
+  WellnessScore: { petId: string };
 };
 
 export type NotificationsStackParamList = {
+  WellnessHub: undefined;
   NotificationInbox: undefined;
   NotificationDetail: { notificationId: string };
   ReminderList: undefined;
@@ -49,7 +54,6 @@ export type NotificationsStackParamList = {
 export type SettingsStackParamList = {
   Settings: undefined;
   UserProfile: undefined;
-  SmartSchedule: undefined;
   Paywall: PaywallRouteParams | undefined;
 };
 
@@ -83,6 +87,11 @@ export type HealthRecordsRootNavigation = CompositeNavigationProp<
 
 export type NotificationInboxRootNavigation = CompositeNavigationProp<
   NativeStackNavigationProp<NotificationsStackParamList, 'NotificationInbox'>,
+  BottomTabNavigationProp<AppTabParamList>
+>;
+
+export type WellnessHubRootNavigation = CompositeNavigationProp<
+  NativeStackNavigationProp<NotificationsStackParamList, 'WellnessHub'>,
   BottomTabNavigationProp<AppTabParamList>
 >;
 

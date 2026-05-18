@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../../../../shared/hooks/useTheme';
@@ -9,7 +9,8 @@ interface AuthTopNavProps {
 }
 
 export const AuthTopNav: React.FC<AuthTopNavProps> = ({ leftIcon, onLeftPress }) => {
-  const { fontFamilies } = useTheme();
+  const { fontFamilies, colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
     <View style={styles.topNav}>
@@ -24,7 +25,8 @@ export const AuthTopNav: React.FC<AuthTopNavProps> = ({ leftIcon, onLeftPress })
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
+  StyleSheet.create({
   topNav: {
     width: '100%',
     paddingHorizontal: 16,
@@ -41,12 +43,12 @@ const styles = StyleSheet.create({
   },
   leftIcon: {
     fontSize: 20,
-    color: '#0F172A',
+    color: colors.text.heading,
   },
   title: {
     fontSize: 17,
     lineHeight: 21,
-    color: '#0F172A',
+    color: colors.text.heading,
     letterSpacing: -0.45,
   },
 });

@@ -3,7 +3,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import type { SettingsStackParamList } from '../types';
 import SettingsScreen from '../../../modules/settings/ui/screens/SettingsScreen';
-import SmartScheduleScreen from '../../../modules/settings/ui/screens/SmartScheduleScreen';
 import UserProfileScreen from '../../../modules/settings/ui/screens/UserProfileScreen';
 import { PaywallScreen } from '../../../modules/subscription/ui/screens/PaywallScreen';
 
@@ -20,7 +19,6 @@ export const SettingsStackNavigator = React.memo(function SettingsStackNavigator
     <Stack.Navigator initialRouteName="Settings" screenOptions={stackScreenOptions}>
       <Stack.Screen name="Settings" component={SettingsScreen} />
       <Stack.Screen name="UserProfile" component={UserProfileScreen} />
-      <Stack.Screen name="SmartSchedule" component={SmartScheduleScreen} />
       <Stack.Screen name="Paywall" component={PaywallScreen} />
     </Stack.Navigator>
   );

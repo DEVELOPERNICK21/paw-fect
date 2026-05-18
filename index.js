@@ -2,11 +2,19 @@
  * @format
  */
 
-import notifee from '@notifee/react-native';
+import notifee, { EventType } from '@notifee/react-native';
 import { AppRegistry } from 'react-native';
 
-notifee.onBackgroundEvent(async () => {
-  // Cold-start taps use getInitialNotification; keep handler registered for Android.
+import { handleCareNotificationAction } from './src/infrastructure/notifications/handleCareNotificationAction';
+
+notifee.onBackgroundEvent(async event => {
+  if (event.type !== EventType.ACTION_PRESS) {
+    return;
+  }
+  await handleCareNotificationAction(
+    event.detail.pressAction?.id,
+    event.detail.notification?.data,
+  );
 });
 
 import App from './App';

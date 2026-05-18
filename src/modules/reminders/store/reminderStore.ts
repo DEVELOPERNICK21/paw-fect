@@ -5,6 +5,7 @@ import {
   type CreateReminderEntryResult,
 } from '../domain/usecases/CreateReminderEntry';
 import { remindersComposition } from '../remindersComposition';
+import { ensureNotificationsReady } from '../../../infrastructure/notifications/notificationDiagnostics';
 
 export interface ReminderState {
   reminders: Reminder[];
@@ -35,7 +36,10 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
     try {
       const reminders = await remindersComposition.getReminders.execute();
       set({ reminders, loading: false });
-      void remindersComposition.syncAllReminderNotifications(reminders).catch(() => {});
+      const granted = await ensureNotificationsReady();
+      if (granted) {
+        await remindersComposition.syncAllReminderNotifications(reminders);
+      }
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('[reminderStore] loadReminders error', error);
@@ -47,13 +51,20 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
     set({ loading: true });
     try {
       const created = await remindersComposition.createReminder.execute(reminder);
+      const scheduled =
+        await remindersComposition.scheduleReminderNotifications(created);
+      if (scheduled === 0) {
+        throw new Error(
+          'Notifications are off or blocked. Turn on alerts in Settings and allow Paw-fect in system settings.',
+        );
+      }
       const { reminders } = get();
       set({ reminders: [...reminders, created], loading: false });
-      void remindersComposition.scheduleReminderNotifications(created).catch(() => {});
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('[reminderStore] createReminder error', error);
       set({ loading: false });
+      throw error;
     }
   },
 
@@ -63,8 +74,14 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
     if (!result.ok) {
       return { success: false, error: result.errorMessage };
     }
-    await get().createReminder(result.reminder);
-    return { success: true };
+    try {
+      await get().createReminder(result.reminder);
+      return { success: true };
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unable to save reminder.';
+      return { success: false, error: message };
+    }
   },
 
   updateReminder: async (reminder: Reminder) => {
@@ -76,7 +93,10 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
         existing.id === updated.id ? updated : existing,
       );
       set({ reminders: next, loading: false });
-      void remindersComposition.scheduleReminderNotifications(updated).catch(() => {});
+      const granted = await ensureNotificationsReady();
+      if (granted) {
+        await remindersComposition.scheduleReminderNotifications(updated);
+      }
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('[reminderStore] updateReminder error', error);

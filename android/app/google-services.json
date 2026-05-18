@@ -14,6 +14,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "119015458250-2rq16ok5b1ch3aor6jl27l203r6m098s.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "app.pawfect",
+            "certificate_hash": "3aaafc57f88752ab262732f12241c7c68a023c84"
+          }
+        },
+        {
+          "client_id": "119015458250-g0duefvmm15hp776ln6ohsj6mjho6tin.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "app.pawfect",
+            "certificate_hash": "0de79486261057d7d4a7ab1ddbbee4170b6b38d9"
+          }
+        },
+        {
           "client_id": "119015458250-hdk6a9npa945c0o2qb37s9d7kq608ms9.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

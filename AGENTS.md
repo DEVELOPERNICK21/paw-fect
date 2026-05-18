@@ -109,17 +109,18 @@ UI → Store → UseCase → Repository → DataSource → Infrastructure
 **Allowed dependencies:**
 
 - UI can access: Store, Shared components
-- Store can access: UseCases, Repository interfaces
-- UseCase can access: Repository interfaces
-- Repository can access: DataSources
+- Store can access: UseCases only (via module composition / `*Composition` roots — **not** repository implementations or other feature stores)
+- UseCase can access: Repository interfaces (domain)
+- Repository implementation can access: DataSources
 - DataSource can access: Infrastructure
+- Cross-feature coordination: UseCases, `AppOrchestrator`, composition roots, and shared session ports — **not** store-to-store imports
 
 **Forbidden:**
 
 - No direct API/storage calls from UI or Store
 - No business logic in UI components
 - No React imports in Domain layer
-- No feature-to-feature dependencies
+- No feature-to-feature UI/domain coupling (no UI importing another feature’s internals)
 
 ### Feature Module Structure
 

@@ -1,5 +1,6 @@
 import type { Reminder, ReminderRepeat, ReminderType } from '../models/Reminder';
 import { createLocalId } from '../../../../shared/utils/id';
+import { isFutureReminderDateTime } from '../../../../shared/utils/reminderDateTime';
 
 interface Input {
   petId: string;
@@ -26,6 +27,12 @@ export class CreateReminderEntry {
     }
     if (!input.petId) {
       return { ok: false, errorMessage: 'Please select a pet.' };
+    }
+    if (!isFutureReminderDateTime(date, time)) {
+      return {
+        ok: false,
+        errorMessage: 'Pick a date and time in the future.',
+      };
     }
 
     const repeat: ReminderRepeat = input.repeatEnabled ? 'yearly' : 'once';

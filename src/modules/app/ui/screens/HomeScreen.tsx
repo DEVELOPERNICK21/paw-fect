@@ -14,11 +14,12 @@ import {
   type HomeQuickActionId,
   useHomeQuickActionsUsageStore,
 } from '../../store/homeQuickActionsUsageStore';
+import { useScheduleStore } from '../../../schedule/store/scheduleStore';
 import { usePetStore } from '../../../pets/store/petStore';
 
 import { HomeHeader } from '../../../../shared/components/HomeHeader';
 import { HomeAttentionBanner } from '../components/home/HomeAttentionBanner';
-import { HomeHealthSnapshotCard } from '../components/home/HomeHealthSnapshotCard';
+import { HomeTodayCarePreviewCard } from '../components/home/HomeTodayCarePreviewCard';
 import { HomeNextMilestoneWidget } from '../components/home/HomeNextMilestoneWidget';
 import { HomePetSummaryCard } from '../components/home/HomePetSummaryCard';
 import { HomePetSwitcherBar } from '../components/home/HomePetSwitcherBar';
@@ -43,11 +44,20 @@ export const HomeScreen: React.FC = () => {
   const recordQuickActionTap = useHomeQuickActionsUsageStore(s => s.recordTap);
   const quickActionCounts = useHomeQuickActionsUsageStore(s => s.counts);
 
+  const schedule = useScheduleStore(s => s.schedule);
+  const scheduleLoading = useScheduleStore(s => s.loading);
+  const loadDaySchedule = useScheduleStore(s => s.loadDaySchedule);
+
+  const activePetId = storeActivePetId ?? viewModel?.activePet?.id ?? null;
+
   useFocusEffect(
     useCallback(() => {
       void loadPets().catch(() => {});
       requestDashboardRefresh();
-    }, [loadPets, requestDashboardRefresh]),
+      if (activePetId) {
+        void loadDaySchedule(activePetId);
+      }
+    }, [activePetId, loadDaySchedule, loadPets, requestDashboardRefresh]),
   );
 
   const goPetProfile = useCallback(() => {
@@ -72,6 +82,20 @@ export const HomeScreen: React.FC = () => {
       params: { kind: 'weight' },
     });
   }, [navigation]);
+
+  const goWellness = useCallback(() => {
+    navigation.navigate('NotificationsTab', { screen: 'WellnessHub' });
+  }, [navigation]);
+
+  const goScheduleSetup = useCallback(() => {
+    if (!activePetId) {
+      return;
+    }
+    navigation.navigate('PetsTab', {
+      screen: 'ScheduleSetup',
+      params: { petId: activePetId },
+    });
+  }, [activePetId, navigation]);
 
   const goHealthRecords = useCallback(() => {
     navigation.navigate('HealthTab', { screen: 'HealthRecords' });
@@ -132,6 +156,30 @@ export const HomeScreen: React.FC = () => {
       navigation,
     ],
   );
+
+  const todayCarePreview = useMemo(() => {
+    const blocks = schedule?.blocks ?? [];
+    const nextBlock = blocks.find(block => !block.isCompleted) ?? null;
+    return {
+      completedCount: blocks.filter(block => block.isCompleted).length,
+      totalCount: blocks.length,
+      completionPercent: schedule?.completionPercent ?? 0,
+      nextBlock: nextBlock
+        ? {
+            id: nextBlock.id,
+            title: nextBlock.title,
+            scheduledTime: nextBlock.scheduledTime,
+            isCompleted: nextBlock.isCompleted,
+          }
+        : null,
+      upcomingBlocks: blocks.map(block => ({
+        id: block.id,
+        title: block.title,
+        scheduledTime: block.scheduledTime,
+        isCompleted: block.isCompleted,
+      })),
+    };
+  }, [schedule]);
 
   const showPetLoading =
     viewModel != null && viewModel.petsLoading && !viewModel.hasAnyPet;
@@ -211,6 +259,7 @@ export const HomeScreen: React.FC = () => {
                     void (async () => {
                       await setActivePet(petId);
                       requestDashboardRefresh();
+                      await loadDaySchedule(petId);
                     })();
                   }}
                   theme={theme}
@@ -233,11 +282,16 @@ export const HomeScreen: React.FC = () => {
                   onPressAction={handleQuickAction}
                   theme={theme}
                 />
-                <HomeHealthSnapshotCard
-                  weightLine={viewModel.weightLine}
-                  activityLine={viewModel.activityLine}
-                  heartLine={viewModel.heartLine}
-                  onPressLogActivity={goLogWeight}
+                <HomeTodayCarePreviewCard
+                  petName={viewModel.activePet.name}
+                  loading={scheduleLoading}
+                  completedCount={todayCarePreview.completedCount}
+                  totalCount={todayCarePreview.totalCount}
+                  completionPercent={todayCarePreview.completionPercent}
+                  nextBlock={todayCarePreview.nextBlock}
+                  upcomingBlocks={todayCarePreview.upcomingBlocks}
+                  onPressViewCare={goWellness}
+                  onPressSetup={goScheduleSetup}
                   theme={theme}
                 />
                 <UpcomingSection

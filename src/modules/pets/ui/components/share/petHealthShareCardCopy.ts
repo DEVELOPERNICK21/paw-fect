@@ -9,16 +9,37 @@ export function shareCardKicker(): string {
 }
 
 export function shareCardTagline(): string {
-  return 'A simple summary anyone can read';
+  return 'The update pet parents love to share';
 }
 
 export function shareCardSectionTitle(): string {
-  return 'What is due next';
+  return 'Care parents notice';
+}
+
+export function shareCardHighlightsSectionTitle(): string {
+  return 'Worth sharing';
+}
+
+export function shareCardPetSubline(viewModel: PetHealthCardViewModel): string | null {
+  const parts: string[] = [];
+  if (viewModel.pet.speciesLabel) {
+    parts.push(viewModel.pet.speciesLabel);
+  }
+  if (viewModel.pet.breedLabel) {
+    parts.push(viewModel.pet.breedLabel);
+  }
+  if (viewModel.pet.ageLabel) {
+    parts.push(viewModel.pet.ageLabel);
+  }
+  if (viewModel.pet.genderLabel) {
+    parts.push(viewModel.pet.genderLabel);
+  }
+  return parts.length > 0 ? parts.join(' · ') : null;
 }
 
 export function shareCardIntro(viewModel: PetHealthCardViewModel): string {
   if (viewModel.snapshot.kind === 'empty') {
-    return `Paw-fect is setting up ${viewModel.pet.name}'s vaccine and deworming schedule.`;
+    return `We are setting up ${viewModel.pet.name}'s vaccine and deworming plan in Paw-fect. Share this card when you want family to see the plan is on the way.`;
   }
 
   const overdue = viewModel.snapshot.items.find(item => item.status === 'overdue');
@@ -28,10 +49,10 @@ export function shareCardIntro(viewModel: PetHealthCardViewModel): string {
 
   const next = viewModel.snapshot.items.find(item => item.status !== 'done');
   if (next) {
-    return `These are the health tasks Paw-fect is tracking for ${viewModel.pet.name}.`;
+    return `${viewModel.pet.name}'s care is tracked in Paw-fect. Share the wins and what is coming up next.`;
   }
 
-  return `${viewModel.pet.name} is up to date. This card shows the latest care logged in Paw-fect.`;
+  return `${viewModel.pet.name} is up to date. Share the latest care wins with people who love your pet.`;
 }
 
 export function shareCardFooterCta(): string {
@@ -39,7 +60,7 @@ export function shareCardFooterCta(): string {
 }
 
 export function shareCardFooterHint(): string {
-  return 'Anyone with this card can see what care is coming up.';
+  return 'Share this card with family, friends, or your vet.';
 }
 
 export function plainTaskName(label: string): string {
@@ -98,6 +119,10 @@ export function careIcon(label: string): string {
 export function glanceStats(
   viewModel: PetHealthCardViewModel,
 ): Array<{ label: string; value: string }> {
+  if (viewModel.glance.length > 0) {
+    return viewModel.glance;
+  }
+
   if (viewModel.snapshot.kind === 'empty') {
     return [
       { label: 'Schedule', value: 'Setting up' },

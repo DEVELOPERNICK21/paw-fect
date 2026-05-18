@@ -10,24 +10,13 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { images } from '../../../../shared/assets/images';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { useSettingsStore } from '../../../settings/store/settingsStore';
 
-const ORANGE = '#EE8C2B';
-
-const STEP_1_HERO =
-  'https://www.figma.com/api/mcp/asset/ed27eaf5-f3e7-4e93-8868-78c0effb6947';
-const STEP_2_CARD_1 =
-  'https://www.figma.com/api/mcp/asset/e90d10b1-625c-4fdc-bba5-60de0b6ae438';
-const STEP_2_CARD_2 =
-  'https://www.figma.com/api/mcp/asset/b9881c0b-3e79-4f82-a40e-5fb136578461';
-const STEP_3_PET_1 =
-  'https://www.figma.com/api/mcp/asset/77395db3-bb0d-4ea2-a3eb-5ca9a2bcc87b';
-const STEP_3_PET_2 =
-  'https://www.figma.com/api/mcp/asset/0f0303b4-7047-49c4-a95e-bfe7f36953c9';
-
 export const OnboardingScreen: React.FC = () => {
   const { fontFamilies, colors, isDarkMode } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { settings, updateSettings } = useSettingsStore();
   const [step, setStep] = useState(0);
   const { height } = useWindowDimensions();
@@ -135,7 +124,7 @@ export const OnboardingScreen: React.FC = () => {
             <>
               <View style={styles.heroSection}>
                 <Image
-                  source={{ uri: STEP_1_HERO }}
+                  source={images.petHd1}
                   style={[
                     styles.heroImage,
                     { height: compact ? sv(280) : sv(320) },
@@ -247,7 +236,8 @@ export const OnboardingScreen: React.FC = () => {
               <View style={[styles.remindersRow, { marginTop: sv(12) }]}>
                 <View style={styles.reminderCard}>
                   <Image
-                    source={{ uri: STEP_2_CARD_1 }}
+                    source={images.petHd2}
+                    resizeMode="cover"
                     style={styles.reminderImage}
                   />
                   <Text
@@ -277,7 +267,8 @@ export const OnboardingScreen: React.FC = () => {
                 </View>
                 <View style={styles.reminderCard}>
                   <Image
-                    source={{ uri: STEP_2_CARD_2 }}
+                    source={images.catHd1}
+                    resizeMode="cover"
                     style={styles.reminderImage}
                   />
                   <Text
@@ -392,56 +383,54 @@ export const OnboardingScreen: React.FC = () => {
               </View>
 
               <View style={styles.petsGrid}>
-                <View
-                  style={[
-                    styles.petCard,
-                    { height: sv(150), marginBottom: sv(10), padding: sv(12) },
-                  ]}
-                >
-                  <Image
-                    source={{ uri: STEP_3_PET_1 }}
-                    style={styles.petImage}
-                  />
-                  <View style={styles.petOverlay} />
-                  <Text
-                    style={[styles.petName, { fontFamily: fontFamilies.bold }]}
-                  >
-                    Luna
-                  </Text>
-                  <Text
-                    style={[
-                      styles.petBreed,
-                      { fontFamily: fontFamilies.regular },
-                    ]}
-                  >
-                    Golden Retriever
-                  </Text>
+                <View style={[styles.petCard, { marginBottom: sv(10) }]}>
+                  <View style={styles.petImageWrap}>
+                    <Image
+                      source={images.petHd4}
+                      resizeMode="contain"
+                      style={styles.petImage}
+                    />
+                  </View>
+                  <View style={styles.petLabelWrap}>
+                    <Text
+                      style={[styles.petName, { fontFamily: fontFamilies.bold }]}
+                    >
+                      Luna
+                    </Text>
+                    <Text
+                      style={[
+                        styles.petBreed,
+                        { fontFamily: fontFamilies.regular },
+                      ]}
+                    >
+                      Golden Retriever
+                    </Text>
+                  </View>
                 </View>
 
-                <View
-                  style={[
-                    styles.petCard,
-                    { height: sv(150), marginBottom: sv(10), padding: sv(12) },
-                  ]}
-                >
-                  <Image
-                    source={{ uri: STEP_3_PET_2 }}
-                    style={styles.petImage}
-                  />
-                  <View style={styles.petOverlay} />
-                  <Text
-                    style={[styles.petName, { fontFamily: fontFamilies.bold }]}
-                  >
-                    Milo
-                  </Text>
-                  <Text
-                    style={[
-                      styles.petBreed,
-                      { fontFamily: fontFamilies.regular },
-                    ]}
-                  >
-                    Tabby Cat
-                  </Text>
+                <View style={[styles.petCard, { marginBottom: sv(10) }]}>
+                  <View style={styles.petImageWrap}>
+                    <Image
+                      source={images.catHd2}
+                      resizeMode="contain"
+                      style={styles.petImage}
+                    />
+                  </View>
+                  <View style={styles.petLabelWrap}>
+                    <Text
+                      style={[styles.petName, { fontFamily: fontFamilies.bold }]}
+                    >
+                      Milo
+                    </Text>
+                    <Text
+                      style={[
+                        styles.petBreed,
+                        { fontFamily: fontFamilies.regular },
+                      ]}
+                    >
+                      Tabby Cat
+                    </Text>
+                  </View>
                 </View>
 
                 <View
@@ -569,7 +558,8 @@ export const OnboardingScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
+  StyleSheet.create({
   safeArea: {
     flex: 1,
   },
@@ -592,12 +582,12 @@ const styles = StyleSheet.create({
   },
   navIcon: {
     fontSize: 26,
-    color: '#0F172A',
+    color: colors.text.heading,
   },
   navTitle: {
     fontSize: 18,
     lineHeight: 22,
-    color: '#0F172A',
+    color: colors.text.heading,
     letterSpacing: -0.5,
   },
   navIconSpacer: {
@@ -624,24 +614,24 @@ const styles = StyleSheet.create({
   progressTitle: {
     fontSize: 13,
     lineHeight: 19,
-    color: '#0F172A',
+    color: colors.text.heading,
   },
   progressCount: {
     fontSize: 13,
     lineHeight: 19,
-    color: ORANGE,
+    color: colors.accent,
     letterSpacing: 0.7,
     textTransform: 'uppercase',
   },
   progressTrack: {
     height: 8,
     borderRadius: 999,
-    backgroundColor: 'rgba(238, 140, 43, 0.1)',
+    backgroundColor: colors.brandTint10,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: ORANGE,
+    backgroundColor: colors.accent,
     borderRadius: 999,
   },
   progressFillTwoThirds: {
@@ -667,18 +657,18 @@ const styles = StyleSheet.create({
   step1Title: {
     fontSize: 34,
     lineHeight: 38,
-    color: '#0F172A',
+    color: colors.text.heading,
     letterSpacing: -0.9,
     textAlign: 'center',
   },
   step1TitleAccent: {
-    color: ORANGE,
+    color: colors.accent,
   },
   stepDescription: {
     marginTop: 16,
     fontSize: 16,
     lineHeight: 24,
-    color: '#475569',
+    color: colors.text.body,
     textAlign: 'center',
   },
   step1FeaturesRow: {
@@ -695,9 +685,9 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 72,
     borderRadius: 16,
-    backgroundColor: 'rgba(238, 140, 43, 0.12)',
+    backgroundColor: colors.brandTint12,
     borderWidth: 1,
-    borderColor: 'rgba(238, 140, 43, 0.25)',
+    borderColor: colors.brandTint20,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -708,12 +698,12 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 14,
     lineHeight: 20,
-    color: '#0F172A',
+    color: colors.text.heading,
   },
   step2Title: {
     fontSize: 28,
     lineHeight: 34,
-    color: '#0F172A',
+    color: colors.text.heading,
     letterSpacing: -0.75,
     textAlign: 'center',
   },
@@ -721,7 +711,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 14,
     lineHeight: 20,
-    color: '#475569',
+    color: colors.text.body,
     textAlign: 'center',
   },
   remindersRow: {
@@ -733,33 +723,34 @@ const styles = StyleSheet.create({
   reminderCard: {
     width: '48%',
     borderRadius: 24,
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(238, 140, 43, 0.1)',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.brandTint10,
+    backgroundColor: colors.surface,
     padding: 13,
   },
   reminderImage: {
     width: '100%',
-    aspectRatio: 1,
+    height: 132,
     borderRadius: 16,
     marginBottom: 12,
   },
   reminderTitle: {
     fontSize: 16,
     lineHeight: 20,
-    color: '#0F172A',
+    color: colors.text.heading,
   },
   reminderTag: {
     marginTop: 4,
     fontSize: 12,
     lineHeight: 16,
-    color: ORANGE,
+    color: colors.accent,
   },
   reminderMeta: {
     marginTop: 8,
     fontSize: 12,
     lineHeight: 16,
-    color: '#64748B',
+    color: colors.text.secondary,
   },
   featureList: {
     marginTop: 4,
@@ -768,10 +759,10 @@ const styles = StyleSheet.create({
   featureListItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: 'rgba(238, 140, 43, 0.05)',
+    backgroundColor: colors.brandTint5,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: 'rgba(238, 140, 43, 0.05)',
+    borderColor: colors.brandTint5,
     padding: 12,
     marginBottom: 8,
   },
@@ -779,14 +770,14 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(238, 140, 43, 0.1)',
+    backgroundColor: colors.brandTint10,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
   },
   featureListIconText: {
     fontSize: 16,
-    color: ORANGE,
+    color: colors.accent,
   },
   featureListTextWrap: {
     flex: 1,
@@ -794,26 +785,26 @@ const styles = StyleSheet.create({
   featureListTitle: {
     fontSize: 16,
     lineHeight: 24,
-    color: '#0F172A',
+    color: colors.text.heading,
   },
   featureListSubtitle: {
     marginTop: 2,
     fontSize: 14,
     lineHeight: 20,
-    color: '#475569',
+    color: colors.text.body,
   },
   step3Title: {
     fontSize: 30,
     lineHeight: 36,
     letterSpacing: -0.8,
     textAlign: 'center',
-    color: '#0F172A',
+    color: colors.text.heading,
   },
   step3Description: {
     marginTop: 14,
     fontSize: 14,
     lineHeight: 20,
-    color: '#475569',
+    color: colors.text.body,
     textAlign: 'center',
   },
   petsGrid: {
@@ -825,30 +816,45 @@ const styles = StyleSheet.create({
   },
   petCard: {
     width: '48%',
-    height: 171,
     borderRadius: 24,
     overflow: 'hidden',
+    backgroundColor: colors.surface,
     marginBottom: 16,
-    justifyContent: 'flex-end',
-    padding: 16,
+    padding: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
+  },
+  /** Square region matches 1:1 assets so contain fills without side letterboxing. */
+  petImageWrap: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 14,
+    overflow: 'hidden',
+    backgroundColor: colors.surfaceAlt,
   },
   petImage: {
-    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
   },
-  petOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.35)',
+  petLabelWrap: {
+    marginTop: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
   },
   petName: {
     fontSize: 16,
     lineHeight: 20,
-    color: '#FFFFFF',
+    color: colors.text.heading,
   },
   petBreed: {
     marginTop: 1,
     fontSize: 12,
     lineHeight: 16,
-    color: 'rgba(255,255,255,0.85)',
+    color: colors.text.secondary,
   },
   addPetCard: {
     width: '48%',
@@ -856,8 +862,8 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 2,
     borderStyle: 'dashed',
-    borderColor: 'rgba(238, 140, 43, 0.4)',
-    backgroundColor: 'rgba(238, 140, 43, 0.05)',
+    borderColor: colors.brandTint20,
+    backgroundColor: colors.brandTint5,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
@@ -866,26 +872,26 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: ORANGE,
+    backgroundColor: colors.accent,
     justifyContent: 'center',
     alignItems: 'center',
   },
   addPetPlus: {
     fontSize: 24,
-    color: '#FFFFFF',
+    color: colors.text.inverse,
     marginTop: -2,
   },
   addPetLabel: {
     marginTop: 8,
     fontSize: 16,
     lineHeight: 24,
-    color: ORANGE,
+    color: colors.accent,
   },
   emptySlotCard: {
     width: '48%',
     height: 171,
     borderRadius: 24,
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.surfaceAlt,
     opacity: 0.7,
     justifyContent: 'center',
     alignItems: 'center',
@@ -893,21 +899,21 @@ const styles = StyleSheet.create({
   },
   emptySlotPaw: {
     fontSize: 24,
-    color: '#94A3B8',
+    color: colors.text.subdued,
   },
   emptySlotLabel: {
     marginTop: 8,
     fontSize: 14,
     lineHeight: 20,
-    color: '#94A3B8',
+    color: colors.text.subdued,
   },
   premiumCard: {
     marginHorizontal: 16,
     marginTop: 8,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: 'rgba(238, 140, 43, 0.1)',
-    backgroundColor: '#FFFFFF',
+    borderColor: colors.brandTint10,
+    backgroundColor: colors.surface,
     padding: 17,
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -916,13 +922,13 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 16,
-    backgroundColor: 'rgba(238, 140, 43, 0.1)',
+    backgroundColor: colors.brandTint10,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
   },
   premiumIconText: {
-    color: ORANGE,
+    color: colors.accent,
     fontSize: 16,
   },
   premiumTextWrap: {
@@ -931,13 +937,13 @@ const styles = StyleSheet.create({
   premiumTitle: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#0F172A',
+    color: colors.text.heading,
   },
   premiumSubtitle: {
     marginTop: 4,
     fontSize: 12,
     lineHeight: 16,
-    color: '#64748B',
+    color: colors.text.secondary,
   },
   actions: {
     paddingHorizontal: 16,
@@ -946,12 +952,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   primaryButton: {
-    backgroundColor: ORANGE,
+    backgroundColor: colors.accent,
     borderRadius: 24,
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: ORANGE,
+    shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.2,
     shadowRadius: 15,
@@ -960,7 +966,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     fontSize: 16,
     lineHeight: 24,
-    color: '#FFFFFF',
+    color: colors.text.inverse,
   },
   dotsRow: {
     flexDirection: 'row',
@@ -971,19 +977,19 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 999,
-    backgroundColor: '#CBD5E1',
+    backgroundColor: colors.borderSubtle,
     marginHorizontal: 4,
   },
   dotActive: {
     width: 32,
-    backgroundColor: ORANGE,
+    backgroundColor: colors.accent,
   },
   skipText: {
     marginTop: 16,
     textAlign: 'center',
     fontSize: 14,
     lineHeight: 20,
-    color: '#64748B',
+    color: colors.text.secondary,
   },
 });
 

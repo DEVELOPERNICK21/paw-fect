@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 
@@ -94,13 +94,27 @@ const createStyles = ({ colors }: Pick<Theme, 'colors'>) =>
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.borderSubtle,
-      paddingHorizontal: 12,
+      paddingLeft: 12,
       paddingVertical: 12,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
     },
-    cardLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+    cardMain: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingRight: 8,
+    },
+    deleteBtn: {
+      width: 44,
+      height: 44,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 4,
+    },
     iconWrap: {
       width: 40,
       height: 40,
@@ -123,9 +137,29 @@ export const ReminderListScreen: React.FC = () => {
   const navigation = useNavigation<ReminderListRootNavigation>();
   const tabBarInset = useAppTabBarInset();
   const { fontFamilies, colors } = useTheme();
-  const { reminders, loadReminders } = useReminderStore();
+  const { reminders, loadReminders, deleteReminder } = useReminderStore();
 
   const styles = useMemo(() => createStyles({ colors }), [colors]);
+
+  const confirmDelete = useCallback(
+    (reminderId: string, title: string) => {
+      Alert.alert(
+        'Delete reminder?',
+        `Remove "${title}"? Scheduled alerts will be cancelled.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: () => {
+              void deleteReminder(reminderId);
+            },
+          },
+        ],
+      );
+    },
+    [deleteReminder],
+  );
 
   useEffect(() => {
     loadReminders().catch(() => {});
@@ -200,16 +234,17 @@ export const ReminderListScreen: React.FC = () => {
           </View>
         ) : (
           reminders.map(reminder => (
-            <Pressable
-              key={reminder.id}
-              style={styles.card}
-              onPress={() =>
-                navigation.navigate('ReminderDetail', {
-                  reminderId: reminder.id,
-                })
-              }
-            >
-              <View style={styles.cardLeft}>
+            <View key={reminder.id} style={styles.card}>
+              <Pressable
+                style={styles.cardMain}
+                onPress={() =>
+                  navigation.navigate('ReminderDetail', {
+                    reminderId: reminder.id,
+                  })
+                }
+                accessibilityRole="button"
+                accessibilityLabel={`Open reminder ${reminder.title}`}
+              >
                 <View style={styles.iconWrap}>
                   <MaterialIcon
                     name={iconByType[reminder.type] ?? 'add_circle'}
@@ -235,13 +270,21 @@ export const ReminderListScreen: React.FC = () => {
                     {reminder.date} • {reminder.time}
                   </Text>
                 </View>
-              </View>
-              <MaterialIcon
-                name="chevron_right"
-                size={20}
-                color={colors.text.subdued}
-              />
-            </Pressable>
+                <MaterialIcon
+                  name="chevron_right"
+                  size={20}
+                  color={colors.text.subdued}
+                />
+              </Pressable>
+              <Pressable
+                style={styles.deleteBtn}
+                onPress={() => confirmDelete(reminder.id, reminder.title)}
+                accessibilityRole="button"
+                accessibilityLabel={`Delete reminder ${reminder.title}`}
+              >
+                <MaterialIcon name="delete" size={20} color={colors.danger} />
+              </Pressable>
+            </View>
           ))
         )}
       </ScrollView>
