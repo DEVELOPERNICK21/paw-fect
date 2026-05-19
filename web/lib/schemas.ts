@@ -8,7 +8,7 @@ export const contactFormSchema = z.object({
 });
 
 export const waitlistSchema = z.object({
-  email: z.string().email("Invalid email"),
+  email: z.string().trim().min(1, "Email is required").email("Invalid email"),
   source: z.enum(["web", "app"]).optional().default("web"),
 });
 

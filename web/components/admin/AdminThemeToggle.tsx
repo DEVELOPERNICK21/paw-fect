@@ -10,11 +10,14 @@ import {
   type ThemePreference,
 } from "@/lib/theme";
 
-export function ThemeToggle(): React.ReactElement {
+export function AdminThemeToggle(): React.ReactElement {
   const [dark, setDark] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setDark(applyTheme(readStoredTheme()));
+    const preference = readStoredTheme();
+    setDark(applyTheme(preference));
+    setMounted(true);
   }, []);
 
   const toggle = (): void => {
@@ -27,10 +30,14 @@ export function ThemeToggle(): React.ReactElement {
     <button
       type="button"
       onClick={toggle}
-      className="rounded-full border border-stone-200 p-2 text-stone-600 hover:bg-stone-100 dark:border-stone-600 dark:text-stone-300 dark:hover:bg-stone-800"
+      className="rounded-lg border border-stone-200 bg-white p-2 text-stone-600 shadow-sm hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700"
       aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
     >
-      {dark ? <Sun size={18} /> : <Moon size={18} />}
+      {mounted ? (
+        dark ? <Sun className="h-5 w-5" aria-hidden /> : <Moon className="h-5 w-5" aria-hidden />
+      ) : (
+        <Moon className="h-5 w-5 opacity-50" aria-hidden />
+      )}
     </button>
   );
 }

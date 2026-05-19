@@ -1,5 +1,6 @@
 import { AppGallerySection } from "@/components/marketing/AppGallerySection";
 import { DownloadCTA } from "@/components/marketing/DownloadCTA";
+import { WaitlistSection } from "@/components/marketing/WaitlistSection";
 import { HomeWidgetsShowcaseSection } from "@/components/marketing/HomeWidgetsShowcaseSection";
 import { FeaturesSection } from "@/components/marketing/FeaturesSection";
 import { HeroSection } from "@/components/marketing/HeroSection";
@@ -51,6 +52,7 @@ export default async function HomePage(): Promise<React.ReactElement> {
       <TestimonialsSection items={site.testimonials} />
       <PricingPreviewSection plans={plans} />
       <HomeWidgetsShowcaseSection />
+      <WaitlistSection />
       <DownloadCTA />
     </>
   );

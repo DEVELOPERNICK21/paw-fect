@@ -56,25 +56,26 @@ export function WaitlistTable({ initial }: { initial: WaitlistEntry[] }): React.
           </Button>
         </div>
       </div>
-      <table className="mt-8 w-full text-left text-sm">
+      <div className="mt-8 overflow-x-auto rounded-xl border border-stone-200 dark:border-stone-700">
+      <table className="w-full min-w-[560px] text-left text-sm text-stone-700 dark:text-stone-300">
         <thead>
           <tr className="border-b border-stone-200 dark:border-stone-700">
-            <th className="py-2">Email</th>
-            <th className="py-2">Date</th>
-            <th className="py-2">Source</th>
-            <th className="py-2" />
+            <th className="px-3 py-2 font-medium text-stone-600 dark:text-stone-400">Email</th>
+            <th className="px-3 py-2 font-medium text-stone-600 dark:text-stone-400">Date</th>
+            <th className="px-3 py-2 font-medium text-stone-600 dark:text-stone-400">Source</th>
+            <th className="px-3 py-2" />
           </tr>
         </thead>
         <tbody>
           {rows.map((r) => (
             <tr key={r.id} className="border-b border-stone-100 dark:border-stone-800">
-              <td className="py-2">{r.email}</td>
-              <td className="py-2">{r.createdAt}</td>
-              <td className="py-2">{r.source}</td>
-              <td className="py-2 text-right">
+              <td className="px-3 py-2">{r.email}</td>
+              <td className="px-3 py-2">{r.createdAt}</td>
+              <td className="px-3 py-2">{r.source}</td>
+              <td className="px-3 py-2 text-right">
                 <button
                   type="button"
-                  className="text-red-600 hover:underline"
+                  className="text-red-600 hover:underline dark:text-red-400"
                   onClick={() => remove(r.id)}
                 >
                   Delete
@@ -84,6 +85,7 @@ export function WaitlistTable({ initial }: { initial: WaitlistEntry[] }): React.
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

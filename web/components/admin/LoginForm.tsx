@@ -3,6 +3,7 @@
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
@@ -33,7 +34,10 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }): React.React
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-stone-100 px-4 dark:bg-stone-950">
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-stone-100 px-4 dark:bg-stone-950">
+      <div className="absolute right-4 top-4">
+        <AdminThemeToggle />
+      </div>
       <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-8 dark:border-stone-700 dark:bg-stone-900">
         <h1 className="text-center text-2xl font-bold text-stone-900 dark:text-stone-50">Pawfect Admin</h1>
         <p className="mt-2 text-center text-sm text-stone-500">Sign in to manage the marketing site.</p>

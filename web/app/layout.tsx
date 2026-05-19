@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Inter } from "next/font/google";
+import { ThemeScript } from "@/components/admin/ThemeScript";
 import "./globals.css";
 import { Providers } from "./providers";
 
@@ -39,7 +40,10 @@ export default function RootLayout({
 }>): React.ReactElement {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${geistMono.variable} min-h-screen font-sans antialiased`}>
+      <head>
+        <ThemeScript />
+      </head>
+      <body className={`${inter.variable} ${geistMono.variable} min-h-screen bg-background font-sans text-foreground antialiased`}>
         <Providers>{children}</Providers>
       </body>
     </html>

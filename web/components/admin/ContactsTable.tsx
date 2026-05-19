@@ -26,14 +26,15 @@ export function ContactsTable({ initial }: { initial: ContactSubmission[] }): Re
   return (
     <div>
       <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-50">Contact submissions</h1>
-      <table className="mt-8 w-full text-left text-sm">
+      <div className="mt-8 overflow-x-auto rounded-xl border border-stone-200 dark:border-stone-700">
+      <table className="w-full min-w-[640px] text-left text-sm text-stone-700 dark:text-stone-300">
         <thead>
           <tr className="border-b border-stone-200 dark:border-stone-700">
-            <th className="py-2">Name</th>
-            <th className="py-2">Email</th>
-            <th className="py-2">Subject</th>
-            <th className="py-2">Status</th>
-            <th className="py-2">Date</th>
+            <th className="px-3 py-2 font-medium text-stone-600 dark:text-stone-400">Name</th>
+            <th className="px-3 py-2 font-medium text-stone-600 dark:text-stone-400">Email</th>
+            <th className="px-3 py-2 font-medium text-stone-600 dark:text-stone-400">Subject</th>
+            <th className="px-3 py-2 font-medium text-stone-600 dark:text-stone-400">Status</th>
+            <th className="px-3 py-2 font-medium text-stone-600 dark:text-stone-400">Date</th>
           </tr>
         </thead>
         <tbody>
@@ -43,15 +44,15 @@ export function ContactsTable({ initial }: { initial: ContactSubmission[] }): Re
                 className="cursor-pointer border-b border-stone-100 dark:border-stone-800"
                 onClick={() => setOpenId(openId === r.id ? null : r.id)}
               >
-                <td className="py-2">{r.name}</td>
-                <td className="py-2">{r.email}</td>
-                <td className="py-2">{r.subject}</td>
-                <td className="py-2">
+                <td className="px-3 py-2">{r.name}</td>
+                <td className="px-3 py-2">{r.email}</td>
+                <td className="px-3 py-2">{r.subject}</td>
+                <td className="px-3 py-2">
                   <span className="rounded-full bg-stone-200 px-2 py-0.5 text-xs dark:bg-stone-700">
                     {r.status}
                   </span>
                 </td>
-                <td className="py-2">{r.createdAt}</td>
+                <td className="px-3 py-2">{r.createdAt}</td>
               </tr>
               {openId === r.id ? (
                 <tr>
@@ -86,6 +87,7 @@ export function ContactsTable({ initial }: { initial: ContactSubmission[] }): Re
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
