@@ -123,7 +123,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
       void ac.notifyLoginWelcome({
         displayName: user.displayName,
-        email: user.email,
       }).catch(() => {});
     } catch (error) {
       logUnexpectedAuthError('[authStore] login error', error);
@@ -156,7 +155,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
       void ac.notifyLoginWelcome({
         displayName: user.displayName,
-        email: user.email,
       }).catch(() => {});
     } catch (error) {
       logUnexpectedAuthError('[authStore] signup error', error);
@@ -189,7 +187,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
       void ac.notifyLoginWelcome({
         displayName: user.displayName,
-        email: user.email,
       }).catch(() => {});
       return true;
     } catch (error) {
@@ -244,7 +241,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
       void ac.notifyLoginWelcome({
         displayName: user.displayName,
-        email: user.email,
       }).catch(() => {});
       return true;
     } catch (error) {
