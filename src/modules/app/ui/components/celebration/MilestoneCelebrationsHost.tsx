@@ -15,6 +15,9 @@ type ActiveCelebration = {
   petName: string;
 };
 
+/** Safety cap so a bad queue state cannot spin the JS thread. */
+const MAX_MILESTONE_DRAIN_ITERATIONS = 128;
+
 /**
  * Listens for milestone share events from smart health completion and shows
  * a one-time modal per pet per app session. "Share" opens the health card share screen.
@@ -35,7 +38,7 @@ export const MilestoneCelebrationsHost: React.FC = () => {
     if (!isAuthenticated) {
       return;
     }
-    for (;;) {
+    for (let i = 0; i < MAX_MILESTONE_DRAIN_ITERATIONS; i += 1) {
       const event = useSmartHealthRecordStore
         .getState()
         .consumeMilestoneEvent();

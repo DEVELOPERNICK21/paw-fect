@@ -1,6 +1,11 @@
 import notifee from '@notifee/react-native';
 
 import type { NotificationService } from './notificationService';
+import {
+  attentionTierFromDailyRoutine,
+  toneFromDailyRoutine,
+} from './notificationSoundCatalog';
+import { withNotificationSound } from './petNotificationSounds';
 
 /** Mirrors `Pet.type` without importing the pets module from infrastructure. */
 export type DailyRoutinePetSpecies = 'dog' | 'cat';
@@ -107,10 +112,17 @@ export async function syncDailyRoutineNotificationsForPets(
   for (const pet of pets) {
     const label = displayName(pet.name);
     const { feed, activity, groom } = routineIds(pet.id);
-    const baseData: Record<string, string> = {
-      kind: 'dailyRoutine',
-      petId: pet.id,
-    };
+    const routineData = (routine: string): Record<string, string> =>
+      withNotificationSound(
+        {
+          kind: 'dailyRoutine',
+          petId: pet.id,
+          routine,
+        },
+        pet.type,
+        toneFromDailyRoutine(routine),
+        attentionTierFromDailyRoutine(routine),
+      );
 
     await service.scheduleNotification({
       id: feed,
@@ -118,7 +130,7 @@ export async function syncDailyRoutineNotificationsForPets(
       body: `A regular meal helps ${label} stay happy and healthy.`,
       scheduledDate: nextLocalOccurrence(DEFAULT_FEED_HOUR, DEFAULT_FEED_MINUTE),
       repeat: 'daily',
-      data: { ...baseData, routine: 'feed' },
+      data: routineData('feed'),
     });
 
     if (pet.type === 'dog') {
@@ -131,7 +143,7 @@ export async function syncDailyRoutineNotificationsForPets(
           DEFAULT_DOG_ACTIVITY_MINUTE,
         ),
         repeat: 'daily',
-        data: { ...baseData, routine: 'walk' },
+        data: routineData('walk'),
       });
 
       await service.scheduleNotification({
@@ -144,7 +156,7 @@ export async function syncDailyRoutineNotificationsForPets(
           DEFAULT_DOG_GROOM_MINUTE,
         ),
         repeat: 'weekly',
-        data: { ...baseData, routine: 'groom' },
+        data: routineData('groom'),
       });
     } else {
       await service.scheduleNotification({
@@ -156,7 +168,7 @@ export async function syncDailyRoutineNotificationsForPets(
           DEFAULT_CAT_ACTIVITY_MINUTE,
         ),
         repeat: 'daily',
-        data: { ...baseData, routine: 'play' },
+        data: routineData('play'),
       });
 
       await service.scheduleNotification({
@@ -169,7 +181,7 @@ export async function syncDailyRoutineNotificationsForPets(
           DEFAULT_CAT_GROOM_MINUTE,
         ),
         repeat: 'weekly',
-        data: { ...baseData, routine: 'groom' },
+        data: routineData('groom'),
       });
     }
   }

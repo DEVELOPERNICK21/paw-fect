@@ -13,7 +13,11 @@ import {
   subscribeNotificationNavigation,
 } from '../../infrastructure/notifications/notificationBootstrap';
 import { notificationService } from '../../infrastructure/notifications/notificationService';
-import { resyncAllLocalNotifications } from '../../infrastructure/notifications/resyncLocalNotifications';
+import {
+  cancelDeferredNotificationResync,
+  scheduleDeferredNotificationResync,
+} from '../../infrastructure/notifications/deferredNotificationResync';
+import { registerCrashlyticsUserSync } from '../../infrastructure/crashlytics/registerCrashlyticsUserSync';
 import '../../modules/app/application/registerAppSessionPortSync';
 import { appOrchestrator } from '../../modules/app/appComposition';
 import { registerNotificationFeedSync } from '../../modules/notifications/bootstrap/registerNotificationFeedSync';
@@ -59,10 +63,19 @@ export const RootNavigator: React.FC = () => {
   const resetRecords = useRecordStore(state => state.reset);
   const { colors, isDarkMode } = useTheme();
   const [bootstrapped, setBootstrapped] = useState(false);
+  const lastSyncedUserIdRef = useRef<string | null>(null);
+  const authDataSyncGenerationRef = useRef(0);
+  const appStateResumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   const hasCompletedOnboarding = settings?.onboardingCompleted ?? false;
   const petGateActive =
-    isAuthenticated && hasCompletedOnboarding && !petsLoading && pets.length === 0;
+    bootstrapped &&
+    isAuthenticated &&
+    hasCompletedOnboarding &&
+    !petsLoading &&
+    pets.length === 0;
 
   const canNavigateNotificationRef = useRef(false);
   const updateNotificationNavGate = useCallback((): void => {
@@ -106,14 +119,8 @@ export const RootNavigator: React.FC = () => {
     if (!bootstrapped) {
       return;
     }
-    void (async () => {
-      try {
-        await bootstrapLocalNotifications();
-        await resyncAllLocalNotifications();
-      } catch {
-        // noop
-      }
-    })();
+    registerCrashlyticsUserSync();
+    void bootstrapLocalNotifications().catch(() => {});
   }, [bootstrapped]);
 
   useEffect(() => {
@@ -135,7 +142,15 @@ export const RootNavigator: React.FC = () => {
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', next => {
-      if (next === 'active') {
+      if (next !== 'active') {
+        return;
+      }
+      if (appStateResumeTimerRef.current != null) {
+        clearTimeout(appStateResumeTimerRef.current);
+      }
+      // Permission dialogs briefly background the app many times; debounce resume work.
+      appStateResumeTimerRef.current = setTimeout(() => {
+        appStateResumeTimerRef.current = null;
         refreshProfile().catch(() => {});
         if (
           useAuthStore.getState().isAuthenticated &&
@@ -143,12 +158,18 @@ export const RootNavigator: React.FC = () => {
         ) {
           void useSubscriptionStore.getState().refreshBootstrap();
           void loadReminders();
-          void resyncAllLocalNotifications();
+          scheduleDeferredNotificationResync(800);
         }
         void processPasswordResetQueue();
-      }
+      }, 600);
     });
-    return () => sub.remove();
+    return () => {
+      if (appStateResumeTimerRef.current != null) {
+        clearTimeout(appStateResumeTimerRef.current);
+        appStateResumeTimerRef.current = null;
+      }
+      sub.remove();
+    };
   }, [
     loadReminders,
     processPasswordResetQueue,
@@ -163,6 +184,7 @@ export const RootNavigator: React.FC = () => {
     const subscriptionApi = useSubscriptionStore.getState();
 
     if (!isAuthenticated || !userId) {
+      lastSyncedUserIdRef.current = null;
       subscriptionApi.stopListening();
       return undefined;
     }
@@ -176,11 +198,13 @@ export const RootNavigator: React.FC = () => {
   }, [isAuthenticated, isSessionReady, userId]);
 
   useEffect(() => {
-    if (!isSessionReady) {
-      return;
+    if (!isSessionReady || !bootstrapped) {
+      return undefined;
     }
 
     if (!isAuthenticated) {
+      cancelDeferredNotificationResync();
+      lastSyncedUserIdRef.current = null;
       useNotificationFeedStore.getState().clearAll();
       useHomeQuickActionsUsageStore.getState().reset();
       useSmartHealthRecordStore.getState().reset();
@@ -190,25 +214,65 @@ export const RootNavigator: React.FC = () => {
         resetRecords,
       });
       void notificationService.cancelAllNotifications();
-      return;
+      return undefined;
     }
 
+    if (!userId) {
+      return undefined;
+    }
+
+    const activeUserId = userId;
+    const previousUserId = lastSyncedUserIdRef.current;
+    const userChanged =
+      previousUserId != null && previousUserId !== activeUserId;
+    lastSyncedUserIdRef.current = activeUserId;
+
+    const petState = usePetStore.getState();
+    const skipCacheReset =
+      !userChanged &&
+      bootstrapped &&
+      (petState.pets.length > 0 || petState.loading);
+
+    const syncGeneration = authDataSyncGenerationRef.current + 1;
+    authDataSyncGenerationRef.current = syncGeneration;
+
     void (async () => {
-      await appOrchestrator.syncAuthenticatedDataStores({
-        resetPets,
-        resetReminders,
-        resetRecords,
-        loadPets,
-        loadReminders,
-        loadRecords,
-      });
-      await resyncAllLocalNotifications();
+      try {
+        if (skipCacheReset) {
+          appOrchestrator.refreshHomeDashboardObservation();
+          await Promise.all([loadReminders(), loadRecords()]);
+          if (authDataSyncGenerationRef.current !== syncGeneration) {
+            return;
+          }
+        } else {
+          await appOrchestrator.syncAuthenticatedDataStores(
+            {
+              resetPets,
+              resetReminders,
+              resetRecords,
+              loadPets,
+              loadReminders,
+              loadRecords,
+            },
+            { resetCaches: true },
+          );
+          if (authDataSyncGenerationRef.current !== syncGeneration) {
+            return;
+          }
+        }
+        scheduleDeferredNotificationResync();
+      } catch {
+        /* Avoid crashing the shell if a loader throws; stores keep last good state. */
+      }
     })();
 
     return () => {
+      authDataSyncGenerationRef.current += 1;
+      cancelDeferredNotificationResync();
       appOrchestrator.stopHomeDashboardObservation();
     };
   }, [
+    bootstrapped,
     isAuthenticated,
     isSessionReady,
     userId,

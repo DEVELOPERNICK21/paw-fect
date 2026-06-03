@@ -52,14 +52,27 @@ export class AppOrchestrator {
   }
 
   /**
-   * After login: reset caches, start dashboard observation, reload command stores, then refresh dashboard VM.
+   * After login: start dashboard observation, reload command stores, then refresh dashboard VM.
+   * @param resetCaches When false, keeps in-memory stores (e.g. bootstrap already loaded pets).
    */
-  async syncAuthenticatedDataStores(deps: AuthenticatedDataSyncDeps): Promise<void> {
-    deps.resetPets();
-    deps.resetReminders();
-    deps.resetRecords();
+  async syncAuthenticatedDataStores(
+    deps: AuthenticatedDataSyncDeps,
+    options?: { resetCaches?: boolean },
+  ): Promise<void> {
+    const resetCaches = options?.resetCaches ?? true;
+    if (resetCaches) {
+      deps.resetPets();
+      deps.resetReminders();
+      deps.resetRecords();
+    }
     this.startHomeDashboardObservation();
     await Promise.all([deps.loadPets(), deps.loadReminders(), deps.loadRecords()]);
+    this.invalidateHomeDashboard();
+  }
+
+  /** Starts dashboard observation and invalidates without touching feature stores. */
+  refreshHomeDashboardObservation(): void {
+    this.startHomeDashboardObservation();
     this.invalidateHomeDashboard();
   }
 }

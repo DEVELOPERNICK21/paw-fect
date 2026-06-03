@@ -1,6 +1,14 @@
 import notifee from '@notifee/react-native';
 
 import { buildCareScheduleNotificationActions } from '../../../../infrastructure/notifications/careNotificationActions';
+import {
+  attentionTierFromScheduleLead,
+  toneFromCareCategory,
+} from '../../../../infrastructure/notifications/notificationSoundCatalog';
+import {
+  withNotificationSound,
+  type PetNotificationSpecies,
+} from '../../../../infrastructure/notifications/petNotificationSounds';
 import { parseReminderLocalDateTime } from '../../../../shared/utils/reminderDateTime';
 import type { NotificationService } from '../../../../infrastructure/notifications/notificationService';
 import type { DailyCareBlock } from '../../domain/models/DailyCareBlock';
@@ -69,6 +77,7 @@ export async function syncScheduleNotifications(
   schedule: DailySchedule,
   blocks: DailyCareBlock[],
   service: NotificationService,
+  petSpecies?: PetNotificationSpecies,
 ): Promise<number> {
   await cancelScheduleTriggersForPet(schedule.petId, service);
 
@@ -97,20 +106,29 @@ export async function syncScheduleNotifications(
           ? 'daily'
           : undefined;
     const notificationId = scheduleNotificationId(schedule.petId, block.id);
+    const scheduleData: Record<string, string> = {
+      kind: 'dailySchedule',
+      petId: schedule.petId,
+      blockId: block.id,
+      date: schedule.date,
+      scheduledTime: block.scheduledTime,
+      notificationId,
+    };
     await service.scheduleNotification({
       id: notificationId,
       title: block.notificationTitle,
       body: block.notificationBody,
       scheduledDate,
       repeat,
-      data: {
-        kind: 'dailySchedule',
-        petId: schedule.petId,
-        blockId: block.id,
-        date: schedule.date,
-        scheduledTime: block.scheduledTime,
-        notificationId,
-      },
+      data:
+        petSpecies != null
+          ? withNotificationSound(
+              { ...scheduleData, category: block.category },
+              petSpecies,
+              toneFromCareCategory(block.category),
+              attentionTierFromScheduleLead(block.reminderMinutesBefore),
+            )
+          : scheduleData,
       actions: buildCareScheduleNotificationActions().map(action => ({
         title: action.title,
         pressActionId: action.pressAction.id,
@@ -125,6 +143,7 @@ export async function reconcileScheduleNotifications(
   schedule: DailySchedule,
   blocks: DailyCareBlock[],
   service: NotificationService,
+  petSpecies?: PetNotificationSpecies,
 ): Promise<number> {
-  return syncScheduleNotifications(schedule, blocks, service);
+  return syncScheduleNotifications(schedule, blocks, service, petSpecies);
 }

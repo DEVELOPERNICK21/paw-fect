@@ -34,7 +34,18 @@ export const scheduleComposition = {
     if (!granted) {
       return 0;
     }
-    return syncScheduleNotifications(schedule, blocks, notificationService);
+    const userId = getAppSessionUserId();
+    let petSpecies: 'dog' | 'cat' | undefined;
+    if (userId != null) {
+      const pet = await petRepository.getPetById(userId, schedule.petId);
+      petSpecies = pet?.type;
+    }
+    return syncScheduleNotifications(
+      schedule,
+      blocks,
+      notificationService,
+      petSpecies,
+    );
   },
   cancelScheduleBlockNotification: async (blockId: string, petId: string): Promise<void> => {
     await cancelScheduleBlockNotification(blockId, petId, notificationService);

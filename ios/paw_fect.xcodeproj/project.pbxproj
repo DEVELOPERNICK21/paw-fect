@@ -11,11 +11,36 @@
 		3BC31E7E3AC74DE6B35CAEFE /* PlusJakartaSans-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F826C11D1AA84548B307516C /* PlusJakartaSans-SemiBold.ttf */; };
 		4216F6AF49F1780103C68C87 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
+		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+		842D2E9E2FD0217D007CEAAF /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 842D2E9D2FD0217D007CEAAF /* GoogleService-Info.plist */; };
+		84C594A388641DE9DE31D003 /* Pods_paw_fect.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 83BAB8C78F03E0D632C87895 /* Pods_paw_fect.framework */; };
 		A1WIDGET0000000000000001 /* WidgetDataModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1WIDGET0000000000000011 /* WidgetDataModule.swift */; };
 		A1WIDGET0000000000000002 /* WidgetDataModule.m in Sources */ = {isa = PBXBuildFile; fileRef = A1WIDGET0000000000000012 /* WidgetDataModule.m */; };
 		A1WIDGET0000000000000003 /* WidgetGlanceStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1WIDGET0000000000000013 /* WidgetGlanceStorage.swift */; };
-		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
-		84C594A388641DE9DE31D003 /* Pods_paw_fect.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 83BAB8C78F03E0D632C87895 /* Pods_paw_fect.framework */; };
+		A2SND0001000000000001 /* dog_meal_soft.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2SND0001000000000011 /* dog_meal_soft.wav */; };
+		A2SND0002000000000001 /* dog_meal_standard.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2SND0002000000000011 /* dog_meal_standard.wav */; };
+		A2SND0003000000000001 /* dog_meal_urgent.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2SND0003000000000011 /* dog_meal_urgent.wav */; };
+		A2SND0004000000000001 /* dog_active_soft.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2SND0004000000000011 /* dog_active_soft.wav */; };
+		A2SND0005000000000001 /* dog_active_standard.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2SND0005000000000011 /* dog_active_standard.wav */; };
+		A2SND0006000000000001 /* dog_active_urgent.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2SND0006000000000011 /* dog_active_urgent.wav */; };
+		A2SND0007000000000001 /* dog_care_soft.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2SND0007000000000011 /* dog_care_soft.wav */; };
+		A2SND0008000000000001 /* dog_care_standard.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2SND0008000000000011 /* dog_care_standard.wav */; };
+		A2SND0009000000000001 /* dog_care_urgent.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2SND0009000000000011 /* dog_care_urgent.wav */; };
+		A2SND0010000000000001 /* dog_health_soft.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2SND0010000000000011 /* dog_health_soft.wav */; };
+		A2SND0011000000000001 /* dog_health_standard.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2SND0011000000000011 /* dog_health_standard.wav */; };
+		A2SND0012000000000001 /* dog_health_urgent.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2SND0012000000000011 /* dog_health_urgent.wav */; };
+		A2SND0013000000000001 /* cat_meal_soft.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2SND0013000000000011 /* cat_meal_soft.wav */; };
+		A2SND0014000000000001 /* cat_meal_standard.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2SND0014000000000011 /* cat_meal_standard.wav */; };
+		A2SND0015000000000001 /* cat_meal_urgent.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2SND0015000000000011 /* cat_meal_urgent.wav */; };
+		A2SND0016000000000001 /* cat_active_soft.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2SND0016000000000011 /* cat_active_soft.wav */; };
+		A2SND0017000000000001 /* cat_active_standard.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2SND0017000000000011 /* cat_active_standard.wav */; };
+		A2SND0018000000000001 /* cat_active_urgent.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2SND0018000000000011 /* cat_active_urgent.wav */; };
+		A2SND0019000000000001 /* cat_care_soft.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2SND0019000000000011 /* cat_care_soft.wav */; };
+		A2SND0020000000000001 /* cat_care_standard.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2SND0020000000000011 /* cat_care_standard.wav */; };
+		A2SND0021000000000001 /* cat_care_urgent.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2SND0021000000000011 /* cat_care_urgent.wav */; };
+		A2SND0022000000000001 /* cat_health_soft.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2SND0022000000000011 /* cat_health_soft.wav */; };
+		A2SND0023000000000001 /* cat_health_standard.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2SND0023000000000011 /* cat_health_standard.wav */; };
+		A2SND0024000000000001 /* cat_health_urgent.wav in Resources */ = {isa = PBXBuildFile; fileRef = A2SND0024000000000011 /* cat_health_urgent.wav */; };
 		AD4F9BC7E1574C6EABA547EA /* PlusJakartaSans-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3DACAB269A7049139966337F /* PlusJakartaSans-ExtraBold.ttf */; };
 		D4B8C2E01A5E4F12B6D70101 /* PlusJakartaSans-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = D4B8C2E01A5E4F12B6D70001 /* PlusJakartaSans-Bold.ttf */; };
 		D4B8C2E01A5E4F12B6D70102 /* PlusJakartaSans-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = D4B8C2E01A5E4F12B6D70002 /* PlusJakartaSans-Medium.ttf */; };
@@ -28,20 +53,45 @@
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = paw_fect/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = paw_fect/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		3B4392A12AC88292D35C810B /* Pods-paw_fect.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-paw_fect.debug.xcconfig"; path = "Target Support Files/Pods-paw_fect/Pods-paw_fect.debug.xcconfig"; sourceTree = "<group>"; };
-		3DACAB269A7049139966337F /* PlusJakartaSans-ExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "PlusJakartaSans-ExtraBold.ttf"; path = "../src/shared/assets/fonts/PlusJakartaSans-ExtraBold.ttf"; sourceTree = "<group>"; };
+		3DACAB269A7049139966337F /* PlusJakartaSans-ExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "PlusJakartaSans-ExtraBold.ttf"; path = "../src/shared/assets/fonts/PlusJakartaSans-ExtraBold.ttf"; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-paw_fect.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-paw_fect.release.xcconfig"; path = "Target Support Files/Pods-paw_fect/Pods-paw_fect.release.xcconfig"; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = paw_fect/AppDelegate.swift; sourceTree = "<group>"; };
+		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = paw_fect/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		83BAB8C78F03E0D632C87895 /* Pods_paw_fect.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_paw_fect.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		842D2E9D2FD0217D007CEAAF /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		A1WIDGET0000000000000011 /* WidgetDataModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WidgetDataModule.swift; path = paw_fect/WidgetDataModule.swift; sourceTree = "<group>"; };
 		A1WIDGET0000000000000012 /* WidgetDataModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = WidgetDataModule.m; path = paw_fect/WidgetDataModule.m; sourceTree = "<group>"; };
 		A1WIDGET0000000000000013 /* WidgetGlanceStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = WidgetGlanceStorage.swift; path = paw_fect/WidgetGlanceStorage.swift; sourceTree = "<group>"; };
 		A1WIDGET0000000000000014 /* paw_fect.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = paw_fect.entitlements; path = paw_fect/paw_fect.entitlements; sourceTree = "<group>"; };
-		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = paw_fect/LaunchScreen.storyboard; sourceTree = "<group>"; };
-		83BAB8C78F03E0D632C87895 /* Pods_paw_fect.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_paw_fect.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		D4B8C2E01A5E4F12B6D70001 /* PlusJakartaSans-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "PlusJakartaSans-Bold.ttf"; path = "../src/shared/assets/fonts/PlusJakartaSans-Bold.ttf"; sourceTree = "<group>"; };
-		D4B8C2E01A5E4F12B6D70002 /* PlusJakartaSans-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "PlusJakartaSans-Medium.ttf"; path = "../src/shared/assets/fonts/PlusJakartaSans-Medium.ttf"; sourceTree = "<group>"; };
-		D4B8C2E01A5E4F12B6D70003 /* PlusJakartaSans-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "PlusJakartaSans-Regular.ttf"; path = "../src/shared/assets/fonts/PlusJakartaSans-Regular.ttf"; sourceTree = "<group>"; };
+		A2SND0001000000000011 /* dog_meal_soft.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = dog_meal_soft.wav; path = paw_fect/dog_meal_soft.wav; sourceTree = "<group>"; };
+		A2SND0002000000000011 /* dog_meal_standard.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = dog_meal_standard.wav; path = paw_fect/dog_meal_standard.wav; sourceTree = "<group>"; };
+		A2SND0003000000000011 /* dog_meal_urgent.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = dog_meal_urgent.wav; path = paw_fect/dog_meal_urgent.wav; sourceTree = "<group>"; };
+		A2SND0004000000000011 /* dog_active_soft.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = dog_active_soft.wav; path = paw_fect/dog_active_soft.wav; sourceTree = "<group>"; };
+		A2SND0005000000000011 /* dog_active_standard.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = dog_active_standard.wav; path = paw_fect/dog_active_standard.wav; sourceTree = "<group>"; };
+		A2SND0006000000000011 /* dog_active_urgent.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = dog_active_urgent.wav; path = paw_fect/dog_active_urgent.wav; sourceTree = "<group>"; };
+		A2SND0007000000000011 /* dog_care_soft.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = dog_care_soft.wav; path = paw_fect/dog_care_soft.wav; sourceTree = "<group>"; };
+		A2SND0008000000000011 /* dog_care_standard.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = dog_care_standard.wav; path = paw_fect/dog_care_standard.wav; sourceTree = "<group>"; };
+		A2SND0009000000000011 /* dog_care_urgent.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = dog_care_urgent.wav; path = paw_fect/dog_care_urgent.wav; sourceTree = "<group>"; };
+		A2SND0010000000000011 /* dog_health_soft.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = dog_health_soft.wav; path = paw_fect/dog_health_soft.wav; sourceTree = "<group>"; };
+		A2SND0011000000000011 /* dog_health_standard.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = dog_health_standard.wav; path = paw_fect/dog_health_standard.wav; sourceTree = "<group>"; };
+		A2SND0012000000000011 /* dog_health_urgent.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = dog_health_urgent.wav; path = paw_fect/dog_health_urgent.wav; sourceTree = "<group>"; };
+		A2SND0013000000000011 /* cat_meal_soft.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = cat_meal_soft.wav; path = paw_fect/cat_meal_soft.wav; sourceTree = "<group>"; };
+		A2SND0014000000000011 /* cat_meal_standard.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = cat_meal_standard.wav; path = paw_fect/cat_meal_standard.wav; sourceTree = "<group>"; };
+		A2SND0015000000000011 /* cat_meal_urgent.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = cat_meal_urgent.wav; path = paw_fect/cat_meal_urgent.wav; sourceTree = "<group>"; };
+		A2SND0016000000000011 /* cat_active_soft.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = cat_active_soft.wav; path = paw_fect/cat_active_soft.wav; sourceTree = "<group>"; };
+		A2SND0017000000000011 /* cat_active_standard.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = cat_active_standard.wav; path = paw_fect/cat_active_standard.wav; sourceTree = "<group>"; };
+		A2SND0018000000000011 /* cat_active_urgent.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = cat_active_urgent.wav; path = paw_fect/cat_active_urgent.wav; sourceTree = "<group>"; };
+		A2SND0019000000000011 /* cat_care_soft.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = cat_care_soft.wav; path = paw_fect/cat_care_soft.wav; sourceTree = "<group>"; };
+		A2SND0020000000000011 /* cat_care_standard.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = cat_care_standard.wav; path = paw_fect/cat_care_standard.wav; sourceTree = "<group>"; };
+		A2SND0021000000000011 /* cat_care_urgent.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = cat_care_urgent.wav; path = paw_fect/cat_care_urgent.wav; sourceTree = "<group>"; };
+		A2SND0022000000000011 /* cat_health_soft.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = cat_health_soft.wav; path = paw_fect/cat_health_soft.wav; sourceTree = "<group>"; };
+		A2SND0023000000000011 /* cat_health_standard.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = cat_health_standard.wav; path = paw_fect/cat_health_standard.wav; sourceTree = "<group>"; };
+		A2SND0024000000000011 /* cat_health_urgent.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; name = cat_health_urgent.wav; path = paw_fect/cat_health_urgent.wav; sourceTree = "<group>"; };
+		D4B8C2E01A5E4F12B6D70001 /* PlusJakartaSans-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "PlusJakartaSans-Bold.ttf"; path = "../src/shared/assets/fonts/PlusJakartaSans-Bold.ttf"; sourceTree = "<group>"; };
+		D4B8C2E01A5E4F12B6D70002 /* PlusJakartaSans-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "PlusJakartaSans-Medium.ttf"; path = "../src/shared/assets/fonts/PlusJakartaSans-Medium.ttf"; sourceTree = "<group>"; };
+		D4B8C2E01A5E4F12B6D70003 /* PlusJakartaSans-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "PlusJakartaSans-Regular.ttf"; path = "../src/shared/assets/fonts/PlusJakartaSans-Regular.ttf"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
-		F826C11D1AA84548B307516C /* PlusJakartaSans-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = "PlusJakartaSans-SemiBold.ttf"; path = "../src/shared/assets/fonts/PlusJakartaSans-SemiBold.ttf"; sourceTree = "<group>"; };
+		F826C11D1AA84548B307516C /* PlusJakartaSans-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "PlusJakartaSans-SemiBold.ttf"; path = "../src/shared/assets/fonts/PlusJakartaSans-SemiBold.ttf"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -68,6 +118,31 @@
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */,
+				A2SND0001000000000011 /* dog_meal_soft.wav */,
+				A2SND0002000000000011 /* dog_meal_standard.wav */,
+				A2SND0003000000000011 /* dog_meal_urgent.wav */,
+				A2SND0004000000000011 /* dog_active_soft.wav */,
+				A2SND0005000000000011 /* dog_active_standard.wav */,
+				A2SND0006000000000011 /* dog_active_urgent.wav */,
+				A2SND0007000000000011 /* dog_care_soft.wav */,
+				A2SND0008000000000011 /* dog_care_standard.wav */,
+				A2SND0009000000000011 /* dog_care_urgent.wav */,
+				A2SND0010000000000011 /* dog_health_soft.wav */,
+				A2SND0011000000000011 /* dog_health_standard.wav */,
+				A2SND0012000000000011 /* dog_health_urgent.wav */,
+				A2SND0013000000000011 /* cat_meal_soft.wav */,
+				A2SND0014000000000011 /* cat_meal_standard.wav */,
+				A2SND0015000000000011 /* cat_meal_urgent.wav */,
+				A2SND0016000000000011 /* cat_active_soft.wav */,
+				A2SND0017000000000011 /* cat_active_standard.wav */,
+				A2SND0018000000000011 /* cat_active_urgent.wav */,
+				A2SND0019000000000011 /* cat_care_soft.wav */,
+				A2SND0020000000000011 /* cat_care_standard.wav */,
+				A2SND0021000000000011 /* cat_care_urgent.wav */,
+				A2SND0022000000000011 /* cat_health_soft.wav */,
+				A2SND0023000000000011 /* cat_health_standard.wav */,
+				A2SND0024000000000011 /* cat_health_urgent.wav */,
+				842D2E9D2FD0217D007CEAAF /* GoogleService-Info.plist */,
 			);
 			name = paw_fect;
 			sourceTree = "<group>";
@@ -91,7 +166,6 @@
 				3DACAB269A7049139966337F /* PlusJakartaSans-ExtraBold.ttf */,
 			);
 			name = Resources;
-			path = "";
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -148,6 +222,7 @@
 				00EEFC60759A1932668264C0 /* [CP] Embed Pods Frameworks */,
 				E235C05ADACE081382539298 /* [CP] Copy Pods Resources */,
 				D1CE1A4225290A2D6F27DB67 /* [CP-User] [RNFB] Core Configuration */,
+				CC7A101B6027E1CEFEA074D4 /* [CP-User] [RNFB] Crashlytics Configuration */,
 			);
 			buildRules = (
 			);
@@ -202,6 +277,31 @@
 				D4B8C2E01A5E4F12B6D70103 /* PlusJakartaSans-Regular.ttf in Resources */,
 				3BC31E7E3AC74DE6B35CAEFE /* PlusJakartaSans-SemiBold.ttf in Resources */,
 				AD4F9BC7E1574C6EABA547EA /* PlusJakartaSans-ExtraBold.ttf in Resources */,
+				842D2E9E2FD0217D007CEAAF /* GoogleService-Info.plist in Resources */,
+				A2SND0001000000000001 /* dog_meal_soft.wav in Resources */,
+				A2SND0002000000000001 /* dog_meal_standard.wav in Resources */,
+				A2SND0003000000000001 /* dog_meal_urgent.wav in Resources */,
+				A2SND0004000000000001 /* dog_active_soft.wav in Resources */,
+				A2SND0005000000000001 /* dog_active_standard.wav in Resources */,
+				A2SND0006000000000001 /* dog_active_urgent.wav in Resources */,
+				A2SND0007000000000001 /* dog_care_soft.wav in Resources */,
+				A2SND0008000000000001 /* dog_care_standard.wav in Resources */,
+				A2SND0009000000000001 /* dog_care_urgent.wav in Resources */,
+				A2SND0010000000000001 /* dog_health_soft.wav in Resources */,
+				A2SND0011000000000001 /* dog_health_standard.wav in Resources */,
+				A2SND0012000000000001 /* dog_health_urgent.wav in Resources */,
+				A2SND0013000000000001 /* cat_meal_soft.wav in Resources */,
+				A2SND0014000000000001 /* cat_meal_standard.wav in Resources */,
+				A2SND0015000000000001 /* cat_meal_urgent.wav in Resources */,
+				A2SND0016000000000001 /* cat_active_soft.wav in Resources */,
+				A2SND0017000000000001 /* cat_active_standard.wav in Resources */,
+				A2SND0018000000000001 /* cat_active_urgent.wav in Resources */,
+				A2SND0019000000000001 /* cat_care_soft.wav in Resources */,
+				A2SND0020000000000001 /* cat_care_standard.wav in Resources */,
+				A2SND0021000000000001 /* cat_care_urgent.wav in Resources */,
+				A2SND0022000000000001 /* cat_health_soft.wav in Resources */,
+				A2SND0023000000000001 /* cat_health_standard.wav in Resources */,
+				A2SND0024000000000001 /* cat_health_urgent.wav in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -263,6 +363,20 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
+		CC7A101B6027E1CEFEA074D4 /* [CP-User] [RNFB] Crashlytics Configuration */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${TARGET_NAME}",
+				"$(BUILT_PRODUCTS_DIR)/$(INFOPLIST_PATH)",
+			);
+			name = "[CP-User] [RNFB] Crashlytics Configuration";
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "#!/usr/bin/env bash\n#\n# Copyright (c) 2016-present Invertase Limited & Contributors\n#\n# Licensed under the Apache License, Version 2.0 (the \"License\");\n# you may not use this library except in compliance with the License.\n# You may obtain a copy of the License at\n#\n#   http://www.apache.org/licenses/LICENSE-2.0\n#\n# Unless required by applicable law or agreed to in writing, software\n# distributed under the License is distributed on an \"AS IS\" BASIS,\n# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n# See the License for the specific language governing permissions and\n# limitations under the License.\n#\nset -e\n\nif [[ ${PODS_ROOT} ]]; then\n  echo \"info: Exec FirebaseCrashlytics Run from Pods\"\n  \"${PODS_ROOT}/FirebaseCrashlytics/run\"\nelse\n  echo \"info: Exec FirebaseCrashlytics Run from framework\"\n  \"${PROJECT_DIR}/FirebaseCrashlytics.framework/run\"\nfi\n";
+		};
 		D1CE1A4225290A2D6F27DB67 /* [CP-User] [RNFB] Core Configuration */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -318,6 +432,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = paw_fect/paw_fect.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 83N78B2XWV;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = paw_fect/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
@@ -349,6 +464,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = paw_fect/paw_fect.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 83N78B2XWV;
 				INFOPLIST_FILE = paw_fect/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -431,6 +547,16 @@
 					"${PODS_ROOT}/React-NativeModulesApple",
 					"${PODS_ROOT}/React-graphics",
 					"${PODS_ROOT}/React-graphics/react/renderer/graphics/platform/ios",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon/ReactCommon.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon/ReactCommon.framework/Headers/react/nativemodule/core",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-runtimeexecutor/React_runtimeexecutor.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-runtimeexecutor/React_runtimeexecutor.framework/Headers/platform/ios",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon-Samples/ReactCommon_Samples.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon-Samples/ReactCommon_Samples.framework/Headers/platform/ios",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-Fabric/React_Fabric.framework/Headers/react/renderer/components/view/platform/cxx",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-NativeModulesApple/React_NativeModulesApple.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers/react/renderer/graphics/platform/ios",
 				);
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -519,6 +645,16 @@
 					"${PODS_ROOT}/React-NativeModulesApple",
 					"${PODS_ROOT}/React-graphics",
 					"${PODS_ROOT}/React-graphics/react/renderer/graphics/platform/ios",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon/ReactCommon.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon/ReactCommon.framework/Headers/react/nativemodule/core",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-runtimeexecutor/React_runtimeexecutor.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-runtimeexecutor/React_runtimeexecutor.framework/Headers/platform/ios",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon-Samples/ReactCommon_Samples.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon-Samples/ReactCommon_Samples.framework/Headers/platform/ios",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-Fabric/React_Fabric.framework/Headers/react/renderer/components/view/platform/cxx",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-NativeModulesApple/React_NativeModulesApple.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers/react/renderer/graphics/platform/ios",
 				);
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (

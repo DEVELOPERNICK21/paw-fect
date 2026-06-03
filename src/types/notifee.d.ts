@@ -6,6 +6,7 @@ declare module '@notifee/react-native' {
   }
 
   export const AndroidImportance: {
+    readonly LOW: number;
     readonly DEFAULT: number;
     readonly HIGH: number;
   };
@@ -62,6 +63,7 @@ declare module '@notifee/react-native' {
     android?: {
       channelId?: string;
       importance?: number;
+      sound?: string;
       smallIcon?: string;
       largeIcon?: string;
       color?: string;

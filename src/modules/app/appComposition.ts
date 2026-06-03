@@ -39,6 +39,21 @@ const observeHomeDashboard = new ObserveHomeDashboard(
   homeDashboardInvalidationHub,
 );
 
+let glanceSyncTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleGlanceSurfacesSync(): void {
+  if (glanceSyncTimer != null) {
+    clearTimeout(glanceSyncTimer);
+  }
+  glanceSyncTimer = setTimeout(() => {
+    glanceSyncTimer = null;
+    const vm = useHomeDashboardStore.getState().viewModel;
+    if (vm?.activePet != null) {
+      void pushGlanceSurfacesForDashboard(vm).catch(() => {});
+    }
+  }, 800);
+}
+
 /** Single app orchestrator: start/stop dashboard observation, explicit invalidation. */
 async function pushGlanceSurfacesForDashboard(
   vm: HomeDashboardViewModel,
@@ -69,7 +84,7 @@ export const appOrchestrator = new AppOrchestrator(
   vm => {
     useHomeDashboardStore.getState().setViewModel(vm);
     if (vm.activePet != null) {
-      void pushGlanceSurfacesForDashboard(vm);
+      scheduleGlanceSurfacesSync();
     }
   },
   homeDashboardInvalidationHub,

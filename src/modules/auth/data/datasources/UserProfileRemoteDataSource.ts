@@ -1,4 +1,12 @@
-import firestore from '@react-native-firebase/firestore';
+import { getApp } from '@react-native-firebase/app';
+import {
+  collection,
+  doc,
+  getDoc,
+  getFirestore,
+  serverTimestamp,
+  setDoc,
+} from '@react-native-firebase/firestore';
 
 import type { User } from '../../domain/models/User';
 
@@ -19,9 +27,11 @@ export interface UserProfileRemoteDataSource {
 }
 
 class UserProfileRemoteDataSourceImpl implements UserProfileRemoteDataSource {
+  private readonly db = getFirestore(getApp());
+
   async syncOnSignIn(user: User): Promise<User> {
-    const ref = firestore().collection('users').doc(user.id);
-    const snap = await ref.get();
+    const ref = doc(collection(this.db, 'users'), user.id);
+    const snap = await getDoc(ref);
     const data = snap.data() as Record<string, unknown> | undefined;
 
     const docDisplayName =
@@ -46,7 +56,8 @@ class UserProfileRemoteDataSourceImpl implements UserProfileRemoteDataSource {
       lastLoginAt: nowIso,
     };
 
-    await ref.set(
+    await setDoc(
+      ref,
       {
         email: merged.email,
         displayName: merged.displayName,
@@ -54,7 +65,7 @@ class UserProfileRemoteDataSourceImpl implements UserProfileRemoteDataSource {
         phoneNumber: merged.phoneNumber,
         onboardingCompleted: merged.onboardingCompleted,
         createdAt: merged.createdAt,
-        lastLoginAt: firestore.FieldValue.serverTimestamp(),
+        lastLoginAt: serverTimestamp(),
       },
       { merge: true },
     );
@@ -66,17 +77,18 @@ class UserProfileRemoteDataSourceImpl implements UserProfileRemoteDataSource {
     userId: string,
     input: { displayName: string; phoneNumber: string | null },
   ): Promise<User> {
-    const ref = firestore().collection('users').doc(userId);
+    const ref = doc(collection(this.db, 'users'), userId);
     const nowIso = new Date().toISOString();
-    await ref.set(
+    await setDoc(
+      ref,
       {
         displayName: input.displayName,
         phoneNumber: input.phoneNumber,
-        updatedAt: firestore.FieldValue.serverTimestamp(),
+        updatedAt: serverTimestamp(),
       },
       { merge: true },
     );
-    const snap = await ref.get();
+    const snap = await getDoc(ref);
     const data = snap.data() as Record<string, unknown> | undefined;
     return {
       id: userId,

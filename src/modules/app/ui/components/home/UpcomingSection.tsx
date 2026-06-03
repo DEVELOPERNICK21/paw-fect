@@ -1,8 +1,7 @@
-import React, { useCallback } from 'react';
+import React from 'react';
 import {
   ActivityIndicator,
-  FlatList,
-  ListRenderItem,
+  ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
@@ -144,18 +143,6 @@ export const UpcomingSection: React.FC<UpcomingSectionProps> = React.memo(
   ({ items, loading, onPressOpenHealth, theme }) => {
     const { colors, spacing, textStyles } = theme;
 
-    const renderItem: ListRenderItem<HomeDashboardWeekCareItem> = useCallback(
-      ({ item, index }) => (
-        <UpcomingCard item={item} theme={theme} accent={index === 0} />
-      ),
-      [theme],
-    );
-
-    const keyExtractor = useCallback(
-      (item: HomeDashboardWeekCareItem) => item.id,
-      [],
-    );
-
     return (
       <View style={{ gap: spacing.md }}>
         <AppText style={[textStyles.title, { color: colors.text.heading }]}>
@@ -203,17 +190,24 @@ export const UpcomingSection: React.FC<UpcomingSectionProps> = React.memo(
         ) : null}
 
         {!loading && items.length > 0 ? (
-          <FlatList
+          <ScrollView
             horizontal
-            data={items}
-            keyExtractor={keyExtractor}
-            renderItem={renderItem}
+            nestedScrollEnabled
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{
-              columnGap: spacing.md,
+              gap: spacing.md,
               paddingRight: spacing.xl,
             }}
-          />
+          >
+            {items.map((item, index) => (
+              <UpcomingCard
+                key={item.id}
+                item={item}
+                theme={theme}
+                accent={index === 0}
+              />
+            ))}
+          </ScrollView>
         ) : null}
       </View>
     );

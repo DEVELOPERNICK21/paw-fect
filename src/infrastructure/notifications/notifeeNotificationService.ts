@@ -10,12 +10,13 @@ import {
   ANDROID_NOTIFICATION_LARGE_ICON,
   ANDROID_NOTIFICATION_SMALL_ICON,
 } from './androidNotificationAssets';
+import { canUseAndroidExactAlarms } from './androidAlarmPermissions';
+import { parseSoundProfile } from './notificationSoundCatalog';
+import { channelIdForNotificationData } from './notificationChannels';
 import {
-  PAWFECT_CHANNEL_CARE,
-  PAWFECT_CHANNEL_GENERAL,
-  PAWFECT_CHANNEL_REMINDERS,
-  PAWFECT_CHANNEL_ROUTINES,
-} from './notificationChannels';
+  resolveAndroidNotificationSound,
+  resolveIosNotificationSound,
+} from './petNotificationSounds';
 import type {
   ImmediateNotificationPayload,
   NotificationPayload,
@@ -23,19 +24,6 @@ import type {
 } from './notificationService';
 import { emitNotificationFeedEvent } from './notificationFeedEvents';
 import { useSettingsStore } from '../../modules/settings/store/settingsStore';
-
-function channelIdForPayload(data?: Record<string, string>): string {
-  if (data?.reminderId != null && data.reminderId.length > 0) {
-    return PAWFECT_CHANNEL_REMINDERS;
-  }
-  if (data?.kind === 'dailyRoutine') {
-    return PAWFECT_CHANNEL_ROUTINES;
-  }
-  if (data?.kind === 'loginWelcome' || data?.kind === 'notificationTest') {
-    return PAWFECT_CHANNEL_GENERAL;
-  }
-  return PAWFECT_CHANNEL_CARE;
-}
 
 function normalizeData(
   data?: Record<string, string>,
@@ -81,14 +69,26 @@ export class NotifeeNotificationService implements NotificationService {
     }
 
     const data = normalizeData(payload.data);
-    const channelId = channelIdForPayload(data);
+    const channelId = channelIdForNotificationData(data);
+    const iosSound = resolveIosNotificationSound(data);
+    const androidSound = resolveAndroidNotificationSound(data);
+    const profile = parseSoundProfile(data?.soundProfile);
+    const androidImportance =
+      profile?.tier === 'urgent'
+        ? AndroidImportance.HIGH
+        : profile?.tier === 'soft'
+          ? AndroidImportance.LOW
+          : AndroidImportance.DEFAULT;
+    const exactAlarmAllowed = await canUseAndroidExactAlarms();
     const trigger: TimestampTrigger = {
       type: TriggerType.TIMESTAMP,
       timestamp: ts,
-      alarmManager: {
-        allowWhileIdle: true,
-      },
     };
+    if (exactAlarmAllowed) {
+      trigger.alarmManager = {
+        allowWhileIdle: true,
+      };
+    }
     if (isRepeatingDaily) {
       trigger.repeatFrequency = RepeatFrequency.DAILY;
     } else if (isRepeatingWeekly) {
@@ -111,7 +111,8 @@ export class NotifeeNotificationService implements NotificationService {
           data,
           android: {
             channelId,
-            importance: AndroidImportance.HIGH,
+            importance: androidImportance,
+            ...(androidSound !== 'default' ? { sound: androidSound } : {}),
             ...androidBrandedAppearance,
             pressAction: {
               id: 'default',
@@ -120,7 +121,7 @@ export class NotifeeNotificationService implements NotificationService {
             ...(androidActions.length > 0 ? { actions: androidActions } : {}),
           },
           ios: {
-            sound: 'default',
+            sound: iosSound,
             ...(payload.actions != null && payload.actions.length > 0
               ? {
                   categoryId: 'care_schedule',
@@ -154,7 +155,16 @@ export class NotifeeNotificationService implements NotificationService {
     }
 
     const data = normalizeData(payload.data);
-    const channelId = channelIdForPayload(data);
+    const channelId = channelIdForNotificationData(data);
+    const iosSound = resolveIosNotificationSound(data);
+    const androidSound = resolveAndroidNotificationSound(data);
+    const displayProfile = parseSoundProfile(data?.soundProfile);
+    const displayImportance =
+      displayProfile?.tier === 'urgent'
+        ? AndroidImportance.HIGH
+        : displayProfile?.tier === 'soft'
+          ? AndroidImportance.LOW
+          : AndroidImportance.DEFAULT;
     try {
       await notifee.displayNotification({
         id: payload.id,
@@ -163,7 +173,8 @@ export class NotifeeNotificationService implements NotificationService {
         data,
         android: {
           channelId,
-          importance: AndroidImportance.DEFAULT,
+          importance: displayImportance,
+          ...(androidSound !== 'default' ? { sound: androidSound } : {}),
           ...androidBrandedAppearance,
           pressAction: {
             id: 'default',
@@ -171,7 +182,7 @@ export class NotifeeNotificationService implements NotificationService {
           },
         },
         ios: {
-          sound: 'default',
+          sound: iosSound,
         },
       });
       const deliveredAtIso = new Date().toISOString();

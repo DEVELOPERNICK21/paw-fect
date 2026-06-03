@@ -102,12 +102,27 @@ export const SettingsScreen: React.FC = () => {
         return;
       }
       try {
-        const when = await scheduleNotificationSelfTest();
+        const activePet =
+          usePetStore.getState().activePet ?? usePetStore.getState().pets[0];
+        const { scheduledDate, soundProfile } = await scheduleNotificationSelfTest(
+          undefined,
+          activePet != null
+            ? {
+                petSpecies: activePet.type,
+                tone: 'active',
+                tier: 'urgent',
+              }
+            : undefined,
+        );
         const pending = await countPendingTriggerNotifications();
         const reminderPending = await countPendingReminderNotifications();
+        const soundLine =
+          soundProfile != null
+            ? ` Uses custom sound: ${soundProfile}.`
+            : ' Add a pet profile to preview custom dog/cat sounds.';
         Alert.alert(
           'Test scheduled',
-          `You should get a test alert around ${when.toLocaleTimeString()}. ${pending} scheduled alert(s) are queued on this device (${reminderPending} reminder).`,
+          `You should get a test alert around ${scheduledDate.toLocaleTimeString()}.${soundLine} ${pending} scheduled alert(s) are queued on this device (${reminderPending} reminder).`,
         );
       } catch (error) {
         const message =

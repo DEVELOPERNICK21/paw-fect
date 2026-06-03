@@ -74,8 +74,9 @@ export const usePetStore = create<PetState>((set, get) => ({
   activePet: null,
   loading: false,
   loadError: null,
+  /** Clears pet state; keeps loading true until the next loadPets completes. */
   reset: () =>
-    set({ pets: [], activePet: null, loading: false, loadError: null }),
+    set({ pets: [], activePet: null, loading: true, loadError: null }),
 
   resyncDailyRoutineNotifications: async () => {
     const pets = get().pets;

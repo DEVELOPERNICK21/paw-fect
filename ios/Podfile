@@ -11,6 +11,12 @@ require 'fileutils'
 # https://github.com/invertase/react-native-firebase/issues/8215
 $RNFirebaseAsStaticFramework = true
 
+# RN 0.84 default prebuilt React-Core conflicts with use_frameworks! + RNFB (RCTBridgeModule import errors).
+# Build React Native from source instead of Maven tarballs.
+# https://github.com/invertase/react-native-firebase/issues/8912
+ENV['RCT_USE_PREBUILT_RNCORE'] = '0'
+ENV['RCT_USE_RN_DEP'] = '0'
+
 def ensure_grpc_modulemap_symlink
   grpc_modulemap_src = File.join(__dir__, 'Pods', 'Target Support Files', 'gRPC-Core', 'gRPC-Core.modulemap')
   grpc_modulemap_dest_dir = File.join(__dir__, 'Pods', 'Headers', 'Private', 'grpc')
@@ -25,7 +31,6 @@ end
 
 platform :ios, min_ios_version_supported
 prepare_react_native_project!
-use_modular_headers!
 
 framework_linkage = ENV['USE_FRAMEWORKS'] == 'dynamic' ? :dynamic : :static
 Pod::UI.puts "Configuring Pod with #{framework_linkage}ally linked Frameworks".green
@@ -51,6 +56,24 @@ target 'paw_fect' do
     # CocoaPods sometimes leaves gRPC-Core.modulemap only in Target Support Files
     # while RNFirebase/Firestore compilers expect it under Headers/Private/grpc.
     ensure_grpc_modulemap_symlink
+
+    # RNFB pods import React-Core headers that are not modular; required with use_frameworks!
+    # https://github.com/invertase/react-native-firebase/issues/6933
+    installer.pods_project.targets.each do |target|
+      if target.name.start_with?('RNFB')
+        target.build_configurations.each do |config|
+          config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+        end
+      end
+
+      # Xcode 26+ Clang rejects fmt consteval; compile fmt pod as C++17 only.
+      # https://github.com/facebook/react-native/issues/55601
+      if target.name == 'fmt'
+        target.build_configurations.each do |config|
+          config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
+        end
+      end
+    end
   end
 end
 

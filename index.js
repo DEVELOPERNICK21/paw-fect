@@ -2,6 +2,7 @@
  * @format
  */
 
+import '@react-native-firebase/app';
 import notifee, { EventType } from '@notifee/react-native';
 import { AppRegistry } from 'react-native';
 

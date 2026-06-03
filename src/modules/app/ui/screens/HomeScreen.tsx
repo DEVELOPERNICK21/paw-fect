@@ -5,7 +5,6 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 import type { HomeRootNavigation } from '../../../../app/navigation/types';
 import { useAppTabBarInset } from '../../../../app/navigation/layout';
-import { AppNavigation } from '../../../../app/navigation/navigationService';
 import { AppText } from '../../../../shared/components/AppText';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { useHomeDashboardStore } from '../../store/homeDashboardStore';
@@ -52,13 +51,20 @@ export const HomeScreen: React.FC = () => {
 
   useFocusEffect(
     useCallback(() => {
-      void loadPets().catch(() => {});
-      requestDashboardRefresh();
-      if (activePetId) {
-        void loadDaySchedule(activePetId);
+      const { pets: currentPets, loading: petsLoading } = usePetStore.getState();
+      if (!petsLoading && currentPets.length === 0) {
+        void loadPets().catch(() => {});
       }
-    }, [activePetId, loadDaySchedule, loadPets, requestDashboardRefresh]),
+      requestDashboardRefresh();
+    }, [loadPets, requestDashboardRefresh]),
   );
+
+  useEffect(() => {
+    if (!activePetId) {
+      return;
+    }
+    void loadDaySchedule(activePetId);
+  }, [activePetId, loadDaySchedule]);
 
   const goPetProfile = useCallback(() => {
     navigation.navigate('PetsTab', { screen: 'PetProfile' });
@@ -187,12 +193,6 @@ export const HomeScreen: React.FC = () => {
   const showBlockingLoader = viewModel === null;
   const syncError = viewModel?.lastError ?? null;
 
-  useEffect(() => {
-    if (viewModel != null && !viewModel.petsLoading && !viewModel.hasAnyPet) {
-      AppNavigation.toPetsAdd();
-    }
-  }, [viewModel]);
-
   return (
     <SafeAreaView
       edges={['top', 'left', 'right']}
@@ -250,7 +250,7 @@ export const HomeScreen: React.FC = () => {
             ]}
             showsVerticalScrollIndicator={false}
           >
-            {viewModel.activePet ? (
+            {viewModel?.activePet ? (
               <>
                 <HomePetSwitcherBar
                   pets={pets}

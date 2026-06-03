@@ -384,6 +384,23 @@ export const HealthRecordScreen: React.FC = () => {
     vaccinationRecords,
   ]);
 
+  const minimumEditDueDate = useMemo(() => {
+    if (!editingRecord || !todayDate) {
+      return undefined;
+    }
+    const todayMs = new Date(`${todayDate}T12:00:00`).getTime();
+    const dobMs = activePet?.dob
+      ? new Date(`${activePet.dob.slice(0, 10)}T12:00:00`).getTime()
+      : Number.NEGATIVE_INFINITY;
+    if (editingRecord.type === 'deworming') {
+      return new Date(Math.max(todayMs, dobMs));
+    }
+    if (activePet?.dob) {
+      return new Date(`${activePet.dob.slice(0, 10)}T12:00:00`);
+    }
+    return undefined;
+  }, [editingRecord, todayDate, activePet?.dob]);
+
   const formatUiDate = (isoDate: string): string => {
     const date = new Date(`${isoDate}T00:00:00`);
     if (Number.isNaN(date.getTime())) return isoDate;
@@ -453,23 +470,6 @@ export const HealthRecordScreen: React.FC = () => {
     setEditingDueDate('');
     setEditDueDateError(null);
   };
-
-  const minimumEditDueDate = useMemo(() => {
-    if (!editingRecord || !todayDate) {
-      return undefined;
-    }
-    const todayMs = new Date(`${todayDate}T12:00:00`).getTime();
-    const dobMs = activePet?.dob
-      ? new Date(`${activePet.dob.slice(0, 10)}T12:00:00`).getTime()
-      : Number.NEGATIVE_INFINITY;
-    if (editingRecord.type === 'deworming') {
-      return new Date(Math.max(todayMs, dobMs));
-    }
-    if (activePet?.dob) {
-      return new Date(`${activePet.dob.slice(0, 10)}T12:00:00`);
-    }
-    return undefined;
-  }, [editingRecord, todayDate, activePet?.dob]);
 
   const applyDateUpdate = (): void => {
     if (!editingRecord || !editingDueDate) return;

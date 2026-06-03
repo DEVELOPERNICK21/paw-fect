@@ -2,6 +2,7 @@ apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 apply plugin: "com.google.gms.google-services"
+apply plugin: "com.google.firebase.crashlytics"
 
 /*
  * Google Sign-In / Firebase: register every certificate that signs the APK users run.
@@ -92,7 +93,7 @@ android {
         applicationId "app.pawfect"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 9
+        versionCode 15
         versionName "1.0"
         missingDimensionStrategy "store", "play"
     }

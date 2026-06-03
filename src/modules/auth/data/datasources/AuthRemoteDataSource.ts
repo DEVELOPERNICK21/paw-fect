@@ -6,6 +6,7 @@ import {
   createUserWithEmailAndPassword,
   fetchSignInMethodsForEmail,
   getAuth,
+  getIdToken,
   GoogleAuthProvider,
   onAuthStateChanged,
   PhoneAuthProvider,
@@ -167,7 +168,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       if (!authResult.user) {
         throw new Error('Failed to login');
       }
-      const token = await authResult.user.getIdToken();
+      const token = await getIdToken(authResult.user);
       const user = this.mapFirebaseUser(authResult.user, new Date().toISOString());
       return { user, token };
     } catch (error) {
@@ -196,7 +197,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       if (!authResult.user) {
         throw new Error('Failed to signup');
       }
-      const token = await authResult.user.getIdToken();
+      const token = await getIdToken(authResult.user);
       const user = this.mapFirebaseUser(authResult.user, new Date().toISOString());
       return { user, token };
     } catch (error) {
@@ -243,7 +244,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         throw new Error('Google Sign-In failed.');
       }
 
-      const token = await authResult.user.getIdToken();
+      const token = await getIdToken(authResult.user);
       const user = this.mapFirebaseUser(authResult.user, new Date().toISOString());
       return { user, token };
     } catch (error) {
@@ -275,7 +276,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         throw new Error('Failed to verify OTP');
       }
 
-      const token = await firebaseUser.getIdToken();
+      const token = await getIdToken(firebaseUser);
       const user = this.mapFirebaseUser(
         firebaseUser,
         authResult.additionalUserInfo?.profile ? undefined : new Date().toISOString(),
@@ -303,7 +304,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     if (!currentUser) {
       return null;
     }
-    const token = await currentUser.getIdToken(true);
+    const token = await getIdToken(currentUser, true);
     return {
       user: this.mapFirebaseUser(currentUser),
       token,
@@ -355,7 +356,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         return;
       }
       try {
-        const token = await firebaseUser.getIdToken(true);
+        const token = await getIdToken(firebaseUser, true);
         onChange({
           user: this.mapFirebaseUser(firebaseUser),
           token,

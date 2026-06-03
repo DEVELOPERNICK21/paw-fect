@@ -1,6 +1,11 @@
 import type { SmartHealthRecord } from '../../modules/records/domain/models/SmartHealthRecord';
 import { getTodayIsoDateLocal } from '../../shared/utils/calendarDate';
 import type { NotificationService } from './notificationService';
+import { attentionTierFromHealthSlot } from './notificationSoundCatalog';
+import {
+  withNotificationSound,
+  type PetNotificationSpecies,
+} from './petNotificationSounds';
 
 const MAX_SCHEDULED_RECORDS = 12;
 const DUE_HOUR = 9;
@@ -38,6 +43,7 @@ export async function cancelSmartHealthNotificationsForRecord(
 export async function scheduleSmartHealthDueNotifications(
   record: SmartHealthRecord,
   service: NotificationService,
+  petSpecies?: PetNotificationSpecies,
 ): Promise<void> {
   if (record.status === 'completed' || record.status === 'skipped') {
     await cancelSmartHealthNotificationsForRecord(record.id, service);
@@ -54,33 +60,48 @@ export async function scheduleSmartHealthDueNotifications(
   overdueDate.setDate(overdueDate.getDate() + 1);
 
   const isOverdueContext = getTodayIsoDateLocal() > record.dueDate;
-  const data: Record<string, string> = {
+  const baseData: Record<string, string> = {
     recordId: record.id,
+    petId: record.petId,
     type: String(record.type),
     kind: 'smartHealth',
   };
 
+  const dataForSlot = (slot: 'd2' | 'due' | 'overdue'): Record<string, string> =>
+    petSpecies != null
+      ? withNotificationSound(
+          baseData,
+          petSpecies,
+          'health',
+          attentionTierFromHealthSlot(slot),
+        )
+      : baseData;
+
   const [idD2, idDue, idOverdue] = smartHealthNotificationIds(record.id);
   const slots: Array<{
     id: string;
+    slot: 'd2' | 'due' | 'overdue';
     title: string;
     body: string;
     scheduledDate: Date;
   }> = [
     {
       id: idD2,
+      slot: 'd2',
       title: `${record.name} due soon`,
       body: `${record.name} is due in 2 days. Tap to open health records.`,
       scheduledDate: twoDaysBefore,
     },
     {
       id: idDue,
+      slot: 'due',
       title: `${record.name} is due today`,
       body: 'Please complete this health task today.',
       scheduledDate: dueDate,
     },
     {
       id: idOverdue,
+      slot: 'overdue',
       title: `${record.name} is overdue`,
       body: isOverdueContext
         ? 'This dose was missed — open the app to get back on track.'
@@ -98,7 +119,7 @@ export async function scheduleSmartHealthDueNotifications(
       title: slot.title,
       body: slot.body,
       scheduledDate: slot.scheduledDate,
-      data,
+      data: dataForSlot(slot.slot),
     });
   }
 }
@@ -118,6 +139,7 @@ function getSchedulableRecords(records: SmartHealthRecord[]): SmartHealthRecord[
 export async function syncAllSmartHealthDueNotifications(
   records: SmartHealthRecord[],
   service: NotificationService,
+  petSpeciesByPetId?: ReadonlyMap<string, PetNotificationSpecies>,
 ): Promise<void> {
   const schedulable = getSchedulableRecords(records);
   const schedulableIds = new Set(schedulable.map(record => record.id));
@@ -129,6 +151,10 @@ export async function syncAllSmartHealthDueNotifications(
   }
 
   for (const record of schedulable.slice(0, MAX_SCHEDULED_RECORDS)) {
-    await scheduleSmartHealthDueNotifications(record, service);
+    await scheduleSmartHealthDueNotifications(
+      record,
+      service,
+      petSpeciesByPetId?.get(record.petId),
+    );
   }
 }

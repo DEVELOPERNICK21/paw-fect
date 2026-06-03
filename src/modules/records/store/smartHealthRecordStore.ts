@@ -10,10 +10,7 @@ import type { MilestoneShareKind } from '../domain/utils/isMilestoneCompletion';
 import { isMilestoneCompletion } from '../domain/utils/isMilestoneCompletion';
 import { smartHealthSelectors } from './smartHealthSelectors';
 import { recordsComposition } from '../recordsComposition';
-import {
-  cancelSmartHealthNotificationsForRecord,
-  syncAllSmartHealthDueNotifications,
-} from '../../../infrastructure/notifications/smartHealthNotificationSchedule';
+import { cancelSmartHealthNotificationsForRecord } from '../../../infrastructure/notifications/smartHealthNotificationSchedule';
 
 const STORE_ACTION_TIMEOUT_MS = 15000;
 
@@ -75,10 +72,7 @@ function requireUserId(): string | null {
 }
 
 async function refreshDueNotifications(records: SmartHealthRecord[]): Promise<void> {
-  await syncAllSmartHealthDueNotifications(
-    records,
-    recordsComposition.notificationService,
-  );
+  await recordsComposition.syncSmartHealthNotificationsForRecords(records);
 }
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {

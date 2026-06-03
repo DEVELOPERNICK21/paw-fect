@@ -49,9 +49,13 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       .doc(userId)
       .onSnapshot(
         snap => {
-          const parsed = parseFirestoreEntitlement(snap.data()?.entitlement);
-          if (parsed) {
-            set({ entitlement: parsed, serverSynced: true });
+          try {
+            const parsed = parseFirestoreEntitlement(snap.data()?.entitlement);
+            if (parsed) {
+              set({ entitlement: parsed, serverSynced: true });
+            }
+          } catch {
+            /* malformed snapshot — keep last entitlement */
           }
         },
         () => {
