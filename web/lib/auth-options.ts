@@ -26,18 +26,12 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
         if (email !== adminEmail) {
-          console.log("[auth][credentials] reject: email mismatch", {
-            providedEmail: email,
-            expectedEmail: adminEmail,
-          });
+          console.log("[auth][credentials] reject: email mismatch");
           return null;
         }
         const ok = await compare(password, hash);
         if (!ok) {
-          console.log("[auth][credentials] reject: password mismatch", {
-            receivedPasswordLength: password.length,
-            expectedHashPrefix: hash.slice(0, 7),
-          });
+          console.log("[auth][credentials] reject: password mismatch");
           return null;
         }
         console.log("[auth][credentials] success");
