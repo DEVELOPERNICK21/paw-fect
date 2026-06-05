@@ -12,6 +12,7 @@ import type {
   PetHealthCardViewModel,
 } from '../models/PetHealthCardViewModel';
 import { formatPetAgeShareLabel } from '../utils/petDobDisplay';
+import { safeToIsoString } from '../../../../shared/utils/calendarDate';
 
 const SHARE_URL_DISPLAY = 'paw-fect.vercel.app';
 const BRAND_LABEL = '🐾 Paw-fect';
@@ -129,7 +130,7 @@ function pickRecentCompleted(
   now: Date,
 ): SmartHealthRecord[] {
   const cutoff = new Date(now.getTime() - COMPLETED_WINDOW_DAYS * MS_PER_DAY);
-  const cutoffIso = cutoff.toISOString().slice(0, 10);
+  const cutoffIso = safeToIsoString(cutoff)?.slice(0, 10) ?? '1970-01-01';
   return records
     .filter(r => r.status === 'completed')
     .filter(r => (r.completedDate ?? r.dueDate) >= cutoffIso)
