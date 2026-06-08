@@ -89,13 +89,6 @@ export const HealthRecordScreen: React.FC = () => {
   // Must match DatePickerField (which emits local YYYY-MM-DD).
   const todayDate = getTodayIsoDateLocal();
 
-  const handleMarkDewormingDone = () => {
-    if (!displayPrimaryTask || !activePet?.dob || !todayDate) return;
-
-    setDewormingLogError(null);
-    setSelectedDewormingDate(todayDate);
-    setShowDewormingModal(true);
-  };
 
   const handleSaveDewormingDate = async () => {
     if (!selectedDewormingDate || !activePet?.dob || !displayPrimaryTask)
@@ -150,12 +143,6 @@ export const HealthRecordScreen: React.FC = () => {
 
   const isDewormingCategory = selectedCategory === 'Deworming';
 
-  const handleMarkVaccinationDone = () => {
-    if (!displayPrimaryTask || !todayDate) return;
-    setVaccinationLogError(null);
-    setSelectedVaccinationDate(todayDate);
-    setShowVaccinationModal(true);
-  };
 
   const handleSaveVaccinationDate = async () => {
     if (!displayPrimaryTask || !selectedVaccinationDate) return;
@@ -265,15 +252,41 @@ export const HealthRecordScreen: React.FC = () => {
     [getUpcomingVaccinations, records],
   );
 
-  const displayPrimaryTask = isDewormingCategory
-    ? dewormingNextStep
-    : vaccinationPrimaryTask;
-  const displayUpcomingItems = isDewormingCategory
-    ? dewormingUpcoming.slice(0, 5)
-    : vaccinationUpcomingItems;
-  const displayCompletedRecords = isDewormingCategory
-    ? dewormingProjection.history
-    : vaccinationRecords.filter(r => r.status === 'completed');
+  const displayPrimaryTask = useMemo(
+    () => (isDewormingCategory ? dewormingNextStep : vaccinationPrimaryTask),
+    [isDewormingCategory, dewormingNextStep, vaccinationPrimaryTask],
+  );
+
+  const displayUpcomingItems = useMemo(
+    () =>
+      isDewormingCategory
+        ? dewormingUpcoming.slice(0, 5)
+        : vaccinationUpcomingItems,
+    [isDewormingCategory, dewormingUpcoming, vaccinationUpcomingItems],
+  );
+
+  const displayCompletedRecords = useMemo(
+    () =>
+      isDewormingCategory
+        ? dewormingProjection.history
+        : vaccinationRecords.filter(r => r.status === 'completed'),
+    [isDewormingCategory, dewormingProjection.history, vaccinationRecords],
+  );
+
+  const handleMarkDewormingDone = React.useCallback(() => {
+    if (!displayPrimaryTask || !activePet?.dob || !todayDate) return;
+
+    setDewormingLogError(null);
+    setSelectedDewormingDate(todayDate);
+    setShowDewormingModal(true);
+  }, [displayPrimaryTask, activePet?.dob, todayDate]);
+
+  const handleMarkVaccinationDone = React.useCallback(() => {
+    if (!displayPrimaryTask || !todayDate) return;
+    setVaccinationLogError(null);
+    setSelectedVaccinationDate(todayDate);
+    setShowVaccinationModal(true);
+  }, [displayPrimaryTask, todayDate]);
 
   const canMarkDewormingDone = useMemo(() => {
     if (!isDewormingCategory || !displayPrimaryTask || !todayDate) return false;
@@ -459,11 +472,17 @@ export const HealthRecordScreen: React.FC = () => {
   const logPrimaryCtaLabel =
     selectedCategory === 'Vaccination' ? 'Log Vaccination' : 'Log Deworming';
 
-  const openUpdateDate = (record: SmartHealthRecord): void => {
+  const openUpdateDate = React.useCallback((record: SmartHealthRecord): void => {
     setEditingRecord(record);
     setEditingDueDate(record.dueDate);
     setEditDueDateError(null);
-  };
+  }, []);
+
+  const handleOpenSkipModal = React.useCallback(() => {
+    setSkipReasonInput('');
+    setSkipError(null);
+    setShowSkipModal(true);
+  }, []);
 
   const closeUpdateDate = (): void => {
     setEditingRecord(null);
@@ -654,11 +673,7 @@ export const HealthRecordScreen: React.FC = () => {
                     }
                     onSkipDose={
                       canShowDewormingAdjustActions
-                        ? () => {
-                            setSkipReasonInput('');
-                            setSkipError(null);
-                            setShowSkipModal(true);
-                          }
+                        ? handleOpenSkipModal
                         : undefined
                     }
                   />

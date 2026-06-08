@@ -14,11 +14,18 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 const toIsoDateOnly = (value: string): string => value.slice(0, 10);
 
+const safeToIsoDate = (d: Date, fallback: string): string => {
+  if (Number.isNaN(d.getTime())) {
+    return toIsoDateOnly(fallback);
+  }
+  return toIsoDateOnly(d.toISOString());
+};
+
 const addDays = (date: string, days: number): string => {
   const [year, month, day] = date.split('-').map(Number);
   const d = new Date(Date.UTC(year, (month ?? 1) - 1, day ?? 1));
   d.setUTCDate(d.getUTCDate() + days);
-  return toIsoDateOnly(d.toISOString());
+  return safeToIsoDate(d, date);
 };
 
 const addWeeks = (date: string, weeks: number): string =>
@@ -28,7 +35,7 @@ const addMonths = (date: string, months: number): string => {
   const [year, month, day] = date.split('-').map(Number);
   const d = new Date(Date.UTC(year, (month ?? 1) - 1, day ?? 1));
   d.setUTCMonth(d.getUTCMonth() + months);
-  return toIsoDateOnly(d.toISOString());
+  return safeToIsoDate(d, date);
 };
 
 const daysBetween = (from: string, to: string): number => {

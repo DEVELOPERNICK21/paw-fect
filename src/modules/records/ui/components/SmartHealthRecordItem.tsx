@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../../../../shared/components/AppText';
 import { icons } from '../../../../shared/assets/icons';
+import type { AppColors } from '../../../../shared/theme/colors';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import type { SmartHealthRecord } from '../../domain/models/SmartHealthRecord';
 import { cadenceDisplayLabel } from '../../domain/utils/DewormingEngine';
@@ -28,30 +29,33 @@ function formatDate(isoDate: string): string {
   });
 }
 
-export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
-  record,
-  onMarkDone,
-  onEditDate,
-  onSkipDose,
-  variant = 'default',
-  primaryActionLabel = 'Mark as Done',
-}) => {
-  const { colors, radius, space, spacing, textStyles, fontFamilies } =
-    useTheme();
+export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = React.memo(
+  ({
+    record,
+    onMarkDone,
+    onEditDate,
+    onSkipDose,
+    variant = 'default',
+    primaryActionLabel = 'Mark as Done',
+  }) => {
+  const theme = useTheme();
+  const { colors, fontFamilies, textStyles } = theme;
+
+  const styles = useMemo(
+    () =>
+      createStyles({
+        colors,
+        radius: theme.radius,
+        spacing: theme.spacing,
+        space: theme.space,
+        variant,
+        status: record.status,
+      }),
+    [colors, theme.radius, theme.spacing, theme.space, variant, record.status],
+  );
+
   const isVaccination = record.type === 'vaccination';
 
-  const badgeBg =
-    record.status === 'completed'
-      ? colors.successSurface
-      : record.status === 'missed'
-      ? colors.brandTint10
-      : record.status === 'skipped'
-      ? colors.surfaceAlt
-      : record.status === 'overdue'
-      ? colors.brandTint20
-      : record.status === 'locked'
-      ? colors.infoSurface
-      : colors.brandTint12;
   const badgeText =
     record.status === 'completed'
       ? colors.success
@@ -64,6 +68,7 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
       : record.status === 'locked'
       ? colors.info
       : colors.warning;
+
   const statusLabel =
     record.status === 'completed'
       ? 'COMPLETED'
@@ -115,31 +120,9 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
   const showCompletedActions = record.status === 'completed' && onEditDate;
 
   return (
-    <View
-      style={[
-        styles.card,
-        {
-          borderRadius: radius.lg,
-          backgroundColor:
-            variant === 'hero' ? colors.surface : colors.surfaceAlt,
-          borderColor:
-            variant === 'hero' ? colors.brandTint10 : colors.borderSubtle,
-          padding: space('md'),
-        },
-      ]}
-    >
-      <View style={[styles.row, { gap: space('md') }]}>
-        <View
-          style={[
-            styles.iconCircle,
-            {
-              borderRadius: radius.round,
-              backgroundColor: colors.surface,
-              width: spacing['4xl'],
-              height: spacing['4xl'],
-            },
-          ]}
-        >
+    <View style={styles.card}>
+      <View style={styles.row}>
+        <View style={styles.iconCircle}>
           {isVaccination ? (
             <icons.vaccineIcon width={19} height={21} />
           ) : (
@@ -147,18 +130,8 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
           )}
         </View>
 
-        <View style={[styles.infoCol, { gap: space('xs') }]}>
-          <View
-            style={[
-              styles.badge,
-              {
-                borderRadius: radius.round,
-                backgroundColor: badgeBg,
-                paddingHorizontal: space('sm'),
-                paddingVertical: space('xs'),
-              },
-            ]}
-          >
+        <View style={styles.infoCol}>
+          <View style={styles.badge}>
             <AppText
               style={[
                 textStyles.overline,
@@ -191,12 +164,7 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
       </View>
 
       {showActionRow ? (
-        <View
-          style={[
-            styles.actionRow,
-            { marginTop: space('md'), gap: space('sm') },
-          ]}
-        >
+        <View style={styles.actionRow}>
           {onMarkDone ? (
             <Pressable
               accessibilityRole="button"
@@ -204,11 +172,8 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
               onPress={onMarkDone}
               style={({ pressed }) => [
                 styles.actionBtn,
-                {
-                  borderRadius: radius.round,
-                  backgroundColor: colors.accent,
-                  opacity: pressed ? 0.9 : 1,
-                },
+                styles.actionBtnPrimary,
+                { opacity: pressed ? 0.9 : 1 },
               ]}
             >
               <AppText
@@ -228,13 +193,8 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
               onPress={onEditDate}
               style={({ pressed }) => [
                 styles.actionBtn,
-                {
-                  borderRadius: radius.round,
-                  borderWidth: 1,
-                  borderColor: colors.borderSubtle,
-                  backgroundColor: colors.surface,
-                  opacity: pressed ? 0.9 : 1,
-                },
+                styles.actionBtnOutline,
+                { opacity: pressed ? 0.9 : 1 },
               ]}
             >
               <AppText
@@ -257,13 +217,8 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
               onPress={onSkipDose}
               style={({ pressed }) => [
                 styles.actionBtn,
-                {
-                  borderRadius: radius.round,
-                  borderWidth: 1,
-                  borderColor: colors.borderSubtle,
-                  backgroundColor: colors.surface,
-                  opacity: pressed ? 0.9 : 1,
-                },
+                styles.actionBtnOutline,
+                { opacity: pressed ? 0.9 : 1 },
               ]}
             >
               <AppText
@@ -283,20 +238,15 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
       ) : null}
 
       {showCompletedActions ? (
-        <View style={{ marginTop: space('md'), alignItems: 'flex-end' }}>
+        <View style={styles.completedActionRow}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Edit date for ${record.name}`}
             onPress={onEditDate}
             style={({ pressed }) => [
               styles.actionBtn,
-              {
-                borderRadius: radius.round,
-                borderWidth: 1,
-                borderColor: colors.borderSubtle,
-                backgroundColor: colors.surface,
-                opacity: pressed ? 0.9 : 1,
-              },
+              styles.actionBtnOutline,
+              { opacity: pressed ? 0.9 : 1 },
             ]}
           >
             <AppText
@@ -312,39 +262,101 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
       ) : null}
     </View>
   );
-};
-
-const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  iconCircle: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  infoCol: {
-    flex: 1,
-    minWidth: 0,
-  },
-  badge: {
-    alignSelf: 'flex-start',
-  },
-  actionRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-  },
-  actionBtn: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    minHeight: 36,
-  },
 });
+
+SmartHealthRecordItem.displayName = 'SmartHealthRecordItem';
+
+interface StyleParams {
+  colors: AppColors;
+  radius: ReturnType<typeof useTheme>['radius'];
+  spacing: ReturnType<typeof useTheme>['spacing'];
+  space: ReturnType<typeof useTheme>['space'];
+  variant: 'default' | 'hero';
+  status: SmartHealthRecord['status'];
+}
+
+const createStyles = ({
+  colors,
+  radius,
+  spacing,
+  space,
+  variant,
+  status,
+}: StyleParams) => {
+  const badgeBg =
+    status === 'completed'
+      ? colors.successSurface
+      : status === 'missed'
+      ? colors.brandTint10
+      : status === 'skipped'
+      ? colors.surfaceAlt
+      : status === 'overdue'
+      ? colors.brandTint20
+      : status === 'locked'
+      ? colors.infoSurface
+      : colors.brandTint12;
+
+  return StyleSheet.create({
+    card: {
+      borderWidth: 1,
+      borderRadius: radius.lg,
+      backgroundColor: variant === 'hero' ? colors.surface : colors.surfaceAlt,
+      borderColor: variant === 'hero' ? colors.brandTint10 : colors.borderSubtle,
+      padding: space('md'),
+    },
+    row: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: space('md'),
+    },
+    iconCircle: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.round,
+      backgroundColor: colors.surface,
+      width: spacing['4xl'],
+      height: spacing['4xl'],
+    },
+    infoCol: {
+      flex: 1,
+      minWidth: 0,
+      gap: space('xs'),
+    },
+    badge: {
+      alignSelf: 'flex-start',
+      borderRadius: radius.round,
+      backgroundColor: badgeBg,
+      paddingHorizontal: space('sm'),
+      paddingVertical: space('xs'),
+    },
+    actionRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      marginTop: space('md'),
+      gap: space('sm'),
+    },
+    actionBtn: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      minHeight: 36,
+      borderRadius: radius.round,
+    },
+    actionBtnPrimary: {
+      backgroundColor: colors.accent,
+    },
+    actionBtnOutline: {
+      borderWidth: 1,
+      borderColor: colors.borderSubtle,
+      backgroundColor: colors.surface,
+    },
+    completedActionRow: {
+      marginTop: space('md'),
+      alignItems: 'flex-end',
+    },
+  });
+};
