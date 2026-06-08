@@ -1,4 +1,16 @@
-## 2025-05-22 - [RangeError: Invalid time value in Date Utility]
-**Crash:** Calling `.toISOString()` on an Invalid Date object (created from a malformed string) throws a RangeError, terminating the app.
-**Learning:** Date math helpers (`addDays`, `addMonths`) were assuming input strings were always valid YYYY-MM-DD. Malformed data from the DB or external sources was bypassing early guards and crashing in the utility layer.
-**Prevention:** Always check `!isNaN(d.getTime())` before calling `.toISOString()` in utility functions. Use a `safeToIsoDate` wrapper to provide a fallback (like the original input) instead of crashing the process.
+# Ember Journal 🔥
+
+Crash triage and stability learnings for Pet Perfect.
+
+## 2025-05-15 - RangeError: Invalid time value in toISOString()
+
+**Crash:** Calling `.toISOString()` on a `Date` object that is "Invalid Date" (e.g. from `new Date(NaN)` or malformed date math) throws a fatal `RangeError: Invalid time value`. This was observed in notification scheduling and UI view models.
+
+**Learning:** React Native apps frequently crash when background tasks or selectors perform date math on null/undefined fields that haven't been properly guarded at the Domain layer.
+
+**Prevention:** Always use `safeToIsoString` or check `!isNaN(date.getTime())` before calling `.toISOString()`.
+
+**Fix:**
+- Introduced `isValidDate` and `safeToIsoString` helpers in `src/shared/utils/calendarDate.ts`.
+- Applied `safeToIsoString` in `src/infrastructure/notifications/notifeeNotificationService.ts` for safe logging/triage.
+- Hardened `pickRecentCompleted` in `src/modules/pets/domain/usecases/BuildPetHealthCardViewModel.ts` to prevent view model crashes.

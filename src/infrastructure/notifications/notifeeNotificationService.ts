@@ -24,6 +24,7 @@ import type {
 } from './notificationService';
 import { emitNotificationFeedEvent } from './notificationFeedEvents';
 import { useSettingsStore } from '../../modules/settings/store/settingsStore';
+import { safeToIsoString } from '../../shared/utils/calendarDate';
 
 function normalizeData(
   data?: Record<string, string>,
@@ -61,7 +62,7 @@ export class NotifeeNotificationService implements NotificationService {
         // eslint-disable-next-line no-console
         console.log('[NotifeeNotificationService] skip schedule (past/near)', {
           id: payload.id,
-          scheduledDate: payload.scheduledDate.toISOString(),
+          scheduledDate: safeToIsoString(payload.scheduledDate),
           repeat: payload.repeat,
         });
       }
@@ -138,7 +139,7 @@ export class NotifeeNotificationService implements NotificationService {
         // eslint-disable-next-line no-console
         console.warn('[NotifeeNotificationService] schedule failed', {
           id: payload.id,
-          scheduledDate: payload.scheduledDate.toISOString(),
+          scheduledDate: safeToIsoString(payload.scheduledDate),
           error,
         });
       }

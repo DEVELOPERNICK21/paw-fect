@@ -33,3 +33,18 @@ export function calendarDaysBetweenIsoDates(fromIso: string, toIso: string): num
   const t1 = Date.UTC(y1, (m1 ?? 1) - 1, d1 ?? 1);
   return Math.round((t1 - t0) / 86400000);
 }
+
+/**
+ * Checks if a Date object is valid (not "Invalid Date").
+ */
+export function isValidDate(d: unknown): d is Date {
+  return d instanceof Date && !isNaN(d.getTime());
+}
+
+/**
+ * Safely converts a Date object to an ISO string.
+ * Returns null if the date is invalid, null, or undefined.
+ */
+export function safeToIsoString(d: Date | null | undefined): string | null {
+  return isValidDate(d) ? d.toISOString() : null;
+}
