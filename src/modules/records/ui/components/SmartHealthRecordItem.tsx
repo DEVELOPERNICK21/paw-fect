@@ -28,14 +28,15 @@ function formatDate(isoDate: string): string {
   });
 }
 
-export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
-  record,
-  onMarkDone,
-  onEditDate,
-  onSkipDose,
-  variant = 'default',
-  primaryActionLabel = 'Mark as Done',
-}) => {
+export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = React.memo(
+  ({
+    record,
+    onMarkDone,
+    onEditDate,
+    onSkipDose,
+    variant = 'default',
+    primaryActionLabel = 'Mark as Done',
+  }) => {
   const { colors, radius, space, spacing, textStyles, fontFamilies } =
     useTheme();
   const isVaccination = record.type === 'vaccination';
@@ -312,7 +313,8 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = ({
       ) : null}
     </View>
   );
-};
+},
+);
 
 const styles = StyleSheet.create({
   card: {
