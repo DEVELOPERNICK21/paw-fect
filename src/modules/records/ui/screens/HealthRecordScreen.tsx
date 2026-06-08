@@ -252,15 +252,26 @@ export const HealthRecordScreen: React.FC = () => {
     [getUpcomingVaccinations, records],
   );
 
-  const displayPrimaryTask = isDewormingCategory
-    ? dewormingNextStep
-    : vaccinationPrimaryTask;
-  const displayUpcomingItems = isDewormingCategory
-    ? dewormingUpcoming.slice(0, 5)
-    : vaccinationUpcomingItems;
-  const displayCompletedRecords = isDewormingCategory
-    ? dewormingProjection.history
-    : vaccinationRecords.filter(r => r.status === 'completed');
+  const displayPrimaryTask = useMemo(
+    () => (isDewormingCategory ? dewormingNextStep : vaccinationPrimaryTask),
+    [isDewormingCategory, dewormingNextStep, vaccinationPrimaryTask],
+  );
+
+  const displayUpcomingItems = useMemo(
+    () =>
+      isDewormingCategory
+        ? dewormingUpcoming.slice(0, 5)
+        : vaccinationUpcomingItems,
+    [isDewormingCategory, dewormingUpcoming, vaccinationUpcomingItems],
+  );
+
+  const displayCompletedRecords = useMemo(
+    () =>
+      isDewormingCategory
+        ? dewormingProjection.history
+        : vaccinationRecords.filter(r => r.status === 'completed'),
+    [isDewormingCategory, dewormingProjection.history, vaccinationRecords],
+  );
 
   const handleMarkDewormingDone = React.useCallback(() => {
     if (!displayPrimaryTask || !activePet?.dob || !todayDate) return;

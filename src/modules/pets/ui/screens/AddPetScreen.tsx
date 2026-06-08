@@ -469,6 +469,8 @@ export const AddPetScreen: React.FC = () => {
                 // Gate mode: no back route available.
               }
             }}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
           >
             <MaterialIcon
               kind="arrow-back"
@@ -534,6 +536,8 @@ export const AddPetScreen: React.FC = () => {
                   setLastDewormingDate('');
                   setLastDewormingUnknown(false);
                 }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: !hasPreviousDeworming }}
               >
                 <Text
                   style={[
@@ -557,6 +561,8 @@ export const AddPetScreen: React.FC = () => {
                   hasPreviousDeworming ? styles.genderChipSelected : undefined,
                 ]}
                 onPress={() => setHasPreviousDeworming(true)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: hasPreviousDeworming }}
               >
                 <Text
                   style={[
@@ -642,6 +648,8 @@ export const AddPetScreen: React.FC = () => {
                   setLastRabiesDate('');
                   setLastRabiesUnknown(false);
                 }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: !hasPreviousVaccination }}
               >
                 <Text
                   style={[
@@ -665,6 +673,8 @@ export const AddPetScreen: React.FC = () => {
                   hasPreviousVaccination ? styles.genderChipSelected : undefined,
                 ]}
                 onPress={() => setHasPreviousVaccination(true)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: hasPreviousVaccination }}
               >
                 <Text
                   style={[
@@ -747,6 +757,8 @@ export const AddPetScreen: React.FC = () => {
                   setLastRabiesDate('');
                   setLastRabiesUnknown(false);
                 }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: !hasPreviousRabies }}
               >
                 <Text
                   style={[
@@ -768,6 +780,8 @@ export const AddPetScreen: React.FC = () => {
                   hasPreviousRabies ? styles.genderChipSelected : undefined,
                 ]}
                 onPress={() => setHasPreviousRabies(true)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: hasPreviousRabies }}
               >
                 <Text
                   style={[
@@ -1105,6 +1119,7 @@ export const AddPetScreen: React.FC = () => {
             ]}
             onPress={handleSave}
             disabled={!canSave}
+            accessibilityRole="button"
           >
             <icons.paws width={18} height={18} />
             <Text style={[styles.ctaText, { fontFamily: fontFamilies.bold }]}>
