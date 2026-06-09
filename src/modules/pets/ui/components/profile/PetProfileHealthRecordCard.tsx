@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import type { HealthRecord } from '../../../../records/domain/models/HealthRecord';
@@ -7,6 +7,8 @@ import { MaterialIcon } from '../../../../../shared/components/MaterialIcon';
 import type { IconName } from '../../../../../shared/components/MaterialIcon';
 import { healthRecordIconName } from './healthRecordVisuals';
 import { useTheme } from '../../../../../shared/hooks/useTheme';
+import type { Theme } from '../../../../../shared/hooks/useTheme';
+import type { AppColors } from '../../../../../shared/theme/colors';
 
 export interface PetProfileHealthRecordCardProps {
   record: HealthRecord;
@@ -31,38 +33,30 @@ export const PetProfileHealthRecordCard: React.FC<PetProfileHealthRecordCardProp
     const { colors, radius, spacing, textStyles, fontFamilies } = theme;
 
     const iconName = healthRecordIconName(record);
-    const iconShell = iconShellFromIconName(colors, iconName);
+    const iconShell = useMemo(
+      () => iconShellFromIconName(colors, iconName),
+      [colors, iconName],
+    );
+
+    const styles = useMemo(
+      () =>
+        createStyles({
+          colors,
+          radius,
+          spacing,
+          iconShell,
+        }),
+      [colors, radius, spacing, iconShell],
+    );
 
     return (
-      <View
-        style={[
-          styles.card,
-          {
-            borderRadius: radius.lg,
-            borderWidth: 1,
-            borderColor: colors.borderSubtle,
-            backgroundColor: colors.surface,
-            padding: spacing.lg,
-            gap: spacing.md,
-          },
-        ]}
-      >
-        <View style={[styles.topRow, { gap: spacing.md }]}>
-          <View
-            style={[
-              styles.iconTile,
-              {
-                borderRadius: radius.md,
-                backgroundColor: iconShell.bg,
-                width: spacing['2xl'],
-                height: spacing['2xl'],
-              },
-            ]}
-          >
+      <View style={styles.card}>
+        <View style={styles.topRow}>
+          <View style={styles.iconTile}>
             <MaterialIcon name={iconName} size={20} color={iconShell.fg} />
           </View>
 
-          <View style={{ flex: 1, minWidth: 0, gap: spacing.xxs }}>
+          <View style={styles.infoCol}>
             <AppText
               style={[
                 textStyles.caption,
@@ -81,19 +75,7 @@ export const PetProfileHealthRecordCard: React.FC<PetProfileHealthRecordCardProp
           </View>
         </View>
 
-        <View
-          style={[
-            styles.tag,
-            {
-              borderRadius: radius.xs,
-              backgroundColor: colors.successSurface,
-              paddingHorizontal: spacing.sm,
-              paddingVertical: spacing.xxs,
-              alignSelf: 'flex-start',
-              gap: spacing.xs,
-            },
-          ]}
-        >
+        <View style={styles.tag}>
           <MaterialIcon name="check" size={14} color={colors.success} />
           <AppText
             style={[
@@ -110,19 +92,7 @@ export const PetProfileHealthRecordCard: React.FC<PetProfileHealthRecordCardProp
           accessibilityRole="button"
           accessibilityLabel="Record details"
           hitSlop={8}
-          style={{
-            alignSelf: 'center',
-            backgroundColor: colors.surface,
-            padding: spacing.xs,
-            borderRadius: radius.md,
-            width: '100%',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderWidth: 1,
-            borderColor: colors.borderSubtle,
-            paddingHorizontal: spacing.md,
-            paddingVertical: spacing.sm,
-          }}
+          style={styles.detailsBtn}
         >
           <AppText
             style={[
@@ -138,7 +108,7 @@ export const PetProfileHealthRecordCard: React.FC<PetProfileHealthRecordCardProp
   });
 
 function iconShellFromIconName(
-  colors: ReturnType<typeof useTheme>['colors'],
+  colors: AppColors,
   iconName: IconName,
 ): { bg: string; fg: string } {
   if (iconName === 'vaccines') {
@@ -149,20 +119,62 @@ function iconShellFromIconName(
 
 PetProfileHealthRecordCard.displayName = 'PetProfileHealthRecordCard';
 
-const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-  },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconTile: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-});
+interface StyleParams {
+  colors: AppColors;
+  radius: Theme['radius'];
+  spacing: Theme['spacing'];
+  iconShell: { bg: string; fg: string };
+}
+
+const createStyles = ({ colors, radius, spacing, iconShell }: StyleParams) =>
+  StyleSheet.create({
+    card: {
+      borderWidth: 1,
+      borderRadius: radius.lg,
+      borderColor: colors.borderSubtle,
+      backgroundColor: colors.surface,
+      padding: spacing.lg,
+      gap: spacing.md,
+    },
+    topRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    iconTile: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radius.md,
+      backgroundColor: iconShell.bg,
+      width: spacing['2xl'],
+      height: spacing['2xl'],
+    },
+    infoCol: {
+      flex: 1,
+      minWidth: 0,
+      gap: spacing.xxs,
+    },
+    tag: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderRadius: radius.xs,
+      backgroundColor: colors.successSurface,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xxs,
+      alignSelf: 'flex-start',
+      gap: spacing.xs,
+    },
+    detailsBtn: {
+      alignSelf: 'center',
+      backgroundColor: colors.surface,
+      padding: spacing.xs,
+      borderRadius: radius.md,
+      width: '100%',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: colors.borderSubtle,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+  });
