@@ -91,6 +91,7 @@ export const AddPetScreen: React.FC = () => {
     useState<PetLifestyleRiskLevel>('low');
   const [region, setRegion] = useState<PetRegion>(() => inferDefaultPetRegion());
   const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [initLoading, setInitLoading] = useState(isEditMode);
   const [editBase, setEditBase] = useState<Pet | null>(null);
   const [hasPreviousDeworming, setHasPreviousDeworming] = useState(false);
@@ -212,6 +213,7 @@ export const AddPetScreen: React.FC = () => {
     if (!editBase) {
       return;
     }
+    setIsSaving(true);
     setError(null);
     const nextPhoto = isPetPhotoPlaceholderUri(photoUri)
       ? undefined
@@ -242,10 +244,12 @@ export const AddPetScreen: React.FC = () => {
           : undefined,
     });
     if (!result.success) {
+      setIsSaving(false);
       setError(result.error ?? 'Unable to save changes.');
       return;
     }
     posthog.capture('pet_profile_updated', { pet_type: petType });
+    setIsSaving(false);
     if (navigation.canGoBack()) {
       navigation.goBack();
     }
@@ -328,10 +332,13 @@ export const AddPetScreen: React.FC = () => {
       }
     }
 
+    setIsSaving(true);
+
     if (isEditMode && editBase) {
       if (dob.trim().length > 0) {
         const check = parseAndValidateDob(dob);
         if (!check.ok) {
+          setIsSaving(false);
           setError(check.error);
           return;
         }
@@ -346,6 +353,7 @@ export const AddPetScreen: React.FC = () => {
             todayIso,
           );
           if (!v.ok) {
+            setIsSaving(false);
             setError(
               v.code === 'before_dob'
                 ? 'Last deworming cannot be before date of birth.'
@@ -364,6 +372,7 @@ export const AddPetScreen: React.FC = () => {
             todayIso,
           );
           if (!v.ok) {
+            setIsSaving(false);
             setError(
               v.code === 'before_dob'
                 ? 'Last vaccination cannot be before date of birth.'
@@ -382,6 +391,7 @@ export const AddPetScreen: React.FC = () => {
             todayIso,
           );
           if (!v.ok) {
+            setIsSaving(false);
             setError(
               v.code === 'before_dob'
                 ? 'Last rabies shot cannot be before date of birth.'
@@ -393,6 +403,7 @@ export const AddPetScreen: React.FC = () => {
       }
 
       await performEditSave();
+      // isSaving is handled inside performEditSave
       return;
     }
 
@@ -419,6 +430,7 @@ export const AddPetScreen: React.FC = () => {
           : undefined,
     });
     if (!result.success) {
+      setIsSaving(false);
       if (result.error === 'PET_LIMIT') {
         navigation.navigate('Paywall', { source: 'pet_limit' });
         return;
@@ -432,6 +444,7 @@ export const AddPetScreen: React.FC = () => {
       lifestyle_type: lifestyleType,
       region,
     });
+    setIsSaving(false);
     if (navigation.canGoBack()) {
       navigation.goBack();
     }
@@ -1125,15 +1138,23 @@ export const AddPetScreen: React.FC = () => {
             style={[
               styles.ctaButton,
               { backgroundColor: colors.accent },
-              !canSave ? styles.ctaButtonDisabled : undefined,
+              !canSave || isSaving ? styles.ctaButtonDisabled : undefined,
             ]}
             onPress={handleSave}
-            disabled={!canSave}
+            disabled={!canSave || isSaving}
             accessibilityRole="button"
           >
-            <icons.paws width={18} height={18} />
+            {isSaving ? (
+              <ActivityIndicator color={colors.text.inverse} />
+            ) : (
+              <icons.paws width={18} height={18} />
+            )}
             <Text style={[styles.ctaText, { fontFamily: fontFamilies.bold }]}>
-              {isEditMode ? 'Save changes' : 'Save Pet Profile'}
+              {isSaving
+                ? 'Saving...'
+                : isEditMode
+                ? 'Save changes'
+                : 'Save Pet Profile'}
             </Text>
           </Pressable>
         </View>
