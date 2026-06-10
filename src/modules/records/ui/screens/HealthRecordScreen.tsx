@@ -243,14 +243,17 @@ export const HealthRecordScreen: React.FC = () => {
     [dewormingRecords],
   );
 
-  const vaccinationPrimaryTask = useMemo(
-    () => getNextVaccinationTask(),
-    [getNextVaccinationTask, records],
-  );
-  const vaccinationUpcomingItems = useMemo(
-    () => getUpcomingVaccinations(5),
-    [getUpcomingVaccinations, records],
-  );
+  const vaccinationPrimaryTask = useMemo(() => {
+    // Reference records to ensure memo re-runs when state changes
+    if (records) return getNextVaccinationTask();
+    return null;
+  }, [getNextVaccinationTask, records]);
+
+  const vaccinationUpcomingItems = useMemo(() => {
+    // Reference records to ensure memo re-runs when state changes
+    if (records) return getUpcomingVaccinations(5);
+    return [];
+  }, [getUpcomingVaccinations, records]);
 
   const displayPrimaryTask = useMemo(
     () => (isDewormingCategory ? dewormingNextStep : vaccinationPrimaryTask),
@@ -273,20 +276,20 @@ export const HealthRecordScreen: React.FC = () => {
     [isDewormingCategory, dewormingProjection.history, vaccinationRecords],
   );
 
-  const handleMarkDewormingDone = React.useCallback(() => {
-    if (!displayPrimaryTask || !activePet?.dob || !todayDate) return;
+  const handleMarkDewormingDone = React.useCallback((record: SmartHealthRecord) => {
+    if (!record || !activePet?.dob || !todayDate) return;
 
     setDewormingLogError(null);
     setSelectedDewormingDate(todayDate);
     setShowDewormingModal(true);
-  }, [displayPrimaryTask, activePet?.dob, todayDate]);
+  }, [activePet?.dob, todayDate]);
 
-  const handleMarkVaccinationDone = React.useCallback(() => {
-    if (!displayPrimaryTask || !todayDate) return;
+  const handleMarkVaccinationDone = React.useCallback((record: SmartHealthRecord) => {
+    if (!record || !todayDate) return;
     setVaccinationLogError(null);
     setSelectedVaccinationDate(todayDate);
     setShowVaccinationModal(true);
-  }, [displayPrimaryTask, todayDate]);
+  }, [todayDate]);
 
   const canMarkDewormingDone = useMemo(() => {
     if (!isDewormingCategory || !displayPrimaryTask || !todayDate) return false;
@@ -430,6 +433,22 @@ export const HealthRecordScreen: React.FC = () => {
     return () => clearTimeout(timer);
   }, [successMessage]);
 
+  const logPrimaryCtaLabel =
+    selectedCategory === 'Vaccination' ? 'Log Vaccination' : 'Log Deworming';
+
+  const openUpdateDate = React.useCallback((record: SmartHealthRecord): void => {
+    setEditingRecord(record);
+    setEditingDueDate(record.dueDate);
+    setEditDueDateError(null);
+  }, []);
+
+  const handleOpenSkipModal = React.useCallback((record: SmartHealthRecord) => {
+    if (!record) return;
+    setSkipReasonInput('');
+    setSkipError(null);
+    setShowSkipModal(true);
+  }, []);
+
   if (!activePet) {
     return (
       <SafeAreaView
@@ -468,21 +487,6 @@ export const HealthRecordScreen: React.FC = () => {
       </SafeAreaView>
     );
   }
-
-  const logPrimaryCtaLabel =
-    selectedCategory === 'Vaccination' ? 'Log Vaccination' : 'Log Deworming';
-
-  const openUpdateDate = React.useCallback((record: SmartHealthRecord): void => {
-    setEditingRecord(record);
-    setEditingDueDate(record.dueDate);
-    setEditDueDateError(null);
-  }, []);
-
-  const handleOpenSkipModal = React.useCallback(() => {
-    setSkipReasonInput('');
-    setSkipError(null);
-    setShowSkipModal(true);
-  }, []);
 
   const closeUpdateDate = (): void => {
     setEditingRecord(null);
@@ -652,7 +656,7 @@ export const HealthRecordScreen: React.FC = () => {
                         ? handleMarkVaccinationDone
                         : undefined
                     }
-                    onEditDate={() => openUpdateDate(displayPrimaryTask)}
+                    onEditDate={openUpdateDate}
                   />
                 ) : (
                   <SmartHealthRecordItem
@@ -668,7 +672,7 @@ export const HealthRecordScreen: React.FC = () => {
                     }
                     onEditDate={
                       canShowDewormingAdjustActions
-                        ? () => openUpdateDate(displayPrimaryTask)
+                        ? openUpdateDate
                         : undefined
                     }
                     onSkipDose={
@@ -789,7 +793,10 @@ export const HealthRecordScreen: React.FC = () => {
               {displayUpcomingItems.length > 0 ? (
                 displayUpcomingItems.map(item => (
                   <View key={item.id} style={{ marginBottom: space('sm') }}>
-                    <SmartHealthRecordItem record={item as SmartHealthRecord} />
+                    <SmartHealthRecordItem
+                      record={item as SmartHealthRecord}
+                      onEditDate={openUpdateDate}
+                    />
                   </View>
                 ))
               ) : (
@@ -842,8 +849,7 @@ export const HealthRecordScreen: React.FC = () => {
                           onEditDate={
                             item.status === 'completed' ||
                             !isDewormingCategory
-                              ? () =>
-                                  openUpdateDate(item as SmartHealthRecord)
+                              ? openUpdateDate
                               : undefined
                           }
                         />
