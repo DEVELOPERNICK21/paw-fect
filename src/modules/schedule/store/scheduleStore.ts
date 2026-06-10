@@ -58,7 +58,10 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
       set({ error: 'Please sign in again.', loading: false });
       return;
     }
-    set({ loading: true, error: null });
+    const currentSchedule = get().schedule;
+    const hasCachedSchedule =
+      currentSchedule != null && currentSchedule.petId === petId;
+    set({ loading: !hasCachedSchedule, error: null });
     try {
       const schedule = await scheduleComposition.buildDailySchedule.execute({
         userId,

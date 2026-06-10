@@ -3,6 +3,7 @@ package app.pawfect
 import android.app.Application
 import com.facebook.react.PackageList
 import app.pawfect.widget.PawfectWidgetsPackage
+import app.pawfect.notifications.NotificationBootPackage
 import com.facebook.react.ReactApplication
 import com.facebook.react.ReactHost
 import com.facebook.react.ReactNativeApplicationEntryPoint.loadReactNative
@@ -16,6 +17,7 @@ class MainApplication : Application(), ReactApplication {
       packageList =
         PackageList(this).packages.apply {
           add(PawfectWidgetsPackage())
+          add(NotificationBootPackage())
         },
     )
   }

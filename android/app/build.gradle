@@ -3,6 +3,7 @@ apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 apply plugin: "com.google.gms.google-services"
 apply plugin: "com.google.firebase.crashlytics"
+apply from: "../../node_modules/react-native-config/android/dotenv.gradle"
 
 /*
  * Google Sign-In / Firebase: register every certificate that signs the APK users run.

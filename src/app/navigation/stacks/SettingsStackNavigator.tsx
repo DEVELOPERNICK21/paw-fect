@@ -11,7 +11,6 @@ const Stack = createNativeStackNavigator<SettingsStackParamList>();
 const stackScreenOptions = {
   headerShown: false,
   animation: 'default' as const,
-  detachInactiveScreens: true,
 };
 
 export const SettingsStackNavigator = React.memo(function SettingsStackNavigator() {

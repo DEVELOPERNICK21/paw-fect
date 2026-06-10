@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
+import { usePostHog } from 'posthog-react-native';
 import {
   ActivityIndicator,
   Pressable,
@@ -28,6 +29,11 @@ export const PaywallScreen: React.FC = () => {
   const startPlayStoreCheckout = useSubscriptionStore(
     s => s.startPlayStoreCheckout,
   );
+  const posthog = usePostHog();
+
+  useEffect(() => {
+    posthog.capture('paywall_viewed', { source });
+  }, [posthog, source]);
 
   const styles = useMemo(
     () =>
@@ -135,7 +141,10 @@ export const PaywallScreen: React.FC = () => {
           <Pressable
             style={styles.cta}
             disabled={checkoutLoading}
-            onPress={() => void startPlayStoreCheckout(PLAN_CARE_PLUS, 'monthly')}
+            onPress={() => {
+              posthog.capture('subscription_checkout_started', { plan: PLAN_CARE_PLUS, billing: 'monthly', source });
+              void startPlayStoreCheckout(PLAN_CARE_PLUS, 'monthly');
+            }}
           >
             {checkoutLoading ? (
               <ActivityIndicator color={colors.surface} />
@@ -148,7 +157,10 @@ export const PaywallScreen: React.FC = () => {
           <Pressable
             style={[styles.cta, { backgroundColor: colors.text.heading, marginTop: spacing.sm }]}
             disabled={checkoutLoading}
-            onPress={() => void startPlayStoreCheckout(PLAN_CARE_PLUS, 'annual')}
+            onPress={() => {
+              posthog.capture('subscription_checkout_started', { plan: PLAN_CARE_PLUS, billing: 'annual', source });
+              void startPlayStoreCheckout(PLAN_CARE_PLUS, 'annual');
+            }}
           >
             <Text style={[styles.ctaText, { fontFamily: fontFamilies.bold }]}>
               Subscribe Care+ annual
@@ -169,7 +181,10 @@ export const PaywallScreen: React.FC = () => {
           <Pressable
             style={styles.cta}
             disabled={checkoutLoading}
-            onPress={() => void startPlayStoreCheckout(PLAN_FAMILY, 'monthly')}
+            onPress={() => {
+              posthog.capture('subscription_checkout_started', { plan: PLAN_FAMILY, billing: 'monthly', source });
+              void startPlayStoreCheckout(PLAN_FAMILY, 'monthly');
+            }}
           >
             <Text style={[styles.ctaText, { fontFamily: fontFamilies.bold }]}>
               Subscribe Family monthly
@@ -178,7 +193,10 @@ export const PaywallScreen: React.FC = () => {
           <Pressable
             style={[styles.cta, { backgroundColor: colors.text.heading, marginTop: spacing.sm }]}
             disabled={checkoutLoading}
-            onPress={() => void startPlayStoreCheckout(PLAN_FAMILY, 'annual')}
+            onPress={() => {
+              posthog.capture('subscription_checkout_started', { plan: PLAN_FAMILY, billing: 'annual', source });
+              void startPlayStoreCheckout(PLAN_FAMILY, 'annual');
+            }}
           >
             <Text style={[styles.ctaText, { fontFamily: fontFamilies.bold }]}>
               Subscribe Family annual

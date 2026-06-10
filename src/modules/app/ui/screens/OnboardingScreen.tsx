@@ -1,4 +1,5 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { usePostHog } from 'posthog-react-native';
 import {
   Image,
   Pressable,
@@ -15,6 +16,7 @@ import { useTheme } from '../../../../shared/hooks/useTheme';
 import { useSettingsStore } from '../../../settings/store/settingsStore';
 
 export const OnboardingScreen: React.FC = () => {
+  const posthog = usePostHog();
   const { fontFamilies, colors, isDarkMode } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { settings, updateSettings } = useSettingsStore();
@@ -24,7 +26,12 @@ export const OnboardingScreen: React.FC = () => {
   const scale = Math.max(0.82, Math.min(1, height / 900));
   const sv = (value: number) => Math.round(value * scale * 0.92);
 
-  const completeOnboarding = useCallback(() => {
+  useEffect(() => {
+    posthog.capture('onboarding_step_viewed', { step: step + 1, total_steps: 3 });
+  }, [posthog, step]);
+
+  const completeOnboarding = useCallback((skipped = false) => {
+    posthog.capture('onboarding_completed', { skipped });
     const current = settings ?? {
       notificationsEnabled: true,
       emailUpdates: true,
@@ -35,10 +42,10 @@ export const OnboardingScreen: React.FC = () => {
       ...current,
       onboardingCompleted: true,
     });
-  }, [settings, updateSettings]);
+  }, [posthog, settings, updateSettings]);
 
   const handleSkip = useCallback(() => {
-    completeOnboarding();
+    completeOnboarding(true);
   }, [completeOnboarding]);
 
   const handlePrimaryAction = useCallback(() => {

@@ -62,6 +62,7 @@ const DOG_TEMPLATE: SpeciesCarePlanTemplate = {
       IN: 12,
       US: 36,
       EU: 36,
+      OTHER: 12,
     },
   },
   nonCoreSeries: [
@@ -207,6 +208,7 @@ const CAT_TEMPLATE: SpeciesCarePlanTemplate = {
       IN: 12,
       US: 36,
       EU: 36,
+      OTHER: 12,
     },
   },
   nonCoreSeries: [

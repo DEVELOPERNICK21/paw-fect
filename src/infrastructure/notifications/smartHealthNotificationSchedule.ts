@@ -6,8 +6,22 @@ import {
   withNotificationSound,
   type PetNotificationSpecies,
 } from './petNotificationSounds';
+import {
+  computeSmartHealthNotificationCoverage,
+  getSchedulableHealthRecords,
+  selectHealthRecordsForNotifications,
+  type SmartHealthNotificationCoverage,
+} from './smartHealthNotificationSelection';
 
-const MAX_SCHEDULED_RECORDS = 12;
+export {
+  computeSmartHealthNotificationCoverage,
+  getSchedulableHealthRecords,
+  MAX_HEALTH_NOTIFICATIONS_PER_PET,
+  MAX_HEALTH_NOTIFICATIONS_TOTAL,
+  selectHealthRecordsForNotifications,
+  type SmartHealthNotificationCoverage,
+} from './smartHealthNotificationSelection';
+
 const DUE_HOUR = 9;
 const DUE_MINUTE = 0;
 
@@ -124,37 +138,29 @@ export async function scheduleSmartHealthDueNotifications(
   }
 }
 
-function getSchedulableRecords(records: SmartHealthRecord[]): SmartHealthRecord[] {
-  return records.filter(
-    record =>
-      record.status !== 'completed' &&
-      record.status !== 'skipped' &&
-      (record.status === 'upcoming' ||
-        record.status === 'overdue' ||
-        record.status === 'locked' ||
-        record.status === 'missed'),
-  );
-}
-
 export async function syncAllSmartHealthDueNotifications(
   records: SmartHealthRecord[],
   service: NotificationService,
   petSpeciesByPetId?: ReadonlyMap<string, PetNotificationSpecies>,
-): Promise<void> {
-  const schedulable = getSchedulableRecords(records);
+): Promise<SmartHealthNotificationCoverage> {
+  const schedulable = getSchedulableHealthRecords(records);
+  const selected = selectHealthRecordsForNotifications(records);
+  const selectedIds = new Set(selected.map(record => record.id));
   const schedulableIds = new Set(schedulable.map(record => record.id));
 
   for (const record of records) {
-    if (!schedulableIds.has(record.id)) {
+    if (!schedulableIds.has(record.id) || !selectedIds.has(record.id)) {
       await cancelSmartHealthNotificationsForRecord(record.id, service);
     }
   }
 
-  for (const record of schedulable.slice(0, MAX_SCHEDULED_RECORDS)) {
+  for (const record of selected) {
     await scheduleSmartHealthDueNotifications(
       record,
       service,
       petSpeciesByPetId?.get(record.petId),
     );
   }
+
+  return computeSmartHealthNotificationCoverage(records);
 }

@@ -38,11 +38,11 @@ export const AppNavigator = React.memo(function AppNavigator() {
       screenOptions={{
         headerShown: false,
         lazy: true,
-        freezeOnBlur: true,
+        // freezeOnBlur caused intermittent blank/frozen tabs when unfreezing lazy scenes.
+        freezeOnBlur: false,
         tabBarHideOnKeyboard: true,
         tabBarStyle: floatingTabBarStyle,
         sceneStyle: { flex: 1 },
-        animation: 'fade',
       }}
       detachInactiveScreens
     >

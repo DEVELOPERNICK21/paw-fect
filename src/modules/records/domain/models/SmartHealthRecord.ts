@@ -121,6 +121,8 @@ export interface SmartHealthRecord {
   };
   /** User- or system-supplied note when status is `skipped` */
   skipReason?: string | null;
+  /** Client-only: dose action queued and not yet confirmed by Firestore */
+  syncPending?: boolean;
   createdAt: string;
   updatedAt: string;
 }

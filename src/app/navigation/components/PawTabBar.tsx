@@ -44,6 +44,25 @@ type TabIconName =
   | 'schedule'
   | 'settings';
 
+const TAB_ROOT_SCREENS: Record<keyof AppTabParamList, string> = {
+  HomeTab: 'Home',
+  HealthTab: 'HealthRecords',
+  PetsTab: 'PetProfile',
+  NotificationsTab: 'WellnessHub',
+  SettingsTab: 'Settings',
+};
+
+function getNestedRouteName(
+  tabRoute: BottomTabBarProps['state']['routes'][number] | undefined,
+): string | undefined {
+  const nestedState = tabRoute?.state;
+  if (nestedState?.routes == null || nestedState.routes.length === 0) {
+    return undefined;
+  }
+  const index = nestedState.index ?? nestedState.routes.length - 1;
+  return nestedState.routes[index]?.name;
+}
+
 function tabKeyFromRouteName(name: keyof AppTabParamList | string): TabKey {
   switch (name) {
     case 'HomeTab':
@@ -284,25 +303,16 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
   };
 
   const jumpToTabRoot = (name: keyof AppTabParamList) => {
-    switch (name) {
-      case 'HomeTab':
-        navigation.navigate('HomeTab', { screen: 'Home' });
-        break;
-      case 'HealthTab':
-        navigation.navigate('HealthTab', { screen: 'HealthRecords' });
-        break;
-      case 'NotificationsTab':
-        navigation.navigate('NotificationsTab', { screen: 'WellnessHub' });
-        break;
-      case 'SettingsTab':
-        navigation.navigate('SettingsTab', { screen: 'Settings' });
-        break;
-      case 'PetsTab':
-        navigation.navigate('PetsTab', { screen: 'PetProfile' });
-        break;
-      default:
-        break;
+    const rootScreen = TAB_ROOT_SCREENS[name];
+    const tabRoute = state.routes.find(route => route.name === name);
+    const isFocused = currentRoute.name === name;
+    const nestedRoute = getNestedRouteName(tabRoute);
+
+    if (isFocused && nestedRoute === rootScreen) {
+      return;
     }
+
+    navigation.navigate(name, { screen: rootScreen });
   };
 
   const openPetPicker = useCallback(() => {

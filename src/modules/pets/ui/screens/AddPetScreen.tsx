@@ -33,6 +33,8 @@ import { isPetPhotoPlaceholderUri } from '../../domain/utils/petPhotoPlaceholder
 import { icons } from '../../../../shared/assets/icons';
 import { DatePickerField } from '../../../../shared/components/DatePickerField';
 import { spacing } from '../../../../shared/theme/spacing';
+import { inferDefaultPetRegion } from '../../../../shared/utils/inferDefaultPetRegion';
+import { usePostHog } from 'posthog-react-native';
 
 type IconKind = 'arrow-back' | 'camera' | 'check' | 'pets';
 
@@ -71,6 +73,7 @@ export const AddPetScreen: React.FC = () => {
   const petId = route.params?.petId;
   const isEditMode = petId != null && petId.length > 0;
 
+  const posthog = usePostHog();
   const { colors, fontFamilies } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const createPetProfile = usePetStore(s => s.createPetProfile);
@@ -86,7 +89,7 @@ export const AddPetScreen: React.FC = () => {
     useState<PetLifestyleType>('indoor');
   const [lifestyleRiskLevel, setLifestyleRiskLevel] =
     useState<PetLifestyleRiskLevel>('low');
-  const [region, setRegion] = useState<PetRegion>('OTHER');
+  const [region, setRegion] = useState<PetRegion>(() => inferDefaultPetRegion());
   const [error, setError] = useState<string | null>(null);
   const [initLoading, setInitLoading] = useState(isEditMode);
   const [editBase, setEditBase] = useState<Pet | null>(null);
@@ -242,6 +245,7 @@ export const AddPetScreen: React.FC = () => {
       setError(result.error ?? 'Unable to save changes.');
       return;
     }
+    posthog.capture('pet_profile_updated', { pet_type: petType });
     if (navigation.canGoBack()) {
       navigation.goBack();
     }
@@ -422,6 +426,12 @@ export const AddPetScreen: React.FC = () => {
       setError(toFriendlyAddPetError(result.error));
       return;
     }
+    posthog.capture('pet_profile_created', {
+      pet_type: petType,
+      has_breed: Boolean(breed.trim()),
+      lifestyle_type: lifestyleType,
+      region,
+    });
     if (navigation.canGoBack()) {
       navigation.goBack();
     }

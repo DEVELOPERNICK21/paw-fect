@@ -2,6 +2,10 @@ import type {
   SmartHealthHistoryLog,
   SmartHealthRecord,
 } from '../../domain/models/SmartHealthRecord';
+import type {
+  SmartHealthQueueEntry,
+  SmartHealthQueueEntryInput,
+} from '../../domain/models/SmartHealthQueueEntry';
 import type { SmartHealthRecordRepository } from '../../domain/repositories/SmartHealthRecordRepository';
 
 const mockRecordDb = new Map<string, SmartHealthRecord[]>();
@@ -12,6 +16,57 @@ const keyFor = (userId: string, petId: string): string => `${userId}:${petId}`;
 export class MockSmartHealthRecordRepository
   implements SmartHealthRecordRepository
 {
+  async getCachedRecords(userId: string, petId: string): Promise<SmartHealthRecord[]> {
+    return this.listByPet(userId, petId);
+  }
+
+  async saveCachedRecords(
+    userId: string,
+    petId: string,
+    records: SmartHealthRecord[],
+  ): Promise<void> {
+    mockRecordDb.set(keyFor(userId, petId), records.slice());
+  }
+
+  async saveCachedRecordsFromServer(
+    userId: string,
+    petId: string,
+    records: SmartHealthRecord[],
+  ): Promise<void> {
+    await this.saveCachedRecords(userId, petId, records);
+  }
+
+  async mergeWithPendingQueue(
+    _userId: string,
+    _petId: string,
+    records: SmartHealthRecord[],
+  ): Promise<SmartHealthRecord[]> {
+    return records;
+  }
+
+  async enqueueMutation(
+    _userId: string,
+    entry: SmartHealthQueueEntryInput,
+  ): Promise<SmartHealthQueueEntry> {
+    return {
+      ...entry,
+      id: 'mock-queue-entry',
+      enqueuedAt: new Date().toISOString(),
+      attempts: 0,
+      nextAttemptAt: Date.now(),
+    };
+  }
+
+  async removeQueueEntry(): Promise<void> {}
+
+  async processSyncQueue(): Promise<number> {
+    return 0;
+  }
+
+  async getPendingSyncCount(): Promise<number> {
+    return 0;
+  }
+
   async listByPet(userId: string, petId: string): Promise<SmartHealthRecord[]> {
     const key = keyFor(userId, petId);
     return (mockRecordDb.get(key) ?? []).slice();

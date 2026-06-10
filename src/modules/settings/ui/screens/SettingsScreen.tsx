@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
+  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -17,6 +18,7 @@ import type { SettingsRootNavigation } from '../../../../app/navigation/types';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
 import { UserAvatar } from '../../../../shared/components/UserAvatar';
 import { icons } from '../../../../shared/assets/icons';
+import { images } from '../../../../shared/assets/images';
 import { APP_VERSION_LABEL } from '../../../../shared/constants/appMeta';
 import {
   countPendingReminderNotifications,
@@ -26,6 +28,11 @@ import {
 } from '../../../../infrastructure/notifications/notificationDiagnostics';
 import { notificationService } from '../../../../infrastructure/notifications/notificationService';
 import { resyncAllLocalNotifications } from '../../../../infrastructure/notifications/resyncLocalNotifications';
+import {
+  formatSmartHealthNotificationCoverage,
+  loadSmartHealthNotificationCoverage,
+} from '../../../../infrastructure/notifications/smartHealthNotificationCoverageLoader';
+import { useSmartHealthRecordStore } from '../../../records/store/smartHealthRecordStore';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { spacing } from '../../../../shared/theme/spacing';
 import { radius } from '../../../../shared/theme/radius';
@@ -50,13 +57,75 @@ export const SettingsScreen: React.FC = () => {
   const loadPets = usePetStore(s => s.loadPets);
   const deletePet = usePetStore(s => s.deletePet);
   const loadReminders = useReminderStore(s => s.loadReminders);
+  const pendingHealthSyncCount = useSmartHealthRecordStore(s => s.pendingSyncCount);
   const profileLabels = useAuthProfileLabels();
   const avatarSize = spacing['4xl'] * 2;
   const [deletePickerVisible, setDeletePickerVisible] = useState(false);
+  const [healthCoverageSummary, setHealthCoverageSummary] = useState<string | null>(
+    null,
+  );
+  const [refreshingReminders, setRefreshingReminders] = useState(false);
 
   useEffect(() => {
     loadSettings().catch(() => {});
   }, [loadSettings]);
+
+  const refreshHealthCoverageSummary = useCallback(() => {
+    void (async () => {
+      if (!settings?.notificationsEnabled) {
+        setHealthCoverageSummary(null);
+        return;
+      }
+      const coverage = await loadSmartHealthNotificationCoverage();
+      if (coverage == null) {
+        setHealthCoverageSummary('Add a pet to schedule health reminders.');
+        return;
+      }
+      setHealthCoverageSummary(formatSmartHealthNotificationCoverage(coverage));
+    })();
+  }, [settings?.notificationsEnabled]);
+
+  useEffect(() => {
+    refreshHealthCoverageSummary();
+  }, [refreshHealthCoverageSummary, pets.length]);
+
+  const handleRefreshAllReminders = () => {
+    void (async () => {
+      if (!settings?.notificationsEnabled) {
+        Alert.alert(
+          'Notifications are off',
+          'Turn on Push Notifications first, then refresh reminders.',
+        );
+        return;
+      }
+      setRefreshingReminders(true);
+      try {
+        const granted = await ensureNotificationsReady({
+          promptExactAlarmIfDisabled: true,
+        });
+        if (!granted) {
+          Alert.alert(
+            'Notifications blocked',
+            'Allow notifications and Alarms & reminders for Paw-fect, then try again.',
+          );
+          return;
+        }
+        await loadReminders();
+        await useSmartHealthRecordStore.getState().processPendingSync();
+        await resyncAllLocalNotifications();
+        refreshHealthCoverageSummary();
+        const pending = await countPendingTriggerNotifications();
+        Alert.alert(
+          'Reminders refreshed',
+          `${pending} scheduled alert(s) are queued on this device.`,
+        );
+      } catch {
+        Alert.alert('Refresh failed', 'Could not refresh reminders. Try again.');
+      } finally {
+        setRefreshingReminders(false);
+      }
+    })();
+  };
 
   const toggleNotifications = () => {
     if (!settings) {
@@ -287,6 +356,58 @@ export const SettingsScreen: React.FC = () => {
               <MaterialIcon name="chevron_right" size={20} color={colors.accent} />
             </Pressable>
 
+            <Pressable
+              style={styles.actionRow}
+              onPress={handleRefreshAllReminders}
+              disabled={refreshingReminders}
+            >
+              <View style={styles.rowLeft}>
+                <View style={styles.rowIcon}>
+                  <MaterialIcon name="notifications" size={20} color={colors.accent} />
+                </View>
+                <View>
+                  <Text style={[styles.rowTitle, { fontFamily: fontFamilies.semibold }]}>
+                    Refresh all reminders
+                  </Text>
+                  <Text style={[styles.rowSubtitle, { fontFamily: fontFamilies.medium }]}>
+                    {refreshingReminders
+                      ? 'Rebuilding scheduled alerts…'
+                      : 'Resync health, care, and manual reminders'}
+                  </Text>
+                </View>
+              </View>
+              <MaterialIcon name="chevron_right" size={20} color={colors.accent} />
+            </Pressable>
+
+            {healthCoverageSummary ? (
+              <View style={styles.coverageBanner}>
+                <MaterialIcon name="info" size={18} color={colors.accent} />
+                <Text
+                  style={[
+                    styles.coverageText,
+                    { fontFamily: fontFamilies.medium, color: colors.text.body },
+                  ]}
+                >
+                  {healthCoverageSummary}
+                </Text>
+              </View>
+            ) : null}
+
+            {pendingHealthSyncCount > 0 ? (
+              <View style={styles.coverageBanner}>
+                <MaterialIcon name="cloud_upload" size={18} color={colors.accent} />
+                <Text
+                  style={[
+                    styles.coverageText,
+                    { fontFamily: fontFamilies.medium, color: colors.text.body },
+                  ]}
+                >
+                  {pendingHealthSyncCount} health update
+                  {pendingHealthSyncCount === 1 ? '' : 's'} waiting to sync.
+                </Text>
+              </View>
+            ) : null}
+
             <View style={styles.row}>
               <View style={styles.rowLeft}>
                 <View style={styles.rowIcon}>
@@ -374,7 +495,11 @@ export const SettingsScreen: React.FC = () => {
             >
               <View style={styles.rowLeft}>
                 <View style={styles.rowIcon}>
-                  <MaterialIcon name="workspace_premium" size={20} color={colors.accent} />
+                  <Image
+                    source={images.appIcon}
+                    style={styles.rowAppIcon}
+                    accessibilityIgnoresInvertColors
+                  />
                 </View>
                 <View>
                   <Text style={[styles.rowTitle, { fontFamily: fontFamilies.semibold }]}>PawCare plans</Text>
@@ -598,6 +723,13 @@ const createStyles = (
     backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  rowAppIcon: {
+    width: spacing['2xl'] + spacing.xs,
+    height: spacing['2xl'] + spacing.xs,
+    borderRadius: radius.sm,
+    resizeMode: 'cover',
   },
   rowIconNeutral: {
     width: spacing['3xl'],
@@ -623,6 +755,21 @@ const createStyles = (
     color: colors.text.body,
     fontSize: fontSizes.xs,
     lineHeight: lineHeights.xs,
+  },
+  coverageBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    marginTop: spacing.xxs,
+    borderRadius: radius.md,
+    backgroundColor: colors.primaryLight,
+  },
+  coverageText: {
+    flex: 1,
+    fontSize: fontSizes.sm,
+    lineHeight: lineHeights.sm,
   },
   actionRow: {
     minHeight: spacing['4xl'] + spacing.xl - spacing.xs,

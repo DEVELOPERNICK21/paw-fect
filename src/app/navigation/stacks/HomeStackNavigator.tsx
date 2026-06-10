@@ -9,7 +9,6 @@ const Stack = createNativeStackNavigator<HomeStackParamList>();
 const stackScreenOptions = {
   headerShown: false,
   animation: 'default' as const,
-  detachInactiveScreens: true,
 };
 
 export const HomeStackNavigator = React.memo(function HomeStackNavigator() {

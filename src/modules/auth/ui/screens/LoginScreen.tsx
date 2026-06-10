@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { usePostHog } from 'posthog-react-native';
 import {
   Animated,
   Image,
@@ -41,6 +42,7 @@ export const LoginScreen: React.FC = () => {
     state => state.sendPasswordResetEmail,
   );
   const authNotice = useAuthStore(state => state.authNotice);
+  const posthog = usePostHog();
   const { colors, space, radius, spacing, textStyles } = useTheme();
   const styles = useMemo(
     () => createStyles({ colors, space, radius, spacing, textStyles }),
@@ -84,16 +86,25 @@ export const LoginScreen: React.FC = () => {
 
     if (isCreateMode) {
       await signup(validationResult.normalizedEmail, password);
+      if (!useAuthStore.getState().authError) {
+        posthog.capture('user_signed_up', { method: 'email' });
+      }
       return;
     }
 
     await login(validationResult.normalizedEmail, password);
+    if (!useAuthStore.getState().authError) {
+      posthog.capture('user_logged_in', { method: 'email' });
+    }
   };
 
   const handleGoogleLoginPress = async () => {
     setError(null);
     clearAuthError();
-    await loginWithGoogle();
+    const success = await loginWithGoogle();
+    if (success) {
+      posthog.capture('user_logged_in', { method: 'google' });
+    }
   };
 
   return (

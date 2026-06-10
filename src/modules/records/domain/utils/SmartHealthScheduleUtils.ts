@@ -6,6 +6,7 @@ import type {
 } from '../models/SmartHealthRecord';
 import { createLocalId } from '../../../../shared/utils/id';
 import { getTodayIsoDateLocal } from '../../../../shared/utils/calendarDate';
+import { resolveCarePlanRegion } from '../../../../shared/utils/inferDefaultPetRegion';
 import type { CarePlanContext } from '../models/CarePlanTemplate';
 import { PetCareLifecycleEngine } from './PetCareLifecycleEngine';
 
@@ -122,7 +123,7 @@ export function generateBootstrapSchedule(
     petType: input.petType,
     dateOfBirth: toIsoDateOnly(input.dateOfBirth),
     nowDate: todayDate,
-    region: (input.region ?? 'OTHER') as CarePlanContext['region'],
+    region: resolveCarePlanRegion(input.region) as CarePlanContext['region'],
     lifestyleType: input.lifestyleType ?? 'indoor',
     lifestyleRiskLevel: (input.lifestyleRiskLevel ??
       'low') as CarePlanContext['lifestyleRiskLevel'],

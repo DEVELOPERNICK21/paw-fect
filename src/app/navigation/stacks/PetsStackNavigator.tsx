@@ -18,7 +18,6 @@ const Stack = createNativeStackNavigator<PetsStackParamList>();
 const stackScreenOptions = {
   headerShown: false,
   animation: 'default' as const,
-  detachInactiveScreens: true,
 };
 
 export const PetsStackNavigator = React.memo(function PetsStackNavigator() {

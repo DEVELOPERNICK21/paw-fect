@@ -120,7 +120,7 @@ export const usePetStore = create<PetState>((set, get) => ({
       return;
     }
 
-    set({ loading: true, loadError: null });
+    set({ loading: get().pets.length === 0, loadError: null });
     try {
       const pets = await pc.getPets.execute(userId);
       let activePetId = await pc.getActivePetId.execute(userId);

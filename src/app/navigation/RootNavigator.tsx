@@ -6,6 +6,8 @@ import {
   NavigationContainer,
   type Theme as NavigationTheme,
 } from '@react-navigation/native';
+import { PostHogProvider } from 'posthog-react-native';
+import { posthog } from '../../config/posthog';
 
 import {
   bootstrapLocalNotifications,
@@ -42,6 +44,7 @@ import { AuthNavigator } from './AuthNavigator';
 import { OnboardingNavigator } from './OnboardingNavigator';
 import { navigationRef } from './navigationRef';
 import { PetRequiredNavigator } from './PetRequiredNavigator';
+import { runBootNotificationResyncIfNeeded } from '../../infrastructure/notifications/notificationBoot';
 
 export const RootNavigator: React.FC = () => {
   const {
@@ -64,6 +67,7 @@ export const RootNavigator: React.FC = () => {
   const { colors, isDarkMode } = useTheme();
   const [bootstrapped, setBootstrapped] = useState(false);
   const lastSyncedUserIdRef = useRef<string | null>(null);
+  const routeNameRef = useRef<string | undefined>();
   const authDataSyncGenerationRef = useRef(0);
   const appStateResumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
@@ -124,6 +128,14 @@ export const RootNavigator: React.FC = () => {
   }, [bootstrapped]);
 
   useEffect(() => {
+    if (!bootstrapped || !isAuthenticated) {
+      return;
+    }
+    void runBootNotificationResyncIfNeeded();
+    void useSmartHealthRecordStore.getState().processPendingSync();
+  }, [bootstrapped, isAuthenticated]);
+
+  useEffect(() => {
     if (!bootstrapped) {
       return;
     }
@@ -158,6 +170,7 @@ export const RootNavigator: React.FC = () => {
         ) {
           void useSubscriptionStore.getState().refreshBootstrap();
           void loadReminders();
+          void useSmartHealthRecordStore.getState().processPendingSync();
           scheduleDeferredNotificationResync(800);
         }
         void processPasswordResetQueue();
@@ -284,6 +297,21 @@ export const RootNavigator: React.FC = () => {
     resetRecords,
   ]);
 
+  const user = useAuthStore(state => state.user);
+
+  useEffect(() => {
+    if (user?.id) {
+      posthog.identify(user.id, {
+        $set: {
+          email: user.email ?? undefined,
+          display_name: user.displayName ?? undefined,
+        },
+      });
+    } else if (userId === null || userId === undefined) {
+      posthog.reset();
+    }
+  }, [user, userId]);
+
   if (!bootstrapped) {
     return <SplashScreen />;
   }
@@ -302,15 +330,33 @@ export const RootNavigator: React.FC = () => {
       ref={navigationRef}
       theme={navigationTheme}
       onReady={() => {
+        routeNameRef.current = navigationRef.current?.getCurrentRoute()?.name;
         void flushInitialNotificationNavigation(navigationRef, () =>
           canNavigateNotificationRef.current,
         );
       }}
+      onStateChange={() => {
+        const previousRouteName = routeNameRef.current;
+        const currentRouteName = navigationRef.current?.getCurrentRoute()?.name;
+        if (previousRouteName !== currentRouteName && currentRouteName) {
+          posthog.screen(currentRouteName, { previous_screen: previousRouteName });
+        }
+        routeNameRef.current = currentRouteName;
+      }}
     >
-      <>
-        {content}
-        <MilestoneCelebrationsHost />
-      </>
+      <PostHogProvider
+        client={posthog}
+        autocapture={{
+          captureScreens: false,
+          captureTouches: true,
+          propsToCapture: ['testID'],
+        }}
+      >
+        <>
+          {content}
+          <MilestoneCelebrationsHost />
+        </>
+      </PostHogProvider>
     </NavigationContainer>
   );
 };

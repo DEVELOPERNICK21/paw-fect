@@ -114,10 +114,12 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = React
       : '';
 
   const showActionRow =
-    record.status === 'overdue' ||
+    !record.syncPending &&
+    (record.status === 'overdue' ||
     record.status === 'upcoming' ||
-    record.status === 'missed';
-  const showCompletedActions = record.status === 'completed' && onEditDate;
+    record.status === 'missed');
+  const showCompletedActions =
+    !record.syncPending && record.status === 'completed' && onEditDate;
 
   return (
     <View style={styles.card}>
@@ -159,6 +161,7 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = React
           >
             {detailLine}
             {dewormingCadenceHint}
+            {record.syncPending ? ' · Pending sync' : ''}
           </AppText>
         </View>
       </View>
