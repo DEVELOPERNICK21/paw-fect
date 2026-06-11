@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../../../../shared/components/AppText';
@@ -10,11 +10,11 @@ import { cadenceDisplayLabel } from '../../domain/utils/DewormingEngine';
 
 export interface SmartHealthRecordItemProps {
   record: SmartHealthRecord;
-  onMarkDone?: () => void;
+  onMarkDone?: (record: SmartHealthRecord) => void;
   /** Reschedule / correct the planned date */
-  onEditDate?: () => void;
+  onEditDate?: (record: SmartHealthRecord) => void;
   /** Deworming: log skip with reason (handled by parent modal) */
-  onSkipDose?: () => void;
+  onSkipDose?: (record: SmartHealthRecord) => void;
   variant?: 'default' | 'hero';
   primaryActionLabel?: string;
 }
@@ -53,6 +53,18 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = React
       }),
     [colors, theme.radius, theme.spacing, theme.space, variant, record.status],
   );
+
+  const handleMarkDone = useCallback(() => {
+    onMarkDone?.(record);
+  }, [onMarkDone, record]);
+
+  const handleEditDate = useCallback(() => {
+    onEditDate?.(record);
+  }, [onEditDate, record]);
+
+  const handleSkipDose = useCallback(() => {
+    onSkipDose?.(record);
+  }, [onSkipDose, record]);
 
   const isVaccination = record.type === 'vaccination';
 
@@ -172,7 +184,7 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = React
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Mark ${record.name} as done`}
-              onPress={onMarkDone}
+              onPress={handleMarkDone}
               style={({ pressed }) => [
                 styles.actionBtn,
                 styles.actionBtnPrimary,
@@ -193,7 +205,7 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = React
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Reschedule ${record.name}`}
-              onPress={onEditDate}
+              onPress={handleEditDate}
               style={({ pressed }) => [
                 styles.actionBtn,
                 styles.actionBtnOutline,
@@ -217,7 +229,7 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = React
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Skip ${record.name}`}
-              onPress={onSkipDose}
+              onPress={handleSkipDose}
               style={({ pressed }) => [
                 styles.actionBtn,
                 styles.actionBtnOutline,
@@ -245,7 +257,7 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = React
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Edit date for ${record.name}`}
-            onPress={onEditDate}
+            onPress={handleEditDate}
             style={({ pressed }) => [
               styles.actionBtn,
               styles.actionBtnOutline,
