@@ -1,4 +1,7 @@
-import { calendarDaysBetweenIsoDates } from '../../../../shared/utils/calendarDate';
+import {
+  calendarDaysBetweenIsoDates,
+  isValidDate,
+} from '../../../../shared/utils/calendarDate';
 import type { LifestyleType } from '../models/CarePlanTemplate';
 
 export type DewormingSymptom =
@@ -60,6 +63,13 @@ export interface DewormingValidationResult {
 
 const toIsoDateOnly = (value: string): string => value.slice(0, 10);
 
+const safeToIsoDate = (d: Date, fallback: string): string => {
+  if (!isValidDate(d)) {
+    return toIsoDateOnly(fallback);
+  }
+  return toIsoDateOnly(d.toISOString());
+};
+
 /** Minimum age (calendar days after DOB) before protocol-first deworm logs — aligns early milestones with vet schedules. */
 export const MIN_DEWORM_AGE_DAYS = 14;
 
@@ -84,7 +94,7 @@ const addDays = (date: string, days: number): string => {
   const [year, month, day] = date.split('-').map(Number);
   const d = new Date(Date.UTC(year, (month ?? 1) - 1, day ?? 1));
   d.setUTCDate(d.getUTCDate() + days);
-  return toIsoDateOnly(d.toISOString());
+  return safeToIsoDate(d, date);
 };
 
 const addWeeks = (date: string, weeks: number): string =>
@@ -94,7 +104,7 @@ const addMonths = (date: string, months: number): string => {
   const [year, month, day] = date.split('-').map(Number);
   const d = new Date(Date.UTC(year, (month ?? 1) - 1, day ?? 1));
   d.setUTCMonth(d.getUTCMonth() + months);
-  return toIsoDateOnly(d.toISOString());
+  return safeToIsoDate(d, date);
 };
 
 const getCalendarAgeMonths = (dateOfBirth: string, asOf: string): number => {
@@ -503,9 +513,12 @@ const buildIdealMilestoneDates = (
   }
   let adultCursor = sixMonthDate(dob);
   const cap = horizonEnd > adultCursor ? horizonEnd : addMonths(dob, 36);
-  while (adultCursor <= cap) {
+
+  let guard = 0;
+  while (adultCursor <= cap && guard < 100) {
     dates.push(adultCursor);
     adultCursor = addMonths(adultCursor, 3);
+    guard++;
   }
   return [...new Set(dates)].sort((a, b) => a.localeCompare(b));
 };

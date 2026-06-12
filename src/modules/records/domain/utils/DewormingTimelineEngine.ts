@@ -1,3 +1,5 @@
+import { isValidDate } from '../../../../shared/utils/calendarDate';
+
 export type DewormingEventStatus =
   | 'UPCOMING'
   | 'OVERDUE'
@@ -36,18 +38,25 @@ const FUTURE_EVENT_LIMIT = 10;
 
 const toIso = (value: string): string => value.slice(0, 10);
 
+const safeToIsoDate = (d: Date, fallback: string): string => {
+  if (!isValidDate(d)) {
+    return toIso(fallback);
+  }
+  return d.toISOString().slice(0, 10);
+};
+
 const addDays = (date: string, days: number): string => {
   const [year, month, day] = date.split('-').map(Number);
   const d = new Date(Date.UTC(year, (month ?? 1) - 1, day ?? 1));
   d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
+  return safeToIsoDate(d, date);
 };
 
 const addMonths = (date: string, months: number): string => {
   const [year, month, day] = date.split('-').map(Number);
   const d = new Date(Date.UTC(year, (month ?? 1) - 1, day ?? 1));
   d.setUTCMonth(d.getUTCMonth() + months);
-  return d.toISOString().slice(0, 10);
+  return safeToIsoDate(d, date);
 };
 
 const maxDate = (a: string, b: string): string => (a > b ? a : b);

@@ -5,7 +5,10 @@ import type {
   SmartHealthRecordStatus,
 } from '../models/SmartHealthRecord';
 import { createLocalId } from '../../../../shared/utils/id';
-import { getTodayIsoDateLocal } from '../../../../shared/utils/calendarDate';
+import {
+  getTodayIsoDateLocal,
+  isValidDate,
+} from '../../../../shared/utils/calendarDate';
 import { resolveCarePlanRegion } from '../../../../shared/utils/inferDefaultPetRegion';
 import type { CarePlanContext } from '../models/CarePlanTemplate';
 import { PetCareLifecycleEngine } from './PetCareLifecycleEngine';
@@ -23,18 +26,25 @@ function toIsoDateOnly(input: string): string {
   return input;
 }
 
+function safeToIsoDate(d: Date, fallback: string): string {
+  if (!isValidDate(d)) {
+    return toIsoDateOnly(fallback);
+  }
+  return d.toISOString().slice(0, 10);
+}
+
 function addMonths(dateOnly: string, months: number): string {
   const [year, month, day] = dateOnly.split('-').map(Number);
   const d = new Date(Date.UTC(year, (month ?? 1) - 1, day ?? 1));
   d.setUTCMonth(d.getUTCMonth() + months);
-  return d.toISOString().slice(0, 10);
+  return safeToIsoDate(d, dateOnly);
 }
 
 function addDays(dateOnly: string, days: number): string {
   const [year, month, day] = dateOnly.split('-').map(Number);
   const d = new Date(Date.UTC(year, (month ?? 1) - 1, day ?? 1));
   d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
+  return safeToIsoDate(d, dateOnly);
 }
 
 function daysBetween(fromDate: string, toDate: string): number {
