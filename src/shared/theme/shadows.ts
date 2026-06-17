@@ -1,6 +1,6 @@
 import type { ViewStyle } from 'react-native';
 import { Platform } from 'react-native';
-import { lightColors, type AppColors } from './colors';
+import { darkColors, lightColors, type AppColors } from './colors';
 
 const createBaseShadow = (colors: AppColors): ViewStyle => ({
   shadowColor: colors.shadow,
@@ -9,7 +9,7 @@ const createBaseShadow = (colors: AppColors): ViewStyle => ({
   shadowRadius: 4,
 });
 
-export const getShadows = (colors: AppColors) => {
+const calculateShadows = (colors: AppColors) => {
   const baseShadow = createBaseShadow(colors);
   return {
     none: {} as ViewStyle,
@@ -32,7 +32,17 @@ export const getShadows = (colors: AppColors) => {
   } as const;
 };
 
-export const shadows = getShadows(lightColors);
+const lightShadows = calculateShadows(lightColors);
+const darkShadows = calculateShadows(darkColors);
+
+/**
+ * Returns a stable shadow configuration for the given colors.
+ * Memoized by theme to avoid repeated object allocations.
+ */
+export const getShadows = (colors: AppColors) => {
+  return colors === darkColors ? darkShadows : lightShadows;
+};
+
+export const shadows = lightShadows;
 
 export type ShadowKey = keyof typeof shadows;
-

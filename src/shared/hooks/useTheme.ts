@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useColorScheme } from 'react-native';
 import {
   getColorsForMode,
@@ -26,21 +27,23 @@ export const useTheme = () => {
 
   const colors: AppColors = getColorsForMode(themeMode);
 
-  return {
-    themeMode,
-    selectedThemeMode,
-    isDarkMode: themeMode === 'dark',
-    colors,
-    fontFamilies,
-    spacing,
-    space,
-    textStyles,
-    fontSizes,
-    fontWeights,
-    radius,
-    shadows: getShadows(colors),
-  };
+  return useMemo(
+    () => ({
+      themeMode,
+      selectedThemeMode,
+      isDarkMode: themeMode === 'dark',
+      colors,
+      fontFamilies,
+      spacing,
+      space,
+      textStyles,
+      fontSizes,
+      fontWeights,
+      radius,
+      shadows: getShadows(colors),
+    }),
+    [themeMode, selectedThemeMode, colors],
+  );
 };
 
 export type Theme = ReturnType<typeof useTheme>;
-
