@@ -14,12 +14,14 @@ export interface FloatingButtonProps {
   onPress?: (event: GestureResponderEvent) => void;
   icon?: Pick<IconProps, 'name'>;
   style?: StyleProp<ViewStyle>;
+  accessibilityLabel?: string;
 }
 
 export const FloatingButton: React.FC<FloatingButtonProps> = ({
   onPress,
   icon = { name: '+' },
   style,
+  accessibilityLabel,
 }) => {
   const { colors, shadows } = useTheme();
 
@@ -27,6 +29,8 @@ export const FloatingButton: React.FC<FloatingButtonProps> = ({
     <TouchableOpacity
       activeOpacity={0.85}
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       style={StyleSheet.flatten([
         styles.button,
         {

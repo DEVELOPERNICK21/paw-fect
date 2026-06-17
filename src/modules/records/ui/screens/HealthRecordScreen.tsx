@@ -599,6 +599,7 @@ export const HealthRecordScreen: React.FC = () => {
                 key={category}
                 accessibilityRole="button"
                 accessibilityLabel={`Filter: ${category}`}
+                accessibilityState={{ selected }}
                 onPress={handleCategoryPress}
                 style={[
                   styles.tab,
