@@ -13,3 +13,8 @@ This journal tracks critical security learnings and vulnerability patterns in th
 **Vulnerability:** The NextAuth credentials provider was logging the provided email, the expected admin email, and the first 7 characters of the bcrypt password hash upon authentication failure.
 **Learning:** Developers often add verbose logging to debug authentication flows during development and forget to remove or sanitize them for production. This leaks PII (email) and significantly reduces the search space for brute-forcing the password hash.
 **Prevention:** Never log PII or credential fragments (even hashes) in authentication handlers. Use generic error messages for logs and avoid echoing back input values in failure contexts.
+
+## 2028-02-14 - Identity Exposure via UI Label Fallbacks
+**Vulnerability:** User identity (email prefix) was being exposed in UI greetings and profile initials when `displayName` was missing.
+**Learning:** Using identity-derived data as a fallback for missing display names is a common but insecure practice that leaks PII into the UI layer.
+**Prevention:** Always use static, generic fallbacks (e.g., 'there', '?') for UI labels when optional identity data is unavailable.
