@@ -26,14 +26,26 @@ function toIsoDateOnly(input: string): string {
 function addMonths(dateOnly: string, months: number): string {
   const [year, month, day] = dateOnly.split('-').map(Number);
   const d = new Date(Date.UTC(year, (month ?? 1) - 1, day ?? 1));
+  if (isNaN(d.getTime())) {
+    return dateOnly;
+  }
   d.setUTCMonth(d.getUTCMonth() + months);
+  if (isNaN(d.getTime())) {
+    return dateOnly;
+  }
   return d.toISOString().slice(0, 10);
 }
 
 function addDays(dateOnly: string, days: number): string {
   const [year, month, day] = dateOnly.split('-').map(Number);
   const d = new Date(Date.UTC(year, (month ?? 1) - 1, day ?? 1));
+  if (isNaN(d.getTime())) {
+    return dateOnly;
+  }
   d.setUTCDate(d.getUTCDate() + days);
+  if (isNaN(d.getTime())) {
+    return dateOnly;
+  }
   return d.toISOString().slice(0, 10);
 }
 

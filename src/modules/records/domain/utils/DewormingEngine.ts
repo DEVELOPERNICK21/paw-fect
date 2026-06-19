@@ -83,7 +83,13 @@ export const validateLastDewormingDate = (
 const addDays = (date: string, days: number): string => {
   const [year, month, day] = date.split('-').map(Number);
   const d = new Date(Date.UTC(year, (month ?? 1) - 1, day ?? 1));
+  if (isNaN(d.getTime())) {
+    return toIsoDateOnly(date);
+  }
   d.setUTCDate(d.getUTCDate() + days);
+  if (isNaN(d.getTime())) {
+    return toIsoDateOnly(date);
+  }
   return toIsoDateOnly(d.toISOString());
 };
 
@@ -93,7 +99,13 @@ const addWeeks = (date: string, weeks: number): string =>
 const addMonths = (date: string, months: number): string => {
   const [year, month, day] = date.split('-').map(Number);
   const d = new Date(Date.UTC(year, (month ?? 1) - 1, day ?? 1));
+  if (isNaN(d.getTime())) {
+    return toIsoDateOnly(date);
+  }
   d.setUTCMonth(d.getUTCMonth() + months);
+  if (isNaN(d.getTime())) {
+    return toIsoDateOnly(date);
+  }
   return toIsoDateOnly(d.toISOString());
 };
 
