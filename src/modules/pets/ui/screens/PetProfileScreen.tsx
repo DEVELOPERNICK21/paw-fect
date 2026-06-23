@@ -9,6 +9,7 @@ import {
 
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useShallow } from 'zustand/react/shallow';
 
 import { useAppTabBarInset } from '../../../../app/navigation/layout';
 import type { PetProfileRootNavigation } from '../../../../app/navigation/types';
@@ -48,23 +49,43 @@ export const PetProfileScreen: React.FC = () => {
   const theme = useTheme();
   const { colors, spacing: spacingTokens, textStyles, fontFamilies } = theme;
 
-  const activePet = usePetStore(s => s.activePet);
-  const pets = usePetStore(s => s.pets);
-  const setActivePet = usePetStore(s => s.setActivePet);
-  const loadPets = usePetStore(s => s.loadPets);
-  const loading = usePetStore(s => s.loading);
-  const loadError = usePetStore(s => s.loadError);
-
-  const requestDashboardRefresh = useHomeDashboardStore(
-    s => s.requestDashboardRefresh,
+  const { activePet, setActivePet, loadPets, loading, loadError } = usePetStore(
+    useShallow(s => ({
+      activePet: s.activePet,
+      setActivePet: s.setActivePet,
+      loadPets: s.loadPets,
+      loading: s.loading,
+      loadError: s.loadError,
+    })),
   );
-  const dashboardVm = useHomeDashboardStore(s => s.viewModel);
+  const pets = usePetStore(useShallow(s => s.pets.slice(0, 4)));
 
-  const records = useRecordStore(s => s.records);
-  const loadRecords = useRecordStore(s => s.loadRecords);
+  const { requestDashboardRefresh, dashboardVm } = useHomeDashboardStore(
+    useShallow(s => ({
+      requestDashboardRefresh: s.requestDashboardRefresh,
+      dashboardVm: s.viewModel
+        ? {
+            activePet: s.viewModel.activePet,
+            todayCare: s.viewModel.todayCare,
+            weightLine: s.viewModel.weightLine,
+          }
+        : null,
+    })),
+  );
 
   const effectivePet = dashboardVm?.activePet ?? activePet;
   const petId = effectivePet?.id ?? null;
+
+  const recordsForPet = useRecordStore(
+    useShallow(s =>
+      petId
+        ? s.records
+            .filter(r => r.petId === petId)
+            .sort((a, b) => b.date.localeCompare(a.date))
+        : [],
+    ),
+  );
+  const loadRecords = useRecordStore(s => s.loadRecords);
 
   const [recordsLoading, setRecordsLoading] = useState(false);
 
@@ -133,25 +154,19 @@ export const PetProfileScreen: React.FC = () => {
     navigation.navigate('DayView', { petId });
   }, [navigation, petId]);
 
-  const todayCare = dashboardVm?.todayCare ?? [];
+  const todayCare = useMemo(
+    () => dashboardVm?.todayCare ?? [],
+    [dashboardVm?.todayCare],
+  );
   const todayCareLoading = dashboardVm == null;
-
-  const recordsForPet: HealthRecord[] = useMemo(() => {
-    if (!petId) {
-      return [];
-    }
-    return records
-      .filter(r => r.petId === petId)
-      .sort((a, b) => b.date.localeCompare(a.date));
-  }, [records, petId]);
 
   const weightValue = useMemo(() => {
     if (!petId) {
       return '—';
     }
-    const derived = getLatestWeightDisplayForPet(records, petId);
+    const derived = getLatestWeightDisplayForPet(recordsForPet, petId);
     return (dashboardVm?.weightLine ?? derived) || '—';
-  }, [petId, records, dashboardVm?.weightLine]);
+  }, [petId, recordsForPet, dashboardVm?.weightLine]);
 
   const birthdayValue = formatPetBirthdayLabel(effectivePet?.dob);
 
@@ -187,7 +202,7 @@ export const PetProfileScreen: React.FC = () => {
       return null;
     }
     return resolvePetAvatarSource(effectivePet);
-  }, [effectivePet?.id, effectivePet?.photo, effectivePet?.type]);
+  }, [effectivePet]);
 
   const dobOk = useMemo(() => {
     const raw = effectivePet?.dob?.trim();
@@ -500,7 +515,7 @@ export const PetProfileScreen: React.FC = () => {
             }
           />
           <View style={styles.petChipsRow}>
-            {pets.slice(0, 4).map(pet => {
+            {pets.map(pet => {
               const isCurrent = pet.id === effectivePet.id;
               return (
                 <Pressable
@@ -582,11 +597,28 @@ export const PetProfileScreen: React.FC = () => {
     goNextAction,
     todayCare,
     todayCareLoading,
-    goHealthRecords,
     tip.body,
     tip.title,
     goAddHealthRecord,
     colors.text.subdued,
+    colors.accent,
+    colors.borderSubtle,
+    colors.danger,
+    colors.info,
+    colors.infoSurface,
+    colors.surface,
+    colors.text.heading,
+    colors.text.inverse,
+    colors.text.secondary,
+    fontFamilies.bold,
+    fontFamilies.medium,
+    fontFamilies.semibold,
+    goDaySchedule,
+    spacingTokens.xs,
+    textStyles.body,
+    textStyles.caption,
+    textStyles.overline,
+    textStyles.subtitle,
   ]);
 
   const listFooter = useMemo(() => {
