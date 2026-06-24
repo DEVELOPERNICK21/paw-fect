@@ -73,6 +73,8 @@ export const OnboardingScreen: React.FC = () => {
             onPress={step === 0 ? handleSkip : () => setStep(prev => prev - 1)}
             style={styles.navIconButton}
             hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={step === 0 ? 'Close onboarding' : 'Go back'}
           >
             <Text style={[styles.navIcon, { color: colors.text.heading }]}>
               {step === 0 ? '✕' : '←'}

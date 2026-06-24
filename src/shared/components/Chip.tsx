@@ -31,6 +31,8 @@ export const Chip: React.FC<ChipProps> = ({
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
       style={StyleSheet.flatten([
         styles.chip,
         {
