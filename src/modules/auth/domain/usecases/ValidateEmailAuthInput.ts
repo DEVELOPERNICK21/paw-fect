@@ -11,8 +11,8 @@ export class ValidateEmailAuthInput {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       return { ok: false, errorMessage: 'Enter a valid email address.' };
     }
-    if (password.length < 6) {
-      return { ok: false, errorMessage: 'Password must be at least 6 characters.' };
+    if (password.length < 8) {
+      return { ok: false, errorMessage: 'Password must be at least 8 characters.' };
     }
     return { ok: true, normalizedEmail };
   }
