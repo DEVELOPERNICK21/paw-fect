@@ -1,5 +1,6 @@
 import { AnimatedSection } from "@/components/ui/AnimatedSection";
 import { Card } from "@/components/ui/Card";
+import { PetJourneySection } from "@/components/marketing/PetJourneySection";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -69,8 +70,12 @@ export default function FeaturesPage(): React.ReactElement {
         <section id="journey" className="mt-20 scroll-mt-24">
           <h2 className="text-2xl font-bold text-stone-900 dark:text-stone-50">Pet journey stages</h2>
           <p className="mt-2 text-stone-600 dark:text-stone-400">
-            Six life stages with guidance for dogs and cats — milestones, care focus, and schedule shifts.
+            Four life stages for dogs — from first vaccines through adulthood — with milestones, care
+            focus, and schedule shifts.
           </p>
+          <div className="-mx-4 mt-8 sm:-mx-6 lg:-mx-8">
+            <PetJourneySection variant="static" showCta={false} embedded />
+          </div>
         </section>
 
         <section id="records" className="mt-20 scroll-mt-24">
