@@ -5,15 +5,18 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 import type { WellnessHubRootNavigation } from '../../../../app/navigation/types';
 import { useAppTabBarInset } from '../../../../app/navigation/layout';
+import { getAppSessionUserId } from '../../../../shared/session/appSessionPorts';
 import { AppText } from '../../../../shared/components/AppText';
 import { Button } from '../../../../shared/components/Button';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { HomePetSwitcherBar } from '../../../app/ui/components/home/HomePetSwitcherBar';
 import { usePetStore } from '../../../pets/store/petStore';
+import { DEFAULT_PET_SCHEDULE_PREFERENCES } from '../../domain/DailyScheduleEngine';
 import { isScheduleProUser } from '../../domain/models/ScheduleFeatureGates';
 import { useSubscriptionStore } from '../../../subscription/store/subscriptionStore';
 import { useScheduleStore } from '../../store/scheduleStore';
+import { useWellnessStore } from '../../store/wellnessStore';
 import { TodayCareSection } from '../components/TodayCareSection';
 
 export const WellnessHubScreen: React.FC = () => {
@@ -28,24 +31,62 @@ export const WellnessHubScreen: React.FC = () => {
   const loadPets = usePetStore(state => state.loadPets);
   const setActivePet = usePetStore(state => state.setActivePet);
   const schedule = useScheduleStore(state => state.schedule);
+  const preferences = useScheduleStore(state => state.preferences);
   const weekScores = useScheduleStore(state => state.weekScores);
   const loading = useScheduleStore(state => state.loading);
   const loadDaySchedule = useScheduleStore(state => state.loadDaySchedule);
+  const loadPreferences = useScheduleStore(state => state.loadPreferences);
   const loadWeekScores = useScheduleStore(state => state.loadWeekScores);
+  const hydrateDay = useWellnessStore(state => state.hydrateDay);
+  const loadRelaxedMode = useWellnessStore(state => state.loadRelaxedMode);
+  const completion = useWellnessStore(state => state.completion);
 
   const petId = activePet?.id ?? pets[0]?.id;
   const pet = pets.find(item => item.id === petId);
+
+  const syncWellnessDay = useCallback(
+    async (targetPetId: string) => {
+      const targetPet = pets.find(item => item.id === targetPetId) ?? activePet;
+      if (!targetPet) {
+        return;
+      }
+      await loadPreferences(targetPetId);
+      await loadDaySchedule(targetPetId, undefined, { skipNotificationSync: true });
+      const latestSchedule = useScheduleStore.getState().schedule;
+      const latestPrefs = useScheduleStore.getState().preferences;
+      if (!latestSchedule || latestSchedule.petId !== targetPetId) {
+        return;
+      }
+      const userId = getAppSessionUserId();
+      if (userId) {
+        loadRelaxedMode(userId);
+      }
+      await hydrateDay({
+        petId: targetPetId,
+        petName: targetPet.name,
+        species: targetPet.type,
+        blocks: latestSchedule.blocks,
+        date: latestSchedule.date,
+        isPro,
+        ownerSleepTime:
+          latestPrefs?.ownerSleepTime ??
+          preferences?.ownerSleepTime ??
+          DEFAULT_PET_SCHEDULE_PREFERENCES.ownerSleepTime,
+      });
+    },
+    [activePet, hydrateDay, isPro, loadDaySchedule, loadPreferences, loadRelaxedMode, pets, preferences],
+  );
 
   useFocusEffect(
     useCallback(() => {
       void loadPets().catch(() => {});
       if (petId) {
-        void loadDaySchedule(petId);
+        void syncWellnessDay(petId);
         if (isPro) {
           void loadWeekScores(petId);
         }
       }
-    }, [isPro, loadDaySchedule, loadPets, loadWeekScores, petId]),
+    }, [isPro, loadPets, loadWeekScores, petId, syncWellnessDay]),
   );
 
   const styles = useMemo(
@@ -118,11 +159,11 @@ export const WellnessHubScreen: React.FC = () => {
 
   const weeklyAverage = useMemo(() => {
     if (weekScores.length === 0) {
-      return schedule?.completionPercent ?? 0;
+      return completion.percentage || schedule?.completionPercent || 0;
     }
     const total = weekScores.reduce((sum, item) => sum + item.percent, 0);
     return Math.round(total / weekScores.length);
-  }, [schedule?.completionPercent, weekScores]);
+  }, [completion.percentage, schedule?.completionPercent, weekScores]);
 
   const handleOpenInbox = useCallback(() => {
     navigation.navigate('NotificationInbox');
@@ -223,7 +264,7 @@ export const WellnessHubScreen: React.FC = () => {
           onSelectPet={nextPetId => {
             void (async () => {
               await setActivePet(nextPetId);
-              await loadDaySchedule(nextPetId);
+              await syncWellnessDay(nextPetId);
               if (isPro) {
                 await loadWeekScores(nextPetId);
               }
@@ -272,7 +313,7 @@ export const WellnessHubScreen: React.FC = () => {
             </AppText>
             <AppText style={[textStyles.body, { color: colors.text.secondary }]}>
               Today&apos;s wellness score:{' '}
-              {schedule?.wellnessScore ?? schedule?.completionPercent ?? 0} / 100
+              {completion.percentage || schedule?.wellnessScore || schedule?.completionPercent || 0} / 100
             </AppText>
           </View>
 

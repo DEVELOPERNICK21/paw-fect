@@ -7,10 +7,18 @@ jest.mock('../notificationService', () => ({
   },
 }));
 
-import { ensureNotificationsReady } from '../notificationDiagnostics';
+jest.mock('../../logging/startupLog', () => ({
+  startupLog: jest.fn(),
+  startupError: jest.fn(),
+}));
+
+import { ensureNotificationsReady, resetNotificationDiagnosticsStateForTests } from '../notificationDiagnostics';
+import { resetNotificationChannelStateForTests } from '../notificationChannels';
 
 describe('ensureNotificationsReady', () => {
   beforeEach(() => {
+    resetNotificationDiagnosticsStateForTests();
+    resetNotificationChannelStateForTests();
     Object.defineProperty(Platform, 'OS', {
       configurable: true,
       value: 'android',

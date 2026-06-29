@@ -511,8 +511,12 @@ export const PetProfileScreen: React.FC = () => {
                   style={[
                     styles.petChip,
                     {
-                      backgroundColor: isCurrent ? colors.accent : colors.surface,
-                      borderColor: isCurrent ? colors.accent : colors.borderSubtle,
+                      backgroundColor: isCurrent
+                        ? colors.accent
+                        : colors.surface,
+                      borderColor: isCurrent
+                        ? colors.accent
+                        : colors.borderSubtle,
                     },
                   ]}
                 >
@@ -520,7 +524,9 @@ export const PetProfileScreen: React.FC = () => {
                     style={[
                       textStyles.caption,
                       {
-                        color: isCurrent ? colors.text.inverse : colors.text.secondary,
+                        color: isCurrent
+                          ? colors.text.inverse
+                          : colors.text.secondary,
                         fontFamily: isCurrent
                           ? fontFamilies.bold
                           : fontFamilies.medium,

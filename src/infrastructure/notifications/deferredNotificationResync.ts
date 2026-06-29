@@ -1,5 +1,7 @@
 import { InteractionManager } from 'react-native';
 
+import { startupError, startupLog } from '../logging/startupLog';
+
 import { resyncAllLocalNotifications } from './resyncLocalNotifications';
 
 let resyncTimer: ReturnType<typeof setTimeout> | null = null;
@@ -18,14 +20,18 @@ export function scheduleDeferredNotificationResync(delayMs = 1500): void {
     InteractionManager.runAfterInteractions(() => {
       try {
         if (resyncInFlight != null) {
+          startupLog('notifications.resync.skipped', 'already_in_flight');
           return;
         }
+        startupLog('notifications.resync.begin');
         resyncInFlight = resyncAllLocalNotifications()
-          .catch(() => {})
+          .then(() => startupLog('notifications.resync.done'))
+          .catch(error => startupError('notifications.resync', error))
           .finally(() => {
             resyncInFlight = null;
           });
-      } catch {
+      } catch (error) {
+        startupError('notifications.resync.schedule', error);
         /* runAfterInteractions/sync must not tear down the RN shell */
       }
     });

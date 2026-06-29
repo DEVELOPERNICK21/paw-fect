@@ -14,7 +14,8 @@ export interface CareBlockDetailSheetProps {
   locked: boolean;
   onClose: () => void;
   onMarkDone: () => void;
-  onSnooze: () => void;
+  onSnooze?: () => void;
+  onSkip?: () => void;
   onUpgrade: () => void;
 }
 
@@ -25,6 +26,7 @@ export const CareBlockDetailSheet: React.FC<CareBlockDetailSheetProps> = ({
   onClose,
   onMarkDone,
   onSnooze,
+  onSkip,
   onUpgrade,
 }) => {
   const { colors, spacing, radius, textStyles, fontFamilies } = useTheme();
@@ -99,6 +101,11 @@ export const CareBlockDetailSheet: React.FC<CareBlockDetailSheetProps> = ({
               {formatScheduleTimeLabel(block.scheduledTime)} · {block.durationMinutes} min
             </AppText>
           </View>
+          {block.insightTip ? (
+            <AppText style={[textStyles.body, { color: colors.text.secondary }]}>
+              {block.insightTip}
+            </AppText>
+          ) : null}
           {bullets.map(item => (
             <View key={item} style={styles.bulletRow}>
               <View style={styles.bulletDot} />
@@ -113,7 +120,12 @@ export const CareBlockDetailSheet: React.FC<CareBlockDetailSheetProps> = ({
             ) : (
               <>
                 <Button title="Mark done" onPress={onMarkDone} />
-                <Button title="Snooze 30 min" variant="secondary" onPress={onSnooze} />
+                {onSnooze ? (
+                  <Button title="Snooze 30 min" variant="secondary" onPress={onSnooze} />
+                ) : null}
+                {onSkip ? (
+                  <Button title="Skip for today" variant="secondary" onPress={onSkip} />
+                ) : null}
               </>
             )}
           </View>

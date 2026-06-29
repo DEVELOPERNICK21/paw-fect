@@ -1,6 +1,8 @@
 import notifee from '@notifee/react-native';
 import { Platform } from 'react-native';
 
+import { startupLog } from '../logging/startupLog';
+
 import type { AttentionTier, NotificationTone } from './notificationSoundCatalog';
 import {
   ensureNotificationChannels,
@@ -36,6 +38,8 @@ export interface EnsureNotificationsReadyOptions {
   requireExactAlarm?: boolean;
 }
 
+let ensureReadyPromise: Promise<boolean> | null = null;
+
 /**
  * Ensures channels, POST_NOTIFICATIONS, and (Android 12+) exact-alarm permission
  * required for Notifee timestamp triggers. Immediate alerts (e.g. login welcome) only need POST_NOTIFICATIONS.
@@ -43,22 +47,59 @@ export interface EnsureNotificationsReadyOptions {
 export async function ensureNotificationsReady(
   options?: EnsureNotificationsReadyOptions,
 ): Promise<boolean> {
-  await ensureNotificationChannels();
-  const granted = await requestNotificationPermission();
-  if (!granted) {
-    return false;
+  if (
+    options?.promptExactAlarmIfDisabled !== true &&
+    options?.requireExactAlarm !== true &&
+    ensureReadyPromise != null
+  ) {
+    return ensureReadyPromise;
   }
 
-  const exactAlarmAllowed = await canUseAndroidExactAlarms();
-  if (!exactAlarmAllowed) {
-    if (options?.promptExactAlarmIfDisabled) {
-      await openAndroidExactAlarmSettings();
+  const run = async (): Promise<boolean> => {
+    startupLog('notifications.ensureReady.begin');
+    await ensureNotificationChannels();
+    const granted = await requestNotificationPermission();
+    if (!granted) {
+      startupLog('notifications.ensureReady.end', 'post_notifications_denied');
       return false;
     }
-    return options?.requireExactAlarm !== true;
+
+    const exactAlarmAllowed = await canUseAndroidExactAlarms();
+    if (!exactAlarmAllowed) {
+      if (options?.promptExactAlarmIfDisabled) {
+        await openAndroidExactAlarmSettings();
+        startupLog('notifications.ensureReady.end', 'exact_alarm_prompted');
+        return false;
+      }
+      const allowed = options?.requireExactAlarm !== true;
+      startupLog(
+        'notifications.ensureReady.end',
+        allowed ? 'exact_alarm_skipped' : 'exact_alarm_required',
+      );
+      return allowed;
+    }
+
+    startupLog('notifications.ensureReady.end', 'ready');
+    return true;
+  };
+
+  if (
+    options?.promptExactAlarmIfDisabled === true ||
+    options?.requireExactAlarm === true
+  ) {
+    return run();
   }
 
-  return true;
+  ensureReadyPromise = run().catch(error => {
+    ensureReadyPromise = null;
+    throw error;
+  });
+  return ensureReadyPromise;
+}
+
+/** Test-only reset for ensure-ready singleton state. */
+export function resetNotificationDiagnosticsStateForTests(): void {
+  ensureReadyPromise = null;
 }
 
 export async function countPendingTriggerNotifications(): Promise<number> {

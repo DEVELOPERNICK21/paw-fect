@@ -17,6 +17,8 @@ export type BlockFrequency =
   | 'monthly'
   | 'every_n_days';
 
+export type WellnessBlockStatus = 'upcoming' | 'active' | 'done' | 'skipped';
+
 export interface DailyCareBlock {
   id: string;
   petId: string;
@@ -36,4 +38,9 @@ export interface DailyCareBlock {
   completedAt: string | null;
   isFreeFeature: boolean;
   order: number;
+  /** Populated by wellness enrichment only — not set by DailyScheduleEngine. */
+  status?: WellnessBlockStatus;
+  isProFeature?: boolean;
+  insightTip?: string;
+  isMissed?: boolean;
 }

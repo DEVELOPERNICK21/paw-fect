@@ -2,7 +2,6 @@ import { create } from 'zustand';
 
 import { getAppSessionUserId } from '../../../shared/session/appSessionPorts';
 import { getTodayIsoDateLocal } from '../../../shared/utils/calendarDate';
-import type { DailyCareBlock } from '../domain/models/DailyCareBlock';
 import type { DailySchedule } from '../domain/models/DailySchedule';
 import type { PetSchedulePreferences } from '../domain/models/PetProfile';
 import { scheduleComposition } from '../scheduleComposition';
@@ -23,7 +22,11 @@ export interface ScheduleState {
   selectedBlockId: string | null;
   weekScores: Array<{ date: string; percent: number }>;
   reset: () => void;
-  loadDaySchedule: (petId: string, date?: string) => Promise<void>;
+  loadDaySchedule: (
+    petId: string,
+    date?: string,
+    options?: { skipNotificationSync?: boolean },
+  ) => Promise<void>;
   loadPreferences: (petId: string) => Promise<void>;
   savePreferences: (
     petId: string,
@@ -52,7 +55,7 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
       weekScores: [],
     }),
 
-  loadDaySchedule: async (petId, date = getTodayIsoDateLocal()) => {
+  loadDaySchedule: async (petId, date = getTodayIsoDateLocal(), options) => {
     const userId = getAppSessionUserId();
     if (!userId) {
       set({ error: 'Please sign in again.', loading: false });
@@ -73,7 +76,9 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
         return;
       }
       set({ schedule, loading: false });
-      await scheduleComposition.syncScheduleNotifications(schedule, schedule.blocks);
+      if (!options?.skipNotificationSync) {
+        await scheduleComposition.syncScheduleNotifications(schedule, schedule.blocks);
+      }
       await scheduleComposition.syncGlanceForSchedule(schedule);
     } catch (error) {
       set({

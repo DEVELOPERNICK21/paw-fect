@@ -45,6 +45,7 @@ import { OnboardingNavigator } from './OnboardingNavigator';
 import { navigationRef } from './navigationRef';
 import { PetRequiredNavigator } from './PetRequiredNavigator';
 import { runBootNotificationResyncIfNeeded } from '../../infrastructure/notifications/notificationBoot';
+import { startupError, startupLog } from '../../infrastructure/logging/startupLog';
 
 export const RootNavigator: React.FC = () => {
   const {
@@ -109,11 +110,20 @@ export const RootNavigator: React.FC = () => {
 
   useEffect(() => {
     const bootstrap = async () => {
-      // Load current user first so pet storage keys are correctly namespaced.
-      await loadCurrentUser();
-      await Promise.all([loadSettings(), loadPets()]);
-      ensureAuthSessionListenerAttached();
-      setBootstrapped(true);
+      startupLog('bootstrap.begin');
+      try {
+        // Load current user first so pet storage keys are correctly namespaced.
+        await loadCurrentUser();
+        startupLog('bootstrap.auth_loaded');
+        await Promise.all([loadSettings(), loadPets()]);
+        startupLog('bootstrap.settings_pets_loaded');
+        ensureAuthSessionListenerAttached();
+        setBootstrapped(true);
+        startupLog('bootstrap.done');
+      } catch (error) {
+        startupError('bootstrap', error);
+        throw error;
+      }
     };
 
     bootstrap();
@@ -124,7 +134,10 @@ export const RootNavigator: React.FC = () => {
       return;
     }
     registerCrashlyticsUserSync();
-    void bootstrapLocalNotifications().catch(() => {});
+    startupLog('post_bootstrap.notifications.begin');
+    void bootstrapLocalNotifications()
+      .then(() => startupLog('post_bootstrap.notifications.done'))
+      .catch(error => startupError('post_bootstrap.notifications', error));
   }, [bootstrapped]);
 
   useEffect(() => {
@@ -250,11 +263,13 @@ export const RootNavigator: React.FC = () => {
     authDataSyncGenerationRef.current = syncGeneration;
 
     void (async () => {
+      startupLog('auth_data_sync.begin', `user=${activeUserId}`);
       try {
         if (skipCacheReset) {
           appOrchestrator.refreshHomeDashboardObservation();
           await Promise.all([loadReminders(), loadRecords()]);
           if (authDataSyncGenerationRef.current !== syncGeneration) {
+            startupLog('auth_data_sync.aborted', 'stale_generation_refresh');
             return;
           }
         } else {
@@ -270,11 +285,14 @@ export const RootNavigator: React.FC = () => {
             { resetCaches: true },
           );
           if (authDataSyncGenerationRef.current !== syncGeneration) {
+            startupLog('auth_data_sync.aborted', 'stale_generation_sync');
             return;
           }
         }
+        startupLog('auth_data_sync.done');
         scheduleDeferredNotificationResync();
-      } catch {
+      } catch (error) {
+        startupError('auth_data_sync', error);
         /* Avoid crashing the shell if a loader throws; stores keep last good state. */
       }
     })();

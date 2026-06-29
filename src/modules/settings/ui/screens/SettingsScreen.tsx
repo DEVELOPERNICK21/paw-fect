@@ -44,6 +44,7 @@ import {
 import type { Pet } from '../../../pets/domain/models/Pet';
 import { usePetStore } from '../../../pets/store/petStore';
 import { useReminderStore } from '../../../reminders/store/reminderStore';
+import { useWellnessStore } from '../../../schedule/store/wellnessStore';
 import { useSettingsStore } from '../../store/settingsStore';
 
 export const SettingsScreen: React.FC = () => {
@@ -52,7 +53,10 @@ export const SettingsScreen: React.FC = () => {
   const { fontFamilies, colors, isDarkMode, selectedThemeMode } = useTheme();
   const styles = useMemo(() => createStyles(colors, tabBarInset), [colors, tabBarInset]);
   const { settings, loadSettings, updateSettings, setThemeMode } = useSettingsStore();
-  const { logout, loading } = useAuthStore();
+  const relaxedMode = useWellnessStore(s => s.relaxedMode);
+  const loadRelaxedMode = useWellnessStore(s => s.loadRelaxedMode);
+  const setRelaxedMode = useWellnessStore(s => s.setRelaxedMode);
+  const { logout, loading, user } = useAuthStore();
   const pets = usePetStore(s => s.pets);
   const loadPets = usePetStore(s => s.loadPets);
   const deletePet = usePetStore(s => s.deletePet);
@@ -69,6 +73,12 @@ export const SettingsScreen: React.FC = () => {
   useEffect(() => {
     loadSettings().catch(() => {});
   }, [loadSettings]);
+
+  useEffect(() => {
+    if (user?.id) {
+      loadRelaxedMode(user.id);
+    }
+  }, [loadRelaxedMode, user?.id]);
 
   const refreshHealthCoverageSummary = useCallback(() => {
     void (async () => {
@@ -334,6 +344,32 @@ export const SettingsScreen: React.FC = () => {
               <Switch
                 value={settings?.notificationsEnabled ?? true}
                 onValueChange={toggleNotifications}
+                thumbColor={colors.surface}
+                trackColor={{ true: colors.primary, false: colors.borderSubtle }}
+              />
+            </View>
+
+            <View style={styles.row}>
+              <View style={styles.rowLeft}>
+                <View style={styles.rowIcon}>
+                  <MaterialIcon name="healing" size={20} color={colors.accent} />
+                </View>
+                <View>
+                  <Text style={[styles.rowTitle, { fontFamily: fontFamilies.semibold }]}>
+                    Relaxed Mode
+                  </Text>
+                  <Text style={[styles.rowSubtitle, { fontFamily: fontFamilies.medium }]}>
+                    No missed-task pressure — celebrate what you complete
+                  </Text>
+                </View>
+              </View>
+              <Switch
+                value={relaxedMode}
+                onValueChange={enabled => {
+                  if (user?.id) {
+                    void setRelaxedMode(user.id, enabled);
+                  }
+                }}
                 thumbColor={colors.surface}
                 trackColor={{ true: colors.primary, false: colors.borderSubtle }}
               />

@@ -30,6 +30,7 @@
     "react-native-config": "^1.6.1",
     "react-native-iap": "^15.0.0",
     "react-native-linear-gradient": "^2.8.3",
+    "react-native-mmkv": "^4.3.1",
     "react-native-nitro-modules": "^0.35.0",
     "react-native-razorpay": "^2.3.0",
     "react-native-safe-area-context": "^5.5.2",
