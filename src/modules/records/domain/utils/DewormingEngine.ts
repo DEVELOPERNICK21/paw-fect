@@ -80,11 +80,18 @@ export const validateLastDewormingDate = (
   return { ok: true };
 };
 
+const safeToIsoDate = (d: Date, fallback: string): string => {
+  if (Number.isNaN(d.getTime())) {
+    return toIsoDateOnly(fallback);
+  }
+  return toIsoDateOnly(d.toISOString());
+};
+
 const addDays = (date: string, days: number): string => {
   const [year, month, day] = date.split('-').map(Number);
   const d = new Date(Date.UTC(year, (month ?? 1) - 1, day ?? 1));
   d.setUTCDate(d.getUTCDate() + days);
-  return toIsoDateOnly(d.toISOString());
+  return safeToIsoDate(d, date);
 };
 
 const addWeeks = (date: string, weeks: number): string =>
@@ -94,7 +101,7 @@ const addMonths = (date: string, months: number): string => {
   const [year, month, day] = date.split('-').map(Number);
   const d = new Date(Date.UTC(year, (month ?? 1) - 1, day ?? 1));
   d.setUTCMonth(d.getUTCMonth() + months);
-  return toIsoDateOnly(d.toISOString());
+  return safeToIsoDate(d, date);
 };
 
 const getCalendarAgeMonths = (dateOfBirth: string, asOf: string): number => {
