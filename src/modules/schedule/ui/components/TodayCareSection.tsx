@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { useShallow } from 'zustand/react/shallow';
 
 import type { Pet } from '../../../pets/domain/models/Pet';
 import { AppText } from '../../../../shared/components/AppText';
@@ -40,19 +41,37 @@ export const TodayCareSection: React.FC<TodayCareSectionProps> = ({
   const loading = useScheduleStore(state => state.loading);
   const error = useScheduleStore(state => state.error);
 
-  const enrichedBlocks = useWellnessStore(state => state.enrichedBlocks);
-  const completion = useWellnessStore(state => state.completion);
-  const streakDays = useWellnessStore(state => state.streakDays);
-  const relaxedMode = useWellnessStore(state => state.relaxedMode);
-  const heroBlockId = useWellnessStore(state => state.heroBlockId);
-  const upNextBlocks = useWellnessStore(state => state.upNextBlocks);
-  const selectedBlockId = useWellnessStore(state => state.selectedBlockId);
-  const showCelebration = useWellnessStore(state => state.showCelebration);
-  const celebrationPetName = useWellnessStore(state => state.celebrationPetName);
-  const markTaskDone = useWellnessStore(state => state.markTaskDone);
-  const skipTask = useWellnessStore(state => state.skipTask);
-  const setSelectedBlockId = useWellnessStore(state => state.setSelectedBlockId);
-  const clearCelebration = useWellnessStore(state => state.clearCelebration);
+  const {
+    enrichedBlocks,
+    completion,
+    streakDays,
+    relaxedMode,
+    heroBlockId,
+    upNextBlocks,
+    selectedBlockId,
+    showCelebration,
+    celebrationPetName,
+    markTaskDone,
+    skipTask,
+    setSelectedBlockId,
+    clearCelebration,
+  } = useWellnessStore(
+    useShallow(state => ({
+      enrichedBlocks: state.enrichedBlocks,
+      completion: state.completion,
+      streakDays: state.streakDays,
+      relaxedMode: state.relaxedMode,
+      heroBlockId: state.heroBlockId,
+      upNextBlocks: state.upNextBlocks,
+      selectedBlockId: state.selectedBlockId,
+      showCelebration: state.showCelebration,
+      celebrationPetName: state.celebrationPetName,
+      markTaskDone: state.markTaskDone,
+      skipTask: state.skipTask,
+      setSelectedBlockId: state.setSelectedBlockId,
+      clearCelebration: state.clearCelebration,
+    })),
+  );
 
   const styles = useMemo(
     () =>
