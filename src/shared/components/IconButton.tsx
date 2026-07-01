@@ -13,12 +13,14 @@ export interface IconButtonProps {
   icon: Pick<IconProps, 'name'>;
   onPress?: (event: GestureResponderEvent) => void;
   style?: StyleProp<ViewStyle>;
+  accessibilityLabel?: string;
 }
 
 export const IconButton: React.FC<IconButtonProps> = ({
   icon,
   onPress,
   style,
+  accessibilityLabel,
 }) => {
   const { colors } = useTheme();
 
@@ -27,6 +29,8 @@ export const IconButton: React.FC<IconButtonProps> = ({
       onPress={onPress}
       style={StyleSheet.flatten([styles.button, style])}
       activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
     >
       <Icon name={icon.name} color={colors.text.secondary} />
     </TouchableOpacity>

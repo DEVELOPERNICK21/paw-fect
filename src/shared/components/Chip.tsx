@@ -16,6 +16,7 @@ export interface ChipProps {
   onPress?: (event: GestureResponderEvent) => void;
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
+  accessibilityLabel?: string;
 }
 
 export const Chip: React.FC<ChipProps> = ({
@@ -24,6 +25,7 @@ export const Chip: React.FC<ChipProps> = ({
   onPress,
   style,
   textStyle,
+  accessibilityLabel,
 }) => {
   const { colors, radius, space, textStyles } = useTheme();
 
@@ -31,6 +33,9 @@ export const Chip: React.FC<ChipProps> = ({
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      accessibilityLabel={accessibilityLabel}
       style={StyleSheet.flatten([
         styles.chip,
         {
