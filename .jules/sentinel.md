@@ -13,3 +13,8 @@ This journal tracks critical security learnings and vulnerability patterns in th
 **Vulnerability:** The NextAuth credentials provider was logging the provided email, the expected admin email, and the first 7 characters of the bcrypt password hash upon authentication failure.
 **Learning:** Developers often add verbose logging to debug authentication flows during development and forget to remove or sanitize them for production. This leaks PII (email) and significantly reduces the search space for brute-forcing the password hash.
 **Prevention:** Never log PII or credential fragments (even hashes) in authentication handlers. Use generic error messages for logs and avoid echoing back input values in failure contexts.
+
+## 2026-07-09 - PII Leakage in Third-Party Analytics
+**Vulnerability:** User PII (email and display name) was being sent to PostHog via the `posthog.identify` call in the root navigator.
+**Learning:** It's tempting to attach as much user metadata as possible to analytics identities for easier debugging and segmentation, but this often violates privacy policies and security best practices regarding PII exposure to third parties.
+**Prevention:** Only use non-identifiable internal IDs for third-party analytics. If PII is required for business needs, ensure it is hashed or handled through a privacy-preserving proxy, though the best practice is to avoid it entirely in client-side analytics calls.

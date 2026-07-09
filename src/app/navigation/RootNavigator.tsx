@@ -319,12 +319,7 @@ export const RootNavigator: React.FC = () => {
 
   useEffect(() => {
     if (user?.id) {
-      posthog.identify(user.id, {
-        $set: {
-          email: user.email ?? undefined,
-          display_name: user.displayName ?? undefined,
-        },
-      });
+      posthog.identify(user.id);
     } else if (userId === null || userId === undefined) {
       posthog.reset();
     }
