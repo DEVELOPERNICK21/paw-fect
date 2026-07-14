@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePostHog } from 'posthog-react-native';
 import {
+  Animated,
   Image,
   Pressable,
   ScrollView,
@@ -13,7 +14,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { images } from '../../../../shared/assets/images';
 import { useTheme } from '../../../../shared/hooks/useTheme';
+import type { CareInterest } from '../../../settings/domain/models/Settings';
 import { useSettingsStore } from '../../../settings/store/settingsStore';
+import { OnboardingCareInterestsStep } from '../components/OnboardingCareInterestsStep';
+import { toggleCareInterest } from '../onboarding/careInterestUtils';
+
+const TOTAL_STEPS = 4;
+
+type HealthChip = 'Activity' | 'Nutrition' | 'Vitals';
+type ReminderDemo = 'vaccination' | 'grooming' | 'walks' | 'meds' | null;
+type PetDemo = 'luna' | 'milo' | 'add' | null;
 
 export const OnboardingScreen: React.FC = () => {
   const posthog = usePostHog();
@@ -21,43 +31,82 @@ export const OnboardingScreen: React.FC = () => {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { settings, updateSettings } = useSettingsStore();
   const [step, setStep] = useState(0);
+  const [selectedHealthChip, setSelectedHealthChip] =
+    useState<HealthChip | null>(null);
+  const [selectedReminder, setSelectedReminder] = useState<ReminderDemo>(null);
+  const [selectedPetDemo, setSelectedPetDemo] = useState<PetDemo>(null);
+  const [careInterests, setCareInterests] = useState<CareInterest[]>([]);
+  const fade = useRef(new Animated.Value(1)).current;
   const { height } = useWindowDimensions();
   const compact = height < 820;
   const scale = Math.max(0.82, Math.min(1, height / 900));
   const sv = (value: number) => Math.round(value * scale * 0.92);
 
   useEffect(() => {
-    posthog.capture('onboarding_step_viewed', { step: step + 1, total_steps: 3 });
+    posthog.capture('onboarding_step_viewed', {
+      step: step + 1,
+      total_steps: TOTAL_STEPS,
+    });
   }, [posthog, step]);
 
-  const completeOnboarding = useCallback((skipped = false) => {
-    posthog.capture('onboarding_completed', { skipped });
-    const current = settings ?? {
-      notificationsEnabled: true,
-      emailUpdates: true,
-      onboardingCompleted: false,
-      themeMode: 'system' as const,
-      careInterests: [],
-    };
-    updateSettings({
-      ...current,
-      onboardingCompleted: true,
-    });
-  }, [posthog, settings, updateSettings]);
+  useEffect(() => {
+    fade.setValue(0);
+    Animated.timing(fade, {
+      toValue: 1,
+      duration: 220,
+      useNativeDriver: true,
+    }).start();
+  }, [fade, step]);
+
+  const completeOnboarding = useCallback(
+    (skipped = false) => {
+      posthog.capture('onboarding_completed', {
+        skipped,
+        care_interests: careInterests,
+      });
+      const current = settings ?? {
+        notificationsEnabled: true,
+        emailUpdates: true,
+        onboardingCompleted: false,
+        themeMode: 'system' as const,
+        careInterests: [],
+      };
+      updateSettings({
+        ...current,
+        onboardingCompleted: true,
+        careInterests,
+      });
+    },
+    [careInterests, posthog, settings, updateSettings],
+  );
 
   const handleSkip = useCallback(() => {
     completeOnboarding(true);
   }, [completeOnboarding]);
 
   const handlePrimaryAction = useCallback(() => {
-    if (step < 2) {
+    if (step < TOTAL_STEPS - 1) {
       setStep(prev => prev + 1);
-    } else {
-      completeOnboarding();
+      return;
     }
-  }, [completeOnboarding, step]);
+    if (careInterests.length === 0) {
+      return;
+    }
+    completeOnboarding(false);
+  }, [careInterests.length, completeOnboarding, step]);
 
-  const stepLabel = useMemo(() => `Step ${step + 1} of 3`, [step]);
+  const primaryDisabled = step === TOTAL_STEPS - 1 && careInterests.length === 0;
+  const progressPercent = ((step + 1) / TOTAL_STEPS) * 100;
+  const stepLabel = useMemo(
+    () => `${step + 1} OF ${TOTAL_STEPS}`,
+    [step],
+  );
+  const primaryLabel =
+    step === 0
+      ? 'Get Started →'
+      : step < TOTAL_STEPS - 1
+        ? 'Next →'
+        : 'Save & Continue →';
 
   return (
     <SafeAreaView
@@ -104,7 +153,7 @@ export const OnboardingScreen: React.FC = () => {
                     { fontFamily: fontFamilies.medium },
                   ]}
                 >
-                  {step === 1 ? 'Onboarding' : 'Onboarding Progress'}
+                  Onboarding Progress
                 </Text>
                 <Text
                   style={[
@@ -112,24 +161,22 @@ export const OnboardingScreen: React.FC = () => {
                     { fontFamily: fontFamilies.bold },
                   ]}
                 >
-                  {step === 1 ? '2 OF 3' : stepLabel}
+                  {stepLabel}
                 </Text>
               </View>
               <View style={styles.progressTrack}>
                 <View
                   style={[
                     styles.progressFill,
-                    step === 1
-                      ? styles.progressFillTwoThirds
-                      : styles.progressFillFull,
+                    { width: `${progressPercent}%` },
                   ]}
                 />
               </View>
             </View>
           ) : null}
 
-          {step === 0 ? (
-            <>
+          <Animated.View style={{ opacity: fade }}>
+          {step === 0 ? (            <>
               <View style={styles.heroSection}>
                 <Image
                   source={images.petHd1}
@@ -183,29 +230,42 @@ export const OnboardingScreen: React.FC = () => {
               </View>
 
               <View style={[styles.step1FeaturesRow, { marginTop: sv(22) }]}>
-                {['Activity', 'Nutrition', 'Vitals'].map(label => (
-                  <View key={label} style={styles.step1FeatureItem}>
-                    <View
-                      style={[styles.step1FeatureThumb, { height: sv(72) }]}
-                    >
-                      <Text style={styles.step1FeatureEmoji}>
-                        {label === 'Activity'
-                          ? '🏃'
-                          : label === 'Nutrition'
-                          ? '🍽️'
-                          : '🩺'}
-                      </Text>
-                    </View>
-                    <Text
-                      style={[
-                        styles.step1FeatureLabel,
-                        { fontFamily: fontFamilies.bold },
-                      ]}
-                    >
-                      {label}
-                    </Text>
-                  </View>
-                ))}
+                {(['Activity', 'Nutrition', 'Vitals'] as HealthChip[]).map(
+                  label => {
+                    const isSelected = selectedHealthChip === label;
+                    return (
+                      <Pressable
+                        key={label}
+                        onPress={() => setSelectedHealthChip(label)}
+                        style={styles.step1FeatureItem}
+                      >
+                        <View
+                          style={[
+                            styles.step1FeatureThumb,
+                            { height: sv(72) },
+                            isSelected ? styles.selectableSelected : null,
+                          ]}
+                        >
+                          <Text style={styles.step1FeatureEmoji}>
+                            {label === 'Activity'
+                              ? '🏃'
+                              : label === 'Nutrition'
+                                ? '🍽️'
+                                : '🩺'}
+                          </Text>
+                        </View>
+                        <Text
+                          style={[
+                            styles.step1FeatureLabel,
+                            { fontFamily: fontFamilies.bold },
+                          ]}
+                        >
+                          {label}
+                        </Text>
+                      </Pressable>
+                    );
+                  },
+                )}
               </View>
             </>
           ) : null}
@@ -242,7 +302,15 @@ export const OnboardingScreen: React.FC = () => {
               </View>
 
               <View style={[styles.remindersRow, { marginTop: sv(12) }]}>
-                <View style={styles.reminderCard}>
+                <Pressable
+                  onPress={() => setSelectedReminder('vaccination')}
+                  style={[
+                    styles.reminderCard,
+                    selectedReminder === 'vaccination'
+                      ? styles.selectableSelected
+                      : null,
+                  ]}
+                >
                   <Image
                     source={images.petHd2}
                     resizeMode="cover"
@@ -272,8 +340,16 @@ export const OnboardingScreen: React.FC = () => {
                   >
                     Tomorrow, 10:00 AM
                   </Text>
-                </View>
-                <View style={styles.reminderCard}>
+                </Pressable>
+                <Pressable
+                  onPress={() => setSelectedReminder('grooming')}
+                  style={[
+                    styles.reminderCard,
+                    selectedReminder === 'grooming'
+                      ? styles.selectableSelected
+                      : null,
+                  ]}
+                >
                   <Image
                     source={images.catHd1}
                     resizeMode="cover"
@@ -303,11 +379,19 @@ export const OnboardingScreen: React.FC = () => {
                   >
                     Saturday, 2:00 PM
                   </Text>
-                </View>
+                </Pressable>
               </View>
 
               <View style={[styles.featureList, { marginTop: sv(4) }]}>
-                <View style={styles.featureListItem}>
+                <Pressable
+                  onPress={() => setSelectedReminder('walks')}
+                  style={[
+                    styles.featureListItem,
+                    selectedReminder === 'walks'
+                      ? styles.selectableSelected
+                      : null,
+                  ]}
+                >
                   <View style={styles.featureListIcon}>
                     <Text style={styles.featureListIconText}>◷</Text>
                   </View>
@@ -330,9 +414,17 @@ export const OnboardingScreen: React.FC = () => {
                       routine.
                     </Text>
                   </View>
-                </View>
+                </Pressable>
 
-                <View style={styles.featureListItem}>
+                <Pressable
+                  onPress={() => setSelectedReminder('meds')}
+                  style={[
+                    styles.featureListItem,
+                    selectedReminder === 'meds'
+                      ? styles.selectableSelected
+                      : null,
+                  ]}
+                >
                   <View style={styles.featureListIcon}>
                     <Text style={styles.featureListIconText}>💊</Text>
                   </View>
@@ -354,7 +446,7 @@ export const OnboardingScreen: React.FC = () => {
                       Keep track of dosages and schedules with smart alerts.
                     </Text>
                   </View>
-                </View>
+                </Pressable>
               </View>
             </>
           ) : null}
@@ -391,7 +483,16 @@ export const OnboardingScreen: React.FC = () => {
               </View>
 
               <View style={styles.petsGrid}>
-                <View style={[styles.petCard, { marginBottom: sv(10) }]}>
+                <Pressable
+                  onPress={() => setSelectedPetDemo('luna')}
+                  style={[
+                    styles.petCard,
+                    { marginBottom: sv(10) },
+                    selectedPetDemo === 'luna'
+                      ? styles.selectableSelected
+                      : null,
+                  ]}
+                >
                   <View style={styles.petImageWrap}>
                     <Image
                       source={images.petHd4}
@@ -414,9 +515,18 @@ export const OnboardingScreen: React.FC = () => {
                       Golden Retriever
                     </Text>
                   </View>
-                </View>
+                </Pressable>
 
-                <View style={[styles.petCard, { marginBottom: sv(10) }]}>
+                <Pressable
+                  onPress={() => setSelectedPetDemo('milo')}
+                  style={[
+                    styles.petCard,
+                    { marginBottom: sv(10) },
+                    selectedPetDemo === 'milo'
+                      ? styles.selectableSelected
+                      : null,
+                  ]}
+                >
                   <View style={styles.petImageWrap}>
                     <Image
                       source={images.catHd2}
@@ -439,12 +549,16 @@ export const OnboardingScreen: React.FC = () => {
                       Tabby Cat
                     </Text>
                   </View>
-                </View>
+                </Pressable>
 
-                <View
+                <Pressable
+                  onPress={() => setSelectedPetDemo('add')}
                   style={[
                     styles.addPetCard,
                     { height: sv(150), marginBottom: sv(10) },
+                    selectedPetDemo === 'add'
+                      ? styles.selectableSelected
+                      : null,
                   ]}
                 >
                   <View style={styles.addPetCircle}>
@@ -458,7 +572,7 @@ export const OnboardingScreen: React.FC = () => {
                   >
                     Add New Pet
                   </Text>
-                </View>
+                </Pressable>
 
                 <View
                   style={[
@@ -509,12 +623,27 @@ export const OnboardingScreen: React.FC = () => {
               </View>
             </>
           ) : null}
+
+          {step === 3 ? (
+            <OnboardingCareInterestsStep
+              selected={careInterests}
+              onToggle={id =>
+                setCareInterests(prev => toggleCareInterest(prev, id))
+              }
+            />
+          ) : null}
+          </Animated.View>
         </ScrollView>
 
         <View style={[styles.actions, { paddingTop: sv(10) }]}>
           <Pressable
             onPress={handlePrimaryAction}
-            style={[styles.primaryButton, { backgroundColor: colors.accent }]}
+            disabled={primaryDisabled}
+            style={[
+              styles.primaryButton,
+              { backgroundColor: colors.accent },
+              primaryDisabled ? styles.primaryButtonDisabled : null,
+            ]}
           >
             <Text
               style={[
@@ -522,17 +651,13 @@ export const OnboardingScreen: React.FC = () => {
                 { fontFamily: fontFamilies.bold },
               ]}
             >
-              {step === 0
-                ? 'Get Started →'
-                : step === 1
-                ? 'Next →'
-                : 'Continue to Dashboard →'}
+              {primaryLabel}
             </Text>
           </Pressable>
 
           {step === 0 ? (
             <View style={styles.dotsRow}>
-              {[0, 1, 2].map(index => (
+              {[0, 1, 2, 3].map(index => (
                 <View
                   key={index}
                   style={[
@@ -642,11 +767,10 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
     backgroundColor: colors.accent,
     borderRadius: 999,
   },
-  progressFillTwoThirds: {
-    width: '66.6%',
-  },
-  progressFillFull: {
-    width: '100%',
+  selectableSelected: {
+    borderColor: colors.accent,
+    borderWidth: 2,
+    backgroundColor: colors.brandTint5,
   },
   heroSection: {
     paddingHorizontal: 16,
@@ -970,6 +1094,9 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
     shadowOpacity: 0.2,
     shadowRadius: 15,
     elevation: 6,
+  },
+  primaryButtonDisabled: {
+    opacity: 0.45,
   },
   primaryButtonText: {
     fontSize: 16,
