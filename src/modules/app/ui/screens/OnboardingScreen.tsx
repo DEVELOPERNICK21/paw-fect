@@ -37,6 +37,7 @@ export const OnboardingScreen: React.FC = () => {
       emailUpdates: true,
       onboardingCompleted: false,
       themeMode: 'system' as const,
+      careInterests: [],
     };
     updateSettings({
       ...current,

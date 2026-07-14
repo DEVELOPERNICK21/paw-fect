@@ -8,6 +8,7 @@ const DEFAULT_SETTINGS: Settings = {
   emailUpdates: true,
   onboardingCompleted: false,
   themeMode: 'system',
+  careInterests: [],
 };
 
 export interface SettingsLocalDataSource {
