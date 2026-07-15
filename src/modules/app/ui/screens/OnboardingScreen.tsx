@@ -73,6 +73,8 @@ export const OnboardingScreen: React.FC = () => {
             onPress={step === 0 ? handleSkip : () => setStep(prev => prev - 1)}
             style={styles.navIconButton}
             hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={step === 0 ? 'Close onboarding' : 'Go back'}
           >
             <Text style={[styles.navIcon, { color: colors.text.heading }]}>
               {step === 0 ? '✕' : '←'}
@@ -514,6 +516,7 @@ export const OnboardingScreen: React.FC = () => {
           <Pressable
             onPress={handlePrimaryAction}
             style={[styles.primaryButton, { backgroundColor: colors.accent }]}
+            accessibilityRole="button"
           >
             <Text
               style={[
@@ -530,7 +533,11 @@ export const OnboardingScreen: React.FC = () => {
           </Pressable>
 
           {step === 0 ? (
-            <View style={styles.dotsRow}>
+            <View
+              style={styles.dotsRow}
+              accessibilityRole="summary"
+              accessibilityLabel={stepLabel}
+            >
               {[0, 1, 2].map(index => (
                 <View
                   key={index}
@@ -544,7 +551,11 @@ export const OnboardingScreen: React.FC = () => {
               ))}
             </View>
           ) : (
-            <Pressable onPress={handleSkip} hitSlop={8}>
+            <Pressable
+              onPress={handleSkip}
+              hitSlop={8}
+              accessibilityRole="button"
+            >
               <Text
                 style={[
                   styles.skipText,
