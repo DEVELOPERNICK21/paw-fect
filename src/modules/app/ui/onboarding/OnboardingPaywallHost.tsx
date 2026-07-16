@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { usePostHog } from 'posthog-react-native';
 
@@ -7,6 +7,8 @@ import { useSubscriptionStore } from '../../../subscription/store/subscriptionSt
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { buildCarePlanSummary } from '../../domain/onboarding/buildCarePlanSummary';
 import { useOnboardingDraftStore } from '../../store/onboardingDraftStore';
+
+const SYNC_TIMEOUT_MS = 6000;
 
 const isPaidOrTrial = (source: string): boolean =>
   source === 'paid' || source === 'trial';
@@ -33,9 +35,42 @@ export const OnboardingPaywallHost: React.FC = () => {
 
   /** null until first serverSynced; then whether user was free at that moment. */
   const wasFreeAtSyncRef = useRef<boolean | null>(null);
+  /** Set when sync wait times out so late serverSynced can still skip entitled users. */
+  const armedByTimeoutRef = useRef(false);
+  const [syncTimedOut, setSyncTimedOut] = useState(false);
+
+  useEffect(() => {
+    if (serverSynced) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      setSyncTimedOut(true);
+    }, SYNC_TIMEOUT_MS);
+
+    return () => clearTimeout(timeoutId);
+  }, [serverSynced]);
+
+  useEffect(() => {
+    if (!syncTimedOut || serverSynced || wasFreeAtSyncRef.current !== null) {
+      return;
+    }
+
+    wasFreeAtSyncRef.current = true;
+    armedByTimeoutRef.current = true;
+  }, [syncTimedOut, serverSynced]);
 
   useEffect(() => {
     if (!serverSynced) {
+      if (
+        syncTimedOut &&
+        wasFreeAtSyncRef.current &&
+        isPaidOrTrial(entitlementSource)
+      ) {
+        wasFreeAtSyncRef.current = false;
+        armedByTimeoutRef.current = false;
+        setPhase('tips');
+      }
       return;
     }
 
@@ -50,6 +85,14 @@ export const OnboardingPaywallHost: React.FC = () => {
       return;
     }
 
+    if (armedByTimeoutRef.current && isPaidOrTrial(entitlementSource)) {
+      wasFreeAtSyncRef.current = false;
+      armedByTimeoutRef.current = false;
+      posthog.capture('paywall_skipped_entitled', { source: 'onboarding' });
+      setPhase('tips');
+      return;
+    }
+
     if (
       wasFreeAtSyncRef.current &&
       isPaidOrTrial(entitlementSource)
@@ -57,7 +100,7 @@ export const OnboardingPaywallHost: React.FC = () => {
       wasFreeAtSyncRef.current = false;
       setPhase('tips');
     }
-  }, [serverSynced, entitlementSource, setPhase, posthog]);
+  }, [serverSynced, syncTimedOut, entitlementSource, setPhase, posthog]);
 
   const handleDismiss = (): void => {
     update(current => ({ ...current, skippedPaywall: true }));
@@ -77,7 +120,9 @@ export const OnboardingPaywallHost: React.FC = () => {
     [colors.background],
   );
 
-  if (!serverSynced || isPaidOrTrial(entitlementSource)) {
+  const waitingForSync = !serverSynced && !syncTimedOut;
+
+  if (waitingForSync || (serverSynced && isPaidOrTrial(entitlementSource))) {
     return (
       <View style={loadingStyles.container}>
         <ActivityIndicator color={colors.primary} />
