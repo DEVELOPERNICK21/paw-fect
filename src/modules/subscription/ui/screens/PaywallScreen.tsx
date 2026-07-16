@@ -17,12 +17,27 @@ import { useTheme } from '../../../../shared/hooks/useTheme';
 import { PLAN_CATALOG, PLAN_CARE_PLUS, PLAN_FAMILY } from '../../../../shared/subscription/planCatalog';
 import { useSubscriptionStore } from '../../store/subscriptionStore';
 
-export const PaywallScreen: React.FC = () => {
+export type PaywallScreenProps = {
+  /** Overrides the route-derived source; used by composition roots (e.g. onboarding) that render this screen outside its normal stack. */
+  sourceOverride?: PaywallRouteParams['source'];
+  /** Called instead of `navigation.goBack()` when the back arrow / skip affordance is pressed. Lets a host own dead-stack-free dismissal. */
+  onDismiss?: () => void;
+  /** Overrides the header banner headline; used by onboarding to show a personalised plan headline. */
+  headlineOverride?: string;
+};
+
+export const PaywallScreen: React.FC<PaywallScreenProps> = ({
+  sourceOverride,
+  onDismiss,
+  headlineOverride,
+}) => {
   const navigation = useNavigation();
   const route = useRoute();
   const source =
-    (route.params as PaywallRouteParams | undefined)?.source ?? 'settings';
-  const { colors, fontFamilies, spacing, radius } = useTheme();
+    sourceOverride ??
+    (route.params as PaywallRouteParams | undefined)?.source ??
+    'settings';
+  const { colors, fontFamilies, fontSizes, spacing, radius } = useTheme();
   const entitlement = useSubscriptionStore(s => s.entitlement);
   const checkoutLoading = useSubscriptionStore(s => s.checkoutLoading);
   const checkoutError = useSubscriptionStore(s => s.checkoutError);
@@ -34,6 +49,17 @@ export const PaywallScreen: React.FC = () => {
   useEffect(() => {
     posthog.capture('paywall_viewed', { source });
   }, [posthog, source]);
+
+  const handleDismiss = (): void => {
+    if (source === 'onboarding') {
+      posthog.capture('paywall_dismissed', { source });
+    }
+    if (onDismiss) {
+      onDismiss();
+    } else {
+      navigation.goBack();
+    }
+  };
 
   const styles = useMemo(
     () =>
@@ -61,6 +87,13 @@ export const PaywallScreen: React.FC = () => {
           borderColor: colors.borderSubtle,
         },
         bannerText: { fontSize: 14, color: colors.text.body },
+        bannerOnboarding: { borderColor: colors.accent, borderWidth: 1 },
+        bannerHeadline: {
+          fontSize: fontSizes.lg,
+          color: colors.text.heading,
+        },
+        skipButton: { paddingHorizontal: spacing.xs, paddingVertical: spacing.xs },
+        skipText: { fontSize: fontSizes.sm, color: colors.text.subdued },
         card: {
           backgroundColor: colors.surface,
           borderRadius: radius.md,
@@ -85,7 +118,7 @@ export const PaywallScreen: React.FC = () => {
         error: { color: colors.danger, marginTop: spacing.md, fontSize: 14 },
         current: { fontSize: 13, color: colors.accent, marginBottom: spacing.md },
       }),
-    [colors, radius, spacing],
+    [colors, radius, spacing, fontSizes],
   );
 
   const care = PLAN_CATALOG[PLAN_CARE_PLUS];
@@ -94,17 +127,26 @@ export const PaywallScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          hitSlop={12}
-          accessibilityRole="button"
-        >
+        <Pressable onPress={handleDismiss} hitSlop={12} accessibilityRole="button">
           <MaterialIcon name="arrow_back" size={22} color={colors.text.heading} />
         </Pressable>
         <Text style={[styles.title, { fontFamily: fontFamilies.bold }]}>
           PawCare plans
         </Text>
-        <View style={{ width: 22 }} />
+        {source === 'onboarding' ? (
+          <Pressable
+            onPress={handleDismiss}
+            style={styles.skipButton}
+            hitSlop={12}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.skipText, { fontFamily: fontFamilies.medium }]}>
+              Skip for now
+            </Text>
+          </Pressable>
+        ) : (
+          <View style={{ width: 22 }} />
+        )}
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -114,6 +156,14 @@ export const PaywallScreen: React.FC = () => {
               You have reached the pet limit on your current plan. Upgrade to add
               another pet profile. Existing pets stay in your account; older pets may
               become view-only if you downgrade.
+            </Text>
+          </View>
+        ) : null}
+
+        {source === 'onboarding' && headlineOverride ? (
+          <View style={[styles.banner, styles.bannerOnboarding]}>
+            <Text style={[styles.bannerHeadline, { fontFamily: fontFamilies.bold }]}>
+              {headlineOverride}
             </Text>
           </View>
         ) : null}

@@ -26,7 +26,7 @@ export type HealthStackParamList = {
 };
 
 export type PaywallRouteParams = {
-  source?: 'pet_limit' | 'settings';
+  source?: 'pet_limit' | 'settings' | 'onboarding';
 };
 
 export type PetsStackParamList = {
