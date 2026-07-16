@@ -5,6 +5,7 @@ import type { OnboardingStackParamList } from './types';
 import { useOnboardingDraftStore } from '../../modules/app/store/onboardingDraftStore';
 import OnboardingFunnelScreen from '../../modules/app/ui/onboarding/OnboardingFunnelScreen';
 import OnboardingPaywallHost from '../../modules/app/ui/onboarding/OnboardingPaywallHost';
+import OnboardingTipsScreen from '../../modules/app/ui/onboarding/tips/OnboardingTipsScreen';
 
 const Stack = createNativeStackNavigator<OnboardingStackParamList>();
 
@@ -20,11 +21,9 @@ export const OnboardingNavigator = React.memo(function OnboardingNavigator() {
   }
 
   if (phase === 'tips') {
-    // TODO(Task 7): mount a TipStrip host here instead of falling back to
-    // the funnel screen once it exists.
     return (
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Onboarding" component={OnboardingFunnelScreen} />
+        <Stack.Screen name="Onboarding" component={OnboardingTipsScreen} />
       </Stack.Navigator>
     );
   }
