@@ -25,6 +25,7 @@ import { appOrchestrator } from '../../modules/app/appComposition';
 import { registerNotificationFeedSync } from '../../modules/notifications/bootstrap/registerNotificationFeedSync';
 import { useHomeQuickActionsUsageStore } from '../../modules/app/store/homeQuickActionsUsageStore';
 import { useOnboardingDraftStore } from '../../modules/app/store/onboardingDraftStore';
+import { resolveOnboardingGate } from '../../modules/app/domain/onboarding/resolveOnboardingGate';
 import { useNotificationFeedStore } from '../../modules/notifications/store/notificationFeedStore';
 import SplashScreen from '../../modules/app/ui/screens/SplashScreen';
 import {
@@ -58,6 +59,11 @@ export const RootNavigator: React.FC = () => {
   } = useAuthStore();
   const userId = useAuthStore(state => state.user?.id);
   const { settings, loadSettings } = useSettingsStore();
+  const onboardingPhase = useOnboardingDraftStore(state => state.draft.phase);
+  const onboardingCommitmentAccepted = useOnboardingDraftStore(
+    state => state.draft.commitmentAccepted,
+  );
+  const setOnboardingPhase = useOnboardingDraftStore(state => state.setPhase);
   const loadPets = usePetStore(state => state.loadPets);
   const pets = usePetStore(state => state.pets);
   const petsLoading = usePetStore(state => state.loading);
@@ -76,6 +82,12 @@ export const RootNavigator: React.FC = () => {
   );
 
   const hasCompletedOnboarding = settings?.onboardingCompleted ?? false;
+  const onboardingGate = resolveOnboardingGate({
+    onboardingCompleted: hasCompletedOnboarding,
+    phase: onboardingPhase,
+    commitmentAccepted: onboardingCommitmentAccepted,
+    isAuthenticated,
+  });
   const petGateActive =
     bootstrapped &&
     isAuthenticated &&
@@ -133,6 +145,16 @@ export const RootNavigator: React.FC = () => {
 
     bootstrap();
   }, [loadCurrentUser, loadSettings, loadPets]);
+
+  useEffect(() => {
+    if (!bootstrapped || !isAuthenticated) {
+      return;
+    }
+    const { phase, commitmentAccepted } = useOnboardingDraftStore.getState().draft;
+    if (commitmentAccepted && phase === 'quiz') {
+      setOnboardingPhase('paywall');
+    }
+  }, [bootstrapped, isAuthenticated, setOnboardingPhase]);
 
   useEffect(() => {
     if (!bootstrapped) {
@@ -340,8 +362,10 @@ export const RootNavigator: React.FC = () => {
   }
 
   let content: React.ReactElement = <AuthNavigator />;
-  if (!hasCompletedOnboarding) {
+  if (onboardingGate === 'quiz' || onboardingGate === 'paywall' || onboardingGate === 'tips') {
     content = <OnboardingNavigator />;
+  } else if (onboardingGate === 'auth') {
+    content = <AuthNavigator />;
   } else if (petGateActive) {
     content = <PetRequiredNavigator />;
   } else if (isAuthenticated) {
