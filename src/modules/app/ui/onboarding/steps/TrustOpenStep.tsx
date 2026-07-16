@@ -2,14 +2,16 @@ import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../../../../../shared/hooks/useTheme';
+import { lineHeights } from '../../../../../shared/theme/typography';
 
 type ThemeParams = {
   colors: ReturnType<typeof useTheme>['colors'];
   spacing: ReturnType<typeof useTheme>['spacing'];
   radius: ReturnType<typeof useTheme>['radius'];
+  fontSizes: ReturnType<typeof useTheme>['fontSizes'];
 };
 
-const createStyles = ({ colors, spacing, radius }: ThemeParams) =>
+const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
   StyleSheet.create({
     container: {
       paddingHorizontal: spacing.xl,
@@ -26,19 +28,19 @@ const createStyles = ({ colors, spacing, radius }: ThemeParams) =>
       marginBottom: spacing.xl,
     },
     badgeGlyph: {
-      fontSize: 28,
+      fontSize: fontSizes['2xl'],
     },
     title: {
-      fontSize: 28,
-      lineHeight: 34,
+      fontSize: fontSizes['2xl'],
+      lineHeight: lineHeights['2xl'],
       color: colors.text.heading,
       textAlign: 'center',
       letterSpacing: -0.6,
     },
     subtitle: {
       marginTop: spacing.md,
-      fontSize: 15,
-      lineHeight: 22,
+      fontSize: fontSizes.md,
+      lineHeight: lineHeights.base,
       color: colors.text.body,
       textAlign: 'center',
     },
@@ -50,18 +52,18 @@ const createStyles = ({ colors, spacing, radius }: ThemeParams) =>
       backgroundColor: colors.brandTint5,
     },
     reassuranceText: {
-      fontSize: 13,
-      lineHeight: 19,
+      fontSize: fontSizes.sm,
+      lineHeight: lineHeights.sm,
       color: colors.text.secondary,
       textAlign: 'center',
     },
   });
 
 export const TrustOpenStep: React.FC = () => {
-  const { colors, fontFamilies, spacing, radius } = useTheme();
+  const { colors, fontFamilies, fontSizes, spacing, radius } = useTheme();
   const styles = useMemo(
-    () => createStyles({ colors, spacing, radius }),
-    [colors, spacing, radius],
+    () => createStyles({ colors, spacing, radius, fontSizes }),
+    [colors, spacing, radius, fontSizes],
   );
 
   return (

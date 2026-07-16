@@ -2,6 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../../../../../shared/hooks/useTheme';
+import { lineHeights } from '../../../../../shared/theme/typography';
 
 const PROCESSING_DURATION_MS = 2000;
 
@@ -13,9 +14,10 @@ type Props = {
 type ThemeParams = {
   colors: ReturnType<typeof useTheme>['colors'];
   spacing: ReturnType<typeof useTheme>['spacing'];
+  fontSizes: ReturnType<typeof useTheme>['fontSizes'];
 };
 
-const createStyles = ({ colors, spacing }: ThemeParams) =>
+const createStyles = ({ colors, spacing, fontSizes }: ThemeParams) =>
   StyleSheet.create({
     container: {
       paddingHorizontal: spacing.xl,
@@ -24,25 +26,25 @@ const createStyles = ({ colors, spacing }: ThemeParams) =>
     },
     title: {
       marginTop: spacing.xl,
-      fontSize: 20,
-      lineHeight: 26,
+      fontSize: fontSizes.lg,
+      lineHeight: lineHeights.lg,
       color: colors.text.heading,
       textAlign: 'center',
     },
     subtitle: {
       marginTop: spacing.sm,
-      fontSize: 14,
-      lineHeight: 20,
+      fontSize: fontSizes.lead,
+      lineHeight: lineHeights.md,
       color: colors.text.body,
       textAlign: 'center',
     },
   });
 
 export const ProcessingStep: React.FC<Props> = ({ nickname, onDone }) => {
-  const { colors, fontFamilies, spacing } = useTheme();
+  const { colors, fontFamilies, fontSizes, spacing } = useTheme();
   const styles = useMemo(
-    () => createStyles({ colors, spacing }),
-    [colors, spacing],
+    () => createStyles({ colors, spacing, fontSizes }),
+    [colors, spacing, fontSizes],
   );
 
   useEffect(() => {

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../../../../../shared/hooks/useTheme';
+import { lineHeights } from '../../../../../shared/theme/typography';
 import type { CarePlanSummary } from '../../../domain/onboarding/buildCarePlanSummary';
 
 type Props = {
@@ -12,9 +13,10 @@ type ThemeParams = {
   colors: ReturnType<typeof useTheme>['colors'];
   spacing: ReturnType<typeof useTheme>['spacing'];
   radius: ReturnType<typeof useTheme>['radius'];
+  fontSizes: ReturnType<typeof useTheme>['fontSizes'];
 };
 
-const createStyles = ({ colors, spacing, radius }: ThemeParams) =>
+const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
   StyleSheet.create({
     container: {
       paddingHorizontal: spacing.xl,
@@ -22,16 +24,16 @@ const createStyles = ({ colors, spacing, radius }: ThemeParams) =>
       alignItems: 'center',
     },
     badge: {
-      fontSize: 13,
-      lineHeight: 19,
+      fontSize: fontSizes.sm,
+      lineHeight: lineHeights.sm,
       color: colors.accent,
       letterSpacing: 1,
       textTransform: 'uppercase',
     },
     title: {
       marginTop: spacing.sm,
-      fontSize: 26,
-      lineHeight: 32,
+      fontSize: fontSizes['2xl'],
+      lineHeight: lineHeights['2xl'],
       color: colors.text.heading,
       textAlign: 'center',
       letterSpacing: -0.6,
@@ -51,14 +53,14 @@ const createStyles = ({ colors, spacing, radius }: ThemeParams) =>
       marginBottom: spacing.sm,
     },
     bulletGlyph: {
-      fontSize: 16,
+      fontSize: fontSizes.base,
       color: colors.accent,
       marginRight: spacing.sm,
     },
     bulletText: {
       flex: 1,
-      fontSize: 14,
-      lineHeight: 20,
+      fontSize: fontSizes.lead,
+      lineHeight: lineHeights.md,
       color: colors.text.heading,
     },
     tipCard: {
@@ -69,25 +71,25 @@ const createStyles = ({ colors, spacing, radius }: ThemeParams) =>
       padding: spacing.lg,
     },
     tipLabel: {
-      fontSize: 12,
-      lineHeight: 18,
+      fontSize: fontSizes.xs,
+      lineHeight: lineHeights.sm,
       color: colors.text.secondary,
       textTransform: 'uppercase',
       letterSpacing: 0.6,
     },
     tipText: {
       marginTop: spacing.xs,
-      fontSize: 14,
-      lineHeight: 20,
+      fontSize: fontSizes.lead,
+      lineHeight: lineHeights.md,
       color: colors.text.body,
     },
   });
 
 export const PlanRevealStep: React.FC<Props> = ({ summary }) => {
-  const { colors, fontFamilies, spacing, radius } = useTheme();
+  const { colors, fontFamilies, fontSizes, spacing, radius } = useTheme();
   const styles = useMemo(
-    () => createStyles({ colors, spacing, radius }),
-    [colors, spacing, radius],
+    () => createStyles({ colors, spacing, radius, fontSizes }),
+    [colors, spacing, radius, fontSizes],
   );
 
   return (

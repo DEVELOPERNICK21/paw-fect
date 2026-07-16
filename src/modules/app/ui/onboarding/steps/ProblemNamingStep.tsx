@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../../../../../shared/hooks/useTheme';
+import { lineHeights } from '../../../../../shared/theme/typography';
 import type { OnboardingProblem } from '../../../domain/onboarding/OnboardingDraft';
 
 type ProblemOption = {
@@ -26,9 +27,10 @@ type ThemeParams = {
   colors: ReturnType<typeof useTheme>['colors'];
   spacing: ReturnType<typeof useTheme>['spacing'];
   radius: ReturnType<typeof useTheme>['radius'];
+  fontSizes: ReturnType<typeof useTheme>['fontSizes'];
 };
 
-const createStyles = ({ colors, spacing, radius }: ThemeParams) =>
+const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
   StyleSheet.create({
     container: {
       paddingHorizontal: spacing.xl,
@@ -36,16 +38,16 @@ const createStyles = ({ colors, spacing, radius }: ThemeParams) =>
       alignItems: 'center',
     },
     title: {
-      fontSize: 26,
-      lineHeight: 32,
+      fontSize: fontSizes['2xl'],
+      lineHeight: lineHeights['2xl'],
       color: colors.text.heading,
       textAlign: 'center',
       letterSpacing: -0.6,
     },
     subtitle: {
       marginTop: spacing.md,
-      fontSize: 14,
-      lineHeight: 20,
+      fontSize: fontSizes.lead,
+      lineHeight: lineHeights.md,
       color: colors.text.body,
       textAlign: 'center',
     },
@@ -70,22 +72,22 @@ const createStyles = ({ colors, spacing, radius }: ThemeParams) =>
       borderColor: colors.borderSubtle,
     },
     glyph: {
-      fontSize: 22,
+      fontSize: fontSizes.xl,
       marginRight: spacing.md,
     },
     label: {
-      fontSize: 15,
-      lineHeight: 22,
+      fontSize: fontSizes.md,
+      lineHeight: lineHeights.base,
       color: colors.text.heading,
       flex: 1,
     },
   });
 
 export const ProblemNamingStep: React.FC<Props> = ({ selected, onToggle }) => {
-  const { colors, fontFamilies, spacing, radius } = useTheme();
+  const { colors, fontFamilies, fontSizes, spacing, radius } = useTheme();
   const styles = useMemo(
-    () => createStyles({ colors, spacing, radius }),
-    [colors, spacing, radius],
+    () => createStyles({ colors, spacing, radius, fontSizes }),
+    [colors, spacing, radius, fontSizes],
   );
 
   return (

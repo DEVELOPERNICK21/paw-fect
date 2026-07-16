@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useTheme } from '../../../../shared/hooks/useTheme';
+import { lineHeights } from '../../../../shared/theme/typography';
 import { buildCarePlanSummary } from '../../domain/onboarding/buildCarePlanSummary';
 import {
   QUIZ_STEP_COUNT,
@@ -59,9 +60,10 @@ type ThemeParams = {
   colors: ReturnType<typeof useTheme>['colors'];
   spacing: ReturnType<typeof useTheme>['spacing'];
   radius: ReturnType<typeof useTheme>['radius'];
+  fontSizes: ReturnType<typeof useTheme>['fontSizes'];
 };
 
-const createStyles = ({ colors, spacing, radius }: ThemeParams) =>
+const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
   StyleSheet.create({
     safeArea: {
       flex: 1,
@@ -84,7 +86,7 @@ const createStyles = ({ colors, spacing, radius }: ThemeParams) =>
       justifyContent: 'center',
     },
     backGlyph: {
-      fontSize: 22,
+      fontSize: fontSizes.xl,
       color: colors.text.heading,
     },
     progressSection: {
@@ -125,18 +127,19 @@ const createStyles = ({ colors, spacing, radius }: ThemeParams) =>
       opacity: 0.45,
     },
     primaryButtonText: {
-      fontSize: 16,
-      lineHeight: 24,
+      fontSize: fontSizes.base,
+      lineHeight: lineHeights.base,
       color: colors.text.inverse,
     },
   });
 
 export const OnboardingFunnelScreen: React.FC = () => {
   const posthog = usePostHog();
-  const { colors, fontFamilies, spacing, radius, isDarkMode } = useTheme();
+  const { colors, fontFamilies, fontSizes, spacing, radius, isDarkMode } =
+    useTheme();
   const styles = useMemo(
-    () => createStyles({ colors, spacing, radius }),
-    [colors, spacing, radius],
+    () => createStyles({ colors, spacing, radius, fontSizes }),
+    [colors, spacing, radius, fontSizes],
   );
 
   const draft = useOnboardingDraftStore(state => state.draft);
@@ -158,7 +161,8 @@ export const OnboardingFunnelScreen: React.FC = () => {
       total_steps: QUIZ_STEP_COUNT,
       phase: draft.phase,
     });
-  }, [posthog, step, draft.phase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fires on STEP change only; `phase` is intentionally excluded to avoid re-firing this event when the commitment step flips phase without changing step.
+  }, [posthog, step]);
 
   useEffect(() => {
     if (step === STEP_INDEX.planReveal) {

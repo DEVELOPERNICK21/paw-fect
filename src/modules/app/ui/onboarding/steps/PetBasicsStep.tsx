@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useTheme } from '../../../../../shared/hooks/useTheme';
+import { lineHeights } from '../../../../../shared/theme/typography';
 import type { PetDraft } from '../../../domain/onboarding/OnboardingDraft';
 
 type SpeciesOption = { id: PetDraft['species']; label: string; glyph: string };
@@ -28,9 +29,10 @@ type ThemeParams = {
   colors: ReturnType<typeof useTheme>['colors'];
   spacing: ReturnType<typeof useTheme>['spacing'];
   radius: ReturnType<typeof useTheme>['radius'];
+  fontSizes: ReturnType<typeof useTheme>['fontSizes'];
 };
 
-const createStyles = ({ colors, spacing, radius }: ThemeParams) =>
+const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
   StyleSheet.create({
     container: {
       paddingHorizontal: spacing.xl,
@@ -38,24 +40,24 @@ const createStyles = ({ colors, spacing, radius }: ThemeParams) =>
       alignItems: 'center',
     },
     title: {
-      fontSize: 26,
-      lineHeight: 32,
+      fontSize: fontSizes['2xl'],
+      lineHeight: lineHeights['2xl'],
       color: colors.text.heading,
       textAlign: 'center',
       letterSpacing: -0.6,
     },
     subtitle: {
       marginTop: spacing.md,
-      fontSize: 14,
-      lineHeight: 20,
+      fontSize: fontSizes.lead,
+      lineHeight: lineHeights.md,
       color: colors.text.body,
       textAlign: 'center',
     },
     sectionLabel: {
       alignSelf: 'flex-start',
       marginTop: spacing.xl,
-      fontSize: 13,
-      lineHeight: 19,
+      fontSize: fontSizes.sm,
+      lineHeight: lineHeights.sm,
       color: colors.text.secondary,
     },
     row: {
@@ -82,12 +84,12 @@ const createStyles = ({ colors, spacing, radius }: ThemeParams) =>
       borderColor: colors.brandTint20,
     },
     chipGlyph: {
-      fontSize: 15,
+      fontSize: fontSizes.md,
       marginRight: spacing.xs,
     },
     chipLabel: {
-      fontSize: 14,
-      lineHeight: 20,
+      fontSize: fontSizes.lead,
+      lineHeight: lineHeights.md,
     },
     textInput: {
       marginTop: spacing.sm,
@@ -98,16 +100,16 @@ const createStyles = ({ colors, spacing, radius }: ThemeParams) =>
       borderColor: colors.borderSubtle,
       backgroundColor: colors.surface,
       paddingHorizontal: spacing.lg,
-      fontSize: 16,
+      fontSize: fontSizes.base,
       color: colors.text.heading,
     },
   });
 
 export const PetBasicsStep: React.FC<Props> = ({ value, onChange }) => {
-  const { colors, fontFamilies, spacing, radius } = useTheme();
+  const { colors, fontFamilies, fontSizes, spacing, radius } = useTheme();
   const styles = useMemo(
-    () => createStyles({ colors, spacing, radius }),
-    [colors, spacing, radius],
+    () => createStyles({ colors, spacing, radius, fontSizes }),
+    [colors, spacing, radius, fontSizes],
   );
 
   return (

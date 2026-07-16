@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../../../../../shared/hooks/useTheme';
+import { lineHeights } from '../../../../../shared/theme/typography';
 import type { OnboardingGoal } from '../../../domain/onboarding/OnboardingDraft';
 
 type GoalOption = {
@@ -41,9 +42,10 @@ type ThemeParams = {
   colors: ReturnType<typeof useTheme>['colors'];
   spacing: ReturnType<typeof useTheme>['spacing'];
   radius: ReturnType<typeof useTheme>['radius'];
+  fontSizes: ReturnType<typeof useTheme>['fontSizes'];
 };
 
-const createStyles = ({ colors, spacing, radius }: ThemeParams) =>
+const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
   StyleSheet.create({
     container: {
       paddingHorizontal: spacing.xl,
@@ -51,16 +53,16 @@ const createStyles = ({ colors, spacing, radius }: ThemeParams) =>
       alignItems: 'center',
     },
     title: {
-      fontSize: 26,
-      lineHeight: 32,
+      fontSize: fontSizes['2xl'],
+      lineHeight: lineHeights['2xl'],
       color: colors.text.heading,
       textAlign: 'center',
       letterSpacing: -0.6,
     },
     subtitle: {
       marginTop: spacing.md,
-      fontSize: 14,
-      lineHeight: 20,
+      fontSize: fontSizes.lead,
+      lineHeight: lineHeights.md,
       color: colors.text.body,
       textAlign: 'center',
     },
@@ -87,27 +89,27 @@ const createStyles = ({ colors, spacing, radius }: ThemeParams) =>
       alignItems: 'center',
     },
     glyph: {
-      fontSize: 20,
+      fontSize: fontSizes.lg,
       marginRight: spacing.sm,
     },
     label: {
-      fontSize: 15,
-      lineHeight: 22,
+      fontSize: fontSizes.md,
+      lineHeight: lineHeights.base,
       color: colors.text.heading,
     },
     description: {
       marginTop: spacing.xs,
-      fontSize: 13,
-      lineHeight: 19,
+      fontSize: fontSizes.sm,
+      lineHeight: lineHeights.sm,
       color: colors.text.body,
     },
   });
 
 export const GoalStep: React.FC<Props> = ({ selected, onSelect }) => {
-  const { colors, fontFamilies, spacing, radius } = useTheme();
+  const { colors, fontFamilies, fontSizes, spacing, radius } = useTheme();
   const styles = useMemo(
-    () => createStyles({ colors, spacing, radius }),
-    [colors, spacing, radius],
+    () => createStyles({ colors, spacing, radius, fontSizes }),
+    [colors, spacing, radius, fontSizes],
   );
 
   return (
