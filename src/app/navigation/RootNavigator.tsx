@@ -24,6 +24,7 @@ import '../../modules/app/application/registerAppSessionPortSync';
 import { appOrchestrator } from '../../modules/app/appComposition';
 import { registerNotificationFeedSync } from '../../modules/notifications/bootstrap/registerNotificationFeedSync';
 import { useHomeQuickActionsUsageStore } from '../../modules/app/store/homeQuickActionsUsageStore';
+import { useOnboardingDraftStore } from '../../modules/app/store/onboardingDraftStore';
 import { useNotificationFeedStore } from '../../modules/notifications/store/notificationFeedStore';
 import SplashScreen from '../../modules/app/ui/screens/SplashScreen';
 import {
@@ -115,7 +116,11 @@ export const RootNavigator: React.FC = () => {
         // Load current user first so pet storage keys are correctly namespaced.
         await loadCurrentUser();
         startupLog('bootstrap.auth_loaded');
-        await Promise.all([loadSettings(), loadPets()]);
+        await Promise.all([
+          loadSettings(),
+          loadPets(),
+          useOnboardingDraftStore.getState().hydrate(),
+        ]);
         startupLog('bootstrap.settings_pets_loaded');
         ensureAuthSessionListenerAttached();
         setBootstrapped(true);
