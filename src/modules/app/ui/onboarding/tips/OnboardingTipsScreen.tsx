@@ -163,10 +163,8 @@ export const OnboardingTipsScreen: React.FC = () => {
     setCompleting(true);
     setError(null);
 
-    posthog.capture('onboarding_completed', {
-      skipped_paywall: draft.skippedPaywall,
-      care_interests: draft.careInterests,
-    });
+    const skippedPaywall = draft.skippedPaywall;
+    const careInterests = draft.careInterests;
 
     await completeFunnel();
 
@@ -176,6 +174,11 @@ export const OnboardingTipsScreen: React.FC = () => {
       setCompleting(false);
       return;
     }
+
+    posthog.capture('onboarding_completed', {
+      skipped_paywall: skippedPaywall,
+      care_interests: careInterests,
+    });
   }, [completing, draft.skippedPaywall, draft.careInterests, posthog, completeFunnel]);
 
   return (
