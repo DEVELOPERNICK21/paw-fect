@@ -103,6 +103,19 @@ export const useOnboardingDraftStore = create<OnboardingDraftState>((set, get) =
         onboardingCompleted: true,
       });
 
+      const updatedSettings = useSettingsStore.getState().settings;
+      if (updatedSettings?.onboardingCompleted !== true) {
+        // updateSettings swallows storage errors internally, so a failed
+        // write leaves onboardingCompleted false without throwing. Keep the
+        // draft intact so the user can retry instead of losing their answers.
+        // eslint-disable-next-line no-console
+        console.error(
+          '[onboardingDraftStore] completeFunnel error',
+          'settings update did not persist onboardingCompleted',
+        );
+        return;
+      }
+
       await dataSource.clearDraft();
       set({ draft: createDefaultOnboardingDraft() });
     } catch (error) {

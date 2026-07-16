@@ -58,17 +58,22 @@ describe('onboardingDraftStore', () => {
   });
 
   it('completeFunnel merges careInterests into settings and clears draft', async () => {
-    const updateSettings = jest.fn().mockResolvedValue(undefined);
-    mockGetState.mockReturnValue({
+    // Mirrors the real settingsStore.updateSettings on success: it resolves
+    // and updates the in-memory settings snapshot returned by getState().
+    const settingsState = {
       settings: {
         notificationsEnabled: true,
         emailUpdates: true,
         onboardingCompleted: false,
         themeMode: 'system',
-        careInterests: [],
+        careInterests: [] as string[],
       },
-      updateSettings,
+      updateSettings: jest.fn(),
+    };
+    settingsState.updateSettings.mockImplementation(async next => {
+      settingsState.settings = next;
     });
+    mockGetState.mockImplementation(() => settingsState);
 
     useOnboardingDraftStore.getState().update(draft =>
       setCareInterests(draft, ['vaccines', 'walks']),
@@ -77,7 +82,7 @@ describe('onboardingDraftStore', () => {
 
     await useOnboardingDraftStore.getState().completeFunnel();
 
-    expect(updateSettings).toHaveBeenCalledWith(
+    expect(settingsState.updateSettings).toHaveBeenCalledWith(
       expect.objectContaining({
         careInterests: ['vaccines', 'walks'],
         onboardingCompleted: true,
@@ -113,20 +118,21 @@ describe('onboardingDraftStore', () => {
     expect(mockSetItem).not.toHaveBeenCalled();
   });
 
-  it('completeFunnel does not clear draft when updateSettings throws', async () => {
-    const updateSettings = jest
-      .fn()
-      .mockRejectedValue(new Error('settings update failed'));
-    mockGetState.mockReturnValue({
+  it('completeFunnel does not clear draft when updateSettings swallows a storage failure', async () => {
+    // The real settingsStore.updateSettings never rejects: on a storage
+    // write failure it logs internally and resolves without updating the
+    // in-memory settings. onboardingCompleted therefore stays false.
+    const settingsState = {
       settings: {
         notificationsEnabled: true,
         emailUpdates: true,
         onboardingCompleted: false,
         themeMode: 'system',
-        careInterests: [],
+        careInterests: [] as string[],
       },
-      updateSettings,
-    });
+      updateSettings: jest.fn().mockResolvedValue(undefined),
+    };
+    mockGetState.mockImplementation(() => settingsState);
 
     useOnboardingDraftStore.getState().update(draft =>
       setCareInterests(draft, ['meds']),
@@ -135,10 +141,14 @@ describe('onboardingDraftStore', () => {
 
     await useOnboardingDraftStore.getState().completeFunnel();
 
-    expect(updateSettings).toHaveBeenCalled();
+    expect(settingsState.updateSettings).toHaveBeenCalled();
     expect(mockRemoveItem).not.toHaveBeenCalled();
+    expect(mockSetItem).not.toHaveBeenCalled();
     expect(useOnboardingDraftStore.getState().draft.careInterests).toEqual([
       'meds',
     ]);
+    expect(useOnboardingDraftStore.getState().draft).not.toEqual(
+      createDefaultOnboardingDraft(),
+    );
   });
 });
