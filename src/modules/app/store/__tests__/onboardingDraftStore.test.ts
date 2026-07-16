@@ -87,5 +87,58 @@ describe('onboardingDraftStore', () => {
     expect(useOnboardingDraftStore.getState().draft).toEqual(
       createDefaultOnboardingDraft(),
     );
+    expect(mockSetItem).not.toHaveBeenCalled();
+  });
+
+  it('completeFunnel does not clear draft when settings are missing', async () => {
+    const updateSettings = jest.fn();
+    mockGetState.mockReturnValue({
+      settings: null,
+      updateSettings,
+    });
+
+    useOnboardingDraftStore.getState().update(draft =>
+      setCareInterests(draft, ['vaccines', 'walks']),
+    );
+    mockSetItem.mockClear();
+
+    await useOnboardingDraftStore.getState().completeFunnel();
+
+    expect(updateSettings).not.toHaveBeenCalled();
+    expect(mockRemoveItem).not.toHaveBeenCalled();
+    expect(useOnboardingDraftStore.getState().draft.careInterests).toEqual([
+      'vaccines',
+      'walks',
+    ]);
+    expect(mockSetItem).not.toHaveBeenCalled();
+  });
+
+  it('completeFunnel does not clear draft when updateSettings throws', async () => {
+    const updateSettings = jest
+      .fn()
+      .mockRejectedValue(new Error('settings update failed'));
+    mockGetState.mockReturnValue({
+      settings: {
+        notificationsEnabled: true,
+        emailUpdates: true,
+        onboardingCompleted: false,
+        themeMode: 'system',
+        careInterests: [],
+      },
+      updateSettings,
+    });
+
+    useOnboardingDraftStore.getState().update(draft =>
+      setCareInterests(draft, ['meds']),
+    );
+    mockSetItem.mockClear();
+
+    await useOnboardingDraftStore.getState().completeFunnel();
+
+    expect(updateSettings).toHaveBeenCalled();
+    expect(mockRemoveItem).not.toHaveBeenCalled();
+    expect(useOnboardingDraftStore.getState().draft.careInterests).toEqual([
+      'meds',
+    ]);
   });
 });

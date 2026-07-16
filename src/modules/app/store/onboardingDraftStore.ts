@@ -86,9 +86,6 @@ export const useOnboardingDraftStore = create<OnboardingDraftState>((set, get) =
   completeFunnel: async () => {
     try {
       const { careInterests } = get().draft;
-      const doneDraft = setDraftPhase(get().draft, 'done');
-      set({ draft: doneDraft });
-      await persistDraft(doneDraft);
 
       const currentSettings = useSettingsStore.getState().settings;
       if (!currentSettings) {
