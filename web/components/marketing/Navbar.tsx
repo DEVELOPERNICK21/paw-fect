@@ -11,6 +11,7 @@ const links = [
   { href: "/pricing", label: "Pricing" },
   { href: "/about", label: "About" },
   { href: "/blog", label: "Blog" },
+  { href: "/waitlist", label: "Waitlist" },
   { href: "/contact", label: "Contact" },
 ];
 

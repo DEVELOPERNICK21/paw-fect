@@ -36,6 +36,7 @@ export function Footer(): React.ReactElement {
                   { href: "/pricing", label: "Pricing" },
                   { href: "/download", label: "Download" },
                   { href: "/blog", label: "Blog" },
+                  { href: "/waitlist", label: "Waitlist" },
                 ].map((l) => (
                   <li key={l.href}>
                     <Link
