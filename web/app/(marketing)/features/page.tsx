@@ -15,7 +15,7 @@ export default function FeaturesPage(): React.ReactElement {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <h1 className="text-4xl font-bold text-stone-900 dark:text-stone-50">Features</h1>
         <p className="mt-4 max-w-2xl text-lg text-stone-600 dark:text-stone-400">
-          Deep dive into how Pawfect keeps dog and cat health on track — from first vaccine to senior care.
+          Deep dive into how Pawfect keeps dog and cat health on track, from first vaccine to senior care.
         </p>
 
         <section id="vaccines" className="mt-16 scroll-mt-24">
@@ -27,7 +27,7 @@ export default function FeaturesPage(): React.ReactElement {
           </AnimatedSection>
           <div className="mt-8 grid gap-6 md:grid-cols-2">
             <Card>
-              <p className="text-sm font-semibold text-primary">Dog — example core series</p>
+              <p className="text-sm font-semibold text-primary">Dog example core series</p>
               <table className="mt-4 w-full text-sm">
                 <tbody>
                   <tr className="border-b border-stone-100 dark:border-stone-700">
@@ -42,7 +42,7 @@ export default function FeaturesPage(): React.ReactElement {
               </table>
             </Card>
             <Card>
-              <p className="text-sm font-semibold text-primary">Cat — example core series</p>
+              <p className="text-sm font-semibold text-primary">Cat example core series</p>
               <table className="mt-4 w-full text-sm">
                 <tbody>
                   <tr className="border-b border-stone-100 dark:border-stone-700">
@@ -70,7 +70,7 @@ export default function FeaturesPage(): React.ReactElement {
         <section id="journey" className="mt-20 scroll-mt-24">
           <h2 className="text-2xl font-bold text-stone-900 dark:text-stone-50">Pet journey stages</h2>
           <p className="mt-2 text-stone-600 dark:text-stone-400">
-            Four life stages for dogs — from first vaccines through adulthood — with milestones, care
+            Four life stages for dogs, from first vaccines through adulthood, with milestones, care
             focus, and schedule shifts.
           </p>
           <div className="-mx-4 mt-8 sm:-mx-6 lg:-mx-8">
@@ -82,15 +82,15 @@ export default function FeaturesPage(): React.ReactElement {
           <h2 className="text-2xl font-bold text-stone-900 dark:text-stone-50">Health records</h2>
           <Card className="mt-6 max-w-md">
             <p className="text-xs uppercase text-stone-500">Record card</p>
-            <p className="mt-2 font-semibold text-stone-900 dark:text-stone-50">Rabies — completed</p>
-            <p className="text-sm text-stone-600 dark:text-stone-400">Batch no. · date · clinic</p>
+            <p className="mt-2 font-semibold text-stone-900 dark:text-stone-50">Rabies completed</p>
+            <p className="text-sm text-stone-600 dark:text-stone-400">Batch no., date, clinic</p>
           </Card>
         </section>
 
         <section id="notifications" className="mt-20 scroll-mt-24">
           <h2 className="text-2xl font-bold text-stone-900 dark:text-stone-50">Notifications & reminders</h2>
           <p className="mt-2 text-stone-600 dark:text-stone-400">
-            Timely nudges before vaccines and deworming — tuned so you can act early, not last minute.
+            Timely nudges before vaccines and deworming, tuned so you can act early, not last minute.
           </p>
         </section>
 

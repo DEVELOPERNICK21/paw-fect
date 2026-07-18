@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import { Inter } from "next/font/google";
+import { Outfit } from "next/font/google";
 import { ThemeScript } from "@/components/admin/ThemeScript";
 import "./globals.css";
 import { Providers } from "./providers";
 
-const inter = Inter({
+const outfit = Outfit({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-outfit",
   display: "swap",
 });
 
@@ -26,11 +26,21 @@ const siteUrl =
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Pawfect — Smart Pet Health Scheduling",
-    template: "%s — Pawfect",
+    default: "Pawfect - Smart Pet Health Scheduling",
+    template: "%s - Pawfect",
   },
   description:
     "Vet-validated vaccination and deworming schedules, pet journey stages, and health records for dogs and cats.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-32.png", type: "image/png", sizes: "32x32" },
+      { url: "/favicon-16.png", type: "image/png", sizes: "16x16" },
+      { url: "/favicon.png", type: "image/png", sizes: "432x432" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    shortcut: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({
@@ -43,7 +53,9 @@ export default function RootLayout({
       <head>
         <ThemeScript />
       </head>
-      <body className={`${inter.variable} ${geistMono.variable} min-h-screen bg-background font-sans text-foreground antialiased`}>
+      <body
+        className={`${outfit.variable} ${geistMono.variable} min-h-screen bg-background font-sans text-foreground antialiased`}
+      >
         <Providers>{children}</Providers>
       </body>
     </html>

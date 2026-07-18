@@ -4,7 +4,7 @@ import { motion, useInView, useReducedMotion } from "framer-motion";
 import { useRef } from "react";
 
 const variants = {
-  hidden: { opacity: 0, y: 32 },
+  hidden: { opacity: 0, y: 40 },
   visible: { opacity: 1, y: 0 },
 };
 
@@ -16,7 +16,7 @@ export function AnimatedSection({
   className?: string;
 }): React.ReactElement {
   const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const inView = useInView(ref, { once: true, margin: "-80px", amount: 0.2 });
   const reduce = useReducedMotion();
 
   if (reduce) {
@@ -30,7 +30,7 @@ export function AnimatedSection({
       initial="hidden"
       animate={inView ? "visible" : "hidden"}
       variants={variants}
-      transition={{ duration: 0.5, ease: [0.33, 1, 0.68, 1] }}
+      transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
     >
       {children}
     </motion.div>

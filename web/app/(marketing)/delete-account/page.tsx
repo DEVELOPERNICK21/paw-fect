@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Delete your account — Pawfect',
+  title: 'Delete your account - Pawfect',
   description:
     'How to request deletion of your Pawfect account and associated pet data. Pawfect pet health app.',
 };

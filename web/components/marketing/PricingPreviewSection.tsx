@@ -13,14 +13,12 @@ export function PricingPreviewSection({ plans }: { plans: PricingPlan[] }): Reac
       <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-cream/80 to-transparent dark:from-stone-900/50" />
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <AnimatedSection>
-          <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400">
-            Plans for every household
-          </p>
           <h2 className="mt-3 text-center text-3xl font-bold text-stone-900 dark:text-stone-50 md:text-4xl">
             Simple pricing
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-center text-lg text-stone-600 dark:text-stone-400">
-            Start free — upgrade when you need more pets, history, or PDF export.{" "}
+            Start free so there is nothing to lose by trying. Upgrade only when you need more pets,
+            history, or PDF export.{" "}
             <span className="font-medium text-primary">Save on annual billing.</span>
           </p>
         </AnimatedSection>

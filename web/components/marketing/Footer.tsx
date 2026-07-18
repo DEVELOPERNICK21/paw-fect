@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Dog, Heart, Mail } from "lucide-react";
+import { Heart, Mail } from "lucide-react";
+import { BrandLogo } from "@/components/marketing/BrandLogo";
 
 export function Footer(): React.ReactElement {
   return (
@@ -8,17 +9,15 @@ export function Footer(): React.ReactElement {
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
           <div className="max-w-sm">
-            <div className="flex items-center gap-2">
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-primary ring-1 ring-primary/20">
-                <Dog className="h-6 w-6" aria-hidden />
-              </span>
+            <div className="flex items-center gap-2.5">
+              <BrandLogo showWordmark={false} size={44} />
               <div>
                 <p className="text-lg font-bold text-stone-900 dark:text-stone-50">Pawfect</p>
                 <p className="text-xs font-medium text-stone-500">Pet health, lovingly organized</p>
               </div>
             </div>
             <p className="mt-4 text-sm leading-relaxed text-stone-600 dark:text-stone-400">
-              Vet-aligned schedules for dogs and cats — vaccines, deworming, journey stages, and records in one place.
+              Vet-aligned schedules for dogs and cats: vaccines, deworming, journey stages, and records in one place.
             </p>
             <p className="mt-4 inline-flex items-center gap-1.5 text-xs text-stone-500">
               <Heart className="h-3.5 w-3.5 text-primary" aria-hidden />
@@ -95,7 +94,7 @@ export function Footer(): React.ReactElement {
                     Contact
                   </Link>
                 </li>
-                <li className="text-stone-500">Social links coming soon</li>
+                <li className="text-stone-500">Follow us on social soon</li>
               </ul>
             </div>
           </div>

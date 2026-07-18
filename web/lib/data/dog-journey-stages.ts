@@ -11,7 +11,7 @@ export const dogJourneyStages: DogJourneyStage[] = [
   {
     id: "newborn",
     title: "Newborn puppy",
-    age: "0–3 months",
+    age: "0-3 months",
     summary: "Foundational immunity, first vaccines, and establishing a healthy baseline.",
     points: [
       "Puppy DP and first DHPP doses",
@@ -23,7 +23,7 @@ export const dogJourneyStages: DogJourneyStage[] = [
   {
     id: "growing",
     title: "Growing puppy",
-    age: "3–12 months",
+    age: "3-12 months",
     summary: "Critical booster window and habit-building for lifelong preventive care.",
     points: [
       "DHPP booster series on schedule",
@@ -35,7 +35,7 @@ export const dogJourneyStages: DogJourneyStage[] = [
   {
     id: "young-adult",
     title: "Young adult",
-    age: "1–3 years",
+    age: "1-3 years",
     summary: "Steady preventive care as your dog settles into their adult routine.",
     points: [
       "Annual core vaccines",
@@ -47,7 +47,7 @@ export const dogJourneyStages: DogJourneyStage[] = [
   {
     id: "adult",
     title: "Adult",
-    age: "3–6 years",
+    age: "3-6 years",
     summary: "Reliable maintenance schedules and a full health timeline you can trust.",
     points: [
       "Routine annual boosters",

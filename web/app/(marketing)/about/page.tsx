@@ -3,13 +3,13 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "About",
-  description: "Why we built Pawfect — vet-validated schedules, pet-first design, privacy, India-aware protocols.",
+  description: "Why we built Pawfect: vet-validated schedules, pet-first design, privacy, India-aware protocols.",
 };
 
 const values = [
-  { title: "Vet-validated", body: "Schedules follow commonly used protocols — your vet finalizes care." },
-  { title: "Pet-first", body: "Clarity for busy pet parents — fewer spreadsheets, fewer missed dates." },
-  { title: "Privacy-safe", body: "Your pet data is for care and product improvement — not sold to advertisers." },
+  { title: "Vet-validated", body: "Schedules follow commonly used protocols. Your vet finalizes care." },
+  { title: "Pet-first", body: "Clarity for busy pet parents: fewer spreadsheets, fewer missed dates." },
+  { title: "Privacy-safe", body: "Your pet data is for care and product improvement, not sold to advertisers." },
   { title: "India-aware", body: "Built with regional rabies and lifestyle context in mind." },
 ];
 
@@ -34,7 +34,9 @@ export default function AboutPage(): React.ReactElement {
           ))}
         </div>
         <h2 className="mt-20 text-2xl font-bold text-stone-900 dark:text-stone-50">Team</h2>
-        <p className="mt-4 text-stone-600 dark:text-stone-400">Founder & team placeholders — update when you publish bios.</p>
+        <p className="mt-4 text-stone-600 dark:text-stone-400">
+          Founder and team placeholders. Update when you publish bios.
+        </p>
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           <Card>
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20 font-bold text-primary">

@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Contact",
-  description: "Reach the Pawfect team — support, press, partnerships, and feedback.",
+  description: "Reach the Pawfect team: support, press, partnerships, and feedback.",
 };
 
 export default function ContactPage(): React.ReactElement {

@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Menu, X, Dog, Cat } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { ThemeToggle } from "@/components/marketing/ThemeToggle";
+import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { motion, AnimatePresence } from "framer-motion";
 
 const links = [
@@ -24,18 +25,7 @@ export function Navbar(): React.ReactElement {
         className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8"
         aria-label="Main"
       >
-        <Link
-          href="/"
-          className="group flex items-center gap-2.5 text-lg font-bold tracking-tight text-stone-900 dark:text-stone-50"
-        >
-          <span className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/25 to-accent/15 ring-1 ring-primary/25 transition group-hover:scale-105 group-hover:shadow-brand group-hover:ring-primary/40">
-            <Dog className="h-6 w-6 text-primary" aria-hidden />
-            <span className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-surface shadow-sm ring-1 ring-stone-200 dark:bg-stone-800 dark:ring-stone-600">
-              <Cat className="h-3 w-3 text-accent" aria-hidden />
-            </span>
-          </span>
-          <span className="text-gradient-brand">Pawfect</span>
-        </Link>
+        <BrandLogo size={40} priority />
         <div className="flex items-center gap-2 md:hidden">
           <ThemeToggle />
           <button

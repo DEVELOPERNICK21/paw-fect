@@ -30,7 +30,7 @@ export function WaitlistSection({
               : "mx-auto mt-3 max-w-lg text-stone-600 dark:text-stone-400"
           }
         >
-          Get product updates and news about Pawfect on the web. No spam — unsubscribe anytime.
+          Be first to hear about web updates. Leave your email once. No spam. Unsubscribe anytime.
         </p>
         <div className={compact ? "mt-4" : "mx-auto mt-8 max-w-md"}>
           <WaitlistForm compact={compact} />

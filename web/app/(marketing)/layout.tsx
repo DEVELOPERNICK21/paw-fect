@@ -1,6 +1,7 @@
 import { ChatbaseChatbot } from "@/components/marketing/ChatbaseChatbot";
 import { Footer } from "@/components/marketing/Footer";
 import { Navbar } from "@/components/marketing/Navbar";
+import { ScrollProgress } from "@/components/marketing/ScrollEffects";
 import { StickyMobileCta } from "@/components/marketing/StickyMobileCta";
 
 export default function MarketingLayout({
@@ -16,6 +17,7 @@ export default function MarketingLayout({
       >
         Skip to content
       </a>
+      <ScrollProgress />
       <Navbar />
       <main id="main" className="pb-24 md:pb-0">
         {children}

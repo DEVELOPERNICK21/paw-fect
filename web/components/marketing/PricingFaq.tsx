@@ -11,7 +11,7 @@ export function PricingFaq({ items }: { items: FaqItem[] }): React.ReactElement 
       <div className="mx-auto max-w-2xl text-center">
         <h2 className="text-2xl font-bold text-stone-900 dark:text-stone-50 md:text-3xl">Questions before you subscribe?</h2>
         <p className="mt-3 text-stone-600 dark:text-stone-400">
-          Straight answers — tap to expand.
+          Straight answers. Tap to expand.
         </p>
       </div>
       <div className="mx-auto mt-10 max-w-3xl space-y-3">

@@ -16,10 +16,10 @@ export type AppScreenshot = {
   label: string;
 };
 
-/** Primary marketing visual — home dashboard (dark). */
+/** Primary marketing visual: home dashboard (dark). */
 export const heroAppScreenshot: StaticImageData = shot212921;
 
-/** Download / secondary hero — home (light). */
+/** Download / secondary hero: home (light). */
 export const downloadAppScreenshot: StaticImageData = shot213020;
 
 export const appGalleryScreenshots: readonly AppScreenshot[] = [
@@ -27,7 +27,7 @@ export const appGalleryScreenshots: readonly AppScreenshot[] = [
     id: "home-dark",
     src: shot212921,
     alt: "Pawfect app home dashboard in dark mode showing pet status and care summary",
-    label: "Home · Dark",
+    label: "Home (dark)",
   },
   {
     id: "home-dark-2",
@@ -45,7 +45,7 @@ export const appGalleryScreenshots: readonly AppScreenshot[] = [
     id: "home-light",
     src: shot213020,
     alt: "Pawfect app home in light mode",
-    label: "Home · Light",
+    label: "Home (light)",
   },
   {
     id: "care-actions",

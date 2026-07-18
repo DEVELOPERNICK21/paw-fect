@@ -9,8 +9,7 @@ import {
   WifiOff,
   MapPin,
 } from "lucide-react";
-import { AnimatedSection } from "@/components/ui/AnimatedSection";
-import { Card } from "@/components/ui/Card";
+import { ScrollReveal } from "@/components/marketing/ScrollEffects";
 
 const features = [
   {
@@ -18,18 +17,19 @@ const features = [
     title: "Smart vaccine scheduler",
     body:
       "Vet-validated DHPP, FVRCP, and Rabies schedules auto-generated from your pet's date of birth. Never miss a critical dose.",
+    featured: true,
   },
   {
     icon: Bug,
     title: "Deworming timeline",
     body:
-      "From birth to senior, the right deworming interval for your pet's age and lifestyle — indoor, outdoor, and mixed.",
+      "From birth to senior, the right deworming interval for your pet's age and lifestyle: indoor, outdoor, and mixed.",
   },
   {
     icon: Footprints,
     title: "Pet journey stages",
     body:
-      "A visual life stage timeline (Birth → Senior) showing what your pet needs at every age.",
+      "A visual life stage timeline (Birth to Senior) showing what your pet needs at every age.",
   },
   {
     icon: FileText,
@@ -52,45 +52,60 @@ const features = [
 
 export function FeaturesSection(): React.ReactElement {
   const reduce = useReducedMotion();
+  const [featured, ...rest] = features;
 
   return (
     <section className="relative overflow-hidden py-24 md:py-32">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <AnimatedSection>
-          <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-primary dark:text-primary">
-            Built for real pet life
-          </p>
-          <h2 className="mt-3 text-center text-3xl font-bold tracking-tight text-stone-900 dark:text-stone-50 md:text-4xl lg:text-[2.5rem]">
+        <ScrollReveal>
+          <h2 className="max-w-2xl text-3xl font-bold tracking-tight text-stone-900 dark:text-stone-50 md:text-4xl lg:text-[2.5rem]">
             Everything your pet needs
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-center text-lg text-stone-600 dark:text-stone-400">
-            One app for schedules, records, and reminders — tuned to your pet&apos;s species and life stage.
+          <p className="mt-4 max-w-2xl text-lg text-stone-600 dark:text-stone-400">
+            One app for schedules, records, and reminders, tuned to your pet&apos;s species and life
+            stage.
           </p>
-        </AnimatedSection>
-        <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {features.map((f, i) => (
-            <motion.div
-              key={f.title}
-              initial={reduce ? false : { opacity: 0, y: 24 }}
-              whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-40px" }}
-              transition={{ delay: i * 0.08, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-            >
+        </ScrollReveal>
+
+        <div className="mt-14 grid gap-6 lg:grid-cols-12">
+          <ScrollReveal direction="left" className="lg:col-span-5">
+            <div className="flex h-full flex-col justify-between rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/15 via-cream to-surface p-8 shadow-card dark:from-primary/20 dark:via-stone-900 dark:to-stone-800">
+              <div>
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-white shadow-brand dark:text-stone-900">
+                  <featured.icon className="h-7 w-7" aria-hidden />
+                </div>
+                <h3 className="mt-6 text-2xl font-bold text-stone-900 dark:text-stone-50">
+                  {featured.title}
+                </h3>
+                <p className="mt-3 text-base leading-relaxed text-stone-600 dark:text-stone-300">
+                  {featured.body}
+                </p>
+              </div>
+            </div>
+          </ScrollReveal>
+
+          <div className="grid gap-6 sm:grid-cols-2 lg:col-span-7">
+            {rest.map((f, i) => (
               <motion.div
+                key={f.title}
+                initial={reduce ? false : { opacity: 0, y: 28 }}
+                whileInView={reduce ? undefined : { opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-40px", amount: 0.25 }}
+                transition={{ delay: i * 0.06, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                 whileHover={reduce ? undefined : { y: -4 }}
-                transition={{ type: "spring", stiffness: 400, damping: 24 }}
+                className={`rounded-2xl border border-stone-200/90 bg-surface p-6 shadow-sm dark:border-stone-700 dark:bg-stone-800/40 ${
+                  i === rest.length - 1 && rest.length % 2 === 1 ? "sm:col-span-2" : ""
+                }`}
               >
-                <Card className="group h-full">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-accent/10 text-primary transition group-hover:from-primary/30 group-hover:to-accent/20">
-                    <f.icon className="h-7 w-7" aria-hidden />
-                  </div>
-                  <h3 className="mt-5 text-lg font-bold text-stone-900 dark:text-stone-100">{f.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-stone-600 dark:text-stone-400">{f.body}</p>
-                </Card>
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+                  <f.icon className="h-6 w-6" aria-hidden />
+                </div>
+                <h3 className="mt-4 text-lg font-bold text-stone-900 dark:text-stone-100">{f.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-stone-600 dark:text-stone-400">{f.body}</p>
               </motion.div>
-            </motion.div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </section>

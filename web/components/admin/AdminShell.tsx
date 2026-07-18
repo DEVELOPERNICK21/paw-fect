@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { adminNavLabelForPath } from "@/components/admin/adminNavLinks";
 import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
+import { BrandLogo } from "@/components/marketing/BrandLogo";
 
 export function AdminShell({
   children,
@@ -33,7 +34,11 @@ export function AdminShell({
       <aside className="hidden w-56 shrink-0 border-r border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900 md:flex md:flex-col">
         <div className="flex h-full flex-col p-4">
           <div className="flex items-center justify-between gap-2 px-2">
-            <p className="text-sm font-bold text-stone-900 dark:text-stone-50">Pawfect</p>
+            <BrandLogo
+              size={28}
+              href="/"
+              wordmarkClassName="text-sm font-bold text-stone-900 dark:text-stone-50"
+            />
             <AdminThemeToggle />
           </div>
           <p className="mt-1 px-2 text-xs text-stone-500 dark:text-stone-400">Admin panel</p>
@@ -53,9 +58,12 @@ export function AdminShell({
           >
             <Menu className="h-5 w-5" aria-hidden />
           </button>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-bold text-stone-900 dark:text-stone-50">Pawfect</p>
-            <p className="truncate text-xs text-stone-500 dark:text-stone-400">{pageTitle}</p>
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <BrandLogo showWordmark={false} size={28} href={null} />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-bold text-stone-900 dark:text-stone-50">Pawfect</p>
+              <p className="truncate text-xs text-stone-500 dark:text-stone-400">{pageTitle}</p>
+            </div>
           </div>
           <AdminThemeToggle />
         </header>
@@ -75,9 +83,12 @@ export function AdminShell({
             />
             <aside className="relative flex h-full w-[min(100%,18rem)] flex-col border-r border-stone-200 bg-white shadow-xl dark:border-stone-800 dark:bg-stone-900">
               <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3 dark:border-stone-800">
-                <div>
-                  <p className="text-sm font-bold text-stone-900 dark:text-stone-50">Pawfect</p>
-                  <p className="text-xs text-stone-500 dark:text-stone-400">Admin panel</p>
+                <div className="flex items-center gap-2">
+                  <BrandLogo showWordmark={false} size={28} href={null} />
+                  <div>
+                    <p className="text-sm font-bold text-stone-900 dark:text-stone-50">Pawfect</p>
+                    <p className="text-xs text-stone-500 dark:text-stone-400">Admin panel</p>
+                  </div>
                 </div>
                 <button
                   type="button"

@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Download",
-  description: "Get Pawfect on iOS and Android — free tier available.",
+  description: "Get Pawfect on iOS and Android: free tier available.",
 };
 
 export default function DownloadPage(): React.ReactElement {
@@ -15,7 +15,7 @@ export default function DownloadPage(): React.ReactElement {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <h1 className="text-4xl font-bold text-stone-900 dark:text-stone-50">Download Pawfect</h1>
         <p className="mt-4 text-lg text-stone-600 dark:text-stone-400">
-          Available on iOS and Android. Free forever plan — no credit card required.
+          Available on iOS and Android. Free forever plan. No credit card required.
         </p>
         <div className="mt-10 flex flex-wrap gap-4">
           <Button href="https://apps.apple.com/" className="!bg-stone-900 !text-white">
@@ -31,6 +31,8 @@ export default function DownloadPage(): React.ReactElement {
             <AppPhoneMockup
               image={downloadAppScreenshot}
               alt="Pawfect app home screen in light mode on a phone"
+              size="xl"
+              float={false}
             />
           </div>
         </div>

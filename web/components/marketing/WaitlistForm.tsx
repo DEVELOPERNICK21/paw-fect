@@ -85,7 +85,7 @@ export function WaitlistForm({
   if (status === "ok") {
     return (
       <p className="text-sm font-medium text-primary-dark dark:text-primary" role="status">
-        You&apos;re on the list — we&apos;ll email you when there&apos;s news.
+        You&apos;re on the list. We&apos;ll email you when there&apos;s news.
       </p>
     );
   }

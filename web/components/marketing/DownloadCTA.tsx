@@ -8,7 +8,7 @@ export function DownloadCTA(): React.ReactElement {
   const reduce = useReducedMotion();
 
   return (
-    <section className="relative overflow-hidden py-24 md:py-32">
+    <section className="relative overflow-hidden py-20 md:py-28">
       <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary-dark to-accent" />
       <div
         className="absolute inset-0 opacity-30"
@@ -25,12 +25,12 @@ export function DownloadCTA(): React.ReactElement {
         viewport={{ once: true }}
         transition={{ duration: 0.5 }}
       >
-        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-white/90">Start free today</p>
-        <h2 className="mt-4 text-3xl font-black tracking-tight text-white drop-shadow-sm md:text-4xl lg:text-5xl">
-          Give your pet the schedule they deserve
+        <h2 className="text-3xl font-black tracking-tight text-white drop-shadow-sm md:text-4xl lg:text-5xl">
+          Every week without a plan is another date that can slip
         </h2>
         <p className="mx-auto mt-5 max-w-xl text-lg text-white/90">
-          Free forever plan · No credit card · Works offline for clinic visits
+          Download free. Add your pet once. Get reminders before doses are due, even when you are
+          offline at the clinic.
         </p>
         <div className="mt-10 flex flex-wrap justify-center gap-4">
           <Button
@@ -54,7 +54,9 @@ export function DownloadCTA(): React.ReactElement {
             </span>
           </Button>
         </div>
-        <p className="mt-10 text-sm font-medium text-white/75">Scan QR on the Download page · Same Pawfect app</p>
+        <p className="mt-8 text-sm font-medium text-white/80">
+          Free forever plan. No credit card. Same Pawfect app on iOS and Android.
+        </p>
       </motion.div>
     </section>
   );

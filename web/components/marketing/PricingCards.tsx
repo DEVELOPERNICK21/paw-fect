@@ -30,7 +30,7 @@ export function PricingCards({ plans, variant = "page" }: Props): React.ReactEle
       {showToggle ? (
         <div className="mx-auto flex max-w-lg flex-col items-center gap-4">
           <p className="text-center text-sm font-medium text-stone-600 dark:text-stone-400">
-            Most families save with <span className="text-primary">annual billing</span> — two months on us.
+            Most families save with <span className="text-primary">annual billing</span>. Two months on us.
           </p>
           <div
             className="inline-flex rounded-full border border-stone-200 bg-cream/80 p-1 shadow-inner dark:border-stone-600 dark:bg-stone-800/80"
@@ -133,7 +133,7 @@ export function PricingCards({ plans, variant = "page" }: Props): React.ReactEle
                       <p className="mt-2 text-xs text-stone-500">
                         Or {sym}
                         {annualEffective}/mo annual ({sym}
-                        {p.priceAnnual}/yr) — save {sym}
+                        {p.priceAnnual}/yr). Save {sym}
                         {savings}
                       </p>
                     ) : null}
@@ -149,7 +149,7 @@ export function PricingCards({ plans, variant = "page" }: Props): React.ReactEle
                               : "bg-stone-100 text-stone-400 dark:bg-stone-800"
                           }`}
                         >
-                          {f.included ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : <span className="text-xs">—</span>}
+                          {f.included ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : <span className="text-xs">-</span>}
                         </span>
                         <span className={f.included ? "text-stone-700 dark:text-stone-300" : "text-stone-400 line-through"}>
                           {f.label}
@@ -170,12 +170,12 @@ export function PricingCards({ plans, variant = "page" }: Props): React.ReactEle
                           : ""
                       }`}
                     >
-                      {p.priceMonthly === 0 ? "Start free — no card" : p.ctaLabel}
+                      {p.priceMonthly === 0 ? "Get the app" : p.ctaLabel}
                     </Button>
                     <p className="text-center text-xs text-stone-500 dark:text-stone-500">
                       {p.priceMonthly === 0
-                        ? "No credit card · Full basic schedule · Upgrade in app anytime"
-                        : "Checkout in the app · Secure payment via App Store or Google Play"}
+                        ? "No credit card. Full basic schedule. Upgrade in app anytime"
+                        : "Checkout in the app. Secure payment via App Store or Google Play"}
                     </p>
                   </div>
                 </div>
@@ -186,7 +186,7 @@ export function PricingCards({ plans, variant = "page" }: Props): React.ReactEle
       </div>
       {showToggle ? (
         <p className="mx-auto mt-8 max-w-2xl text-center text-[11px] leading-relaxed text-stone-400 dark:text-stone-500">
-          Subscriptions and refunds follow Apple / Google policies. Pawfect provides scheduling tools only — not
+          Subscriptions and refunds follow Apple / Google policies. Pawfect provides scheduling tools only, not
           veterinary medical advice.
         </p>
       ) : null}

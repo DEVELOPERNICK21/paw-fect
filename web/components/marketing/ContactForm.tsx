@@ -33,7 +33,7 @@ export function ContactForm(): React.ReactElement {
     await res.json();
     setLoading(false);
     if (!res.ok) {
-      setError("Could not send — check fields (message min 20 characters).");
+      setError("Could not send. Check fields (message min 20 characters).");
       return;
     }
     setDone(true);
@@ -42,7 +42,7 @@ export function ContactForm(): React.ReactElement {
   if (done) {
     return (
       <p className="rounded-2xl border border-stone-200 bg-stone-50 p-6 text-stone-700 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300">
-        Thanks — we received your message and will get back soon.
+        Thanks. We received your message and will get back soon.
       </p>
     );
   }

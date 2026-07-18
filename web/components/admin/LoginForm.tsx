@@ -4,6 +4,7 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
+import { BrandLogo } from "@/components/marketing/BrandLogo";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
@@ -39,7 +40,12 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }): React.React
         <AdminThemeToggle />
       </div>
       <div className="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-8 dark:border-stone-700 dark:bg-stone-900">
-        <h1 className="text-center text-2xl font-bold text-stone-900 dark:text-stone-50">Pawfect Admin</h1>
+        <div className="flex justify-center">
+          <BrandLogo size={56} href={null} showWordmark={false} priority />
+        </div>
+        <h1 className="mt-4 text-center text-2xl font-bold text-stone-900 dark:text-stone-50">
+          Pawfect Admin
+        </h1>
         <p className="mt-2 text-center text-sm text-stone-500">Sign in to manage the marketing site.</p>
         <form onSubmit={onSubmit} className="mt-8 space-y-4">
           <Input

@@ -1,9 +1,9 @@
 import type { PricingPlan, SiteContentMarketing } from "@/types";
 
 export const defaultSiteContent = (): SiteContentMarketing => ({
-  heroHeadline: "Your pet's health, perfectly scheduled.",
+  heroHeadline: "Stop missing what your pet needs next.",
   heroSubline:
-    "Pawfect gives dog and cat owners a vet-validated health timeline — vaccinations, deworming, and life stage milestones — all in one beautiful app.",
+    "Vet-validated schedules for vaccines and deworming, life stage care, and records you can open at the clinic. Free to start.",
   trustBadges: [
     "Vet-validated protocols",
     "Dogs & cats",

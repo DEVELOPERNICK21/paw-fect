@@ -36,7 +36,7 @@ export default function WaitlistPage(): React.ReactElement {
         <div>
           <h1 className="text-4xl font-bold text-stone-900 dark:text-stone-50">Join the waitlist</h1>
           <p className="mt-4 text-lg text-stone-600 dark:text-stone-400">
-            Get product updates and news about Pawfect. No spam — unsubscribe anytime.
+            Get product updates and news about Pawfect. No spam. Unsubscribe anytime.
           </p>
           <ul className="mt-10 space-y-6">
             {benefits.map(({ icon: Icon, title, body }) => (

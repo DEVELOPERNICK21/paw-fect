@@ -1,4 +1,6 @@
 import { AppGallerySection } from "@/components/marketing/AppGallerySection";
+import { CommitmentSection } from "@/components/marketing/CommitmentSection";
+import { ContrastSection } from "@/components/marketing/ContrastSection";
 import { DownloadCTA } from "@/components/marketing/DownloadCTA";
 import { WaitlistSection } from "@/components/marketing/WaitlistSection";
 import { HomeWidgetsShowcaseSection } from "@/components/marketing/HomeWidgetsShowcaseSection";
@@ -6,6 +8,7 @@ import { FeaturesSection } from "@/components/marketing/FeaturesSection";
 import { HeroSection } from "@/components/marketing/HeroSection";
 import { HomeJsonLd } from "@/components/marketing/HomeJsonLd";
 import { HowItWorksSection } from "@/components/marketing/HowItWorksSection";
+import { LossAversionSection } from "@/components/marketing/LossAversionSection";
 import { PetJourneySection } from "@/components/marketing/PetJourneySection";
 import { PricingPreviewSection } from "@/components/marketing/PricingPreviewSection";
 import { SocialProofBar } from "@/components/marketing/SocialProofBar";
@@ -18,18 +21,18 @@ import type { Metadata } from "next";
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "Pawfect — Smart Pet Health Scheduling",
+  title: "Pawfect - Smart Pet Health Scheduling",
   description:
     "Vet-validated vaccination and deworming schedules, pet journey stages, and health records for dogs and cats.",
   openGraph: {
-    title: "Pawfect — Smart Pet Health Scheduling",
+    title: "Pawfect - Smart Pet Health Scheduling",
     description:
       "Vet-validated vaccination and deworming schedules, pet journey stages, and health records for dogs and cats.",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Pawfect — Smart Pet Health Scheduling",
+    title: "Pawfect - Smart Pet Health Scheduling",
     description:
       "Vet-validated vaccination and deworming schedules, pet journey stages, and health records for dogs and cats.",
   },
@@ -43,14 +46,17 @@ export default async function HomePage(): Promise<React.ReactElement> {
     <>
       <HomeJsonLd />
       <HeroSection site={site} />
-      <SocialProofBar />
+      <SocialProofBar trustBadges={site.trustBadges} />
+      <LossAversionSection />
       <FeaturesSection />
       <AppGallerySection />
       <HowItWorksSection />
+      <ContrastSection />
       <PetJourneySection />
       <SpeciesSection />
       <TestimonialsSection items={site.testimonials} />
       <PricingPreviewSection plans={plans} />
+      <CommitmentSection />
       <HomeWidgetsShowcaseSection />
       <WaitlistSection />
       <DownloadCTA />

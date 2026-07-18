@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from "react";
  * SSR-safe: the initial state is `value`, so the server-rendered HTML and
  * pre-hydration paint always show the real number. The "count from zero"
  * animation only runs when the element first enters the viewport AFTER
- * mount — so users with JS slow, blocked, or off never see a misleading
+ * mount: so users with JS slow, blocked, or off never see a misleading
  * "0" sitting on the page.
  */
 export function CountUpNumber({
