@@ -113,7 +113,7 @@ export function HeroSection({ site }: { site: SiteContentMarketing }): React.Rea
           >
             <AppPhoneMockup
               image={heroAppScreenshot}
-              alt="Pawfect mobile app home dashboard with pet status, health summary, and navigation"
+              alt="Pawsoul mobile app home dashboard with pet status, health summary, and navigation"
               priority
               size="xl"
               float={false}

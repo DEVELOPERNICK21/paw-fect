@@ -20,6 +20,7 @@ import Svg, { Path } from 'react-native-svg';
 import type { PetsStackParamList } from '../../../../app/navigation/types';
 import { validateLastDewormingDate } from '../../../records/domain/utils/DewormingEngine';
 import { useTheme } from '../../../../shared/hooks/useTheme';
+import { useSubscriptionStore } from '../../../subscription/store/subscriptionStore';
 import { usePetStore } from '../../store/petStore';
 import type {
   Pet,
@@ -35,6 +36,24 @@ import { DatePickerField } from '../../../../shared/components/DatePickerField';
 import { spacing } from '../../../../shared/theme/spacing';
 import { inferDefaultPetRegion } from '../../../../shared/utils/inferDefaultPetRegion';
 import { usePostHog } from 'posthog-react-native';
+import {
+  computePetFormProgress,
+} from '../../domain/utils/computePetFormProgress';
+import { PetFormPsychologyChrome } from '../components/PetFormPsychologyChrome';
+
+const suggestRiskFromLifestyle = (
+  type: PetLifestyleType,
+): PetLifestyleRiskLevel => {
+  if (type === 'outdoor') return 'high';
+  if (type === 'mixed') return 'medium';
+  return 'low';
+};
+
+const planDisplayLabel = (plan: string): string => {
+  if (plan === 'care_plus') return 'Care+';
+  if (plan === 'family') return 'Family';
+  return 'Free';
+};
 
 type IconKind = 'arrow-back' | 'camera' | 'check' | 'pets';
 
@@ -78,6 +97,8 @@ export const AddPetScreen: React.FC = () => {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const createPetProfile = usePetStore(s => s.createPetProfile);
   const updatePet = usePetStore(s => s.updatePet);
+  const petsUsed = usePetStore(s => s.pets.length);
+  const entitlement = useSubscriptionStore(s => s.entitlement);
 
   const [name, setName] = useState('');
   const [petType, setPetType] = useState<PetType>('dog');
@@ -89,6 +110,8 @@ export const AddPetScreen: React.FC = () => {
     useState<PetLifestyleType>('indoor');
   const [lifestyleRiskLevel, setLifestyleRiskLevel] =
     useState<PetLifestyleRiskLevel>('low');
+  /** When true, lifestyle changes no longer auto-adjust risk (IKEA: honor user choice). */
+  const [riskTouched, setRiskTouched] = useState(false);
   const [region, setRegion] = useState<PetRegion>(() => inferDefaultPetRegion());
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -153,6 +176,7 @@ export const AddPetScreen: React.FC = () => {
         setGender((pet.gender as PetGender | undefined) ?? '');
         setLifestyleType(pet.lifestyle?.type ?? 'indoor');
         setLifestyleRiskLevel(pet.lifestyle?.riskLevel ?? 'low');
+        setRiskTouched(true);
         setRegion(pet.region ?? 'OTHER');
         void usePetStore
           .getState()
@@ -208,6 +232,55 @@ export const AddPetScreen: React.FC = () => {
   const canSave =
     trimmedName.length > 0 &&
     (isEditMode || (dob.trim().length > 0 && dobCheck.ok));
+
+  const applyLifestyle = (next: PetLifestyleType): void => {
+    setLifestyleType(next);
+    if (!riskTouched) {
+      setLifestyleRiskLevel(suggestRiskFromLifestyle(next));
+    }
+  };
+
+  const healthAnswered =
+    hasPreviousDeworming ||
+    hasPreviousVaccination ||
+    hasPreviousRabies ||
+    lastDewormingUnknown ||
+    lastVaccinationUnknown ||
+    lastRabiesUnknown;
+
+  const formProgress = useMemo(
+    () =>
+      computePetFormProgress({
+        nameFilled: trimmedName.length > 0,
+        dobFilled: dob.trim().length > 0 && dobCheck.ok,
+        genderFilled: gender !== '',
+        breedFilled: breed.trim().length > 0,
+        photoFilled: !isPetPhotoPlaceholderUri(photoUri) && photoUri.length > 0,
+        healthAnswered,
+        // Smart defaults already applied: species, lifestyle, risk, region.
+        defaultsApplied: 4,
+      }),
+    [
+      breed,
+      dob,
+      dobCheck.ok,
+      gender,
+      healthAnswered,
+      photoUri,
+      trimmedName.length,
+    ],
+  );
+
+  const lockedInCount = useMemo(() => {
+    let n = 0;
+    if (trimmedName.length > 0) n += 1;
+    if (dob.trim().length > 0 && dobCheck.ok) n += 1;
+    if (gender !== '') n += 1;
+    if (breed.trim().length > 0) n += 1;
+    if (!isPetPhotoPlaceholderUri(photoUri) && photoUri.length > 0) n += 1;
+    if (healthAnswered) n += 1;
+    return n;
+  }, [breed, dob, dobCheck.ok, gender, healthAnswered, photoUri, trimmedName.length]);
 
   const performEditSave = async (): Promise<void> => {
     if (!editBase) {
@@ -432,7 +505,14 @@ export const AddPetScreen: React.FC = () => {
     if (!result.success) {
       setIsSaving(false);
       if (result.error === 'PET_LIMIT') {
-        navigation.navigate('Paywall', { source: 'pet_limit' });
+        navigation.navigate('Paywall', {
+          source: 'pet_limit',
+          lossContext: {
+            draftPetName: trimmedName || undefined,
+            petsUsed,
+            maxPets: entitlement.maxPets,
+          },
+        });
         return;
       }
       setError(toFriendlyAddPetError(result.error));
@@ -502,10 +582,20 @@ export const AddPetScreen: React.FC = () => {
             />
           </Pressable>
           <Text style={[styles.headerTitle, { fontFamily: fontFamilies.bold }]}>
-            {isEditMode ? 'Edit pet' : 'Add Pet to Pawfect'}
+            {isEditMode ? 'Edit pet' : 'Add Pet to Pawsoul'}
           </Text>
           <View style={styles.headerRightSpacer} />
         </View>
+
+        <PetFormPsychologyChrome
+          isEditMode={isEditMode}
+          petsUsed={petsUsed}
+          maxPets={entitlement.maxPets}
+          planLabel={planDisplayLabel(entitlement.plan)}
+          progress={formProgress}
+          lockedInCount={lockedInCount}
+          petDisplayName={trimmedName}
+        />
 
         <View style={styles.avatarSection}>
           <View
@@ -1025,7 +1115,7 @@ export const AddPetScreen: React.FC = () => {
                         styles.genderChip,
                         selected ? styles.genderChipSelected : undefined,
                       ]}
-                      onPress={() => setLifestyleType(next)}
+                      onPress={() => applyLifestyle(next)}
                     >
                       <Text
                         style={[
@@ -1044,6 +1134,18 @@ export const AddPetScreen: React.FC = () => {
                   );
                 })}
               </View>
+              {!riskTouched ? (
+                <Text
+                  style={{
+                    marginTop: spacing.xs,
+                    fontSize: 12,
+                    color: colors.text.subdued,
+                    fontFamily: fontFamilies.medium,
+                  }}
+                >
+                  Risk suggested from lifestyle. Change it anytime.
+                </Text>
+              ) : null}
             </View>
             <View>
               <Text
@@ -1064,7 +1166,10 @@ export const AddPetScreen: React.FC = () => {
                         styles.genderChip,
                         selected ? styles.genderChipSelected : undefined,
                       ]}
-                      onPress={() => setLifestyleRiskLevel(next)}
+                      onPress={() => {
+                        setRiskTouched(true);
+                        setLifestyleRiskLevel(next);
+                      }}
                     >
                       <Text
                         style={[

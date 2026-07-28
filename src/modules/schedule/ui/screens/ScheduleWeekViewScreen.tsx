@@ -62,7 +62,7 @@ export const ScheduleWeekViewScreen: React.FC = () => {
             <MaterialIcon name="arrow_back" size={22} color={colors.text.heading} />
           </Pressable>
           <AppText style={[textStyles.title, { color: colors.text.heading }]}>
-            Week view is part of Pawfect+
+            Week view is part of Pawsoul+
           </AppText>
         </View>
       </SafeAreaView>

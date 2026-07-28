@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Upgrade Pawfect onboarding into a 4-step interactive flow (demo taps + motion + persisted care interests) using existing theme tokens and settings storage.
+**Goal:** Upgrade Pawsoul onboarding into a 4-step interactive flow (demo taps + motion + persisted care interests) using existing theme tokens and settings storage.
 
 **Architecture:** Keep a single `OnboardingScreen`. Demo selections stay in React state. Care interests persist via `Settings.careInterests` through `useSettingsStore` → `UpdateSettings` → local storage. Step transitions use React Native `Animated` (no Reanimated). Extract pure toggle helpers + a step-4 presentational component so the screen stays maintainable.
 

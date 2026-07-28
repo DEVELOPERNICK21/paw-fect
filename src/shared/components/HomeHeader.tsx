@@ -17,7 +17,7 @@ export interface HomeHeaderProps {
 const SIDE = spacingTokens['2xl'] + spacingTokens.sm;
 
 export const HomeHeader: React.FC<HomeHeaderProps> = React.memo(
-  ({ title = 'Pawfect', onPressMenu, onPressProfile, theme }) => {
+  ({ title = 'Pawsoul', onPressMenu, onPressProfile, theme }) => {
     const { colors, radius, space, textStyles, spacing } = theme;
 
     return (

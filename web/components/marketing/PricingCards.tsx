@@ -186,7 +186,7 @@ export function PricingCards({ plans, variant = "page" }: Props): React.ReactEle
       </div>
       {showToggle ? (
         <p className="mx-auto mt-8 max-w-2xl text-center text-[11px] leading-relaxed text-stone-400 dark:text-stone-500">
-          Subscriptions and refunds follow Apple / Google policies. Pawfect provides scheduling tools only, not
+          Subscriptions and refunds follow Apple / Google policies. Pawsoul provides scheduling tools only, not
           veterinary medical advice.
         </p>
       ) : null}

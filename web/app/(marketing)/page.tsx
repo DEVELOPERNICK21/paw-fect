@@ -21,18 +21,18 @@ import type { Metadata } from "next";
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "Pawfect - Smart Pet Health Scheduling",
+  title: "Pawsoul - Smart Pet Health Scheduling",
   description:
     "Vet-validated vaccination and deworming schedules, pet journey stages, and health records for dogs and cats.",
   openGraph: {
-    title: "Pawfect - Smart Pet Health Scheduling",
+    title: "Pawsoul - Smart Pet Health Scheduling",
     description:
       "Vet-validated vaccination and deworming schedules, pet journey stages, and health records for dogs and cats.",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Pawfect - Smart Pet Health Scheduling",
+    title: "Pawsoul - Smart Pet Health Scheduling",
     description:
       "Vet-validated vaccination and deworming schedules, pet journey stages, and health records for dogs and cats.",
   },

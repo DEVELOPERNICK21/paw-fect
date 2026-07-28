@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Contact",
-  description: "Reach the Pawfect team: support, press, partnerships, and feedback.",
+  description: "Reach the Pawsoul team: support, press, partnerships, and feedback.",
 };
 
 export default function ContactPage(): React.ReactElement {
@@ -21,7 +21,7 @@ export default function ContactPage(): React.ReactElement {
         <div className="space-y-6">
           <Card>
             <p className="text-sm font-semibold text-stone-900 dark:text-stone-50">Email</p>
-            <p className="mt-2 text-stone-600 dark:text-stone-400">hello@pawfect.app</p>
+            <p className="mt-2 text-stone-600 dark:text-stone-400">hello@pawsoul.app</p>
           </Card>
           <Card>
             <p className="text-sm font-semibold text-stone-900 dark:text-stone-50">Response time</p>

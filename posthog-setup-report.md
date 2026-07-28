@@ -1,7 +1,7 @@
 <wizard-report>
 # PostHog post-wizard report
 
-The wizard has completed a deep integration of PostHog analytics into the Pawfect React Native app. Here is a summary of all changes made:
+The wizard has completed a deep integration of PostHog analytics into the Pawsoul React Native app. Here is a summary of all changes made:
 
 **New files created:**
 - `src/config/posthog.ts` — PostHog client instance, configured via `react-native-config` environment variables

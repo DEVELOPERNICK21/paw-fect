@@ -1,26 +1,26 @@
 <resources>
-    <string name="app_name">Pawfect</string>
-    <string name="widget_next_milestone_label">Pawfect · Next milestone</string>
+    <string name="app_name">Pawsoul</string>
+    <string name="widget_next_milestone_label">Pawsoul · Next milestone</string>
     <string name="widget_next_milestone_desc">Next vaccination or deworming for your pet</string>
     <string name="widget_next_milestone_badge">Next milestone</string>
     <string name="widget_upcoming_tasks_title">Upcoming tasks</string>
     <string name="widget_upcoming_tasks_desc">Today\'s care reminders</string>
-    <string name="widget_open_app">Open Pawfect to set up your pet.</string>
+    <string name="widget_open_app">Open Pawsoul to set up your pet.</string>
     <string name="widget_no_milestone">No upcoming milestone</string>
     <string name="widget_tasks_empty">No tasks for today</string>
     <string name="widget_paw_emoji">🐾</string>
     <string name="widget_tasks_header">Tasks</string>
     <string name="widget_tasks_kebab">⋮</string>
     <string name="widget_tasks_menu_desc">More options</string>
-    <string name="widget_tasks_add_hint">+ Add New Task — open Pawfect</string>
+    <string name="widget_tasks_add_hint">+ Add New Task — open Pawsoul</string>
     <string name="widget_tasks_footer_when_list">Tap widget to manage tasks</string>
     <string name="widget_pet_fallback">Your pet</string>
-    <string name="widget_next_up_lock_label">Pawfect · Next care</string>
+    <string name="widget_next_up_lock_label">Pawsoul · Next care</string>
     <string name="widget_next_up_lock_desc">Next feeding, walk, or care task on your lock screen</string>
     <string name="widget_next_up_empty">No care tasks today</string>
-    <string name="widget_care_progress_lock_label">Pawfect · Today\'s care</string>
+    <string name="widget_care_progress_lock_label">Pawsoul · Today\'s care</string>
     <string name="widget_care_progress_lock_desc">How much of today\'s care plan is done</string>
-    <string name="widget_care_progress_empty">Set up daily care in Pawfect</string>
+    <string name="widget_care_progress_empty">Set up daily care in Pawsoul</string>
     <string name="widget_care_progress_line_fmt">%1$d of %2$d done</string>
     <string name="widget_care_progress_percent_fmt">%1$d%% complete</string>
 </resources>

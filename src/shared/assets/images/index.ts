@@ -1,5 +1,5 @@
 export const images = {
-  appIcon: require('./AppIcon.png'),
+  appIcon: require('./pawSoulLogo.png'),
   petHd1: require('./pet_hd_1.png'),
   petHd2: require('./pet_hd_2.png'),
   petHd4: require('./pet_hd_4.png'),

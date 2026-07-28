@@ -24,7 +24,7 @@ Replace the primary feature-tour onboarding with a Flo/Cal AI–inspired psychol
 - Flo: long quiz + trust + commitment gesture before paywall; quiz sells, paywall unlocks.  
 - Cal AI: investment quiz → projected outcome → hard paywall; sunk cost drives yes.  
 - Highest-leverage bridge: **personalized plan reveal** between quiz and price.  
-- Pawfect is anxiety + habit (closer to Flo trust than pure Cal AI hard lock); India freemium retained via Skip.
+- Pawsoul is anxiety + habit (closer to Flo trust than pure Cal AI hard lock); India freemium retained via Skip.
 
 ## Scope
 
@@ -59,7 +59,7 @@ Replace the primary feature-tour onboarding with a Flo/Cal AI–inspired psychol
 | 8 | Commitment | “I’m ready to stay on top of {nickname}’s health” | Intent |
 | 9 | Auth | Sign-in / Google — “save your plan” | Account |
 | 10 | Paywall | Care+ annual default, 14-day trial, weekly ₹; Skip → free | Monetize |
-| 11 | Tip strip | 1–2 light “how Pawfect works” screens | Orient |
+| 11 | Tip strip | 1–2 light “how Pawsoul works” screens | Orient |
 | 12 | Complete | `onboardingCompleted = true` → PetRequired / App | Exit |
 
 ### Copy / UX rules
@@ -203,4 +203,4 @@ Composition stays Clean Architecture: UI → store/use cases for settings; no st
 
 - Gift-box secondary paywall (Flo) — later experiment  
 - Longer 16–18 step validation loops — v2  
-- Hard lock with no Skip (Cal AI) — rejected for Pawfect freemium/India  
+- Hard lock with no Skip (Cal AI) — rejected for Pawsoul freemium/India  

@@ -77,7 +77,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       : null;
 
   if (!customerId) {
-    const email = verified.email ?? `${verified.uid}@pawfect.app`;
+    const email = verified.email ?? `${verified.uid}@pawsoul.app`;
     const customer = await rzp.customers.create({
       email,
       fail_existing: 0,

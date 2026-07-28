@@ -27,6 +27,12 @@ export type HealthStackParamList = {
 
 export type PaywallRouteParams = {
   source?: 'pet_limit' | 'settings' | 'onboarding';
+  /** Loss-context copy when the user hits a pet slot limit mid-create. */
+  lossContext?: {
+    draftPetName?: string;
+    petsUsed?: number;
+    maxPets?: number;
+  };
 };
 
 export type PetsStackParamList = {

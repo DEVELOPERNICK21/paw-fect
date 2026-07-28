@@ -18,7 +18,7 @@ export const AuthTopNav: React.FC<AuthTopNavProps> = ({ leftIcon, onLeftPress })
         <Text style={styles.leftIcon}>{leftIcon}</Text>
       </Pressable>
 
-      <Text style={[styles.title, { fontFamily: fontFamilies.bold }]}>Pawfect</Text>
+      <Text style={[styles.title, { fontFamily: fontFamilies.bold }]}>Pawsoul</Text>
 
       <View style={styles.leftButton} />
     </View>

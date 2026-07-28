@@ -29,7 +29,7 @@ export function HomeWidgetsShowcaseSection(): React.ReactElement {
             </h2>
             <p className="mt-4 max-w-lg text-stone-600 dark:text-stone-400">
               On Android, Next milestone and Tasks widgets mirror the in-app layout so upcoming care
-              stays visible between opens. Data syncs when you launch Pawfect.
+              stays visible between opens. Data syncs when you launch Pawsoul.
             </p>
             <ul className="mt-6 space-y-2 text-sm text-stone-600 dark:text-stone-400">
               <li className="flex gap-2">
@@ -58,7 +58,7 @@ export function HomeWidgetsShowcaseSection(): React.ReactElement {
               <div className="absolute left-0 top-4 z-10 w-[62%] max-w-[260px] sm:max-w-[280px]">
                 <AppPhoneMockup
                   image={downloadAppScreenshot}
-                  alt="Pawfect home screen in light mode"
+                  alt="Pawsoul home screen in light mode"
                   float={!reduce}
                   size="lg"
                 />

@@ -75,7 +75,7 @@ export function LossAversionSection(): React.ReactElement {
 
         <ScrollReveal delay={0.1} className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="max-w-xl text-sm font-medium text-stone-300 md:text-base">
-            Pawfect keeps the next dose, the life stage, and the record in one place so those gaps
+            Pawsoul keeps the next dose, the life stage, and the record in one place so those gaps
             stop being normal.
           </p>
           <Button href="/download" className="shrink-0 !px-7">

@@ -11,7 +11,7 @@ type AppPhoneMockupProps = {
   size?: "sm" | "md" | "lg" | "xl";
   caption?: string;
   /**
-   * Chassis style. Pawfect screenshots are Android, so gallery/hero default to android.
+   * Chassis style. Pawsoul screenshots are Android, so gallery/hero default to android.
    */
   variant?: "android" | "ios";
 };

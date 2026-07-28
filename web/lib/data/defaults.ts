@@ -14,9 +14,9 @@ export const defaultSiteContent = (): SiteContentMarketing => ({
   pricingFaqs: [
     {
       id: "1",
-      question: "Is Pawfect a substitute for veterinary care?",
+      question: "Is Pawsoul a substitute for veterinary care?",
       answer:
-        "No. Pawfect helps you track schedules and records; always consult your vet for medical decisions.",
+        "No. Pawsoul helps you track schedules and records; always consult your vet for medical decisions.",
     },
     {
       id: "2",

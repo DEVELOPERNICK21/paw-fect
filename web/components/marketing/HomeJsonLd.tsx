@@ -1,10 +1,10 @@
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://pawfect.app";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://pawsoul.app";
 
 export function HomeJsonLd(): React.ReactElement {
   const json = {
     "@context": "https://schema.org",
     "@type": "MobileApplication",
-    name: "Pawfect",
+    name: "Pawsoul",
     operatingSystem: "iOS, Android",
     applicationCategory: "HealthApplication",
     offers: {

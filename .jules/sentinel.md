@@ -1,6 +1,6 @@
 # Sentinel Journal 🛡️
 
-This journal tracks critical security learnings and vulnerability patterns in the Paw-fect codebase.
+This journal tracks critical security learnings and vulnerability patterns in the Pawsoul codebase.
 
 ## Entries
 

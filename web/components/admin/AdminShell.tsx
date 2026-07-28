@@ -61,7 +61,7 @@ export function AdminShell({
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <BrandLogo showWordmark={false} size={28} href={null} />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold text-stone-900 dark:text-stone-50">Pawfect</p>
+              <p className="truncate text-sm font-bold text-stone-900 dark:text-stone-50">Pawsoul</p>
               <p className="truncate text-xs text-stone-500 dark:text-stone-400">{pageTitle}</p>
             </div>
           </div>
@@ -86,7 +86,7 @@ export function AdminShell({
                 <div className="flex items-center gap-2">
                   <BrandLogo showWordmark={false} size={28} href={null} />
                   <div>
-                    <p className="text-sm font-bold text-stone-900 dark:text-stone-50">Pawfect</p>
+                    <p className="text-sm font-bold text-stone-900 dark:text-stone-50">Pawsoul</p>
                     <p className="text-xs text-stone-500 dark:text-stone-400">Admin panel</p>
                   </div>
                 </div>

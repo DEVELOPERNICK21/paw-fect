@@ -59,7 +59,7 @@ import {
 } from './petHealthShareCardLayout';
 import { SHARE_CARD_TYPE } from './petHealthShareCardTypography';
 
-const BRAND_LABEL = 'Paw-fect';
+const BRAND_LABEL = 'Pawsoul';
 
 export interface PetHealthShareCardSkiaProps {
   viewModel: PetHealthCardViewModel;
@@ -718,7 +718,7 @@ const EmptyState: React.FC<{
     return null;
   }
 
-  const title = `${viewModel.pet.name} just joined Paw-fect`;
+  const title = `${viewModel.pet.name} just joined Pawsoul`;
   const subtitle = 'We are building the first vaccine and deworming plan.';
   const titleWidth = fontEmptyTitle.measureText(title).width;
   const subtitleWidth = fontEmptySub.measureText(subtitle).width;

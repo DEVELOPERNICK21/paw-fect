@@ -15,7 +15,7 @@ import { formatPetAgeShareLabel } from '../utils/petDobDisplay';
 import { safeToIsoString } from '../../../../shared/utils/calendarDate';
 
 const SHARE_URL_DISPLAY = 'paw-fect.vercel.app';
-const BRAND_LABEL = '🐾 Paw-fect';
+const BRAND_LABEL = '🐾 Pawsoul';
 const MAX_ITEMS = 3;
 const COMPLETED_WINDOW_DAYS = 365;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -235,7 +235,7 @@ function buildShareHighlights(input: {
     return [
       {
         emoji: '✨',
-        title: 'New on Paw-fect',
+        title: 'New on Pawsoul',
         detail: `${pet.name}'s care plan is loading`,
       },
       {

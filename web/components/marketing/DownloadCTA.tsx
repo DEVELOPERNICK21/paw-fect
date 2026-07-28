@@ -55,7 +55,7 @@ export function DownloadCTA(): React.ReactElement {
           </Button>
         </div>
         <p className="mt-8 text-sm font-medium text-white/80">
-          Free forever plan. No credit card. Same Pawfect app on iOS and Android.
+          Free forever plan. No credit card. Same Pawsoul app on iOS and Android.
         </p>
       </motion.div>
     </section>

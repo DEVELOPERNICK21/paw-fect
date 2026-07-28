@@ -30,7 +30,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       await resend.emails.send({
         from: getFromEmail(),
         to: process.env.CONTACT_INBOX_EMAIL ?? getFromEmail(),
-        subject: `[Pawfect] ${parsed.data.subject}`,
+        subject: `[Pawsoul] ${parsed.data.subject}`,
         text: `From: ${parsed.data.name} <${parsed.data.email}>\n\n${parsed.data.message}`,
       });
     } catch {

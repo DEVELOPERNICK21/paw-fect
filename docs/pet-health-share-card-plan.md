@@ -436,7 +436,7 @@ import { formatPetAgeShareLabel } from '../utils/petDobDisplay';
 import { resolvePetAvatarSource } from '../../../../shared/utils/petDisplayPhoto';
 
 const SHARE_URL_DISPLAY = 'paw-fect.vercel.app';
-const BRAND_LABEL = '🐾 Paw-fect';
+const BRAND_LABEL = '🐾 Pawsoul';
 const MAX_ITEMS = 3;
 const COMPLETED_WINDOW_DAYS = 365;
 
@@ -873,7 +873,7 @@ export const PetHealthShareCard: React.FC<PetHealthShareCardProps> = ({ viewMode
           <View style={shareCardStyles.emptyWrap}>
             <Text style={shareCardStyles.emptyEmoji}>{snapshot.speciesEmoji}</Text>
             <Text style={[shareCardStyles.emptyTitle, { fontFamily: fontFamilies.bold }]}>
-              Just added {pet.name} to Paw-fect 🎉
+              Just added {pet.name} to Pawsoul 🎉
             </Text>
             <Text style={[shareCardStyles.emptySub, { fontFamily: fontFamilies.medium }]}>
               Auto-scheduled vaccines and deworming.
@@ -1119,7 +1119,7 @@ function buildShareMessage(vm: PetHealthCardViewModel): string {
   if (vm.snapshot.kind === 'empty') {
     const species = vm.snapshot.speciesEmoji === '🐈' ? 'cats' : 'dogs';
     return [
-      `Just added ${vm.pet.name} to Paw-fect 🐾`,
+      `Just added ${vm.pet.name} to Pawsoul 🐾`,
       `Auto-scheduled vaccines and deworming for ${species}.`,
       `Track your pet’s health: ${vm.footer.shareUrl}`,
     ].join('\n');
@@ -1127,7 +1127,7 @@ function buildShareMessage(vm: PetHealthCardViewModel): string {
   const next = vm.snapshot.items.find(i => i.status !== 'done');
   const nextLine = next ? `Next up: ${next.label} (${next.detail})` : 'On track 💛';
   return [
-    `${vm.pet.name} on Paw-fect 🐾`,
+    `${vm.pet.name} on Pawsoul 🐾`,
     nextLine,
     `Track your pet’s health: ${vm.footer.shareUrl}`,
   ].join('\n');
@@ -1715,7 +1715,7 @@ Run through every edge case from spec §7 in order. Use a real iOS device + an A
   - Repeat → tap a real target (e.g. WhatsApp) → confirm image plus caption text both appear.
 
 - [ ] **Step 2: Empty state — Add a new pet, no records yet**
-  - Confirm the empty-state copy ("Just added X to Paw-fect 🎉") renders.
+  - Confirm the empty-state copy ("Just added X to Pawsoul 🎉") renders.
   - Confirm sharing still works.
 
 - [ ] **Step 3: Missing data variants**

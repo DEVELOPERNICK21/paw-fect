@@ -51,7 +51,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Waitlist",
   description:
-    "Join the Pawfect waitlist for product updates and news. Vet-aligned schedules, health records, and pet journey stages.",
+    "Join the Pawsoul waitlist for product updates and news. Vet-aligned schedules, health records, and pet journey stages.",
 };
 
 const benefits = [
@@ -81,7 +81,7 @@ export default function WaitlistPage(): React.ReactElement {
             Join the waitlist
           </h1>
           <p className="mt-4 text-lg text-stone-600 dark:text-stone-400">
-            Get product updates and news about Pawfect. No spam — unsubscribe anytime.
+            Get product updates and news about Pawsoul. No spam — unsubscribe anytime.
           </p>
           <ul className="mt-10 space-y-6">
             {benefits.map(({ icon: Icon, title, body }) => (

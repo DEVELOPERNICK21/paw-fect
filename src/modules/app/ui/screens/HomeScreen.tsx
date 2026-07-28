@@ -200,7 +200,7 @@ export const HomeScreen: React.FC = () => {
     >
       <View style={styles.root}>
         <HomeHeader
-          title="Pawfect"
+          title="Pawsoul"
           onPressProfile={goUserProfile}
           theme={theme}
         />

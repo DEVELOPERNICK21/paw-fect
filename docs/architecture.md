@@ -270,7 +270,7 @@ Screens belong to their respective feature modules.
 
 # Data Models
 
-Core models used in Paw-fect.
+Core models used in Pawsoul.
 
 ### User
 
@@ -318,7 +318,7 @@ attachment
 
 # MVP Feature Set
 
-Paw-fect MVP includes the following features:
+Pawsoul MVP includes the following features:
 
 Authentication
 Pet profiles
@@ -400,4 +400,4 @@ Component → `ReminderCard.tsx`
 Architecture is not about folders.
 It is about **dependency direction and clear responsibilities**.
 
-If these rules are respected, Paw-fect can scale to a large codebase without becoming unmaintainable.
+If these rules are respected, Pawsoul can scale to a large codebase without becoming unmaintainable.

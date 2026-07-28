@@ -9,7 +9,7 @@ export function PricingComparisonTable({ plans }: { plans: PricingPlan[] }): Rea
   return (
     <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-surface shadow-sm dark:border-stone-700 dark:bg-stone-900/40">
       <table className="w-full min-w-[640px] border-collapse text-left text-sm">
-        <caption className="sr-only">Compare features across Pawfect plans</caption>
+        <caption className="sr-only">Compare features across Pawsoul plans</caption>
         <thead>
           <tr className="border-b border-stone-200 bg-cream/50 dark:border-stone-700 dark:bg-stone-800/50">
             <th scope="col" className="p-4 font-semibold text-stone-900 dark:text-stone-50">

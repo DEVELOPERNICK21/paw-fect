@@ -116,7 +116,7 @@ export const SettingsScreen: React.FC = () => {
         if (!granted) {
           Alert.alert(
             'Notifications blocked',
-            'Allow notifications and Alarms & reminders for Paw-fect, then try again.',
+            'Allow notifications and Alarms & reminders for Pawsoul, then try again.',
           );
           return;
         }
@@ -154,7 +154,7 @@ export const SettingsScreen: React.FC = () => {
       if (!granted) {
         Alert.alert(
           'Notifications blocked',
-          'Allow notifications for Paw-fect and enable Alarms & reminders in system settings, then try again.',
+          'Allow notifications for Pawsoul and enable Alarms & reminders in system settings, then try again.',
         );
         return;
       }
@@ -176,7 +176,7 @@ export const SettingsScreen: React.FC = () => {
       if (!granted) {
         Alert.alert(
           'Notifications blocked',
-          'Allow notifications for Paw-fect in system settings, then try again.',
+          'Allow notifications for Pawsoul in system settings, then try again.',
         );
         return;
       }
@@ -581,7 +581,7 @@ export const SettingsScreen: React.FC = () => {
             <Text style={[styles.logoutText, { fontFamily: fontFamilies.bold }]}>Logout</Text>
           </Pressable>
           <Text style={[styles.versionText, { fontFamily: fontFamilies.regular }]}>
-            Pawfect • {APP_VERSION_LABEL} • Made with love for pets
+            Pawsoul • {APP_VERSION_LABEL} • Made with love for pets
           </Text>
         </View>
       </ScrollView>
@@ -600,7 +600,7 @@ export const SettingsScreen: React.FC = () => {
               Choose a pet to delete
             </Text>
             <Text style={[styles.modalHint, { fontFamily: fontFamilies.medium, color: colors.text.body }]}>
-              This removes the pet from Pawfect. This cannot be undone.
+              This removes the pet from Pawsoul. This cannot be undone.
             </Text>
             <ScrollView
               style={styles.modalList}

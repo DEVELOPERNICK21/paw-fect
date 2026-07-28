@@ -14,5 +14,5 @@ export function getResend(): Resend | null {
 }
 
 export function getFromEmail(): string {
-  return process.env.RESEND_FROM_EMAIL ?? "hello@pawfect.app";
+  return process.env.RESEND_FROM_EMAIL ?? "hello@pawsoul.app";
 }

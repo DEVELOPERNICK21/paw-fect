@@ -44,7 +44,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }): React.React
           <BrandLogo size={56} href={null} showWordmark={false} priority />
         </div>
         <h1 className="mt-4 text-center text-2xl font-bold text-stone-900 dark:text-stone-50">
-          Pawfect Admin
+          Pawsoul Admin
         </h1>
         <p className="mt-2 text-center text-sm text-stone-500">Sign in to manage the marketing site.</p>
         <form onSubmit={onSubmit} className="mt-8 space-y-4">

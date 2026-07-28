@@ -40,7 +40,7 @@ const features = [
   {
     icon: WifiOff,
     title: "Offline-first",
-    body: "Pawfect works without internet. Records sync automatically when you're back online.",
+    body: "Pawsoul works without internet. Records sync automatically when you're back online.",
   },
   {
     icon: MapPin,

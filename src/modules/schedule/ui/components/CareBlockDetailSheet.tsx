@@ -116,7 +116,7 @@ export const CareBlockDetailSheet: React.FC<CareBlockDetailSheetProps> = ({
           ))}
           <View style={styles.actions}>
             {locked ? (
-              <Button title="Unlock with Pawfect+" onPress={onUpgrade} />
+              <Button title="Unlock with Pawsoul+" onPress={onUpgrade} />
             ) : (
               <>
                 <Button title="Mark done" onPress={onMarkDone} />

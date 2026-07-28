@@ -37,6 +37,8 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
     sourceOverride ??
     (route.params as PaywallRouteParams | undefined)?.source ??
     'settings';
+  const lossContext = (route.params as PaywallRouteParams | undefined)
+    ?.lossContext;
   const { colors, fontFamilies, fontSizes, spacing, radius } = useTheme();
   const entitlement = useSubscriptionStore(s => s.entitlement);
   const checkoutLoading = useSubscriptionStore(s => s.checkoutLoading);
@@ -60,6 +62,11 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
       navigation.goBack();
     }
   };
+
+  const petsUsed = lossContext?.petsUsed ?? null;
+  const maxPets = lossContext?.maxPets ?? entitlement.maxPets;
+  const draftName = lossContext?.draftPetName?.trim();
+  const nextSlot = petsUsed != null ? petsUsed + 1 : maxPets + 1;
 
   const styles = useMemo(
     () =>
@@ -86,12 +93,34 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
           borderWidth: 1,
           borderColor: colors.borderSubtle,
         },
-        bannerText: { fontSize: 14, color: colors.text.body },
-        bannerOnboarding: { borderColor: colors.accent, borderWidth: 1 },
+        bannerThreat: {
+          borderColor: colors.danger,
+          backgroundColor: colors.surface,
+        },
+        bannerText: { fontSize: 14, color: colors.text.body, lineHeight: 20 },
         bannerHeadline: {
           fontSize: fontSizes.lg,
           color: colors.text.heading,
+          marginBottom: spacing.xs,
         },
+        bannerLoss: {
+          fontSize: 14,
+          color: colors.text.body,
+          lineHeight: 20,
+          marginTop: spacing.sm,
+        },
+        lossItem: {
+          fontSize: 13,
+          color: colors.text.body,
+          marginTop: spacing.xs,
+          lineHeight: 18,
+        },
+        anchorLine: {
+          fontSize: 15,
+          color: colors.primary,
+          marginBottom: spacing.sm,
+        },
+        bannerOnboarding: { borderColor: colors.accent, borderWidth: 1 },
         skipButton: { paddingHorizontal: spacing.xs, paddingVertical: spacing.xs },
         skipText: { fontSize: fontSizes.sm, color: colors.text.subdued },
         card: {
@@ -123,6 +152,9 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
 
   const care = PLAN_CATALOG[PLAN_CARE_PLUS];
   const family = PLAN_CATALOG[PLAN_FAMILY];
+  const upgradePlan = maxPets < care.maxPets ? care : family;
+  const upgradeLabel =
+    upgradePlan.key === PLAN_CARE_PLUS ? 'Care+' : 'Family';
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
@@ -151,11 +183,33 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
 
       <ScrollView contentContainerStyle={styles.content}>
         {source === 'pet_limit' ? (
-          <View style={styles.banner}>
+          <View style={[styles.banner, styles.bannerThreat]}>
+            <Text style={[styles.anchorLine, { fontFamily: fontFamilies.bold }]}>
+              Slot {nextSlot} of {upgradePlan.maxPets} opens on {upgradeLabel} · you
+              have {maxPets} on your current plan
+            </Text>
+            <Text style={[styles.bannerHeadline, { fontFamily: fontFamilies.bold }]}>
+              {draftName
+                ? `${draftName}'s profile cannot be saved yet`
+                : 'Another pet profile cannot be saved yet'}
+            </Text>
             <Text style={[styles.bannerText, { fontFamily: fontFamilies.medium }]}>
-              You have reached the pet limit on your current plan. Upgrade to add
-              another pet profile. Existing pets stay in your account; older pets may
-              become view-only if you downgrade.
+              Without an upgrade you keep your current pet{maxPets === 1 ? '' : 's'},
+              but you lose the ability to add {draftName || 'this pet'} and unlock
+              their care timeline.
+            </Text>
+            <Text style={[styles.bannerLoss, { fontFamily: fontFamilies.semibold }]}>
+              If you stay on your current plan you miss out on:
+            </Text>
+            <Text style={[styles.lossItem, { fontFamily: fontFamilies.regular }]}>
+              · A dedicated profile and vaccine plan for{' '}
+              {draftName || 'your next pet'}
+            </Text>
+            <Text style={[styles.lossItem, { fontFamily: fontFamilies.regular }]}>
+              · Up to {upgradePlan.maxPets} pets on {upgradeLabel} (vs {maxPets} now)
+            </Text>
+            <Text style={[styles.lossItem, { fontFamily: fontFamilies.regular }]}>
+              · Unlimited history, PDF export, offline, and sharing
             </Text>
           </View>
         ) : null}

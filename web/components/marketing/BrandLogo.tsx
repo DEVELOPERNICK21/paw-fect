@@ -1,10 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import pawfectIcon from "@/app/assets/brand/pawfect-icon.png";
+import pawsoulLogo from "@/app/assets/brand/pawsoul-logo.png";
 
 type BrandLogoProps = {
-  /** Show the Pawfect wordmark beside the icon. Default true. */
+  /** Show the Pawsoul wordmark beside the icon. Default true. */
   showWordmark?: boolean;
   /** Icon edge length in pixels (CSS). Default 40. */
   size?: number;
@@ -27,7 +27,7 @@ export function BrandLogo({
   const mark = (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
       <Image
-        src={pawfectIcon}
+        src={pawsoulLogo}
         alt=""
         width={size}
         height={size}
@@ -35,20 +35,20 @@ export function BrandLogo({
         style={{ width: size, height: size }}
         priority={priority}
       />
-      {showWordmark ? <span className={wordmarkClassName}>Pawfect</span> : null}
+      {showWordmark ? <span className={wordmarkClassName}>Pawsoul</span> : null}
     </span>
   );
 
   if (!href) {
     return (
-      <span className="inline-flex" aria-label="Pawfect">
+      <span className="inline-flex" aria-label="Pawsoul">
         {mark}
       </span>
     );
   }
 
   return (
-    <Link href={href} className="inline-flex items-center" aria-label="Pawfect home">
+    <Link href={href} className="inline-flex items-center" aria-label="Pawsoul home">
       {mark}
     </Link>
   );

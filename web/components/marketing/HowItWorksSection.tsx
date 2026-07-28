@@ -9,7 +9,7 @@ const steps = [
     icon: UserPlus,
     title: "Add your pet",
     body:
-      "Enter name, species, date of birth, and lifestyle. Pawfect builds your pet's health plan instantly.",
+      "Enter name, species, date of birth, and lifestyle. Pawsoul builds your pet's health plan instantly.",
   },
   {
     icon: Bell,

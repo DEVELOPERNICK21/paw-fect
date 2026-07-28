@@ -14,6 +14,6 @@ FVRCP protects against serious diseases that can enter on shoes, objects, or new
 
 Feline leukemia may be recommended if your household has outdoor cats or fosters. Discuss exposure with your vet.
 
-## Pawfect’s role
+## Pawsoul’s role
 
 Track due dates, reminders, and history so every visit starts with accurate information.

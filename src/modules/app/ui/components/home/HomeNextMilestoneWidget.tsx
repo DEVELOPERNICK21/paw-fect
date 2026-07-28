@@ -52,7 +52,7 @@ export const HomeNextMilestoneWidget: React.FC<HomeNextMilestoneWidgetProps> =
       await openGoogleCalendarAllDayEvent({
         title: `${pet.name}: ${milestone.title}`,
         dateYmd: milestone.dueDateYmd,
-        details: `Scheduled in Pawfect for ${pet.name}.`,
+        details: `Scheduled in Pawsoul for ${pet.name}.`,
       });
     }, [milestone, pet.name]);
 

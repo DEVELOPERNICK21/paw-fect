@@ -26,20 +26,19 @@ const siteUrl =
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Pawfect - Smart Pet Health Scheduling",
-    template: "%s - Pawfect",
+    default: "Pawsoul - Smart Pet Health Scheduling",
+    template: "%s - Pawsoul",
   },
   description:
     "Vet-validated vaccination and deworming schedules, pet journey stages, and health records for dogs and cats.",
   icons: {
     icon: [
-      { url: "/favicon.ico", sizes: "any" },
       { url: "/favicon-32.png", type: "image/png", sizes: "32x32" },
       { url: "/favicon-16.png", type: "image/png", sizes: "16x16" },
       { url: "/favicon.png", type: "image/png", sizes: "432x432" },
     ],
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
-    shortcut: "/favicon.ico",
+    shortcut: "/favicon.png",
   },
 };
 

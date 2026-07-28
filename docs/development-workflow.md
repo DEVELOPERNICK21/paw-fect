@@ -1,8 +1,8 @@
-# Paw-fect Development Workflow
+# Pawsoul Development Workflow
 
 ## Purpose
 
-This document defines how development should happen in the Paw-fect project.
+This document defines how development should happen in the Pawsoul project.
 
 The goal is to ensure:
 
@@ -27,7 +27,7 @@ All development must follow the workflow defined here.
 
 # Development Order
 
-The Paw-fect MVP must be built in the following order.
+The Pawsoul MVP must be built in the following order.
 
 1. Project foundation
 2. Navigation system

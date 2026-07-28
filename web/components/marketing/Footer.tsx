@@ -12,7 +12,7 @@ export function Footer(): React.ReactElement {
             <div className="flex items-center gap-2.5">
               <BrandLogo showWordmark={false} size={44} />
               <div>
-                <p className="text-lg font-bold text-stone-900 dark:text-stone-50">Pawfect</p>
+                <p className="text-lg font-bold text-stone-900 dark:text-stone-50">Pawsoul</p>
                 <p className="text-xs font-medium text-stone-500">Pet health, lovingly organized</p>
               </div>
             </div>
@@ -101,7 +101,7 @@ export function Footer(): React.ReactElement {
         </div>
         <div className="mt-14 border-t border-stone-200/80 pt-8 text-center text-xs leading-relaxed text-stone-500 dark:border-stone-700 dark:text-stone-500">
           <p>
-            © {new Date().getFullYear()} Pawfect. Vet-validated protocols. Not a substitute for professional
+            © {new Date().getFullYear()} Pawsoul. Vet-validated protocols. Not a substitute for professional
             veterinary advice.
           </p>
         </div>

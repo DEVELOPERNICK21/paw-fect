@@ -40,7 +40,7 @@ export function AppGallerySection(): React.ReactElement {
               Real screens, light and dark
             </h2>
             <p className="mt-3 text-base text-stone-400 md:text-lg">
-              Pet-first home, care actions, profiles, and reminders: the same Pawfect UI on your
+              Pet-first home, care actions, profiles, and reminders: the same Pawsoul UI on your
               phone.
             </p>
           </div>

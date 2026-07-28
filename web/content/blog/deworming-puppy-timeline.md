@@ -14,6 +14,6 @@ Puppies often need more frequent deworming in the first months because of matern
 
 As your dog ages, interval and product choice shift with lifestyle (indoor, outdoor, hunting, etc.).
 
-## Use Pawfect
+## Use Pawsoul
 
 Layer deworming tasks alongside vaccines in one timeline so nothing slips.

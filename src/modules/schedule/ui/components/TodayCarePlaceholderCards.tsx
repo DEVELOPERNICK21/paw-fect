@@ -83,7 +83,7 @@ export const TodayCareSetupPlaceholder: React.FC<TodayCareSetupPlaceholderProps>
         Build {petName}&apos;s daily rhythm
       </AppText>
       <AppText style={[textStyles.body, { color: colors.text.secondary }]}>
-        Set wake time, meals, and walks once. Pawfect turns that into a clear
+        Set wake time, meals, and walks once. Pawsoul turns that into a clear
         care plan for today.
       </AppText>
       <Button title="Set up care schedule" onPress={onPressSetup} />

@@ -16,8 +16,8 @@ Most puppies start a series between 6–8 weeks, with boosters every 3–4 weeks
 
 ## Adult dogs
 
-Annual or triennial boosters depend on vaccine type and your vet’s protocol. Pawfect adapts reminders to the plan you confirm with your clinic.
+Annual or triennial boosters depend on vaccine type and your vet’s protocol. Pawsoul adapts reminders to the plan you confirm with your clinic.
 
 ## Takeaway
 
-Use Pawfect to track what was given and what’s next — your vet remains the source of medical decisions.
+Use Pawsoul to track what was given and what’s next — your vet remains the source of medical decisions.

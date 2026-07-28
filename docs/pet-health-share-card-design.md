@@ -14,7 +14,7 @@
 
 ## 1. Purpose
 
-Give every Paw-fect user a one-tap way to produce a beautiful, shareable PNG of their pet's identity + current health snapshot, optimized for Instagram Stories and WhatsApp DMs.
+Give every Pawsoul user a one-tap way to produce a beautiful, shareable PNG of their pet's identity + current health snapshot, optimized for Instagram Stories and WhatsApp DMs.
 
 This is the project's single highest-leverage growth feature for v1: pet content goes viral on identity ("look at my Bruno"), not utility ("my dog needs a shot"). The card foregrounds identity and tucks utility into the body.
 
@@ -91,12 +91,12 @@ Sized for a fixed canvas of **1080 × 1350 px** (4:5, the densest IG-Story / IG-
           - `Overdue` — red background (`#fde0e0` / `#8a1a1a`)
        - Item selection (see §6.3 for full ordering): next upcoming (1) + most recent completed (up to 2).
     - Empty state: if the pet has no smart-health records yet, replace the 3 rows with a single centered block:
-       - "Just added Bruno to Paw-fect 🎉"
+       - "Just added Bruno to Pawsoul 🎉"
        - "Vaccines and deworming auto-scheduled below"
        - This still produces a shareable artifact and turns the empty-state into a viral moment.
 3. **Footer band** — ~12% of card height, light separator above.
     - Left: `paw-fect.vercel.app/get` in secondary text color, small.
-    - Right: `🐾 Paw-fect` in brand-dark color, slightly larger.
+    - Right: `🐾 Pawsoul` in brand-dark color, slightly larger.
 
 ### 4.2 Visual fidelity vs. provided mockup
 
@@ -175,7 +175,7 @@ export interface PetHealthCardViewModel {
     | { kind: 'empty'; speciesEmoji: string };
   footer: {
     urlLabel: string;       // "paw-fect.vercel.app/get" in v1
-    brandLabel: string;     // "🐾 Paw-fect"
+    brandLabel: string;     // "🐾 Pawsoul"
     shareUrl: string;       // full URL passed to Share.share message (v1: same as above; v1.1: deep-link)
   };
 }
@@ -250,7 +250,7 @@ Three independent test cases. Easy unit tests.
 ### 6.6 Share message string
 
 ```
-{petName} on Paw-fect 🐾
+{petName} on Pawsoul 🐾
 Next up: {nextLabel} ({nextDetail})
 Track your pet's health: {shareUrl}
 ```
@@ -258,7 +258,7 @@ Track your pet's health: {shareUrl}
 When the snapshot is empty-state, the message is:
 
 ```
-Just added {petName} to Paw-fect 🐾
+Just added {petName} to Pawsoul 🐾
 Auto-scheduled vaccines and deworming for {speciesLabel}.
 Track your pet's health: {shareUrl}
 ```

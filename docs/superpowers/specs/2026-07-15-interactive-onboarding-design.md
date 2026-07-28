@@ -6,7 +6,7 @@
 
 ## Goal
 
-Make the existing Pawfect onboarding more interactive while preserving brand and architecture: theme tokens only, Clean Architecture via settings store, and a familiar 3-feature tour plus a short prefs step.
+Make the existing Pawsoul onboarding more interactive while preserving brand and architecture: theme tokens only, Clean Architecture via settings store, and a familiar 3-feature tour plus a short prefs step.
 
 ## Scope
 
@@ -112,7 +112,7 @@ export interface Settings {
 
 ## Success Criteria
 
-- User can swipe/page and tap through a lively 4-step flow that matches Pawfect theme
+- User can swipe/page and tap through a lively 4-step flow that matches Pawsoul theme
 - Choosing care interests persists across app restarts via settings storage
 - Skip and complete both exit onboarding as today
 - No new native animation dependencies

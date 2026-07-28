@@ -36,7 +36,7 @@ export interface PetHealthCardViewModel {
   footer: {
     /** Visible URL printed on the card footer (kept short, no token). */
     urlLabel: string;
-    /** "🐾 Paw-fect" brand label on the card footer. */
+    /** "🐾 Pawsoul" brand label on the card footer. */
     brandLabel: string;
     /**
      * Full URL appended to the share-sheet caption.

@@ -49,7 +49,7 @@ export async function POST(request: Request): Promise<NextResponse> {
           await resend.emails.send({
             from: getFromEmail(),
             to: parsed.data.email,
-            subject: "You're on the Pawfect list",
+            subject: "You're on the Pawsoul list",
             text: "Thanks — we'll notify you when the web experience expands.",
           });
         } catch {

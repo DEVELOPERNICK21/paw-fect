@@ -1,10 +1,10 @@
 # AGENTS.md
 
-This file provides guidelines for AI agents operating in the Paw-fect codebase.
+This file provides guidelines for AI agents operating in the Pawsoul codebase.
 
 ## Project Overview
 
-Paw-fect is a React Native mobile app for managing pet care with:
+Pawsoul is a React Native mobile app for managing pet care with:
 
 - **Architecture**: Clean Architecture with Feature-First structure
 - **State Management**: Zustand

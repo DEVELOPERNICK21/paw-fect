@@ -421,7 +421,7 @@ EOF
 
 - [ ] **Step 1: Tips UI (1–2 screens)**
 
-Short “how Pawfect works” (reminders / records) — light reuse of existing imagery/copy, not full old 3-step tour. CTA: “Continue to Pawfect”.
+Short “how Pawsoul works” (reminders / records) — light reuse of existing imagery/copy, not full old 3-step tour. CTA: “Continue to Pawsoul”.
 
 - [ ] **Step 2: Complete**
 

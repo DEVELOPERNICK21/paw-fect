@@ -622,7 +622,7 @@ export const PetProfileScreen: React.FC = () => {
         style={[styles.safeArea, { backgroundColor: colors.backgroundAlt }]}
       >
         <HomeHeader
-          title="Pawfect"
+          title="Pawsoul"
           onPressMenu={goSettings}
           onPressProfile={goSettings}
           theme={theme}
@@ -661,7 +661,7 @@ export const PetProfileScreen: React.FC = () => {
         style={[styles.safeArea, { backgroundColor: colors.backgroundAlt }]}
       >
         <HomeHeader
-          title="Pawfect"
+          title="Pawsoul"
           onPressMenu={goSettings}
           onPressProfile={goSettings}
           theme={theme}
@@ -709,7 +709,7 @@ export const PetProfileScreen: React.FC = () => {
       style={[styles.safeArea, { backgroundColor: colors.backgroundAlt }]}
     >
       <HomeHeader
-        title="Pawfect"
+        title="Pawsoul"
         onPressMenu={goSettings}
         onPressProfile={goSettings}
         theme={theme}

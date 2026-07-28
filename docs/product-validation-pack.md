@@ -1,4 +1,4 @@
-# Paw-fect Product Validation Pack
+# Pawsoul Product Validation Pack
 
 Living reference for validating the app idea with users, investors, or teammates. Derived from codebase docs and feature direction as of 2026.
 
@@ -6,7 +6,7 @@ Living reference for validating the app idea with users, investors, or teammates
 
 ## 1) Product In One Line
 
-**Paw-fect** is a **mobile pet care companion** that helps pet parents keep pets healthy through **profiles, smart health schedules, reminders, and notifications**, with an offline-first experience and a social sharing loop.
+**Pawsoul** is a **mobile pet care companion** that helps pet parents keep pets healthy through **profiles, smart health schedules, reminders, and notifications**, with an offline-first experience and a social sharing loop.
 
 *(Internal docs also use "Pet Perfect" — same product.)*
 
@@ -178,11 +178,11 @@ Test these messages with users:
 ## 15) ICP + Positioning Statement (Draft)
 
 **For** busy pet parents (especially new or multi-pet households),  
-**Paw-fect** is the pet health routine app  
+**Pawsoul** is the pet health routine app  
 **that** automatically structures vaccines, deworming, and reminders and keeps you on track—even offline—  
 **while** turning milestones into shareable moments.
 
-**Unlike** generic reminder apps, Paw-fect encodes species- and age-aware care schedules and surfaces what matters today on one home screen.
+**Unlike** generic reminder apps, Pawsoul encodes species- and age-aware care schedules and surfaces what matters today on one home screen.
 
 ---
 

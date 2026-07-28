@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Features",
   description:
-    "Vaccination schedules, deworming, pet journey, health records, reminders, and offline sync in Pawfect.",
+    "Vaccination schedules, deworming, pet journey, health records, reminders, and offline sync in Pawsoul.",
 };
 
 export default function FeaturesPage(): React.ReactElement {
@@ -15,7 +15,7 @@ export default function FeaturesPage(): React.ReactElement {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <h1 className="text-4xl font-bold text-stone-900 dark:text-stone-50">Features</h1>
         <p className="mt-4 max-w-2xl text-lg text-stone-600 dark:text-stone-400">
-          Deep dive into how Pawfect keeps dog and cat health on track, from first vaccine to senior care.
+          Deep dive into how Pawsoul keeps dog and cat health on track, from first vaccine to senior care.
         </p>
 
         <section id="vaccines" className="mt-16 scroll-mt-24">
@@ -62,7 +62,7 @@ export default function FeaturesPage(): React.ReactElement {
         <section id="deworming" className="mt-20 scroll-mt-24">
           <h2 className="text-2xl font-bold text-stone-900 dark:text-stone-50">Deworming timeline</h2>
           <p className="mt-2 text-stone-600 dark:text-stone-400">
-            Intervals change with age and lifestyle. Pawfect surfaces the next due window and keeps history in one place.
+            Intervals change with age and lifestyle. Pawsoul surfaces the next due window and keeps history in one place.
           </p>
           <div className="mt-8 h-2 w-full rounded-full bg-gradient-to-r from-primary/40 via-primary to-primary/40" />
         </section>

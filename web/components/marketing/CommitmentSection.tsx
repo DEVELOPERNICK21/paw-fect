@@ -9,7 +9,7 @@ const reasons = [
   {
     icon: Clock3,
     title: "Small commitment, clear payoff",
-    body: "Add your pet once. Pawfect builds the care timeline so you are not rebuilding it every month.",
+    body: "Add your pet once. Pawsoul builds the care timeline so you are not rebuilding it every month.",
   },
   {
     icon: ShieldCheck,

@@ -1,13 +1,13 @@
-# Pawfect — AI Agent Robustness Prompt
+# Pawsoul — AI Agent Robustness Prompt
 
 > Paste this entire document as context when instructing your coding agent to write tests,
-> review logic, or harden validation in the Pawfect codebase.
+> review logic, or harden validation in the Pawsoul codebase.
 
 ---
 
 ## 1. Product context (why correctness matters here)
 
-Pawfect is the operating system for preventive pet care — its entire value proposition is that
+Pawsoul is the operating system for preventive pet care — its entire value proposition is that
 owners follow the schedule and nothing falls through the cracks. A validation bug is not a
 minor UX issue: it means a pet misses a vaccine dose or a deworming treatment. Every edge
 case below must be treated as a patient safety issue, not a polish task.

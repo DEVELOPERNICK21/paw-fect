@@ -130,7 +130,7 @@ export const OnboardingScreen: React.FC = () => {
           </Pressable>
 
           <Text style={[styles.navTitle, { fontFamily: fontFamilies.bold }]}>
-            Pawfect
+            Pawsoul
           </Text>
 
           <View style={styles.navIconSpacer} />
@@ -608,7 +608,7 @@ export const OnboardingScreen: React.FC = () => {
                       { fontFamily: fontFamilies.bold },
                     ]}
                   >
-                    Pawfect Premium Included
+                    Pawsoul Premium Included
                   </Text>
                   <Text
                     style={[

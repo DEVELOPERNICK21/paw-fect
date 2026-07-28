@@ -8,7 +8,7 @@ export async function showLoginWelcomeNotification(input: {
   await notificationService.displayImmediateNotification({
     id: 'session-welcome',
     title: `Welcome back, ${name}`,
-    body: 'Open Pawfect to check on your pets and today’s care.',
+    body: 'Open Pawsoul to check on your pets and today’s care.',
     data: { kind: 'loginWelcome' },
   });
 }
