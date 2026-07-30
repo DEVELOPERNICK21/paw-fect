@@ -7,3 +7,7 @@
 ## 2026-06-10 - Callback Stability in Lists
 **Learning:** Even with `React.memo`, list items re-render if the parent passes inline arrow functions as callbacks. Per-item closures (e.g., `() => onPress(item)`) create new references on every parent render.
 **Action:** Update child component callback signatures to pass the item/record back to the parent (e.g., `onPress: (item: T) => void`). This allows the parent to provide a single stable `useCallback` reference for all items in the list, effectively preventing re-renders.
+
+## 2026-06-17 - Zustand Subscription and Selector Optimization Pattern
+**Learning:** Subscribing to stable action or getter functions via store hooks registers unnecessary listeners on store changes. Also, subscribing to unfiltered and unsorted arrays (like `records`) causes the component to re-render on *any* record update, even for other pets.
+**Action:** Retrieve stable actions directly via `useStore.getState().actionName` to eliminate listener registrations. Move array filtering and sorting transformations directly into a selector hook wrapped in `useShallow` so the component only re-renders when the transformed result changes shallowly.
