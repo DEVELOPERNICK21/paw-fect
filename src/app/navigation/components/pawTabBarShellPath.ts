@@ -8,7 +8,12 @@ export type PawTabBarShellParams = {
 
 export const DEFAULT_TAB_BAR_CORNER_RADIUS = 28;
 export const DEFAULT_TAB_BAR_SCOOP_RADIUS = 38;
-export const DEFAULT_TAB_BAR_SCOOP_DEPTH = 26;
+/**
+ * Depth of the top scoop cutout. Kept equal to `FAB_SIZE - FAB_OVERHANG`
+ * (58 - 30 = 28) in `PawTabBar.tsx` so the FAB's lowest point lands right at
+ * the cavity boundary instead of clipping into the bar fill near center.
+ */
+export const DEFAULT_TAB_BAR_SCOOP_DEPTH = 28;
 
 /**
  * Closed SVG path for a floating tab bar with rounded ends and a center scoop.
