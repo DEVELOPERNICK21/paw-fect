@@ -1,5 +1,13 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 
@@ -7,6 +15,7 @@ import { useAppTabBarInset } from '../../../../app/navigation/layout';
 import type { ReminderListRootNavigation } from '../../../../app/navigation/types';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
 import { useTheme, type Theme } from '../../../../shared/hooks/useTheme';
+import type { Reminder } from '../../domain/models/Reminder';
 import { useReminderStore } from '../../store/reminderStore';
 
 const iconByType: Record<
@@ -59,6 +68,20 @@ const createStyles = ({ colors }: Pick<Theme, 'colors'>) =>
       paddingTop: 12,
       paddingBottom: 12,
       gap: 12,
+      flexGrow: 1,
+    },
+    centered: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 24,
+      minHeight: 200,
+    },
+    errorText: {
+      textAlign: 'center',
+      fontSize: 14,
+      lineHeight: 20,
+      color: colors.danger,
     },
     emptyState: {
       marginTop: 80,
@@ -99,6 +122,7 @@ const createStyles = ({ colors }: Pick<Theme, 'colors'>) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
+      marginBottom: 12,
     },
     cardMain: {
       flex: 1,
@@ -137,7 +161,11 @@ export const ReminderListScreen: React.FC = () => {
   const navigation = useNavigation<ReminderListRootNavigation>();
   const tabBarInset = useAppTabBarInset();
   const { fontFamilies, colors } = useTheme();
-  const { reminders, loadReminders, deleteReminder } = useReminderStore();
+  const reminders = useReminderStore(s => s.reminders);
+  const loading = useReminderStore(s => s.loading);
+  const error = useReminderStore(s => s.error);
+  const loadReminders = useReminderStore(s => s.loadReminders);
+  const deleteReminder = useReminderStore(s => s.deleteReminder);
 
   const styles = useMemo(() => createStyles({ colors }), [colors]);
 
@@ -164,6 +192,97 @@ export const ReminderListScreen: React.FC = () => {
   useEffect(() => {
     loadReminders().catch(() => {});
   }, [loadReminders]);
+
+  const renderReminder = useCallback(
+    ({ item: reminder }: { item: Reminder }) => (
+      <View style={styles.card}>
+        <Pressable
+          style={styles.cardMain}
+          onPress={() =>
+            navigation.navigate('ReminderDetail', {
+              reminderId: reminder.id,
+            })
+          }
+          accessibilityRole="button"
+          accessibilityLabel={`Open reminder ${reminder.title}`}
+        >
+          <View style={styles.iconWrap}>
+            <MaterialIcon
+              name={iconByType[reminder.type] ?? 'add_circle'}
+              size={20}
+              color={colors.accent}
+            />
+          </View>
+          <View style={styles.textWrap}>
+            <Text style={[styles.cardTitle, { fontFamily: fontFamilies.bold }]}>
+              {reminder.title}
+            </Text>
+            <Text
+              style={[styles.cardMeta, { fontFamily: fontFamilies.medium }]}
+            >
+              {reminder.date} • {reminder.time}
+            </Text>
+          </View>
+          <MaterialIcon
+            name="chevron_right"
+            size={20}
+            color={colors.text.subdued}
+          />
+        </Pressable>
+        <Pressable
+          style={styles.deleteBtn}
+          onPress={() => confirmDelete(reminder.id, reminder.title)}
+          accessibilityRole="button"
+          accessibilityLabel={`Delete reminder ${reminder.title}`}
+        >
+          <MaterialIcon name="delete" size={20} color={colors.danger} />
+        </Pressable>
+      </View>
+    ),
+    [colors, confirmDelete, fontFamilies, navigation, styles],
+  );
+
+  const listEmpty = useMemo(() => {
+    if (loading) {
+      return (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      );
+    }
+    if (error) {
+      return (
+        <View style={styles.centered}>
+          <Text style={[styles.errorText, { fontFamily: fontFamilies.medium }]}>
+            {error}
+          </Text>
+        </View>
+      );
+    }
+    return (
+      <View style={styles.emptyState}>
+        <Text style={[styles.emptyTitle, { fontFamily: fontFamilies.bold }]}>
+          No reminders yet
+        </Text>
+        <Text
+          style={[styles.emptySubtitle, { fontFamily: fontFamilies.medium }]}
+        >
+          Quick extras — vet follow-ups, grooming, anything you want nudged
+          about.
+        </Text>
+        <Pressable
+          style={styles.primaryBtn}
+          onPress={() => navigation.navigate('AddReminder')}
+        >
+          <Text
+            style={[styles.primaryBtnText, { fontFamily: fontFamilies.bold }]}
+          >
+            Add reminder
+          </Text>
+        </Pressable>
+      </View>
+    );
+  }, [colors.primary, error, fontFamilies, loading, navigation, styles]);
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
@@ -195,99 +314,17 @@ export const ReminderListScreen: React.FC = () => {
         </Pressable>
       </View>
 
-      <ScrollView
+      <FlatList
+        data={loading || error ? [] : reminders}
+        keyExtractor={item => item.id}
+        renderItem={renderReminder}
         contentContainerStyle={[
           styles.content,
           { paddingBottom: tabBarInset + 12 },
         ]}
         showsVerticalScrollIndicator={false}
-      >
-        {reminders.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text
-              style={[styles.emptyTitle, { fontFamily: fontFamilies.bold }]}
-            >
-              No reminders yet
-            </Text>
-            <Text
-              style={[
-                styles.emptySubtitle,
-                { fontFamily: fontFamilies.medium },
-              ]}
-            >
-              Quick extras — vet follow-ups, grooming, anything you want nudged
-              about.
-            </Text>
-            <Pressable
-              style={styles.primaryBtn}
-              onPress={() => navigation.navigate('AddReminder')}
-            >
-              <Text
-                style={[
-                  styles.primaryBtnText,
-                  { fontFamily: fontFamilies.bold },
-                ]}
-              >
-                Add reminder
-              </Text>
-            </Pressable>
-          </View>
-        ) : (
-          reminders.map(reminder => (
-            <View key={reminder.id} style={styles.card}>
-              <Pressable
-                style={styles.cardMain}
-                onPress={() =>
-                  navigation.navigate('ReminderDetail', {
-                    reminderId: reminder.id,
-                  })
-                }
-                accessibilityRole="button"
-                accessibilityLabel={`Open reminder ${reminder.title}`}
-              >
-                <View style={styles.iconWrap}>
-                  <MaterialIcon
-                    name={iconByType[reminder.type] ?? 'add_circle'}
-                    size={20}
-                    color={colors.accent}
-                  />
-                </View>
-                <View style={styles.textWrap}>
-                  <Text
-                    style={[
-                      styles.cardTitle,
-                      { fontFamily: fontFamilies.bold },
-                    ]}
-                  >
-                    {reminder.title}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.cardMeta,
-                      { fontFamily: fontFamilies.medium },
-                    ]}
-                  >
-                    {reminder.date} • {reminder.time}
-                  </Text>
-                </View>
-                <MaterialIcon
-                  name="chevron_right"
-                  size={20}
-                  color={colors.text.subdued}
-                />
-              </Pressable>
-              <Pressable
-                style={styles.deleteBtn}
-                onPress={() => confirmDelete(reminder.id, reminder.title)}
-                accessibilityRole="button"
-                accessibilityLabel={`Delete reminder ${reminder.title}`}
-              >
-                <MaterialIcon name="delete" size={20} color={colors.danger} />
-              </Pressable>
-            </View>
-          ))
-        )}
-      </ScrollView>
+        ListEmptyComponent={listEmpty}
+      />
     </SafeAreaView>
   );
 };

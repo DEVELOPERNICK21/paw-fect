@@ -153,8 +153,11 @@ export const AddReminderScreen: React.FC = () => {
   const theme = useTheme();
   const { colors, spacing, textStyles, fontFamilies, radius } = theme;
   const tabBarInset = useAppTabBarInset();
-  const { createReminderEntry, loading } = useReminderStore();
-  const { pets, activePet, loadPets } = usePetStore();
+  const createReminderEntry = useReminderStore(s => s.createReminderEntry);
+  const loading = useReminderStore(s => s.loading);
+  const pets = usePetStore(s => s.pets);
+  const activePet = usePetStore(s => s.activePet);
+  const loadPets = usePetStore(s => s.loadPets);
 
   const styles = useMemo(
     () => createStyles({ colors, spacing, radius }),

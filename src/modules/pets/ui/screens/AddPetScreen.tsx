@@ -117,6 +117,8 @@ export const AddPetScreen: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [initLoading, setInitLoading] = useState(isEditMode);
   const [editBase, setEditBase] = useState<Pet | null>(null);
+  /** Create: collapsed by default. Edit: opens when milestone data exists. */
+  const [showHealthHistory, setShowHealthHistory] = useState(false);
   const [hasPreviousDeworming, setHasPreviousDeworming] = useState(false);
   const [lastDewormingDate, setLastDewormingDate] = useState('');
   const [lastDewormingUnknown, setLastDewormingUnknown] = useState(false);
@@ -144,6 +146,7 @@ export const AddPetScreen: React.FC = () => {
     if (!isEditMode || !petId) {
       setInitLoading(false);
       setEditBase(null);
+      setShowHealthHistory(false);
       return;
     }
 
@@ -183,20 +186,27 @@ export const AddPetScreen: React.FC = () => {
           .getLastHealthMilestones(pet.id)
           .then(milestones => {
             if (cancelled) return;
+            let hasAny = false;
             if (milestones.lastDewormingDate) {
+              hasAny = true;
               setHasPreviousDeworming(true);
               setLastDewormingUnknown(false);
               setLastDewormingDate(milestones.lastDewormingDate);
             }
             if (milestones.lastVaccinationDate) {
+              hasAny = true;
               setHasPreviousVaccination(true);
               setLastVaccinationUnknown(false);
               setLastVaccinationDate(milestones.lastVaccinationDate);
             }
             if (milestones.lastRabiesDate) {
+              hasAny = true;
               setHasPreviousRabies(true);
               setLastRabiesUnknown(false);
               setLastRabiesDate(milestones.lastRabiesDate);
+            }
+            if (hasAny) {
+              setShowHealthHistory(true);
             }
           });
         setInitLoading(false);
@@ -615,349 +625,6 @@ export const AddPetScreen: React.FC = () => {
         <View style={styles.formSection}>
           <View>
             <Text
-              style={[styles.sectionLabel, { fontFamily: fontFamilies.bold }]}
-            >
-              Health onboarding
-            </Text>
-            <Text
-              style={[styles.fieldLabelSm, { fontFamily: fontFamilies.semibold }]}
-            >
-              Date of birth {!isEditMode ? '(required)' : '(optional)'}
-            </Text>
-            <DatePickerField
-              value={dob}
-              onChange={setDob}
-              placeholder="YYYY-MM-DD"
-              maximumDate={today}
-            />
-          </View>
-
-          <View>
-            <Text
-              style={[styles.fieldLabelSm, { fontFamily: fontFamilies.semibold }]}
-            >
-              Has your pet been dewormed before?
-            </Text>
-            <View style={styles.genderRow}>
-              <Pressable
-                style={[
-                  styles.genderChip,
-                  !hasPreviousDeworming ? styles.genderChipSelected : undefined,
-                ]}
-                onPress={() => {
-                  setHasPreviousDeworming(false);
-                  setLastDewormingDate('');
-                  setLastDewormingUnknown(false);
-                }}
-                accessibilityRole="button"
-                accessibilityState={{ selected: !hasPreviousDeworming }}
-              >
-                <Text
-                  style={[
-                    styles.genderChipText,
-                    !hasPreviousDeworming
-                      ? styles.genderChipTextSelected
-                      : undefined,
-                    {
-                      fontFamily: !hasPreviousDeworming
-                        ? fontFamilies.bold
-                        : fontFamilies.medium,
-                    },
-                  ]}
-                >
-                  No
-                </Text>
-              </Pressable>
-              <Pressable
-                style={[
-                  styles.genderChip,
-                  hasPreviousDeworming ? styles.genderChipSelected : undefined,
-                ]}
-                onPress={() => setHasPreviousDeworming(true)}
-                accessibilityRole="button"
-                accessibilityState={{ selected: hasPreviousDeworming }}
-              >
-                <Text
-                  style={[
-                    styles.genderChipText,
-                    hasPreviousDeworming
-                      ? styles.genderChipTextSelected
-                      : undefined,
-                    {
-                      fontFamily: hasPreviousDeworming
-                        ? fontFamilies.bold
-                        : fontFamilies.medium,
-                    },
-                  ]}
-                >
-                  Yes
-                </Text>
-              </Pressable>
-            </View>
-            {hasPreviousDeworming ? (
-              <View style={{ marginTop: 12, gap: 10 }}>
-                <Pressable
-                  onPress={() => {
-                    setLastDewormingUnknown(v => {
-                      const next = !v;
-                      if (next) {
-                        setLastDewormingDate('');
-                      }
-                      return next;
-                    });
-                  }}
-                  style={styles.genderClear}
-                >
-                  <Text
-                    style={{
-                      fontFamily: fontFamilies.medium,
-                      color: lastDewormingUnknown
-                        ? colors.accent
-                        : colors.text.subdued,
-                    }}
-                  >
-                    I don&apos;t know the date
-                  </Text>
-                </Pressable>
-                {!lastDewormingUnknown ? (
-                  <>
-                    <Text
-                      style={[
-                        styles.fieldLabelSm,
-                        { fontFamily: fontFamilies.semibold },
-                      ]}
-                    >
-                      Last deworming date
-                    </Text>
-                    <DatePickerField
-                      value={lastDewormingDate}
-                      onChange={setLastDewormingDate}
-                      placeholder="YYYY-MM-DD"
-                      maximumDate={today}
-                    />
-                  </>
-                ) : null}
-              </View>
-            ) : null}
-          </View>
-
-          <View>
-            <Text
-              style={[styles.fieldLabelSm, { fontFamily: fontFamilies.semibold }]}
-            >
-              Has your pet received vaccinations before?
-            </Text>
-            <View style={styles.genderRow}>
-              <Pressable
-                style={[
-                  styles.genderChip,
-                  !hasPreviousVaccination ? styles.genderChipSelected : undefined,
-                ]}
-                onPress={() => {
-                  setHasPreviousVaccination(false);
-                  setLastVaccinationDate('');
-                  setLastVaccinationUnknown(false);
-                  setHasPreviousRabies(false);
-                  setLastRabiesDate('');
-                  setLastRabiesUnknown(false);
-                }}
-                accessibilityRole="button"
-                accessibilityState={{ selected: !hasPreviousVaccination }}
-              >
-                <Text
-                  style={[
-                    styles.genderChipText,
-                    !hasPreviousVaccination
-                      ? styles.genderChipTextSelected
-                      : undefined,
-                    {
-                      fontFamily: !hasPreviousVaccination
-                        ? fontFamilies.bold
-                        : fontFamilies.medium,
-                    },
-                  ]}
-                >
-                  No
-                </Text>
-              </Pressable>
-              <Pressable
-                style={[
-                  styles.genderChip,
-                  hasPreviousVaccination ? styles.genderChipSelected : undefined,
-                ]}
-                onPress={() => setHasPreviousVaccination(true)}
-                accessibilityRole="button"
-                accessibilityState={{ selected: hasPreviousVaccination }}
-              >
-                <Text
-                  style={[
-                    styles.genderChipText,
-                    hasPreviousVaccination
-                      ? styles.genderChipTextSelected
-                      : undefined,
-                    {
-                      fontFamily: hasPreviousVaccination
-                        ? fontFamilies.bold
-                        : fontFamilies.medium,
-                    },
-                  ]}
-                >
-                  Yes
-                </Text>
-              </Pressable>
-            </View>
-            {hasPreviousVaccination ? (
-              <View style={{ marginTop: 12, gap: 10 }}>
-                <Pressable
-                  onPress={() => {
-                    setLastVaccinationUnknown(v => {
-                      const next = !v;
-                      if (next) {
-                        setLastVaccinationDate('');
-                      }
-                      return next;
-                    });
-                  }}
-                  style={styles.genderClear}
-                >
-                  <Text
-                    style={{
-                      fontFamily: fontFamilies.medium,
-                      color: lastVaccinationUnknown
-                        ? colors.accent
-                        : colors.text.subdued,
-                    }}
-                  >
-                    I don&apos;t know the date
-                  </Text>
-                </Pressable>
-                {!lastVaccinationUnknown ? (
-                  <>
-                    <Text
-                      style={[
-                        styles.fieldLabelSm,
-                        { fontFamily: fontFamilies.semibold },
-                      ]}
-                    >
-                      Last vaccination date
-                    </Text>
-                    <DatePickerField
-                      value={lastVaccinationDate}
-                      onChange={setLastVaccinationDate}
-                      placeholder="YYYY-MM-DD"
-                      maximumDate={today}
-                    />
-                  </>
-                ) : null}
-              </View>
-            ) : null}
-          </View>
-
-          <View>
-            <Text
-              style={[styles.fieldLabelSm, { fontFamily: fontFamilies.semibold }]}
-            >
-              Has your pet received rabies vaccine?
-            </Text>
-            <View style={styles.genderRow}>
-              <Pressable
-                style={[
-                  styles.genderChip,
-                  !hasPreviousRabies ? styles.genderChipSelected : undefined,
-                ]}
-                onPress={() => {
-                  setHasPreviousRabies(false);
-                  setLastRabiesDate('');
-                  setLastRabiesUnknown(false);
-                }}
-                accessibilityRole="button"
-                accessibilityState={{ selected: !hasPreviousRabies }}
-              >
-                <Text
-                  style={[
-                    styles.genderChipText,
-                    !hasPreviousRabies ? styles.genderChipTextSelected : undefined,
-                    {
-                      fontFamily: !hasPreviousRabies
-                        ? fontFamilies.bold
-                        : fontFamilies.medium,
-                    },
-                  ]}
-                >
-                  No
-                </Text>
-              </Pressable>
-              <Pressable
-                style={[
-                  styles.genderChip,
-                  hasPreviousRabies ? styles.genderChipSelected : undefined,
-                ]}
-                onPress={() => setHasPreviousRabies(true)}
-                accessibilityRole="button"
-                accessibilityState={{ selected: hasPreviousRabies }}
-              >
-                <Text
-                  style={[
-                    styles.genderChipText,
-                    hasPreviousRabies ? styles.genderChipTextSelected : undefined,
-                    {
-                      fontFamily: hasPreviousRabies
-                        ? fontFamilies.bold
-                        : fontFamilies.medium,
-                    },
-                  ]}
-                >
-                  Yes
-                </Text>
-              </Pressable>
-            </View>
-            {hasPreviousRabies ? (
-              <View style={{ marginTop: 12, gap: 10 }}>
-                <Pressable
-                  onPress={() => {
-                    setLastRabiesUnknown(v => {
-                      const next = !v;
-                      if (next) {
-                        setLastRabiesDate('');
-                      }
-                      return next;
-                    });
-                  }}
-                  style={styles.genderClear}
-                >
-                  <Text
-                    style={{
-                      fontFamily: fontFamilies.medium,
-                      color: lastRabiesUnknown ? colors.accent : colors.text.subdued,
-                    }}
-                  >
-                    I don&apos;t know the date
-                  </Text>
-                </Pressable>
-                {!lastRabiesUnknown ? (
-                  <>
-                    <Text
-                      style={[
-                        styles.fieldLabelSm,
-                        { fontFamily: fontFamilies.semibold },
-                      ]}
-                    >
-                      Last rabies vaccine date
-                    </Text>
-                    <DatePickerField
-                      value={lastRabiesDate}
-                      onChange={setLastRabiesDate}
-                      placeholder="YYYY-MM-DD"
-                      maximumDate={today}
-                    />
-                  </>
-                ) : null}
-              </View>
-            ) : null}
-          </View>
-
-          <View>
-            <Text
               style={[styles.fieldLabel, { fontFamily: fontFamilies.semibold }]}
             >
               Pet Name
@@ -1014,6 +681,82 @@ export const AddPetScreen: React.FC = () => {
 
           <View>
             <Text
+              style={[styles.fieldLabelSm, { fontFamily: fontFamilies.semibold }]}
+            >
+              Date of birth {!isEditMode ? '(required)' : '(optional)'}
+            </Text>
+            <DatePickerField
+              value={dob}
+              onChange={setDob}
+              placeholder="YYYY-MM-DD"
+              maximumDate={today}
+            />
+          </View>
+
+          <View>
+            <Text
+              style={[
+                styles.fieldLabelSm,
+                { fontFamily: fontFamilies.semibold },
+              ]}
+            >
+              Gender (optional)
+            </Text>
+            <View style={styles.genderRow}>
+              {(['male', 'female'] as const).map(next => {
+                const selected = gender === next;
+                const label =
+                  next === 'male'
+                    ? 'Male'
+                    : next === 'female'
+                    ? 'Female'
+                    : '';
+                if (!label) {
+                  return null;
+                }
+                return (
+                  <Pressable
+                    key={next}
+                    style={[
+                      styles.genderChip,
+                      selected ? styles.genderChipSelected : undefined,
+                    ]}
+                    onPress={() => setGender(next)}
+                  >
+                    <Text
+                      style={[
+                        styles.genderChipText,
+                        selected ? styles.genderChipTextSelected : undefined,
+                        {
+                          fontFamily: selected
+                            ? fontFamilies.bold
+                            : fontFamilies.medium,
+                        },
+                      ]}
+                    >
+                      {label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Pressable
+              onPress={() => setGender('')}
+              style={styles.genderClear}
+            >
+              <Text
+                style={{
+                  fontFamily: fontFamilies.medium,
+                  color: colors.text.subdued,
+                }}
+              >
+                Clear
+              </Text>
+            </Pressable>
+          </View>
+
+          <View>
+            <Text
               style={[styles.fieldLabel, { fontFamily: fontFamilies.semibold }]}
             >
               Breed (Optional)
@@ -1026,75 +769,452 @@ export const AddPetScreen: React.FC = () => {
               style={[styles.textInput, { fontFamily: fontFamilies.regular }]}
             />
           </View>
-          <View style={{ gap: 14 }}>
-            <View>
-              <Text
-                style={[styles.sectionLabel, { fontFamily: fontFamilies.bold }]}
-              >
-                Core Identity
-              </Text>
-            </View>
 
-            <View>
+          <View style={styles.healthHistoryBlock}>
+            <Pressable
+              onPress={() => setShowHealthHistory(v => !v)}
+              style={styles.healthHistoryToggle}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: showHealthHistory }}
+              accessibilityLabel="Add vaccine and deworming history (optional)"
+            >
               <Text
                 style={[
-                  styles.fieldLabelSm,
-                  { fontFamily: fontFamilies.semibold },
+                  styles.healthHistoryToggleText,
+                  { fontFamily: fontFamilies.semibold, color: colors.accent },
                 ]}
               >
-                Gender (optional)
+                {showHealthHistory
+                  ? 'Hide vaccine & deworming history'
+                  : 'Add vaccine & deworming history (optional)'}
               </Text>
-              <View style={styles.genderRow}>
-                {(['male', 'female'] as const).map(next => {
-                  const selected = gender === next;
-                  const label =
-                    next === 'male'
-                      ? 'Male'
-                      : next === 'female'
-                      ? 'Female'
-                      : '';
-                  if (!label) {
-                    return null;
-                  }
-                  return (
+              <Text
+                style={{
+                  fontFamily: fontFamilies.medium,
+                  color: colors.text.subdued,
+                  fontSize: 12,
+                }}
+              >
+                {showHealthHistory ? '▲' : '▼'}
+              </Text>
+            </Pressable>
+            {!showHealthHistory && !isEditMode ? (
+              <Text
+                style={[
+                  styles.fieldHint,
+                  {
+                    color: colors.text.subdued,
+                    fontFamily: fontFamilies.regular,
+                    marginBottom: 0,
+                  },
+                ]}
+              >
+                You can add this later from the pet profile. We&apos;ll still set
+                up a smart care schedule.
+              </Text>
+            ) : null}
+
+            {showHealthHistory ? (
+              <View style={styles.healthHistoryFields}>
+                <View>
+                  <Text
+                    style={[
+                      styles.fieldLabelSm,
+                      { fontFamily: fontFamilies.semibold },
+                    ]}
+                  >
+                    Has your pet been dewormed before?
+                  </Text>
+                  <Text
+                    style={[
+                      styles.fieldHint,
+                      {
+                        color: colors.text.subdued,
+                        fontFamily: fontFamilies.regular,
+                      },
+                    ]}
+                  >
+                    Deworming clears intestinal worms that can cause weight loss
+                    or diarrhoea. Most pets need it every 1–3 months.
+                  </Text>
+                  <View style={styles.genderRow}>
                     <Pressable
-                      key={next}
                       style={[
                         styles.genderChip,
-                        selected ? styles.genderChipSelected : undefined,
+                        !hasPreviousDeworming
+                          ? styles.genderChipSelected
+                          : undefined,
                       ]}
-                      onPress={() => setGender(next)}
+                      onPress={() => {
+                        setHasPreviousDeworming(false);
+                        setLastDewormingDate('');
+                        setLastDewormingUnknown(false);
+                      }}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: !hasPreviousDeworming }}
                     >
                       <Text
                         style={[
                           styles.genderChipText,
-                          selected ? styles.genderChipTextSelected : undefined,
+                          !hasPreviousDeworming
+                            ? styles.genderChipTextSelected
+                            : undefined,
                           {
-                            fontFamily: selected
+                            fontFamily: !hasPreviousDeworming
                               ? fontFamilies.bold
                               : fontFamilies.medium,
                           },
                         ]}
                       >
-                        {label}
+                        No
                       </Text>
                     </Pressable>
-                  );
-                })}
+                    <Pressable
+                      style={[
+                        styles.genderChip,
+                        hasPreviousDeworming
+                          ? styles.genderChipSelected
+                          : undefined,
+                      ]}
+                      onPress={() => setHasPreviousDeworming(true)}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: hasPreviousDeworming }}
+                    >
+                      <Text
+                        style={[
+                          styles.genderChipText,
+                          hasPreviousDeworming
+                            ? styles.genderChipTextSelected
+                            : undefined,
+                          {
+                            fontFamily: hasPreviousDeworming
+                              ? fontFamilies.bold
+                              : fontFamilies.medium,
+                          },
+                        ]}
+                      >
+                        Yes
+                      </Text>
+                    </Pressable>
+                  </View>
+                  {hasPreviousDeworming ? (
+                    <View style={{ marginTop: 12, gap: 10 }}>
+                      <Pressable
+                        onPress={() => {
+                          setLastDewormingUnknown(v => {
+                            const next = !v;
+                            if (next) {
+                              setLastDewormingDate('');
+                            }
+                            return next;
+                          });
+                        }}
+                        style={styles.genderClear}
+                      >
+                        <Text
+                          style={{
+                            fontFamily: fontFamilies.medium,
+                            color: lastDewormingUnknown
+                              ? colors.accent
+                              : colors.text.subdued,
+                          }}
+                        >
+                          I don&apos;t know the date
+                        </Text>
+                      </Pressable>
+                      {!lastDewormingUnknown ? (
+                        <>
+                          <Text
+                            style={[
+                              styles.fieldLabelSm,
+                              { fontFamily: fontFamilies.semibold },
+                            ]}
+                          >
+                            Last deworming date
+                          </Text>
+                          <DatePickerField
+                            value={lastDewormingDate}
+                            onChange={setLastDewormingDate}
+                            placeholder="YYYY-MM-DD"
+                            maximumDate={today}
+                          />
+                        </>
+                      ) : null}
+                    </View>
+                  ) : null}
+                </View>
+
+                <View>
+                  <Text
+                    style={[
+                      styles.fieldLabelSm,
+                      { fontFamily: fontFamilies.semibold },
+                    ]}
+                  >
+                    Has your pet received vaccinations before?
+                  </Text>
+                  <Text
+                    style={[
+                      styles.fieldHint,
+                      {
+                        color: colors.text.subdued,
+                        fontFamily: fontFamilies.regular,
+                      },
+                    ]}
+                  >
+                    Core vaccines (DHPP for dogs, FVRCP for cats) protect against
+                    serious illnesses. Enter the last dose date if you know it.
+                  </Text>
+                  <View style={styles.genderRow}>
+                    <Pressable
+                      style={[
+                        styles.genderChip,
+                        !hasPreviousVaccination
+                          ? styles.genderChipSelected
+                          : undefined,
+                      ]}
+                      onPress={() => {
+                        setHasPreviousVaccination(false);
+                        setLastVaccinationDate('');
+                        setLastVaccinationUnknown(false);
+                        setHasPreviousRabies(false);
+                        setLastRabiesDate('');
+                        setLastRabiesUnknown(false);
+                      }}
+                      accessibilityRole="button"
+                      accessibilityState={{
+                        selected: !hasPreviousVaccination,
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.genderChipText,
+                          !hasPreviousVaccination
+                            ? styles.genderChipTextSelected
+                            : undefined,
+                          {
+                            fontFamily: !hasPreviousVaccination
+                              ? fontFamilies.bold
+                              : fontFamilies.medium,
+                          },
+                        ]}
+                      >
+                        No
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      style={[
+                        styles.genderChip,
+                        hasPreviousVaccination
+                          ? styles.genderChipSelected
+                          : undefined,
+                      ]}
+                      onPress={() => setHasPreviousVaccination(true)}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: hasPreviousVaccination }}
+                    >
+                      <Text
+                        style={[
+                          styles.genderChipText,
+                          hasPreviousVaccination
+                            ? styles.genderChipTextSelected
+                            : undefined,
+                          {
+                            fontFamily: hasPreviousVaccination
+                              ? fontFamilies.bold
+                              : fontFamilies.medium,
+                          },
+                        ]}
+                      >
+                        Yes
+                      </Text>
+                    </Pressable>
+                  </View>
+                  {hasPreviousVaccination ? (
+                    <View style={{ marginTop: 12, gap: 10 }}>
+                      <Pressable
+                        onPress={() => {
+                          setLastVaccinationUnknown(v => {
+                            const next = !v;
+                            if (next) {
+                              setLastVaccinationDate('');
+                            }
+                            return next;
+                          });
+                        }}
+                        style={styles.genderClear}
+                      >
+                        <Text
+                          style={{
+                            fontFamily: fontFamilies.medium,
+                            color: lastVaccinationUnknown
+                              ? colors.accent
+                              : colors.text.subdued,
+                          }}
+                        >
+                          I don&apos;t know the date
+                        </Text>
+                      </Pressable>
+                      {!lastVaccinationUnknown ? (
+                        <>
+                          <Text
+                            style={[
+                              styles.fieldLabelSm,
+                              { fontFamily: fontFamilies.semibold },
+                            ]}
+                          >
+                            Last vaccination date
+                          </Text>
+                          <DatePickerField
+                            value={lastVaccinationDate}
+                            onChange={setLastVaccinationDate}
+                            placeholder="YYYY-MM-DD"
+                            maximumDate={today}
+                          />
+                        </>
+                      ) : null}
+                    </View>
+                  ) : null}
+                </View>
+
+                <View>
+                  <Text
+                    style={[
+                      styles.fieldLabelSm,
+                      { fontFamily: fontFamilies.semibold },
+                    ]}
+                  >
+                    Has your pet received rabies vaccine?
+                  </Text>
+                  <Text
+                    style={[
+                      styles.fieldHint,
+                      {
+                        color: colors.text.subdued,
+                        fontFamily: fontFamilies.regular,
+                      },
+                    ]}
+                  >
+                    Rabies vaccine is required in India. It protects against a
+                    fatal disease that can spread to humans.
+                  </Text>
+                  <View style={styles.genderRow}>
+                    <Pressable
+                      style={[
+                        styles.genderChip,
+                        !hasPreviousRabies
+                          ? styles.genderChipSelected
+                          : undefined,
+                      ]}
+                      onPress={() => {
+                        setHasPreviousRabies(false);
+                        setLastRabiesDate('');
+                        setLastRabiesUnknown(false);
+                      }}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: !hasPreviousRabies }}
+                    >
+                      <Text
+                        style={[
+                          styles.genderChipText,
+                          !hasPreviousRabies
+                            ? styles.genderChipTextSelected
+                            : undefined,
+                          {
+                            fontFamily: !hasPreviousRabies
+                              ? fontFamilies.bold
+                              : fontFamilies.medium,
+                          },
+                        ]}
+                      >
+                        No
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      style={[
+                        styles.genderChip,
+                        hasPreviousRabies
+                          ? styles.genderChipSelected
+                          : undefined,
+                      ]}
+                      onPress={() => setHasPreviousRabies(true)}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: hasPreviousRabies }}
+                    >
+                      <Text
+                        style={[
+                          styles.genderChipText,
+                          hasPreviousRabies
+                            ? styles.genderChipTextSelected
+                            : undefined,
+                          {
+                            fontFamily: hasPreviousRabies
+                              ? fontFamilies.bold
+                              : fontFamilies.medium,
+                          },
+                        ]}
+                      >
+                        Yes
+                      </Text>
+                    </Pressable>
+                  </View>
+                  {hasPreviousRabies ? (
+                    <View style={{ marginTop: 12, gap: 10 }}>
+                      <Pressable
+                        onPress={() => {
+                          setLastRabiesUnknown(v => {
+                            const next = !v;
+                            if (next) {
+                              setLastRabiesDate('');
+                            }
+                            return next;
+                          });
+                        }}
+                        style={styles.genderClear}
+                      >
+                        <Text
+                          style={{
+                            fontFamily: fontFamilies.medium,
+                            color: lastRabiesUnknown
+                              ? colors.accent
+                              : colors.text.subdued,
+                          }}
+                        >
+                          I don&apos;t know the date
+                        </Text>
+                      </Pressable>
+                      {!lastRabiesUnknown ? (
+                        <>
+                          <Text
+                            style={[
+                              styles.fieldLabelSm,
+                              { fontFamily: fontFamilies.semibold },
+                            ]}
+                          >
+                            Last rabies vaccine date
+                          </Text>
+                          <DatePickerField
+                            value={lastRabiesDate}
+                            onChange={setLastRabiesDate}
+                            placeholder="YYYY-MM-DD"
+                            maximumDate={today}
+                          />
+                        </>
+                      ) : null}
+                    </View>
+                  ) : null}
+                </View>
               </View>
-              <Pressable
-                onPress={() => setGender('')}
-                style={styles.genderClear}
+            ) : null}
+          </View>
+
+          <View style={{ gap: 14 }}>
+            <View>
+              <Text
+                style={[styles.sectionLabel, { fontFamily: fontFamilies.bold }]}
               >
-                <Text
-                  style={{
-                    fontFamily: fontFamilies.medium,
-                    color: colors.text.subdued,
-                  }}
-                >
-                  Clear
-                </Text>
-              </Pressable>
+                Lifestyle & region
+              </Text>
             </View>
             <View>
               <Text
@@ -1259,7 +1379,7 @@ export const AddPetScreen: React.FC = () => {
                 ? 'Saving...'
                 : isEditMode
                 ? 'Save changes'
-                : 'Save Pet Profile'}
+                : 'Save pet'}
             </Text>
           </Pressable>
         </View>
@@ -1382,6 +1502,31 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
     lineHeight: 20,
     color: colors.text.heading,
     marginBottom: 8,
+  },
+  fieldHint: {
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 8,
+    marginTop: -4,
+  },
+  healthHistoryBlock: {
+    gap: 10,
+  },
+  healthHistoryToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+  },
+  healthHistoryToggleText: {
+    fontSize: 15,
+    lineHeight: 22,
+    flex: 1,
+    paddingRight: 8,
+  },
+  healthHistoryFields: {
+    gap: 24,
+    paddingTop: 4,
   },
   textInput: {
     height: 56,

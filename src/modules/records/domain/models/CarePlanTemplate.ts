@@ -25,6 +25,8 @@ export interface VaccineRule {
   isOptional?: boolean;
   lifestyleTriggers?: LifestyleType[];
   riskLevel?: LifestyleRiskLevel;
+  /** Skip this vaccine when the pet's care region is in this list. */
+  excludedRegions?: PetRegion[];
 }
 
 export interface RabiesRule {

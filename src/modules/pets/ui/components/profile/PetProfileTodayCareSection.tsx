@@ -9,7 +9,7 @@ import { PetProfileTodayCareRow } from './PetProfileTodayCareRow';
 export interface PetProfileTodayCareSectionProps {
   items: HomeDashboardTodayCareItem[];
   loading: boolean;
-  /** Opens Health tab (smart schedules + notifications); not the manual reminders list. */
+  /** Opens Wellness hub (canonical daily care surface). */
   onPressOpenHealthSchedule: () => void;
 }
 
@@ -34,7 +34,7 @@ export const PetProfileTodayCareSection: React.FC<PetProfileTodayCareSectionProp
             onPress={onPressOpenHealthSchedule}
             accessibilityRole="button"
             hitSlop={8}
-            accessibilityLabel="Open health schedule"
+            accessibilityLabel="Open today's care"
           >
             <AppText
               style={[
@@ -42,7 +42,7 @@ export const PetProfileTodayCareSection: React.FC<PetProfileTodayCareSectionProp
                 { color: colors.primary, fontFamily: fontFamilies.semibold },
               ]}
             >
-              Care schedule
+              Open today&apos;s care
             </AppText>
           </Pressable>
         </View>

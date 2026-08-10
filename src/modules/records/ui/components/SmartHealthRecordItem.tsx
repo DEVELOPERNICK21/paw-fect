@@ -7,6 +7,10 @@ import type { AppColors } from '../../../../shared/theme/colors';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import type { SmartHealthRecord } from '../../domain/models/SmartHealthRecord';
 import { cadenceDisplayLabel } from '../../domain/utils/DewormingEngine';
+import {
+  plainVaccineDisplayName,
+  vaccineProtectionHint,
+} from '../../domain/utils/vaccinePlainLanguage';
 
 export interface SmartHealthRecordItemProps {
   record: SmartHealthRecord;
@@ -162,8 +166,19 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = React
             ]}
             numberOfLines={2}
           >
-            {record.name}
+            {plainVaccineDisplayName(record.name)}
           </AppText>
+          {vaccineProtectionHint(record.family ?? record.name) ? (
+            <AppText
+              style={[
+                textStyles.caption,
+                { color: colors.text.secondary, fontFamily: fontFamilies.regular },
+              ]}
+              numberOfLines={2}
+            >
+              {vaccineProtectionHint(record.family ?? record.name)}
+            </AppText>
+          ) : null}
           <AppText
             style={[
               textStyles.caption,

@@ -52,11 +52,16 @@ export const SettingsScreen: React.FC = () => {
   const tabBarInset = useAppTabBarInset();
   const { fontFamilies, colors, isDarkMode, selectedThemeMode } = useTheme();
   const styles = useMemo(() => createStyles(colors, tabBarInset), [colors, tabBarInset]);
-  const { settings, loadSettings, updateSettings, setThemeMode } = useSettingsStore();
+  const settings = useSettingsStore(s => s.settings);
+  const loadSettings = useSettingsStore(s => s.loadSettings);
+  const updateSettings = useSettingsStore(s => s.updateSettings);
+  const setThemeMode = useSettingsStore(s => s.setThemeMode);
   const relaxedMode = useWellnessStore(s => s.relaxedMode);
   const loadRelaxedMode = useWellnessStore(s => s.loadRelaxedMode);
   const setRelaxedMode = useWellnessStore(s => s.setRelaxedMode);
-  const { logout, loading, user } = useAuthStore();
+  const logout = useAuthStore(s => s.logout);
+  const loading = useAuthStore(s => s.loading);
+  const user = useAuthStore(s => s.user);
   const pets = usePetStore(s => s.pets);
   const loadPets = usePetStore(s => s.loadPets);
   const deletePet = usePetStore(s => s.deletePet);

@@ -7,7 +7,8 @@ import { useTheme } from '../../../../shared/hooks/useTheme';
 
 export const SignupForm: React.FC = () => {
   const { colors, space, textStyles } = useTheme();
-  const { signup, loading } = useAuthStore();
+  const signup = useAuthStore(s => s.signup);
+  const loading = useAuthStore(s => s.loading);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

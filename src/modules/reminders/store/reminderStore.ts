@@ -10,6 +10,7 @@ import { ensureNotificationsReady } from '../../../infrastructure/notifications/
 export interface ReminderState {
   reminders: Reminder[];
   loading: boolean;
+  error: string | null;
   reset: () => void;
   loadReminders: () => Promise<void>;
   createReminder: (reminder: Reminder) => Promise<void>;
@@ -29,13 +30,14 @@ export interface ReminderState {
 export const useReminderStore = create<ReminderState>((set, get) => ({
   reminders: [],
   loading: false,
-  reset: () => set({ reminders: [], loading: false }),
+  error: null,
+  reset: () => set({ reminders: [], loading: false, error: null }),
 
   loadReminders: async () => {
-    set({ loading: true });
+    set({ loading: true, error: null });
     try {
       const reminders = await remindersComposition.getReminders.execute();
-      set({ reminders, loading: false });
+      set({ reminders, loading: false, error: null });
       const granted = await ensureNotificationsReady();
       if (granted) {
         await remindersComposition.syncAllReminderNotifications(reminders);
@@ -43,7 +45,10 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('[reminderStore] loadReminders error', error);
-      set({ loading: false });
+      set({
+        loading: false,
+        error: 'Unable to load reminders. Please try again.',
+      });
     }
   },
 

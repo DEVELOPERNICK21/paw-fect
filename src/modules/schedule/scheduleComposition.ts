@@ -26,6 +26,12 @@ export const scheduleComposition = {
   saveSchedulePreferences: new SaveSchedulePreferences(scheduleRepository),
   markCareBlockDone: new MarkCareBlockDone(scheduleRepository),
   snoozeCareBlock: new SnoozeCareBlock(scheduleRepository),
+  getDailyCompletionPercents: (
+    userId: string,
+    petId: string,
+    dates: string[],
+  ): Promise<Record<string, number | null>> =>
+    scheduleRepository.getDailyCompletionPercents(userId, petId, dates),
   syncScheduleNotifications: async (
     schedule: DailySchedule,
     blocks: DailyCareBlock[],

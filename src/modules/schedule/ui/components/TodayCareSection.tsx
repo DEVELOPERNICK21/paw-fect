@@ -113,6 +113,7 @@ export const TodayCareSection: React.FC<TodayCareSectionProps> = ({
           date={schedule.date}
           completion={completion}
           streakDays={streakDays}
+          isPro={isPro}
         />
       ) : null}
 

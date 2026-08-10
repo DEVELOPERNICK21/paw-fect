@@ -1,5 +1,8 @@
 import { calendarDaysBetweenIsoDates } from '../../../../shared/utils/calendarDate';
-import type { LifestyleType } from '../models/CarePlanTemplate';
+import type { DewormingRule, LifestyleType } from '../models/CarePlanTemplate';
+import { CARE_PLAN_TEMPLATES } from '../models/CarePlanTemplates';
+
+type DewormPetType = 'dog' | 'cat';
 
 export type DewormingSymptom =
   | 'diarrhea'
@@ -110,35 +113,86 @@ const getCalendarAgeMonths = (dateOfBirth: string, asOf: string): number => {
 const generateItemId = (dueDate: string, index: number): string =>
   `deworm-${dueDate}-${index}`;
 
-const EARLY_WEEK_MILESTONES = [2, 4, 6, 8] as const;
-const GROWTH_MONTH_MILESTONES = [3, 4, 5, 6] as const;
+const getDewormingRule = (petType: DewormPetType): DewormingRule =>
+  CARE_PLAN_TEMPLATES[petType].deworming;
 
-const eightWeekDate = (dob: string): string => addWeeks(dob, 8);
-const sixMonthDate = (dob: string): string => addMonths(dob, 6);
+const lifestyleIntervalDays = (
+  rule: DewormingRule,
+  lifestyle: LifestyleType,
+): number => {
+  if (lifestyle === 'outdoor') {
+    return rule.outdoorIntervalDays;
+  }
+  if (lifestyle === 'mixed') {
+    return rule.mixedIntervalDays;
+  }
+  return rule.indoorIntervalDays;
+};
+
+/** Last early-phase week from template `startWeeks` (typically week 8). */
+const earlyPhaseEndWeeks = (rule: DewormingRule): number =>
+  Math.max(...rule.startWeeks);
+
+const earlyPhaseEndDate = (dob: string, rule: DewormingRule): string =>
+  addWeeks(dob, earlyPhaseEndWeeks(rule));
+
+/** Adult phase starts at template `untilMonths` (typically 6). */
+const adultStartDate = (dob: string, rule: DewormingRule): string =>
+  addMonths(dob, rule.untilMonths);
+
+/** Growth monthly milestones from month 3 through `untilMonths` inclusive. */
+const growthMonthMilestones = (rule: DewormingRule): number[] => {
+  const months: number[] = [];
+  for (let month = 3; month <= rule.untilMonths; month += 1) {
+    months.push(month);
+  }
+  return months;
+};
 
 const getAgeInWeeks = (dob: string, asOf: string): number =>
   Math.floor(calendarDaysBetweenIsoDates(dob, asOf) / 7);
 
-const phaseAtDate = (dob: string, d: string): 'early' | 'growth' | 'adult' => {
-  const w8 = eightWeekDate(dob);
-  const m6 = sixMonthDate(dob);
-  if (d <= w8) {
+const phaseAtDate = (
+  dob: string,
+  d: string,
+  rule: DewormingRule,
+): 'early' | 'growth' | 'adult' => {
+  const earlyEnd = earlyPhaseEndDate(dob, rule);
+  const adultStart = adultStartDate(dob, rule);
+  if (d <= earlyEnd) {
     return 'early';
   }
-  if (d < m6) {
+  if (d < adultStart) {
     return 'growth';
   }
   return 'adult';
 };
 
-const adultIntervalMonthsFromLifestyle = (lifestyle: LifestyleType): number => {
-  if (lifestyle === 'outdoor') {
-    return 2;
+/**
+ * Adult interval in whole months from CARE_PLAN_TEMPLATES.
+ * Lifestyle day fields drive outdoor/mixed; indoor uses `adultIntervalMonths`.
+ */
+export const adultIntervalMonthsFromLifestyle = (
+  petType: DewormPetType,
+  lifestyle: LifestyleType,
+): number => {
+  const rule = getDewormingRule(petType);
+  if (lifestyle === 'indoor') {
+    return rule.adultIntervalMonths;
   }
-  if (lifestyle === 'mixed') {
-    return 2;
+  const days = lifestyleIntervalDays(rule, lifestyle);
+  const fromDays = Math.max(1, Math.round(days / 30));
+  return Math.min(fromDays, rule.adultIntervalMonths);
+};
+
+const adultCadenceFromMonths = (months: number): DewormingCadenceKind => {
+  if (months <= 1) {
+    return 'monthly';
   }
-  return 3;
+  if (months <= 2) {
+    return 'every_2_months';
+  }
+  return 'every_3_months';
 };
 
 /** Classify ideal / scheduled dose by pet age phase (for UI + log window). */
@@ -146,20 +200,22 @@ export const getCadenceForDueDate = (
   dob: string,
   dueDate: string,
   lifestyle: LifestyleType,
+  petType: DewormPetType = 'dog',
 ): DewormingCadenceKind => {
   const d = toIsoDateOnly(dob);
   const due = toIsoDateOnly(dueDate);
-  const w8 = eightWeekDate(d);
-  const m6 = sixMonthDate(d);
-  if (due <= w8) {
+  const rule = getDewormingRule(petType);
+  const earlyEnd = earlyPhaseEndDate(d, rule);
+  const adultStart = adultStartDate(d, rule);
+  if (due <= earlyEnd) {
     return 'every_14_days';
   }
-  if (due < m6) {
+  if (due < adultStart) {
     return 'monthly';
   }
-  return adultIntervalMonthsFromLifestyle(lifestyle) <= 2
-    ? 'every_2_months'
-    : 'every_3_months';
+  return adultCadenceFromMonths(
+    adultIntervalMonthsFromLifestyle(petType, lifestyle),
+  );
 };
 
 export const cadenceDisplayLabel = (cadence: DewormingCadenceKind): string => {
@@ -485,27 +541,31 @@ const attachCadence = (
   item: ScheduleItem,
   dob: string,
   lifestyle: LifestyleType,
+  petType: DewormPetType,
 ): ScheduleItem => ({
   ...item,
-  cadence: getCadenceForDueDate(dob, item.dueDate, lifestyle),
+  cadence: getCadenceForDueDate(dob, item.dueDate, lifestyle, petType),
 });
 
 const buildIdealMilestoneDates = (
   dob: string,
   horizonEnd: string,
+  petType: DewormPetType,
 ): string[] => {
+  const rule = getDewormingRule(petType);
   const dates: string[] = [];
-  for (const w of EARLY_WEEK_MILESTONES) {
+  for (const w of rule.startWeeks) {
     dates.push(addWeeks(dob, w));
   }
-  for (const m of GROWTH_MONTH_MILESTONES) {
+  for (const m of growthMonthMilestones(rule)) {
     dates.push(addMonths(dob, m));
   }
-  let adultCursor = sixMonthDate(dob);
+  let adultCursor = adultStartDate(dob, rule);
+  const adultStep = adultIntervalMonthsFromLifestyle(petType, 'indoor');
   const cap = horizonEnd > adultCursor ? horizonEnd : addMonths(dob, 36);
   while (adultCursor <= cap) {
     dates.push(adultCursor);
-    adultCursor = addMonths(adultCursor, 3);
+    adultCursor = addMonths(adultCursor, adultStep);
   }
   return [...new Set(dates)].sort((a, b) => a.localeCompare(b));
 };
@@ -562,13 +622,16 @@ const expandForwardFromCompletion = (
   dob: string,
   today: string,
   lifestyle: LifestyleType,
+  petType: DewormPetType,
   completions: Set<string>,
   startIndex: number,
 ): ScheduleItem[] => {
   const out: ScheduleItem[] = [];
   let idx = startIndex;
-  const m6 = sixMonthDate(dob);
-  const phaseL = phaseAtDate(dob, L);
+  const rule = getDewormingRule(petType);
+  const adultStart = adultStartDate(dob, rule);
+  const earlyEndWeeks = earlyPhaseEndWeeks(rule);
+  const phaseL = phaseAtDate(dob, L, rule);
 
   const push = (dueDate: string): void => {
     if (dueDate <= L) {
@@ -587,7 +650,7 @@ const expandForwardFromCompletion = (
         cursor = next;
         continue;
       }
-      if (getAgeInWeeks(dob, next) > 8) {
+      if (getAgeInWeeks(dob, next) > earlyEndWeeks) {
         break;
       }
       push(next);
@@ -596,7 +659,7 @@ const expandForwardFromCompletion = (
     }
     let gCursor = lastScheduled;
     let nextG = addMonths(gCursor, 1);
-    while (nextG < m6) {
+    while (nextG < adultStart) {
       push(nextG);
       lastScheduled = nextG;
       gCursor = nextG;
@@ -606,7 +669,7 @@ const expandForwardFromCompletion = (
     let cursor = L;
     let nextG = addMonths(cursor, 1);
     let guard = 0;
-    while (nextG < m6 && guard < 24) {
+    while (nextG < adultStart && guard < 24) {
       push(nextG);
       lastScheduled = nextG;
       cursor = nextG;
@@ -615,12 +678,12 @@ const expandForwardFromCompletion = (
     }
   }
 
-  const step = adultIntervalMonthsFromLifestyle(lifestyle);
+  const step = adultIntervalMonthsFromLifestyle(petType, lifestyle);
   let adultAnchor: string;
-  if (phaseL === 'adult' || L >= m6) {
+  if (phaseL === 'adult' || L >= adultStart) {
     adultAnchor = L;
   } else {
-    adultAnchor = lastScheduled > L ? lastScheduled : m6;
+    adultAnchor = lastScheduled > L ? lastScheduled : adultStart;
   }
 
   let nextA = addMonths(adultAnchor, step);
@@ -642,10 +705,11 @@ const collectActionableItems = (
   dob: string,
   today: string,
   lifestyle: LifestyleType,
+  petType: DewormPetType,
   completions: Set<string>,
 ): ScheduleItem[] => {
   const horizonEnd = addMonths(today, 36);
-  const ideal = buildIdealMilestoneDates(dob, horizonEnd);
+  const ideal = buildIdealMilestoneDates(dob, horizonEnd, petType);
   const sortedC = [...completions].sort((a, b) => a.localeCompare(b));
   const lastC = sortedC.length ? sortedC[sortedC.length - 1] : null;
 
@@ -678,6 +742,7 @@ const collectActionableItems = (
     dob,
     today,
     lifestyle,
+    petType,
     completions,
     index,
   );
@@ -735,6 +800,7 @@ export class DewormingEngine {
   execute(input: DewormingInput): DewormingResult {
     const today = toIsoDateOnly(input.todayDate);
     const lifestyle = input.lifestyle;
+    const petType = input.petType;
     const symptoms = input.symptoms ?? [];
     const hasSymptoms = symptoms.length > 0;
 
@@ -748,6 +814,7 @@ export class DewormingEngine {
       dob,
       today,
       lifestyle,
+      petType,
       completionSet,
     );
     const pending = actionable.filter(i => i.status === 'pending');
@@ -766,7 +833,7 @@ export class DewormingEngine {
         ? pending[0] ?? missed[0] ?? null
         : missed[0] ?? pending[0] ?? null;
       if (primary) {
-        nextStep = attachCadence({ ...primary }, dob, lifestyle);
+        nextStep = attachCadence({ ...primary }, dob, lifestyle, petType);
         if (hasSymptoms) {
           urgency = 'critical';
           riskLevel = 'high';
@@ -800,7 +867,7 @@ export class DewormingEngine {
     const upcoming = pending
       .filter(p => nextDue && p.dueDate > nextDue)
       .slice(0, 3)
-      .map(p => attachCadence(p, dob, lifestyle));
+      .map(p => attachCadence(p, dob, lifestyle, petType));
 
     const { confidence, estimated } = computeConfidence(input);
 

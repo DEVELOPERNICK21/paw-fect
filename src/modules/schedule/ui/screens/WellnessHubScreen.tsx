@@ -1,9 +1,13 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
+import type { RouteProp } from '@react-navigation/native';
 
-import type { WellnessHubRootNavigation } from '../../../../app/navigation/types';
+import type {
+  NotificationsStackParamList,
+  WellnessHubRootNavigation,
+} from '../../../../app/navigation/types';
 import { useAppTabBarInset } from '../../../../app/navigation/layout';
 import { getAppSessionUserId } from '../../../../shared/session/appSessionPorts';
 import { AppText } from '../../../../shared/components/AppText';
@@ -21,6 +25,7 @@ import { TodayCareSection } from '../components/TodayCareSection';
 
 export const WellnessHubScreen: React.FC = () => {
   const navigation = useNavigation<WellnessHubRootNavigation>();
+  const route = useRoute<RouteProp<NotificationsStackParamList, 'WellnessHub'>>();
   const tabBarInset = useAppTabBarInset();
   const theme = useTheme();
   const { colors, spacing, radius, textStyles, fontFamilies, shadows } = theme;
@@ -40,8 +45,10 @@ export const WellnessHubScreen: React.FC = () => {
   const hydrateDay = useWellnessStore(state => state.hydrateDay);
   const loadRelaxedMode = useWellnessStore(state => state.loadRelaxedMode);
   const completion = useWellnessStore(state => state.completion);
+  const setSelectedBlockId = useWellnessStore(state => state.setSelectedBlockId);
 
-  const petId = activePet?.id ?? pets[0]?.id;
+  const routePetId = route.params?.petId;
+  const petId = routePetId ?? activePet?.id ?? pets[0]?.id;
   const pet = pets.find(item => item.id === petId);
 
   const syncWellnessDay = useCallback(
@@ -88,6 +95,19 @@ export const WellnessHubScreen: React.FC = () => {
       }
     }, [isPro, loadPets, loadWeekScores, petId, syncWellnessDay]),
   );
+
+  useEffect(() => {
+    if (routePetId && routePetId !== activePet?.id) {
+      void setActivePet(routePetId);
+    }
+  }, [activePet?.id, routePetId, setActivePet]);
+
+  useEffect(() => {
+    const blockId = route.params?.blockId;
+    if (blockId) {
+      setSelectedBlockId(blockId);
+    }
+  }, [route.params?.blockId, setSelectedBlockId]);
 
   const styles = useMemo(
     () =>

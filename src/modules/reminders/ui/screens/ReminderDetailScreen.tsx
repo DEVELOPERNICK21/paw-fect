@@ -220,8 +220,11 @@ export const ReminderDetailScreen: React.FC = () => {
     useRoute<RouteProp<NotificationsStackParamList, 'ReminderDetail'>>();
   const { fontFamilies, colors } = useTheme();
   const tabBarInset = useAppTabBarInset();
-  const { reminders, deleteReminder, loadReminders } = useReminderStore();
-  const { pets, loadPets } = usePetStore();
+  const reminders = useReminderStore(s => s.reminders);
+  const deleteReminder = useReminderStore(s => s.deleteReminder);
+  const loadReminders = useReminderStore(s => s.loadReminders);
+  const pets = usePetStore(s => s.pets);
+  const loadPets = usePetStore(s => s.loadPets);
 
   const styles = useMemo(() => createStyles({ colors }), [colors]);
 

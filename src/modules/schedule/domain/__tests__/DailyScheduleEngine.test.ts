@@ -2,6 +2,7 @@ import {
   DEFAULT_PET_SCHEDULE_PREFERENCES,
   generateDailySchedule,
   resolveFeedingConfig,
+  resolveIndiaWalkSeasonNote,
   resolvePetAgeStage,
 } from '../DailyScheduleEngine';
 import type { PetProfile, PetSchedulePreferences } from '../models/PetProfile';
@@ -208,5 +209,29 @@ describe('DailyScheduleEngine', () => {
     const first = generateDailySchedule(adultDog, DEFAULT_PET_SCHEDULE_PREFERENCES, '2026-05-12');
     const second = generateDailySchedule(adultDog, DEFAULT_PET_SCHEDULE_PREFERENCES, '2026-05-12');
     expect(first.map(block => block.id)).toEqual(second.map(block => block.id));
+  });
+
+  it('[SCH-15] adds hot-season walk guidance for Apr–Jun', () => {
+    expect(resolveIndiaWalkSeasonNote('2026-05-12')).toMatch(/Hot season|pavement/i);
+    const blocks = generateDailySchedule(
+      adultDog,
+      DEFAULT_PET_SCHEDULE_PREFERENCES,
+      '2026-05-12',
+    );
+    expect(findByTitle(blocks, 'Main exercise walk')?.description).toMatch(
+      /Hot season|pavement/i,
+    );
+  });
+
+  it('[SCH-16] adds monsoon walk guidance for Jul–Sep', () => {
+    expect(resolveIndiaWalkSeasonNote('2026-08-01')).toMatch(/Monsoon/i);
+    const blocks = generateDailySchedule(
+      adultDog,
+      DEFAULT_PET_SCHEDULE_PREFERENCES,
+      '2026-08-01',
+    );
+    expect(findByTitle(blocks, 'Morning walk + potty break')?.description).toMatch(
+      /Monsoon/i,
+    );
   });
 });

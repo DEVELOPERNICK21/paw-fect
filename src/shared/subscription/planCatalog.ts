@@ -51,9 +51,10 @@ export const PLAN_CATALOG: Record<PlanKey, PlanDefinition> = {
     maxPets: 3,
     historyMonthsCap: null,
     features: {
-      pdfExport: true,
+      // Flags mirror shipped product — not a marketing wishlist.
+      pdfExport: false,
       offline: true,
-      sharing: true,
+      sharing: false,
       multiUser: false,
       vetPortal: false,
       prioritySupport: false,
@@ -66,11 +67,11 @@ export const PLAN_CATALOG: Record<PlanKey, PlanDefinition> = {
     maxPets: 10,
     historyMonthsCap: null,
     features: {
-      pdfExport: true,
+      pdfExport: false,
       offline: true,
-      sharing: true,
-      multiUser: true,
-      vetPortal: true,
+      sharing: false,
+      multiUser: false,
+      vetPortal: false,
       prioritySupport: true,
     },
   },

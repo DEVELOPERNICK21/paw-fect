@@ -325,7 +325,7 @@ export const AddHealthDetailsScreen: React.FC = () => {
               <Input
                 value={name}
                 onChangeText={setName}
-                placeholder="e.g. Rabies, DHPP"
+                placeholder="e.g. Rabies (required) or core shots (DHPP)"
               />
             </View>
           ) : null}

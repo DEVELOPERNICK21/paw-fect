@@ -82,13 +82,6 @@ export const HomeScreen: React.FC = () => {
     navigation.navigate('NotificationsTab', { screen: 'NotificationInbox' });
   }, [navigation]);
 
-  const goLogWeight = useCallback(() => {
-    navigation.navigate('PetsTab', {
-      screen: 'AddHealthDetails',
-      params: { kind: 'weight' },
-    });
-  }, [navigation]);
-
   const goWellness = useCallback(() => {
     navigation.navigate('NotificationsTab', { screen: 'WellnessHub' });
   }, [navigation]);
@@ -317,8 +310,8 @@ export const HomeScreen: React.FC = () => {
                   items={viewModel.todayCare}
                   loading={viewModel.remindersLoading}
                   onPressAddTask={goAddReminder}
-                  onPressRow={goNotifications}
-                  onPressViewSchedule={goNotifications}
+                  onPressRow={goWellness}
+                  onPressViewSchedule={goWellness}
                   theme={theme}
                 />
               </>

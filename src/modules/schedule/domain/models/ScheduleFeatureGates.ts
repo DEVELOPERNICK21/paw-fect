@@ -1,3 +1,7 @@
+/**
+ * Feature IDs that are actually shipped and gated in product.
+ * Do not list aspirational PRO items here — paywall/copy must match runtime.
+ */
 export const SCHEDULE_FEATURE_GATES = {
   FREE: [
     'basic_daily_schedule',
@@ -10,14 +14,7 @@ export const SCHEDULE_FEATURE_GATES = {
     'vaccination_deworming_records',
   ],
   PRO: [
-    'ai_schedule_personalisation',
-    'weather_aware_walk_reminders',
-    'family_sharing',
-    'multi_pet_dashboard',
     'weekly_wellness_score',
-    'shareable_wellness_report',
-    'health_photo_log',
-    'vet_ready_export_pdf',
     'grooming_reminders',
     'health_check_reminders',
     'custom_reminder_times',

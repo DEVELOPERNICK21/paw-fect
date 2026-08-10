@@ -49,7 +49,12 @@ export type PetsStackParamList = {
 };
 
 export type NotificationsStackParamList = {
-  WellnessHub: undefined;
+  WellnessHub:
+    | undefined
+    | {
+        petId?: string;
+        blockId?: string;
+      };
   NotificationInbox: undefined;
   NotificationDetail: { notificationId: string };
   ReminderList: undefined;

@@ -4,6 +4,7 @@ import type { PetSchedulePreferences } from '../models/PetProfile';
 import type { PetRepository } from '../../../pets/domain/repositories/PetRepository';
 import { generateDailySchedule } from '../DailyScheduleEngine';
 import type { ScheduleRepository } from '../repositories/ScheduleRepository';
+import { getDayCompletion } from '../utils/wellnessCompletion';
 import { mapPetToScheduleProfile } from '../utils/mapPetToScheduleProfile';
 import { getTodayIsoDateLocal } from '../../../../shared/utils/calendarDate';
 
@@ -11,6 +12,8 @@ export interface BuildDailyScheduleInput {
   userId: string;
   petId: string;
   date?: string;
+  /** When false, Pro-only blocks are excluded from completion % (matches Wellness hub). */
+  isPro?: boolean;
 }
 
 export class BuildDailySchedule {
@@ -26,6 +29,7 @@ export class BuildDailySchedule {
     }
 
     const date = input.date ?? getTodayIsoDateLocal();
+    const isPro = input.isPro ?? false;
     const preferences =
       (await this.scheduleRepository.getPreferences(input.userId, input.petId)) ??
       undefined;
@@ -51,7 +55,7 @@ export class BuildDailySchedule {
       };
     });
 
-    const completionPercent = this.computeCompletionPercent(blocks);
+    const completionPercent = getDayCompletion(blocks, isPro).percentage;
     await this.scheduleRepository.saveDailyCompletionPercent(
       input.userId,
       input.petId,
@@ -64,38 +68,13 @@ export class BuildDailySchedule {
       date,
       blocks,
       completionPercent,
-      streakDays: await this.computeStreakDays(input.userId, input.petId, date),
-      wellnessScore: await this.computeWellnessScore(input.userId, input.petId, date),
+      streakDays: this.scheduleRepository.getCareStreakDays(input.petId),
+      wellnessScore: await this.computeWellnessScore(
+        input.userId,
+        input.petId,
+        date,
+      ),
     };
-  }
-
-  private computeCompletionPercent(blocks: DailyCareBlock[]): number {
-    if (blocks.length === 0) {
-      return 0;
-    }
-    const completed = blocks.filter(block => block.isCompleted).length;
-    return Math.round((completed / blocks.length) * 100);
-  }
-
-  private async computeStreakDays(
-    userId: string,
-    petId: string,
-    date: string,
-  ): Promise<number> {
-    let streak = 0;
-    for (let offset = 0; offset < 30; offset += 1) {
-      const day = this.shiftDate(date, -offset);
-      const percent = await this.scheduleRepository.getDailyCompletionPercent(
-        userId,
-        petId,
-        day,
-      );
-      if (percent == null || percent < 80) {
-        break;
-      }
-      streak += 1;
-    }
-    return streak;
   }
 
   private async computeWellnessScore(
@@ -103,18 +82,18 @@ export class BuildDailySchedule {
     petId: string,
     date: string,
   ): Promise<number> {
-    const scores: number[] = [];
+    const dates: string[] = [];
     for (let offset = 0; offset < 7; offset += 1) {
-      const day = this.shiftDate(date, -offset);
-      const percent = await this.scheduleRepository.getDailyCompletionPercent(
-        userId,
-        petId,
-        day,
-      );
-      if (percent != null) {
-        scores.push(percent);
-      }
+      dates.push(this.shiftDate(date, -offset));
     }
+    const byDate = await this.scheduleRepository.getDailyCompletionPercents(
+      userId,
+      petId,
+      dates,
+    );
+    const scores = dates
+      .map(day => byDate[day])
+      .filter((value): value is number => value != null);
     if (scores.length === 0) {
       return 0;
     }

@@ -6,8 +6,32 @@ import type {
   PetSize,
 } from '../models/PetProfile';
 
+/** Indie / desi / street-dog style names common in India. */
+const INDIE_BREED_MARKERS = [
+  'indie',
+  'indi',
+  'desi',
+  'street',
+  'mongrel',
+  'pariah',
+  'indian',
+  'desi dog',
+  'indian pariah',
+] as const;
+
+export function isIndieBreed(breed: string | undefined): boolean {
+  const normalized = breed?.toLowerCase().trim() ?? '';
+  if (!normalized) {
+    return false;
+  }
+  return INDIE_BREED_MARKERS.some(marker => normalized.includes(marker));
+}
+
 function defaultDogSize(breed: string | undefined): PetSize {
   const normalized = breed?.toLowerCase() ?? '';
+  if (isIndieBreed(breed)) {
+    return 'medium';
+  }
   if (normalized.includes('great dane') || normalized.includes('mastiff')) {
     return 'giant';
   }
@@ -27,6 +51,9 @@ function defaultDogSize(breed: string | undefined): PetSize {
 
 function defaultCoatType(breed: string | undefined, species: Pet['type']): PetCoatType {
   const normalized = breed?.toLowerCase() ?? '';
+  if (isIndieBreed(breed) && species === 'dog') {
+    return 'short';
+  }
   if (normalized.includes('husky') || normalized.includes('collie')) {
     return 'double';
   }
@@ -39,8 +66,15 @@ function defaultCoatType(breed: string | undefined, species: Pet['type']): PetCo
   return species === 'cat' ? 'short' : 'medium';
 }
 
+/**
+ * Indie/desi dogs are typically medium-high energy working street dogs.
+ * PetEnergyLevel has no "medium-high", so we map to `high` for walk/play intensity.
+ */
 function defaultEnergyLevel(breed: string | undefined): PetEnergyLevel {
   const normalized = breed?.toLowerCase() ?? '';
+  if (isIndieBreed(breed)) {
+    return 'high';
+  }
   if (
     normalized.includes('border collie') ||
     normalized.includes('husky') ||

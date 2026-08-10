@@ -50,15 +50,16 @@ import { runBootNotificationResyncIfNeeded } from '../../infrastructure/notifica
 import { startupError, startupLog } from '../../infrastructure/logging/startupLog';
 
 export const RootNavigator: React.FC = () => {
-  const {
-    isAuthenticated,
-    isSessionReady,
-    loadCurrentUser,
-    refreshProfile,
-    processPasswordResetQueue,
-  } = useAuthStore();
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const isSessionReady = useAuthStore(state => state.isSessionReady);
+  const loadCurrentUser = useAuthStore(state => state.loadCurrentUser);
+  const refreshProfile = useAuthStore(state => state.refreshProfile);
+  const processPasswordResetQueue = useAuthStore(
+    state => state.processPasswordResetQueue,
+  );
   const userId = useAuthStore(state => state.user?.id);
-  const { settings, loadSettings } = useSettingsStore();
+  const settings = useSettingsStore(state => state.settings);
+  const loadSettings = useSettingsStore(state => state.loadSettings);
   const onboardingPhase = useOnboardingDraftStore(state => state.draft.phase);
   const onboardingCommitmentAccepted = useOnboardingDraftStore(
     state => state.draft.commitmentAccepted,

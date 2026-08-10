@@ -2,9 +2,9 @@ import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
   Modal,
   Pressable,
+  SectionList,
   StyleSheet,
   TextInput,
   View,
@@ -40,6 +40,12 @@ import { weeksBetweenDobAndToday } from '../utils/healthRecordScreenPartition';
 import { projectDewormingFromSmartRecords } from '../utils/projectDewormingFromSmartRecords';
 
 type CategoryFilter = 'Vaccination' | 'Deworming';
+
+type HealthRecordListSection = {
+  key: 'upcoming' | 'history';
+  title: string;
+  data: SmartHealthRecord[];
+};
 
 const CATEGORIES: CategoryFilter[] = ['Vaccination', 'Deworming'];
 
@@ -436,6 +442,28 @@ export const HealthRecordScreen: React.FC = () => {
   const logPrimaryCtaLabel =
     selectedCategory === 'Vaccination' ? 'Log Vaccination' : 'Log Deworming';
 
+  const listSections = useMemo((): HealthRecordListSection[] => {
+    const sections: HealthRecordListSection[] = [
+      {
+        key: 'upcoming',
+        title: 'COMING UP',
+        data: displayUpcomingItems as SmartHealthRecord[],
+      },
+    ];
+    if (isCompletedExpanded) {
+      sections.push({
+        key: 'history',
+        title: `HISTORY (${displayCompletedRecords.length})`,
+        data: displayCompletedRecords as SmartHealthRecord[],
+      });
+    }
+    return sections;
+  }, [
+    displayUpcomingItems,
+    displayCompletedRecords,
+    isCompletedExpanded,
+  ]);
+
   const openUpdateDate = React.useCallback((record: SmartHealthRecord): void => {
     setEditingRecord(record);
     setEditingDueDate(record.dueDate);
@@ -629,10 +657,11 @@ export const HealthRecordScreen: React.FC = () => {
         </View>
       </View>
 
-      <FlatList
-        data={[1]}
-        keyExtractor={() => 'smart-health-list'}
-        renderItem={() => (
+      <SectionList
+        sections={listSections}
+        keyExtractor={item => item.id}
+        stickySectionHeadersEnabled={false}
+        ListHeaderComponent={
           <View>
             <View style={{ marginTop: space('md') }}>
               <AppText
@@ -782,39 +811,22 @@ export const HealthRecordScreen: React.FC = () => {
                 </View>
               )}
             </View>
-
-            <View style={{ marginTop: space('lg') }}>
-              <AppText
-                style={[textStyles.overline, { color: colors.text.subdued }]}
-              >
-                COMING UP
-              </AppText>
-              <View style={{ height: space('sm') }} />
-              {displayUpcomingItems.length > 0 ? (
-                displayUpcomingItems.map(item => (
-                  <View key={item.id} style={{ marginBottom: space('sm') }}>
-                    <SmartHealthRecordItem
-                      record={item as SmartHealthRecord}
-                      onEditDate={openUpdateDate}
-                    />
-                  </View>
-                ))
-              ) : (
+          </View>
+        }
+        renderSectionHeader={({ section }) => {
+          if (section.key === 'upcoming') {
+            return (
+              <View style={{ marginTop: space('lg') }}>
                 <AppText
-                  style={[
-                    textStyles.caption,
-                    {
-                      color: colors.text.subdued,
-                      fontFamily: fontFamilies.medium,
-                      paddingVertical: space('xs'),
-                    },
-                  ]}
+                  style={[textStyles.overline, { color: colors.text.subdued }]}
                 >
-                  No further scheduled doses.
+                  {section.title}
                 </AppText>
-              )}
-            </View>
-
+                <View style={{ height: space('sm') }} />
+              </View>
+            );
+          }
+          return (
             <View style={{ marginTop: space('lg') }}>
               <Pressable
                 accessibilityRole="button"
@@ -836,48 +848,97 @@ export const HealthRecordScreen: React.FC = () => {
                     },
                   ]}
                 >
-                  {isCompletedExpanded ? 'Hide' : 'Show'}
+                  Hide
                 </AppText>
               </Pressable>
-              {isCompletedExpanded ? (
-                <View style={{ marginTop: space('sm') }}>
-                  {displayCompletedRecords.length > 0 ? (
-                    displayCompletedRecords.map(item => (
-                      <View key={item.id} style={{ marginBottom: space('sm') }}>
-                        <SmartHealthRecordItem
-                          record={item as SmartHealthRecord}
-                          onEditDate={
-                            item.status === 'completed' ||
-                            !isDewormingCategory
-                              ? openUpdateDate
-                              : undefined
-                          }
-                        />
-                      </View>
-                    ))
-                  ) : (
-                    <View
-                      style={[
-                        styles.emptyCard,
-                        {
-                          backgroundColor: colors.surface,
-                          borderColor: colors.borderSubtle,
-                        },
-                      ]}
-                    >
-                      <AppText
-                        style={[
-                          textStyles.caption,
-                          { color: colors.text.secondary },
-                        ]}
-                      >
-                        No history yet
-                      </AppText>
-                    </View>
-                  )}
-                </View>
-              ) : null}
+              <View style={{ height: space('sm') }} />
             </View>
+          );
+        }}
+        renderItem={({ item, section }) => (
+          <View style={{ marginBottom: space('sm') }}>
+            <SmartHealthRecordItem
+              record={item}
+              onEditDate={
+                section.key === 'history'
+                  ? item.status === 'completed' || !isDewormingCategory
+                    ? openUpdateDate
+                    : undefined
+                  : openUpdateDate
+              }
+            />
+          </View>
+        )}
+        renderSectionFooter={({ section }) => {
+          if (section.key === 'upcoming' && section.data.length === 0) {
+            return (
+              <AppText
+                style={[
+                  textStyles.caption,
+                  {
+                    color: colors.text.subdued,
+                    fontFamily: fontFamilies.medium,
+                    paddingVertical: space('xs'),
+                  },
+                ]}
+              >
+                No further scheduled doses.
+              </AppText>
+            );
+          }
+          if (section.key === 'history' && section.data.length === 0) {
+            return (
+              <View
+                style={[
+                  styles.emptyCard,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: colors.borderSubtle,
+                  },
+                ]}
+              >
+                <AppText
+                  style={[
+                    textStyles.caption,
+                    { color: colors.text.secondary },
+                  ]}
+                >
+                  No history yet
+                </AppText>
+              </View>
+            );
+          }
+          return null;
+        }}
+        ListFooterComponent={
+          <View>
+            {!isCompletedExpanded ? (
+              <View style={{ marginTop: space('lg') }}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Toggle history records"
+                  onPress={() => setIsCompletedExpanded(prev => !prev)}
+                  style={styles.completedHeader}
+                >
+                  <AppText
+                    style={[textStyles.overline, { color: colors.text.subdued }]}
+                  >
+                    HISTORY ({displayCompletedRecords.length})
+                  </AppText>
+                  <AppText
+                    style={[
+                      textStyles.caption,
+                      {
+                        color: colors.text.subdued,
+                        fontFamily: fontFamilies.medium,
+                      },
+                    ]}
+                  >
+                    Show
+                  </AppText>
+                </Pressable>
+              </View>
+            ) : null}
 
             {error ? (
               <View style={{ marginTop: space('lg') }}>
@@ -900,7 +961,7 @@ export const HealthRecordScreen: React.FC = () => {
               <PremiumUpgradeCard />
             </View>
           </View>
-        )}
+        }
         contentContainerStyle={{
           paddingHorizontal: space('lg'),
           paddingTop: space('md'),

@@ -34,6 +34,8 @@ export const ScheduleSetupScreen: React.FC = () => {
   const [worksAway, setWorksAway] = useState<'yes' | 'no' | 'sometimes'>('no');
   const [coatType, setCoatType] = useState<PetCoatType>('short');
   const [energyLevel, setEnergyLevel] = useState<PetEnergyLevel>('medium');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     void loadPreferences(route.params.petId).then(() => {
@@ -98,8 +100,22 @@ export const ScheduleSetupScreen: React.FC = () => {
             ? prefs.ownerWorkHours ?? { start: '10:00', end: '16:00' }
             : null,
     };
-    await savePreferences(route.params.petId, next);
-    navigation.replace('DayView', { petId: route.params.petId });
+    setSaveError(null);
+    setSaving(true);
+    try {
+      await savePreferences(route.params.petId, next);
+      navigation.getParent()?.navigate('NotificationsTab', {
+        screen: 'WellnessHub',
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Unable to save schedule preferences.';
+      setSaveError(message);
+    } finally {
+      setSaving(false);
+    }
   }, [navigation, prefs, route.params.petId, savePreferences, worksAway]);
 
   if (!pet) {
@@ -219,10 +235,25 @@ export const ScheduleSetupScreen: React.FC = () => {
           </View>
         ) : null}
 
+        {saveError ? (
+          <AppText style={[textStyles.caption, { color: colors.danger }]}>
+            {saveError}
+          </AppText>
+        ) : null}
+
         {step < (pet.type === 'dog' ? 3 : 2) ? (
-          <Button title="Continue" onPress={() => setStep(current => current + 1)} />
+          <Button
+            title="Continue"
+            disabled={saving}
+            onPress={() => setStep(current => current + 1)}
+          />
         ) : (
-          <Button title="Looks good" onPress={() => void handleFinish()} />
+          <Button
+            title="Looks good"
+            loading={saving}
+            disabled={saving}
+            onPress={() => void handleFinish()}
+          />
         )}
       </ScrollView>
     </SafeAreaView>

@@ -664,6 +664,23 @@ function healthCheckToBlock(
   });
 }
 
+/** India-oriented walk copy for heat (Apr–Jun) and monsoon (Jul–Sep). */
+export function resolveIndiaWalkSeasonNote(date: string): string | null {
+  const month = Number(date.slice(5, 7));
+  if (month >= 4 && month <= 6) {
+    return 'Hot season: avoid midday pavement — walk early morning or after sunset; test the road with your hand.';
+  }
+  if (month >= 7 && month <= 9) {
+    return 'Monsoon: prefer early morning or evening walks; skip flooded roads and keep sessions shorter if humid.';
+  }
+  return null;
+}
+
+function withSeasonWalkNote(base: string, date: string): string {
+  const note = resolveIndiaWalkSeasonNote(date);
+  return note ? `${base} ${note}` : base;
+}
+
 function buildDogBlocks(
   pet: PetProfile,
   prefs: PetSchedulePreferences,
@@ -692,16 +709,22 @@ function buildDogBlocks(
   const eveningPottyTime = addMinutes(dinnerTime, 45);
   const bedtimeTime = prefs.ownerSleepTime;
 
+  const morningWalkBase =
+    stage === 'senior'
+      ? 'Gentle pace — let them sniff at their own speed.'
+      : 'First potty break after waking. 15–20 min minimum with sniff time.';
+  const mainWalkBase =
+    stage === 'senior'
+      ? 'Gentle pace — let them lead. No jogging or jumping.'
+      : 'Longest walk of the day. Avoid hot pavement in summer.';
+
   blocks.push(
     buildCareBlock({
       pet,
       date,
       category: 'walk',
       title: 'Morning walk + potty break',
-      description:
-        stage === 'senior'
-          ? 'Gentle pace — let them sniff at their own speed.'
-          : 'First potty break after waking. 15–20 min minimum with sniff time.',
+      description: withSeasonWalkNote(morningWalkBase, date),
       scheduledTime: walks.morningWalk.time,
       durationMinutes: walks.morningWalk.durationMinutes,
       frequency: 'daily',
@@ -809,10 +832,7 @@ function buildDogBlocks(
       date,
       category: 'walk',
       title: 'Main exercise walk',
-      description:
-        stage === 'senior'
-          ? 'Gentle pace — let them lead. No jogging or jumping.'
-          : 'Longest walk of the day. Avoid hot pavement in summer.',
+      description: withSeasonWalkNote(mainWalkBase, date),
       scheduledTime: walks.afternoonWalk.time,
       durationMinutes: walks.afternoonWalk.durationMinutes,
       frequency: 'daily',

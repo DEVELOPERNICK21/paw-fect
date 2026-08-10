@@ -38,4 +38,14 @@ export interface ScheduleRepository {
     date: string,
     percent: number,
   ): Promise<void>;
+  /** Wellness MMKV streak — single source of truth for care streaks. */
+  getCareStreakDays(petId: string): number;
+  /**
+   * Returns completion percents for many dates with one storage read when possible.
+   */
+  getDailyCompletionPercents(
+    userId: string,
+    petId: string,
+    dates: string[],
+  ): Promise<Record<string, number | null>>;
 }

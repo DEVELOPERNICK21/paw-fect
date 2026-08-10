@@ -113,9 +113,9 @@ function navigateFromNotificationData(
   if (data.kind === 'dailySchedule' && data.petId) {
     nav.dispatch(
       CommonActions.navigate({
-        name: 'PetsTab',
+        name: 'NotificationsTab',
         params: {
-          screen: 'DayView',
+          screen: 'WellnessHub',
           params: {
             petId: data.petId,
             blockId: data.blockId,

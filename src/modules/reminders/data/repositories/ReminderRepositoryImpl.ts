@@ -11,9 +11,21 @@ export class ReminderRepositoryImpl implements ReminderRepository {
     private readonly local: ReminderLocalDataSource,
   ) {}
 
+  private revalidateFromRemote(): void {
+    void (async () => {
+      try {
+        const remoteReminders = await this.remote.fetchReminders();
+        await this.local.saveReminders(remoteReminders);
+      } catch {
+        // Keep serving cache; sync will retry later.
+      }
+    })();
+  }
+
   async getReminders(): Promise<Reminder[]> {
     const cached = await this.local.getReminders();
     if (cached.length > 0) {
+      this.revalidateFromRemote();
       return cached;
     }
 

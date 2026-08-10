@@ -127,11 +127,8 @@ export const PetProfileScreen: React.FC = () => {
   }, [navigation]);
 
   const goDaySchedule = useCallback(() => {
-    if (!petId) {
-      return;
-    }
-    navigation.navigate('DayView', { petId });
-  }, [navigation, petId]);
+    navigation.navigate('NotificationsTab', { screen: 'WellnessHub' });
+  }, [navigation]);
 
   const todayCare = dashboardVm?.todayCare ?? [];
   const todayCareLoading = dashboardVm == null;

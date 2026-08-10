@@ -209,7 +209,7 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
               · Up to {upgradePlan.maxPets} pets on {upgradeLabel} (vs {maxPets} now)
             </Text>
             <Text style={[styles.lossItem, { fontFamily: fontFamilies.regular }]}>
-              · Unlimited history, PDF export, offline, and sharing
+              · Unlimited history, week view, Pro care tasks, and wellness score
             </Text>
           </View>
         ) : null}
@@ -237,7 +237,8 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
             ₹{care.priceMonthlyInr}/mo · ₹{care.priceAnnualInr}/yr
           </Text>
           <Text style={[styles.meta, { fontFamily: fontFamilies.regular }]}>
-            Up to {care.maxPets} pets · unlimited history · PDF · offline · sharing
+            Up to {care.maxPets} pets · unlimited history · week view · Pro care
+            tasks · wellness score
           </Text>
           <Text style={[styles.row, { fontFamily: fontFamilies.regular }]}>
             Annual billing = 10× monthly (2 months free).
@@ -280,7 +281,7 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
             ₹{family.priceMonthlyInr}/mo · ₹{family.priceAnnualInr}/yr
           </Text>
           <Text style={[styles.meta, { fontFamily: fontFamilies.regular }]}>
-            Up to {family.maxPets} pets · multi-user · vet portal · priority support
+            Up to {family.maxPets} pets · everything in Care+ · priority support
           </Text>
           <Pressable
             style={styles.cta}

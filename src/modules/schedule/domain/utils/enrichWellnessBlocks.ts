@@ -33,7 +33,7 @@ export function enrichWellnessBlocks(
         status === 'done'
           ? persisted?.updatedAt ?? block.completedAt ?? new Date().toISOString()
           : block.completedAt,
-      insightTip: resolveInsightTip(block, input.species),
+      insightTip: resolveInsightTip(block, input.species, input.now),
       isMissed: isBlockMissed(
         { ...block, status },
         input.now,

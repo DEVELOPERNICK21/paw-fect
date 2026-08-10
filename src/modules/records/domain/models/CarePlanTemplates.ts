@@ -120,6 +120,8 @@ const DOG_TEMPLATE: SpeciesCarePlanTemplate = {
       boosterIntervalMonths: 12,
       lifestyleTriggers: ['outdoor'],
       riskLevel: 'high',
+      // Lyme is uncommon in India; outdoor dogs need tick prevention instead.
+      excludedRegions: ['IN'],
     },
     {
       key: 'LYME_2',
@@ -134,14 +136,16 @@ const DOG_TEMPLATE: SpeciesCarePlanTemplate = {
       boosterIntervalMonths: 12,
       lifestyleTriggers: ['outdoor'],
       riskLevel: 'high',
+      excludedRegions: ['IN'],
     },
   ],
   deworming: {
     startWeeks: [2, 4, 6, 8],
     untilMonths: 6,
-    indoorIntervalDays: 30,
-    mixedIntervalDays: 21,
-    outdoorIntervalDays: 15,
+    // Adult intervals in days (India): outdoor/mixed ~every 2 months, indoor ~quarterly.
+    indoorIntervalDays: 90,
+    mixedIntervalDays: 60,
+    outdoorIntervalDays: 60,
     adultIntervalMonths: 3,
   },
 };
@@ -258,9 +262,9 @@ const CAT_TEMPLATE: SpeciesCarePlanTemplate = {
   deworming: {
     startWeeks: [2, 4, 6, 8],
     untilMonths: 6,
-    indoorIntervalDays: 30,
-    mixedIntervalDays: 21,
-    outdoorIntervalDays: 15,
+    indoorIntervalDays: 90,
+    mixedIntervalDays: 60,
+    outdoorIntervalDays: 60,
     adultIntervalMonths: 3,
   },
 };

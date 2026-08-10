@@ -11,9 +11,21 @@ export class HealthRecordRepositoryImpl implements HealthRecordRepository {
     private readonly local: HealthRecordLocalDataSource,
   ) {}
 
+  private revalidateFromRemote(): void {
+    void (async () => {
+      try {
+        const remoteRecords = await this.remote.fetchRecords();
+        await this.local.saveRecords(remoteRecords);
+      } catch {
+        // Keep serving cache; sync will retry later.
+      }
+    })();
+  }
+
   async getRecords(): Promise<HealthRecord[]> {
     const cached = await this.local.getRecords();
     if (cached.length > 0) {
+      this.revalidateFromRemote();
       return cached;
     }
 

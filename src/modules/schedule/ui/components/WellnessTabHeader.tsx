@@ -13,6 +13,7 @@ export interface WellnessTabHeaderProps {
   date: string;
   completion: DayCompletion;
   streakDays: number;
+  isPro?: boolean;
 }
 
 const RING_SIZE = 56;
@@ -25,6 +26,7 @@ export const WellnessTabHeader: React.FC<WellnessTabHeaderProps> = ({
   date,
   completion,
   streakDays,
+  isPro = false,
 }) => {
   const { colors, spacing, textStyles, fontFamilies } = useTheme();
   const offset = CIRCUMFERENCE * (1 - completion.percentage / 100);
@@ -127,9 +129,19 @@ export const WellnessTabHeader: React.FC<WellnessTabHeaderProps> = ({
           ]}
         >
           {streakDays > 0
-            ? `🔥 ${streakDays}-day streak`
-            : 'Start your streak today 🐾'}
+            ? `${streakDays}-day streak`
+            : 'Start your streak today'}
         </AppText>
+        {!isPro ? (
+          <AppText
+            style={[
+              textStyles.caption,
+              { color: colors.text.secondary, fontFamily: fontFamilies.regular },
+            ]}
+          >
+            Free tasks today · finish all to keep your streak
+          </AppText>
+        ) : null}
       </View>
     </View>
   );

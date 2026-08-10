@@ -6,6 +6,7 @@ import type {
 import type { ScheduleLocalDataSource } from '../datasources/ScheduleLocalDataSource';
 
 import { createScheduleLocalDataSource } from '../datasources/ScheduleLocalDataSource';
+import { getWellnessStreak } from '../datasources/WellnessMmkvDataSource';
 
 export class ScheduleRepositoryImpl implements ScheduleRepository {
   constructor(private readonly local: ScheduleLocalDataSource) {}
@@ -51,6 +52,14 @@ export class ScheduleRepositoryImpl implements ScheduleRepository {
     return this.local.getDailyCompletionPercent(userId, petId, date);
   }
 
+  getDailyCompletionPercents(
+    userId: string,
+    petId: string,
+    dates: string[],
+  ): Promise<Record<string, number | null>> {
+    return this.local.getDailyCompletionPercents(userId, petId, dates);
+  }
+
   saveDailyCompletionPercent(
     userId: string,
     petId: string,
@@ -58,6 +67,10 @@ export class ScheduleRepositoryImpl implements ScheduleRepository {
     percent: number,
   ): Promise<void> {
     return this.local.saveDailyCompletionPercent(userId, petId, date, percent);
+  }
+
+  getCareStreakDays(petId: string): number {
+    return getWellnessStreak(petId).count;
   }
 }
 

@@ -288,9 +288,9 @@ export const AddHealthRecordScreen: React.FC = () => {
 function getPlaceholderForCategory(category: CategoryOption): string {
   switch (category) {
     case 'Vaccination':
-      return 'e.g. Rabies, DHPP, FVRCP';
+      return 'e.g. Rabies (required), core puppy shots (DHPP), cat core (FVRCP)';
     case 'Deworming':
-      return 'e.g. Monthly dewormer';
+      return 'e.g. Monthly dewormer — clears intestinal worms';
     case 'Checkup':
       return 'e.g. Annual checkup, Dental cleaning';
     case 'Other':

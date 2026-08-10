@@ -3,6 +3,7 @@
 import type {
   CarePlanContext,
   LifestyleType,
+  PetRegion,
   SpeciesCarePlanTemplate,
   VaccineRule,
 } from '../models/CarePlanTemplate';
@@ -87,6 +88,14 @@ const shouldIncludeByLifestyle = (
 ): boolean => {
   if (!triggers || triggers.length === 0) return true;
   return triggers.includes(lifestyle);
+};
+
+const shouldIncludeByRegion = (
+  excludedRegions: PetRegion[] | undefined,
+  region: PetRegion,
+): boolean => {
+  if (!excludedRegions || excludedRegions.length === 0) return true;
+  return !excludedRegions.includes(region);
 };
 
 const toSmartRecord = (params: {
@@ -234,6 +243,9 @@ export class PetCareLifecycleEngine {
             context.lifestyleType,
           )
         ) {
+          continue;
+        }
+        if (!shouldIncludeByRegion(rule.excludedRegions, context.region)) {
           continue;
         }
         const existing = byFamily.get(rule.family) ?? [];

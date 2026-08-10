@@ -1,5 +1,6 @@
 import {
   DewormingEngine,
+  adultIntervalMonthsFromLifestyle,
   getCadenceForDueDate,
   MIN_DEWORM_AGE_DAYS,
   validateLastDewormingDate,
@@ -128,6 +129,35 @@ describe('DewormingEngine', () => {
       });
 
       expect(result.upcoming).toBeDefined();
+    });
+
+    it('reads adult outdoor cadence from CARE_PLAN_TEMPLATES (≈2 months)', () => {
+      expect(adultIntervalMonthsFromLifestyle('dog', 'outdoor')).toBe(2);
+      expect(adultIntervalMonthsFromLifestyle('dog', 'mixed')).toBe(2);
+      expect(adultIntervalMonthsFromLifestyle('dog', 'indoor')).toBe(3);
+      expect(getCadenceForDueDate('2020-01-01', '2026-04-01', 'outdoor', 'dog')).toBe(
+        'every_2_months',
+      );
+      expect(getCadenceForDueDate('2020-01-01', '2026-04-01', 'indoor', 'dog')).toBe(
+        'every_3_months',
+      );
+    });
+
+    it('aligns outdoor adult follow-up to template 2-month step', () => {
+      const result = engine.recalculateAfterUpdate({
+        completedDate: '2026-04-10',
+        dateOfBirth: '2020-01-01',
+        lifestyle: 'outdoor',
+        petType: 'dog',
+        previousItems: [],
+        todayDate: '2026-04-15',
+        completionDates: ['2026-04-10'],
+      });
+      const dates = [
+        ...(result.nextStep ? [result.nextStep.dueDate] : []),
+        ...result.upcoming.map(u => u.dueDate),
+      ];
+      expect(dates).toContain('2026-06-10');
     });
   });
 

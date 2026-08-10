@@ -52,6 +52,36 @@ describe('PetCareLifecycleEngine', () => {
     expect(outdoor.some(r => r.family === 'FeLV')).toBe(true);
   });
 
+  it('excludes Lyme vaccines for India outdoor dogs', () => {
+    const india = engine.generateInitialPlan({
+      userId: 'u1',
+      petId: 'p-in',
+      context: {
+        petType: 'dog',
+        dateOfBirth: '2026-01-01',
+        nowDate: '2026-04-01',
+        region: 'IN',
+        lifestyleType: 'outdoor',
+        lifestyleRiskLevel: 'high',
+      },
+    });
+    expect(india.some(r => r.family === 'Lyme')).toBe(false);
+
+    const us = engine.generateInitialPlan({
+      userId: 'u1',
+      petId: 'p-us',
+      context: {
+        petType: 'dog',
+        dateOfBirth: '2026-01-01',
+        nowDate: '2026-04-01',
+        region: 'US',
+        lifestyleType: 'outdoor',
+        lifestyleRiskLevel: 'high',
+      },
+    });
+    expect(us.some(r => r.family === 'Lyme')).toBe(true);
+  });
+
   it('dedupes upcoming by family by default and can disable it', () => {
     const records = engine.generateInitialPlan({
       userId: 'u1',
