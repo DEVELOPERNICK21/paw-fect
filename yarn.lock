@@ -6628,6 +6628,11 @@ react-native-iap@^15.0.0:
   resolved "https://registry.npmjs.org/react-native-iap/-/react-native-iap-15.0.0.tgz"
   integrity sha512-bKBZcIPTL+RVRVewwhooBbyx0XIizAz4EjaH934NweZcxS2lK0dmjqr4upexmCHdP6bqoEkjEqKWIPkqj2l70g==
 
+react-native-image-picker@^8.2.1:
+  version "8.2.1"
+  resolved "https://registry.yarnpkg.com/react-native-image-picker/-/react-native-image-picker-8.2.1.tgz#1ac7826563cbaa5d5298d9f2acc53c69805e5393"
+  integrity sha512-FBeGYJGFDjMdGCcyubDJgBAPCQ4L1D3hwLXyUU91jY9ahOZMTbluceVvRmrEKqnDPFJ0gF1NVhJ0nr1nROFLdg==
+
 react-native-linear-gradient@^2.8.3:
   version "2.8.3"
   resolved "https://registry.npmjs.org/react-native-linear-gradient/-/react-native-linear-gradient-2.8.3.tgz"
