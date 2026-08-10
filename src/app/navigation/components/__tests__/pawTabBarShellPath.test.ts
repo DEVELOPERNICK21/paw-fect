@@ -22,11 +22,13 @@ describe('buildPawTabBarShellPath', () => {
     scoopDepth: DEFAULT_TAB_BAR_SCOOP_DEPTH,
   };
 
-  it('returns a closed SVG path string', () => {
+  it('returns a closed SVG path string with a scooped top', () => {
     const d = buildPawTabBarShellPath(base);
     expect(d.startsWith('M')).toBe(true);
     expect(d.trim().endsWith('Z') || d.trim().endsWith('z')).toBe(true);
-    expect(d).toContain('C'); // scoop uses cubics
+    // Soft shoulders (cubics) + circular cradle (arc)
+    expect(d).toContain('C');
+    expect(d).toContain('A');
   });
 
   it('clamps corner radius so it cannot exceed half height', () => {

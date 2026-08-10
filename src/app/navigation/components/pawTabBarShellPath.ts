@@ -16,13 +16,17 @@ export const FAB_OVERHANG = 30;
 export const FAB_BOTTOM_OFFSET = BAR_HEIGHT - (FAB_SIZE - FAB_OVERHANG);
 
 export const DEFAULT_TAB_BAR_CORNER_RADIUS = 28;
-export const DEFAULT_TAB_BAR_SCOOP_RADIUS = 38;
+/** Horizontal half-width budget for the notch (wider = softer merge around FAB). */
+export const DEFAULT_TAB_BAR_SCOOP_RADIUS = 44;
 /** Depth of the top scoop cutout — must match how far the FAB dips below the bar top. */
 export const DEFAULT_TAB_BAR_SCOOP_DEPTH = FAB_SIZE - FAB_OVERHANG;
 
 /**
  * Closed SVG path for a floating tab bar with rounded ends and a center scoop.
  * Coordinate origin: top-left of the bar rect (0,0). Scoop dips downward (+y).
+ *
+ * Scoop uses a circular cradle (slightly larger than the FAB) plus short cubic
+ * shoulders so the flat top melts into the cutout instead of meeting at a kink.
  */
 export function buildPawTabBarShellPath(params: PawTabBarShellParams): string {
   const width = Math.max(params.width, 1);
@@ -41,18 +45,36 @@ export function buildPawTabBarShellPath(params: PawTabBarShellParams): string {
   );
 
   const cx = width / 2;
-  const scoopHalf = scoopR;
-  const leftScoop = cx - scoopHalf;
-  const rightScoop = cx + scoopHalf;
+  // Cradle radius: FAB half-size + air gap so background shows through the merge.
+  const cradleGap = 6;
+  const arcR = Math.min(scoopR + cradleGap, scoopDepth + cradleGap + 4);
+  // Circle centered so its lowest point sits at scoopDepth (cradles the FAB).
+  const circleCy = scoopDepth - arcR;
+  const chordUnder = arcR * arcR - circleCy * circleCy;
+  const halfChord =
+    chordUnder > 0 ? Math.sqrt(chordUnder) : Math.max(scoopR * 0.85, 8);
+  const leftArc = cx - halfChord;
+  const rightArc = cx + halfChord;
 
-  // Top edge with center scoop (cubic bezier dip).
-  // Start mid-left on top after left corner arc conceptually via M at top-left + r.
+  // Soft shoulder: ease off the flat top before joining the circular cradle.
+  const shoulder = Math.min(16, halfChord * 0.4);
+  const leftShoulder = Math.max(r, leftArc - shoulder);
+  const rightShoulder = Math.min(width - r, rightArc + shoulder);
+  const arcJoinY = Math.max(0, -circleCy * 0.12);
+
   const d = [
     `M ${r} 0`,
-    `L ${leftScoop} 0`,
-    // Scoop: down into cradle and back up
-    `C ${leftScoop + scoopHalf * 0.35} 0 ${cx - scoopHalf * 0.55} ${scoopDepth} ${cx} ${scoopDepth}`,
-    `C ${cx + scoopHalf * 0.55} ${scoopDepth} ${rightScoop - scoopHalf * 0.35} 0 ${rightScoop} 0`,
+    `L ${leftShoulder} 0`,
+    // Left shoulder: horizontal leave → settle onto the arc start
+    `C ${leftShoulder + shoulder * 0.65} 0 ${leftArc - shoulder * 0.2} ${
+      scoopDepth * 0.12
+    } ${leftArc} ${arcJoinY}`,
+    // Large clockwise arc under the FAB (SVG y-down: sweep=1 dips into +y)
+    `A ${arcR} ${arcR} 0 1 1 ${rightArc} ${arcJoinY}`,
+    // Right shoulder: leave arc → flatten back onto the top edge
+    `C ${rightArc + shoulder * 0.2} ${scoopDepth * 0.12} ${
+      rightShoulder - shoulder * 0.65
+    } 0 ${rightShoulder} 0`,
     `L ${width - r} 0`,
     `A ${r} ${r} 0 0 1 ${width} ${r}`,
     `L ${width} ${height - r}`,
