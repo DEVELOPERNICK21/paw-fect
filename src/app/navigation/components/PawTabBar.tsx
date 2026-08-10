@@ -144,8 +144,6 @@ interface TabSlotProps {
   compactLabel?: boolean;
   fontFamilies: ReturnType<typeof useTheme>['fontFamilies'];
   colors: Theme['colors'];
-  /** Index of this tab within `SIDE_TAB_ORDER`; used by the parent to key measured centers. */
-  sideIndex: number;
   onCenterMeasured?: (pageX: number, width: number) => void;
 }
 
@@ -158,7 +156,6 @@ const TabSlot = React.memo(function TabSlot({
   compactLabel,
   fontFamilies,
   colors,
-  sideIndex,
   onCenterMeasured,
 }: TabSlotProps) {
   const scale = useRef(new Animated.Value(1)).current;
@@ -197,72 +194,69 @@ const TabSlot = React.memo(function TabSlot({
   });
 
   return (
-    <View
+    <Pressable
       ref={slotRef}
       onLayout={() => {
         slotRef.current?.measureInWindow((x, _y, width) => {
           onCenterMeasured?.(x, width);
         });
       }}
+      onPressIn={pressIn}
+      onPressOut={pressOut}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ selected: active }}
+      hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
+      style={itemStyles.tabHit}
+      testID={`paw-tab-slot-${accessibilityLabel.toLowerCase().replace(/\s+/g, '-')}`}
     >
-      <Pressable
-        onPressIn={pressIn}
-        onPressOut={pressOut}
-        onPress={onPress}
-        accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel}
-        accessibilityState={{ selected: active }}
-        hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
-        style={itemStyles.tabHit}
-        testID={`paw-tab-slot-${sideIndex}`}
+      <Animated.View
+        style={[
+          itemStyles.tabChip,
+          {
+            transform: [{ scale }],
+          },
+        ]}
       >
         <Animated.View
+          style={{
+            transform: [{ scale: iconPopScale }, { translateY: iconLift }],
+          }}
+        >
+          <View style={{ width: 28, height: 28, justifyContent: 'center' }}>
+            <Animated.View
+              style={{ position: 'absolute', left: 0, right: 0, opacity: activeOpacity }}
+            >
+              <MaterialIcon name={icon} size={24} color={colors.accent} />
+            </Animated.View>
+            <Animated.View
+              style={{
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                opacity: inactiveOpacity,
+              }}
+            >
+              <MaterialIcon name={icon} size={24} color={colors.text.subdued} />
+            </Animated.View>
+          </View>
+        </Animated.View>
+        <Text
           style={[
-            itemStyles.tabChip,
+            active ? itemStyles.navLabelActive : itemStyles.navLabel,
+            compactLabel && itemStyles.navLabelCompact,
             {
-              transform: [{ scale }],
+              fontFamily: active ? fontFamilies.bold : fontFamilies.medium,
+              color: active ? colors.accent : colors.text.subdued,
             },
           ]}
+          numberOfLines={1}
         >
-          <Animated.View
-            style={{
-              transform: [{ scale: iconPopScale }, { translateY: iconLift }],
-            }}
-          >
-            <View style={{ width: 28, height: 28, justifyContent: 'center' }}>
-              <Animated.View
-                style={{ position: 'absolute', left: 0, right: 0, opacity: activeOpacity }}
-              >
-                <MaterialIcon name={icon} size={24} color={colors.accent} />
-              </Animated.View>
-              <Animated.View
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  opacity: inactiveOpacity,
-                }}
-              >
-                <MaterialIcon name={icon} size={24} color={colors.text.subdued} />
-              </Animated.View>
-            </View>
-          </Animated.View>
-          <Text
-            style={[
-              active ? itemStyles.navLabelActive : itemStyles.navLabel,
-              compactLabel && itemStyles.navLabelCompact,
-              {
-                fontFamily: active ? fontFamilies.bold : fontFamilies.medium,
-                color: active ? colors.accent : colors.text.subdued,
-              },
-            ]}
-            numberOfLines={1}
-          >
-            {label}
-          </Text>
-        </Animated.View>
-      </Pressable>
-    </View>
+          {label}
+        </Text>
+      </Animated.View>
+    </Pressable>
   );
 });
 
@@ -309,12 +303,18 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
   const pillOpacity = useRef(new Animated.Value(0)).current;
   const pillScale = useRef(new Animated.Value(1)).current;
   const hasPositionedPill = useRef(false);
+  /** True once the pill has faded in for the current side-tab streak; false while hidden (e.g. on Pets). */
+  const pillVisibleRef = useRef(false);
+  /** Last X we actually applied to `pillX`, used to detect layout drift worth remeasuring for. */
+  const lastPillXRef = useRef<number | null>(null);
 
   const revealPill = useCallback(
     (x: number) => {
       pillX.setValue(x);
+      lastPillXRef.current = x;
       hasPositionedPill.current = true;
       if (isSideTabActive(currentKey)) {
+        pillVisibleRef.current = true;
         Animated.timing(pillOpacity, {
           toValue: 1,
           duration: 180,
@@ -331,21 +331,39 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
         const centerInBar = pageX + width / 2 - barX;
         centersXRef.current[sideIndex] = centerInBar;
         const activeIndex = sideTabIndex(currentKey);
-        if (activeIndex === sideIndex && !hasPositionedPill.current) {
-          const x = pillTranslateX(centersXRef.current, activeIndex, PILL_SIZE);
-          if (x != null) {
-            revealPill(x);
-          }
+        if (activeIndex !== sideIndex) {
+          return;
+        }
+        const x = pillTranslateX(centersXRef.current, activeIndex, PILL_SIZE);
+        if (x == null) {
+          return;
+        }
+        if (!hasPositionedPill.current) {
+          revealPill(x);
+          return;
+        }
+        // Layout drift (e.g. rotation, font scaling) can shift a side tab's
+        // center after the pill already landed there; remeasure and follow it.
+        const lastX = lastPillXRef.current;
+        if (lastX == null || Math.abs(x - lastX) > 0.5) {
+          lastPillXRef.current = x;
+          Animated.spring(pillX, {
+            toValue: x,
+            friction: 7,
+            tension: 180,
+            useNativeDriver: true,
+          }).start();
         }
       });
     },
-    [currentKey, revealPill],
+    [currentKey, pillX, revealPill],
   );
 
   useEffect(() => {
     const index = sideTabIndex(currentKey);
 
     if (index == null) {
+      pillVisibleRef.current = false;
       Animated.timing(pillOpacity, {
         toValue: 0,
         duration: 180,
@@ -360,16 +378,14 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
       return;
     }
 
-    if (!hasPositionedPill.current) {
+    // Coming from an unmeasured start or from a hidden state (Pets): snap
+    // into place instead of springing across the FAB gap while fading in.
+    if (!hasPositionedPill.current || !pillVisibleRef.current) {
       revealPill(x);
       return;
     }
 
-    Animated.timing(pillOpacity, {
-      toValue: 1,
-      duration: 180,
-      useNativeDriver: true,
-    }).start();
+    lastPillXRef.current = x;
 
     Animated.parallel([
       Animated.spring(pillX, {
@@ -396,8 +412,11 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
 
   useEffect(() => {
     hasPositionedPill.current = false;
+    pillVisibleRef.current = false;
+    lastPillXRef.current = null;
     centersXRef.current = [undefined, undefined, undefined, undefined];
-  }, [winW]);
+    pillOpacity.setValue(0);
+  }, [winW, pillOpacity]);
 
   const fabScale = useRef(new Animated.Value(1)).current;
   const fabLift = useRef(new Animated.Value(0)).current;
@@ -634,7 +653,7 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
           pointerEvents="none"
           style={{
             position: 'absolute',
-            top: 8,
+            top: 4,
             left: 0,
             width: PILL_SIZE,
             height: PILL_SIZE,
@@ -653,7 +672,6 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
             onPress={() => jumpToTabRoot('HomeTab')}
             fontFamilies={fontFamilies}
             colors={colors}
-            sideIndex={HOME_SIDE_INDEX}
             onCenterMeasured={(pageX, width) => onTabCenter(HOME_SIDE_INDEX, pageX, width)}
           />
           <TabSlot
@@ -665,7 +683,6 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
             compactLabel
             fontFamilies={fontFamilies}
             colors={colors}
-            sideIndex={HEALTH_SIDE_INDEX}
             onCenterMeasured={(pageX, width) => onTabCenter(HEALTH_SIDE_INDEX, pageX, width)}
           />
         </View>
@@ -681,7 +698,6 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
             onPress={() => jumpToTabRoot('NotificationsTab')}
             fontFamilies={fontFamilies}
             colors={colors}
-            sideIndex={NOTIFICATIONS_SIDE_INDEX}
             onCenterMeasured={(pageX, width) =>
               onTabCenter(NOTIFICATIONS_SIDE_INDEX, pageX, width)
             }
@@ -694,7 +710,6 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
             onPress={() => jumpToTabRoot('SettingsTab')}
             fontFamilies={fontFamilies}
             colors={colors}
-            sideIndex={SETTINGS_SIDE_INDEX}
             onCenterMeasured={(pageX, width) => onTabCenter(SETTINGS_SIDE_INDEX, pageX, width)}
           />
         </View>
