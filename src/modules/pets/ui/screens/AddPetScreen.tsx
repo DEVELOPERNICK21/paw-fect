@@ -1,6 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  ActionSheetIOS,
+  Alert,
+  Image,
+  Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -23,7 +28,9 @@ import { validateLastDewormingDate } from '../../../records/domain/utils/Dewormi
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { useSubscriptionStore } from '../../../subscription/store/subscriptionStore';
 import { useSettingsStore } from '../../../settings/store/settingsStore';
+import { petComposition } from '../../petComposition';
 import { usePetStore } from '../../store/petStore';
+import { pickPetPhoto } from '../../data/photos/pickPetPhoto';
 import type {
   Pet,
   PetGender,
@@ -32,12 +39,14 @@ import type {
   PetRegion,
   PetType,
 } from '../../domain/models/Pet';
+import type { PetPhotoEncodeRequest } from '../../domain/ports/PetPhotoEncoder';
 import { isPetPhotoPlaceholderUri } from '../../domain/utils/petPhotoPlaceholder';
 import { prefillFromOnboardingProfile } from '../../domain/utils/prefillFromOnboardingProfile';
 import { icons } from '../../../../shared/assets/icons';
 import { DatePickerField } from '../../../../shared/components/DatePickerField';
 import { spacing } from '../../../../shared/theme/spacing';
 import { inferDefaultPetRegion } from '../../../../shared/utils/inferDefaultPetRegion';
+import { resolvePetAvatarSource } from '../../../../shared/utils/petDisplayPhoto';
 import {
   computePetFormProgress,
 } from '../../domain/utils/computePetFormProgress';
@@ -119,6 +128,11 @@ export const AddPetScreen: React.FC = () => {
   );
   const [breed, setBreed] = useState('');
   const [photoUri, setPhotoUri] = useState<string>(PROFILE_PLACEHOLDER);
+  /** Pending compressed pick; encode on save. Null = no new pick this session. */
+  const [pendingPhoto, setPendingPhoto] =
+    useState<PetPhotoEncodeRequest | null>(null);
+  /** True when the user removes a photo, including an existing edit photo. */
+  const [photoCleared, setPhotoCleared] = useState(false);
   const [dob, setDob] = useState<string>('');
   const [gender, setGender] = useState<PetGender | ''>('');
   const [lifestyleType, setLifestyleType] =
@@ -190,6 +204,8 @@ export const AddPetScreen: React.FC = () => {
         setPetType(pet.type);
         setBreed(pet.breed ?? '');
         setPhotoUri(pet.photo?.trim() ? pet.photo : PROFILE_PLACEHOLDER);
+        setPendingPhoto(null);
+        setPhotoCleared(false);
         setDob(pet.dob ?? '');
         setGender((pet.gender as PetGender | undefined) ?? '');
         setLifestyleType(pet.lifestyle?.type ?? 'indoor');
@@ -273,6 +289,11 @@ export const AddPetScreen: React.FC = () => {
     lastVaccinationUnknown ||
     lastRabiesUnknown;
 
+  const photoFilled =
+    !photoCleared &&
+    (pendingPhoto !== null ||
+      (!isPetPhotoPlaceholderUri(photoUri) && photoUri.length > 0));
+
   const formProgress = useMemo(
     () =>
       computePetFormProgress({
@@ -280,7 +301,7 @@ export const AddPetScreen: React.FC = () => {
         dobFilled: dob.trim().length > 0 && dobCheck.ok,
         genderFilled: gender !== '',
         breedFilled: breed.trim().length > 0,
-        photoFilled: !isPetPhotoPlaceholderUri(photoUri) && photoUri.length > 0,
+        photoFilled,
         healthAnswered,
         // Smart defaults already applied: species, lifestyle, risk, region.
         defaultsApplied: 4,
@@ -291,7 +312,7 @@ export const AddPetScreen: React.FC = () => {
       dobCheck.ok,
       gender,
       healthAnswered,
-      photoUri,
+      photoFilled,
       trimmedName.length,
     ],
   );
@@ -302,10 +323,154 @@ export const AddPetScreen: React.FC = () => {
     if (dob.trim().length > 0 && dobCheck.ok) n += 1;
     if (gender !== '') n += 1;
     if (breed.trim().length > 0) n += 1;
-    if (!isPetPhotoPlaceholderUri(photoUri) && photoUri.length > 0) n += 1;
+    if (photoFilled) n += 1;
     if (healthAnswered) n += 1;
     return n;
-  }, [breed, dob, dobCheck.ok, gender, healthAnswered, photoUri, trimmedName.length]);
+  }, [
+    breed,
+    dob,
+    dobCheck.ok,
+    gender,
+    healthAnswered,
+    photoFilled,
+    trimmedName.length,
+  ]);
+
+  const handlePick = async (source: 'camera' | 'library'): Promise<void> => {
+    try {
+      const picked = await pickPetPhoto(source);
+      if (!picked) {
+        return;
+      }
+      setPendingPhoto(picked);
+      setPhotoUri(picked.localUri);
+      setPhotoCleared(false);
+      setError(null);
+    } catch (pickError) {
+      const message =
+        pickError instanceof Error
+          ? pickError.message
+          : 'Could not open the photo picker.';
+      if (message === 'PERMISSION_DENIED') {
+        Alert.alert(
+          'Photo access needed',
+          'Allow photo access in Settings to add a pet photo.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Open Settings',
+              onPress: () => {
+                Linking.openSettings().catch(() => undefined);
+              },
+            },
+          ],
+        );
+        return;
+      }
+      setError(message);
+    }
+  };
+
+  const removePhoto = (): void => {
+    setPhotoUri(PROFILE_PLACEHOLDER);
+    setPendingPhoto(null);
+    setPhotoCleared(true);
+    setError(null);
+  };
+
+  const openPhotoOptions = (): void => {
+    if (Platform.OS === 'ios') {
+      const options = photoFilled
+        ? ['Take photo', 'Choose from library', 'Remove photo', 'Cancel']
+        : ['Take photo', 'Choose from library', 'Cancel'];
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options,
+          cancelButtonIndex: options.length - 1,
+          destructiveButtonIndex: photoFilled ? 2 : undefined,
+          title: 'Pet photo',
+        },
+        selectedIndex => {
+          if (selectedIndex === 0) {
+            handlePick('camera').catch(() => undefined);
+          } else if (selectedIndex === 1) {
+            handlePick('library').catch(() => undefined);
+          } else if (photoFilled && selectedIndex === 2) {
+            removePhoto();
+          }
+        },
+      );
+      return;
+    }
+
+    Alert.alert(
+      'Pet photo',
+      'Choose a photo option',
+      photoFilled
+        ? [
+            {
+              text: 'Take photo',
+              onPress: () => {
+                handlePick('camera').catch(() => undefined);
+              },
+            },
+            {
+              text: 'Choose from library',
+              onPress: () => {
+                handlePick('library').catch(() => undefined);
+              },
+            },
+            {
+              text: 'More…',
+              onPress: () => {
+                Alert.alert('More photo options', undefined, [
+                  {
+                    text: 'Remove photo',
+                    style: 'destructive',
+                    onPress: removePhoto,
+                  },
+                  { text: 'Cancel', style: 'cancel' },
+                ]);
+              },
+            },
+          ]
+        : [
+            {
+              text: 'Take photo',
+              onPress: () => {
+                handlePick('camera').catch(() => undefined);
+              },
+            },
+            {
+              text: 'Choose from library',
+              onPress: () => {
+                handlePick('library').catch(() => undefined);
+              },
+            },
+            { text: 'Cancel', style: 'cancel' },
+          ],
+    );
+  };
+
+  const resolvePhotoForSave = async (): Promise<
+    | { ok: true; photo: string | undefined }
+    | { ok: false; errorMessage: string }
+  > => {
+    if (photoCleared) {
+      return { ok: true, photo: undefined };
+    }
+    if (pendingPhoto) {
+      const prepared = await petComposition.preparePetPhoto.execute(pendingPhoto);
+      if (!prepared.ok) {
+        return { ok: false, errorMessage: prepared.errorMessage };
+      }
+      return { ok: true, photo: prepared.photo };
+    }
+    if (!isPetPhotoPlaceholderUri(photoUri) && photoUri.length > 0) {
+      return { ok: true, photo: photoUri };
+    }
+    return { ok: true, photo: undefined };
+  };
 
   const performEditSave = async (): Promise<void> => {
     if (!editBase) {
@@ -313,15 +478,18 @@ export const AddPetScreen: React.FC = () => {
     }
     setIsSaving(true);
     setError(null);
-    const nextPhoto = isPetPhotoPlaceholderUri(photoUri)
-      ? undefined
-      : photoUri;
+    const resolvedPhoto = await resolvePhotoForSave();
+    if (!resolvedPhoto.ok) {
+      setIsSaving(false);
+      setError(resolvedPhoto.errorMessage);
+      return;
+    }
     const result = await updatePet({
       ...editBase,
       name: trimmedName,
       type: petType,
       breed: breed.trim() || undefined,
-      photo: nextPhoto,
+      photo: resolvedPhoto.photo,
       dob: dob.trim() || undefined,
       gender: gender || undefined,
       lifestyle: { type: lifestyleType, riskLevel: lifestyleRiskLevel },
@@ -505,6 +673,13 @@ export const AddPetScreen: React.FC = () => {
       return;
     }
 
+    const resolvedPhoto = await resolvePhotoForSave();
+    if (!resolvedPhoto.ok) {
+      setIsSaving(false);
+      setError(resolvedPhoto.errorMessage);
+      return;
+    }
+
     const result = await createPetProfile({
       name,
       type: petType,
@@ -513,7 +688,7 @@ export const AddPetScreen: React.FC = () => {
       gender: gender || undefined,
       lifestyle: { type: lifestyleType, riskLevel: lifestyleRiskLevel },
       region,
-      photo: isPetPhotoPlaceholderUri(photoUri) ? undefined : photoUri,
+      photo: resolvedPhoto.photo,
       lastDewormingDate:
         hasPreviousDeworming && !lastDewormingUnknown
           ? lastDewormingDate.trim() || undefined
@@ -642,18 +817,38 @@ export const AddPetScreen: React.FC = () => {
         />
 
         <View style={styles.avatarSection}>
-          <View
+          <Pressable
             style={[
               styles.profileImageWrap,
               { backgroundColor: colors.brandTint5 },
             ]}
+            onPress={openPhotoOptions}
+            accessibilityRole="button"
+            accessibilityLabel={photoFilled ? 'Change pet photo' : 'Add pet photo'}
           >
-            {petType === 'dog' ? (
+            {photoFilled ? (
+              <Image
+                source={resolvePetAvatarSource({
+                  type: petType,
+                  photo: photoUri,
+                })}
+                style={styles.profileImage}
+                resizeMode="cover"
+                accessibilityLabel="Pet photo preview"
+              />
+            ) : petType === 'dog' ? (
               <icons.dogIcon width={80} height={80} />
             ) : (
               <icons.catIcon width={80} height={80} />
             )}
-          </View>
+            <View style={styles.cameraBadge} pointerEvents="none">
+              <MaterialIcon
+                kind="camera"
+                size={18}
+                color={colors.text.inverse}
+              />
+            </View>
+          </Pressable>
         </View>
 
         <View style={styles.formSection}>

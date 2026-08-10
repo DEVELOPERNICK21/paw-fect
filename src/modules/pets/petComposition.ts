@@ -5,6 +5,7 @@ import { useSmartHealthRecordStore } from '../records/store/smartHealthRecordSto
 import { ensureNotificationsReady } from '../../infrastructure/notifications/notificationDiagnostics';
 import { notificationService } from '../../infrastructure/notifications/notificationService';
 import { syncDailyRoutineNotificationsForPets } from '../../infrastructure/notifications/dailyCareNotifications';
+import { createFirestorePetPhotoEncoder } from './data/photos/FirestorePetPhotoEncoder';
 import { createPetRepository } from './data/repositories/PetRepositoryImpl';
 import type { Pet } from './domain/models/Pet';
 import { GetPets } from './domain/usecases/GetPets';
@@ -16,10 +17,12 @@ import { DeletePet } from './domain/usecases/DeletePet';
 import { SetActivePet } from './domain/usecases/SetActivePet';
 import { CreatePetProfile } from './domain/usecases/CreatePetProfile';
 import { BuildPetHealthCardViewModel } from './domain/usecases/BuildPetHealthCardViewModel';
+import { PreparePetPhoto } from './domain/usecases/PreparePetPhoto';
 import type { PetHealthCardViewModel } from './domain/models/PetHealthCardViewModel';
 import { registerPetCoordinationPorts } from './store/petCoordinationPorts';
 
 const repository = createPetRepository();
+const petPhotoEncoder = createFirestorePetPhotoEncoder();
 
 registerPetCoordinationPorts({
   bootstrapPetHealthSchedule: async input => {
@@ -82,6 +85,7 @@ export const petComposition = {
   deletePet: new DeletePet(repository),
   setActivePet: new SetActivePet(repository),
   createPetProfile: new CreatePetProfile(),
+  preparePetPhoto: new PreparePetPhoto(petPhotoEncoder),
   syncDailyRoutineNotifications: async (pets: Pet[]): Promise<void> => {
     const granted = await ensureNotificationsReady();
     if (!granted) {

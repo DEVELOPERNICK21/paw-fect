@@ -42,9 +42,14 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
     return collection(this.db, 'users', userId, 'pets');
   }
 
-  private serializePetForFirestore(pet: Pet): Omit<Pet, 'syncStatus'> {
-    const { syncStatus: _syncStatus, ...payload } = pet;
-    return payload;
+  private serializePetForFirestore(pet: Pet): Record<string, unknown> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { syncStatus: _syncStatus, photo, ...rest } = pet;
+    return {
+      ...rest,
+      // Explicit null clears a previous photo under setDoc merge.
+      photo: photo && photo.trim().length > 0 ? photo : null,
+    };
   }
 
   /** Firestore batches max 500 ops; delete in chunks to avoid silent failures. */
@@ -128,7 +133,7 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
         // Fall back to API below.
       }
     }
-    const response = await apiClient.request<Pet, Pet>({
+    const response = await apiClient.request<Pet, Record<string, unknown>>({
       path: '/pets',
       method: 'POST',
       body: this.serializePetForFirestore(pet),
@@ -150,7 +155,7 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
         // Fall back to API below.
       }
     }
-    const response = await apiClient.request<Pet, Pet>({
+    const response = await apiClient.request<Pet, Record<string, unknown>>({
       path: `/pets/${pet.id}`,
       method: 'PUT',
       body: this.serializePetForFirestore(pet),
