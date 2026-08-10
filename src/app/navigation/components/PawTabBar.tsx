@@ -7,14 +7,18 @@ import {
   Platform,
   Pressable,
   StyleSheet,
-  Text,
   useWindowDimensions,
   View,
 } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { AppTabParamList } from '../types';
-import { TAB_BAR_VISUAL_HEIGHT } from '../layout';
+import {
+  TAB_BAR_FLOAT_GAP,
+  TAB_BAR_HORIZONTAL_INSET,
+  TAB_BAR_VISUAL_HEIGHT,
+} from '../layout';
 import { useHomeDashboardStore } from '../../../modules/app/store/homeDashboardStore';
 import { usePetStore } from '../../../modules/pets/store/petStore';
 import type { Pet } from '../../../modules/pets/domain/models/Pet';
@@ -24,6 +28,12 @@ import { useTheme } from '../../../shared/hooks/useTheme';
 import type { Theme } from '../../../shared/hooks/useTheme';
 import { icons } from '../../../shared/assets/icons';
 import { resolvePetAvatarSource } from '../../../shared/utils/petDisplayPhoto';
+import {
+  DEFAULT_TAB_BAR_CORNER_RADIUS,
+  DEFAULT_TAB_BAR_SCOOP_DEPTH,
+  DEFAULT_TAB_BAR_SCOOP_RADIUS,
+  buildPawTabBarShellPath,
+} from './pawTabBarShellPath';
 import {
   SIDE_TAB_ORDER,
   isSideTabActive,
@@ -36,8 +46,12 @@ export { TAB_BAR_VISUAL_HEIGHT as APP_TAB_BAR_HEIGHT } from '../layout';
 type TabKey = 'home' | 'health' | 'notifications' | 'settings' | 'pets';
 
 const FAB_SIZE = 58;
-const FAB_BOTTOM = 28;
-const BAR_ROW_MIN_HEIGHT = 56;
+/** Height of the SVG scoop shell (excludes float gap + safe-area pad). */
+const BAR_HEIGHT = 64;
+/** How much of the FAB visually sits above the bar's top edge, into the scoop. */
+const FAB_OVERHANG = 30;
+/** Distance from the island's bottom edge to the FAB layer's bottom edge, so the FAB dips into the scoop by `FAB_SIZE - FAB_OVERHANG`. */
+const FAB_BOTTOM_OFFSET = BAR_HEIGHT - (FAB_SIZE - FAB_OVERHANG);
 const ORBIT_AVATAR = 52;
 const ORBIT_ITEM_WIDTH = 76;
 const PILL_SIZE = 40;
@@ -112,49 +126,26 @@ const itemStyles = StyleSheet.create({
   tabChip: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
-    minWidth: 64,
-    maxWidth: 86,
     paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingVertical: 10,
     borderRadius: 14,
-  },
-  navLabel: {
-    fontSize: 10,
-    lineHeight: 12,
-    textAlign: 'center',
-  },
-  navLabelActive: {
-    fontSize: 10,
-    lineHeight: 12,
-    textAlign: 'center',
-  },
-  navLabelCompact: {
-    fontSize: 9,
-    lineHeight: 11,
   },
 });
 
 interface TabSlotProps {
-  label: string;
   accessibilityLabel: string;
   icon: TabIconName;
   active: boolean;
   onPress: () => void;
-  compactLabel?: boolean;
-  fontFamilies: ReturnType<typeof useTheme>['fontFamilies'];
   colors: Theme['colors'];
   onCenterMeasured?: (pageX: number, width: number) => void;
 }
 
 const TabSlot = React.memo(function TabSlot({
-  label,
   accessibilityLabel,
   icon,
   active,
   onPress,
-  compactLabel,
-  fontFamilies,
   colors,
   onCenterMeasured,
 }: TabSlotProps) {
@@ -242,19 +233,6 @@ const TabSlot = React.memo(function TabSlot({
             </Animated.View>
           </View>
         </Animated.View>
-        <Text
-          style={[
-            active ? itemStyles.navLabelActive : itemStyles.navLabel,
-            compactLabel && itemStyles.navLabelCompact,
-            {
-              fontFamily: active ? fontFamilies.bold : fontFamilies.medium,
-              color: active ? colors.accent : colors.text.subdued,
-            },
-          ]}
-          numberOfLines={1}
-        >
-          {label}
-        </Text>
       </Animated.View>
     </Pressable>
   );
@@ -281,8 +259,21 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
 
   const bottomPad = Math.max(insets.bottom, Platform.OS === 'ios' ? 6 : 4);
   const shellHeight = TAB_BAR_VISUAL_HEIGHT + bottomPad;
+  const islandWidth = Math.max(winW - TAB_BAR_HORIZONTAL_INSET * 2, 1);
+  const shellPath = useMemo(
+    () =>
+      buildPawTabBarShellPath({
+        width: islandWidth,
+        height: BAR_HEIGHT,
+        cornerRadius: DEFAULT_TAB_BAR_CORNER_RADIUS,
+        scoopRadius: DEFAULT_TAB_BAR_SCOOP_RADIUS,
+        scoopDepth: DEFAULT_TAB_BAR_SCOOP_DEPTH,
+      }),
+    [islandWidth],
+  );
   /** Vertical center of the paw FAB on screen (for orbit layout). */
-  const fabCenterY = winH - bottomPad - FAB_BOTTOM - FAB_SIZE / 2;
+  const fabCenterY =
+    winH - bottomPad - TAB_BAR_FLOAT_GAP - FAB_BOTTOM_OFFSET - FAB_SIZE / 2;
 
   const bubbleAnimsRef = useRef<Animated.Value[]>([]);
   const backdropOpac = useRef(new Animated.Value(0)).current;
@@ -638,124 +629,123 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
         styles.shell,
         {
           height: shellHeight,
-          paddingBottom: bottomPad,
-          backgroundColor: colors.tabBarBackground,
-          borderTopColor: colors.borderSubtle,
+          paddingBottom: bottomPad + TAB_BAR_FLOAT_GAP,
+          paddingHorizontal: TAB_BAR_HORIZONTAL_INSET,
+          backgroundColor: 'transparent',
         },
       ]}
       pointerEvents="box-none"
     >
-      <View
-        ref={barRowRef}
-        style={[styles.barRow, { minHeight: BAR_ROW_MIN_HEIGHT }]}
-      >
-        <Animated.View
+      <View style={[styles.islandWrap, shadows.lg, { width: islandWidth }]}>
+        <Svg
+          width={islandWidth}
+          height={BAR_HEIGHT}
+          style={StyleSheet.absoluteFill}
           pointerEvents="none"
-          style={{
-            position: 'absolute',
-            top: 4,
-            left: 0,
-            width: PILL_SIZE,
-            height: PILL_SIZE,
-            borderRadius: PILL_SIZE / 2,
-            backgroundColor: colors.primaryLight,
-            opacity: pillOpacity,
-            transform: [{ translateX: pillX }, { scale: pillScale }],
-          }}
-        />
-        <View style={styles.side}>
-          <TabSlot
-            label="Home"
-            accessibilityLabel="Home"
-            icon="home"
-            active={currentKey === 'home'}
-            onPress={() => jumpToTabRoot('HomeTab')}
-            fontFamilies={fontFamilies}
-            colors={colors}
-            onCenterMeasured={(pageX, width) => onTabCenter(HOME_SIDE_INDEX, pageX, width)}
-          />
-          <TabSlot
-            label="Health Records"
-            accessibilityLabel="Health records"
-            icon="monitor_heart"
-            active={currentKey === 'health'}
-            onPress={() => jumpToTabRoot('HealthTab')}
-            compactLabel
-            fontFamilies={fontFamilies}
-            colors={colors}
-            onCenterMeasured={(pageX, width) => onTabCenter(HEALTH_SIDE_INDEX, pageX, width)}
-          />
-        </View>
+        >
+          <Path d={shellPath} fill={colors.tabBarBackground} />
+        </Svg>
 
-        <View style={styles.fabGap} />
-
-        <View style={styles.side}>
-          <TabSlot
-            label="Wellness"
-            accessibilityLabel="Wellness"
-            icon="analytics"
-            active={currentKey === 'notifications'}
-            onPress={() => jumpToTabRoot('NotificationsTab')}
-            fontFamilies={fontFamilies}
-            colors={colors}
-            onCenterMeasured={(pageX, width) =>
-              onTabCenter(NOTIFICATIONS_SIDE_INDEX, pageX, width)
-            }
-          />
-          <TabSlot
-            label="Settings"
-            accessibilityLabel="Settings"
-            icon="settings"
-            active={currentKey === 'settings'}
-            onPress={() => jumpToTabRoot('SettingsTab')}
-            fontFamilies={fontFamilies}
-            colors={colors}
-            onCenterMeasured={(pageX, width) => onTabCenter(SETTINGS_SIDE_INDEX, pageX, width)}
-          />
-        </View>
-      </View>
-
-      <View
-        style={[styles.fabLayer, { paddingBottom: FAB_BOTTOM }]}
-        pointerEvents="box-none"
-      >
-        <Animated.View
-          style={[
-            { transform: [{ translateY: fabTranslateY }] },
-          ]}
+        <View
+          ref={barRowRef}
+          style={[styles.barRow, { height: BAR_HEIGHT }]}
         >
           <Animated.View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              top: (BAR_HEIGHT - PILL_SIZE) / 2,
+              left: 0,
+              width: PILL_SIZE,
+              height: PILL_SIZE,
+              borderRadius: PILL_SIZE / 2,
+              backgroundColor: colors.primaryLight,
+              opacity: pillOpacity,
+              transform: [{ translateX: pillX }, { scale: pillScale }],
+            }}
+          />
+          <View style={styles.side}>
+            <TabSlot
+              accessibilityLabel="Home"
+              icon="home"
+              active={currentKey === 'home'}
+              onPress={() => jumpToTabRoot('HomeTab')}
+              colors={colors}
+              onCenterMeasured={(pageX, width) => onTabCenter(HOME_SIDE_INDEX, pageX, width)}
+            />
+            <TabSlot
+              accessibilityLabel="Health records"
+              icon="monitor_heart"
+              active={currentKey === 'health'}
+              onPress={() => jumpToTabRoot('HealthTab')}
+              colors={colors}
+              onCenterMeasured={(pageX, width) => onTabCenter(HEALTH_SIDE_INDEX, pageX, width)}
+            />
+          </View>
+
+          <View style={styles.fabGap} />
+
+          <View style={styles.side}>
+            <TabSlot
+              accessibilityLabel="Wellness"
+              icon="analytics"
+              active={currentKey === 'notifications'}
+              onPress={() => jumpToTabRoot('NotificationsTab')}
+              colors={colors}
+              onCenterMeasured={(pageX, width) =>
+                onTabCenter(NOTIFICATIONS_SIDE_INDEX, pageX, width)
+              }
+            />
+            <TabSlot
+              accessibilityLabel="Settings"
+              icon="settings"
+              active={currentKey === 'settings'}
+              onPress={() => jumpToTabRoot('SettingsTab')}
+              colors={colors}
+              onCenterMeasured={(pageX, width) => onTabCenter(SETTINGS_SIDE_INDEX, pageX, width)}
+            />
+          </View>
+        </View>
+
+        <View style={styles.fabLayer} pointerEvents="box-none">
+          <Animated.View
             style={[
-              styles.fabLift,
-              { transform: [{ scale: fabScale }] },
-              fabShadow,
+              { transform: [{ translateY: fabTranslateY }] },
             ]}
           >
-            <Pressable
+            <Animated.View
               style={[
-                styles.fabButton,
-                { backgroundColor: colors.accent },
-                currentKey === 'pets' && styles.fabButtonActive,
+                styles.fabLift,
+                { transform: [{ scale: fabScale }] },
+                fabShadow,
               ]}
-              onPress={() => jumpToTabRoot('PetsTab')}
-              onLongPress={openPetPicker}
-              delayLongPress={380}
-              onPressIn={() => animateFabPress(true)}
-              onPressOut={() => animateFabPress(false)}
-              accessibilityRole="button"
-              accessibilityLabel="Pets"
-              accessibilityHint="Tap to open pet profile. Long press to switch pets."
-              accessibilityState={{ selected: currentKey === 'pets' }}
-              android_ripple={{
-                color: 'rgba(255,255,255,0.35)',
-                borderless: true,
-                radius: FAB_SIZE / 2,
-              }}
             >
-              <icons.paws width={32} height={32} />
-            </Pressable>
+              <Pressable
+                style={[
+                  styles.fabButton,
+                  { backgroundColor: colors.accent },
+                  currentKey === 'pets' && styles.fabButtonActive,
+                ]}
+                onPress={() => jumpToTabRoot('PetsTab')}
+                onLongPress={openPetPicker}
+                delayLongPress={380}
+                onPressIn={() => animateFabPress(true)}
+                onPressOut={() => animateFabPress(false)}
+                accessibilityRole="button"
+                accessibilityLabel="Pets"
+                accessibilityHint="Tap to open pet profile. Long press to switch pets."
+                accessibilityState={{ selected: currentKey === 'pets' }}
+                android_ripple={{
+                  color: 'rgba(255,255,255,0.35)',
+                  borderless: true,
+                  radius: FAB_SIZE / 2,
+                }}
+              >
+                <icons.paws width={32} height={32} />
+              </Pressable>
+            </Animated.View>
           </Animated.View>
-        </Animated.View>
+        </View>
       </View>
     </View>
 
@@ -952,41 +942,35 @@ const createStyles = () =>
       right: 0,
       bottom: 0,
       overflow: 'visible',
-      borderTopWidth: StyleSheet.hairlineWidth,
-      ...Platform.select({
-        ios: {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -4 },
-          shadowOpacity: 0.07,
-          shadowRadius: 12,
-        },
-        android: {
-          elevation: 12,
-        },
-        default: {},
-      }),
+      justifyContent: 'flex-end',
+    },
+    islandWrap: {
+      borderRadius: DEFAULT_TAB_BAR_CORNER_RADIUS,
+      overflow: 'visible',
+      backgroundColor: 'transparent',
     },
     barRow: {
       flexDirection: 'row',
-      alignItems: 'flex-end',
+      alignItems: 'center',
       justifyContent: 'space-between',
-      paddingHorizontal: 4,
-      paddingTop: 4,
+      paddingHorizontal: 8,
       overflow: 'visible',
     },
     side: {
       flex: 1,
       flexDirection: 'row',
       justifyContent: 'space-evenly',
-      alignItems: 'flex-end',
+      alignItems: 'center',
     },
     fabGap: {
-      width: FAB_SIZE + 14,
+      width: DEFAULT_TAB_BAR_SCOOP_RADIUS * 2,
     },
     fabLayer: {
-      ...StyleSheet.absoluteFillObject,
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: FAB_BOTTOM_OFFSET,
       alignItems: 'center',
-      justifyContent: 'flex-end',
       pointerEvents: 'box-none',
     },
     fabLift: {
