@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { usePostHog } from 'posthog-react-native';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
+import { trackEvent } from '../../../../infrastructure/analytics/analytics';
 import type { HealthStackParamList } from '../../../../app/navigation/types';
 import { useAppTabBarInset } from '../../../../app/navigation/layout';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
@@ -47,7 +47,6 @@ export const AddHealthRecordScreen: React.FC = () => {
       NativeStackNavigationProp<HealthStackParamList, 'AddHealthRecord'>
     >();
   const tabBarInset = useAppTabBarInset();
-  const posthog = usePostHog();
   const { fontFamilies, colors } = useTheme();
   const { createRecordEntry } = useRecordStore();
   const { activePet } = usePetStore();
@@ -91,7 +90,7 @@ export const AddHealthRecordScreen: React.FC = () => {
       setError(result.error ?? 'Unable to save health record.');
       return;
     }
-    posthog.capture('health_record_added', { category, has_notes: Boolean(notes.trim()) });
+    void trackEvent('health_record_added', { category, has_notes: Boolean(notes.trim()) });
     if (activePet) {
       await useSmartHealthRecordStore.getState().loadPetRecords(activePet.id);
     }

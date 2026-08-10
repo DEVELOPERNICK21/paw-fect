@@ -6,11 +6,17 @@ export type IdentifyTraits = {
 };
 
 export type PostHogAnalyticsClient = {
-  capture: (event: string, properties?: AnalyticsParams) => void;
-  screen: (name: string, properties?: AnalyticsParams) => void;
+  capture: (
+    event: string,
+    properties?: AnalyticsParams | Record<string, unknown>,
+  ) => void;
+  screen: (
+    name: string,
+    properties?: AnalyticsParams | Record<string, unknown>,
+  ) => void | Promise<void>;
   identify: (
     distinctId: string,
-    properties?: { $set?: Record<string, string | undefined> },
+    properties?: Record<string, unknown>,
   ) => void;
   reset: () => void;
 };

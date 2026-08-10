@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { usePostHog } from 'posthog-react-native';
 import {
   Animated,
   Image,
@@ -12,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { trackEvent } from '../../../../infrastructure/analytics/analytics';
 import { images } from '../../../../shared/assets/images';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import type { CareInterest } from '../../../settings/domain/models/Settings';
@@ -26,7 +26,6 @@ type ReminderDemo = 'vaccination' | 'grooming' | 'walks' | 'meds' | null;
 type PetDemo = 'luna' | 'milo' | 'add' | null;
 
 export const OnboardingScreen: React.FC = () => {
-  const posthog = usePostHog();
   const { fontFamilies, colors, isDarkMode } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { settings, updateSettings } = useSettingsStore();
@@ -43,11 +42,11 @@ export const OnboardingScreen: React.FC = () => {
   const sv = (value: number) => Math.round(value * scale * 0.92);
 
   useEffect(() => {
-    posthog.capture('onboarding_step_viewed', {
+    void trackEvent('onboarding_step_viewed', {
       step: step + 1,
       total_steps: TOTAL_STEPS,
     });
-  }, [posthog, step]);
+  }, [step]);
 
   useEffect(() => {
     fade.setValue(0);
@@ -60,9 +59,9 @@ export const OnboardingScreen: React.FC = () => {
 
   const completeOnboarding = useCallback(
     (skipped = false) => {
-      posthog.capture('onboarding_completed', {
+      void trackEvent('onboarding_completed', {
         skipped,
-        care_interests: careInterests,
+        care_interests: careInterests.join(','),
       });
       const current = settings ?? {
         notificationsEnabled: true,
@@ -77,7 +76,7 @@ export const OnboardingScreen: React.FC = () => {
         careInterests,
       });
     },
-    [careInterests, posthog, settings, updateSettings],
+    [careInterests, settings, updateSettings],
   );
 
   const handleSkip = useCallback(() => {

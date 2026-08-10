@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { usePostHog } from 'posthog-react-native';
 import {
   Animated,
   Pressable,
@@ -11,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { trackEvent } from '../../../../infrastructure/analytics/analytics';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { lineHeights } from '../../../../shared/theme/typography';
 import { buildCarePlanSummary } from '../../domain/onboarding/buildCarePlanSummary';
@@ -134,7 +134,6 @@ const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
   });
 
 export const OnboardingFunnelScreen: React.FC = () => {
-  const posthog = usePostHog();
   const { colors, fontFamilies, fontSizes, spacing, radius, isDarkMode } =
     useTheme();
   const styles = useMemo(
@@ -156,21 +155,21 @@ export const OnboardingFunnelScreen: React.FC = () => {
   const summary = useMemo(() => buildCarePlanSummary(draft), [draft]);
 
   useEffect(() => {
-    posthog.capture('onboarding_step_viewed', {
+    void trackEvent('onboarding_step_viewed', {
       step: step + 1,
       total_steps: QUIZ_STEP_COUNT,
       phase: draft.phase,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fires on STEP change only; `phase` is intentionally excluded to avoid re-firing this event when the commitment step flips phase without changing step.
-  }, [posthog, step]);
+  }, [step]);
 
   useEffect(() => {
     if (step === STEP_INDEX.planReveal) {
-      posthog.capture('onboarding_plan_revealed', {
+      void trackEvent('onboarding_plan_revealed', {
         bullets_count: summary.bullets.length,
       });
     }
-  }, [posthog, step, summary.bullets.length]);
+  }, [step, summary.bullets.length]);
 
   useEffect(() => {
     fade.setValue(0);
@@ -255,15 +254,15 @@ export const OnboardingFunnelScreen: React.FC = () => {
 
   const handleContinue = useCallback(() => {
     if (step === STEP_INDEX.problemNaming) {
-      posthog.capture('onboarding_problem_selected', {
-        problems: draft.problems,
+      void trackEvent('onboarding_problem_selected', {
+        problems: draft.problems.join(','),
       });
     }
 
     if (step === STEP_INDEX.commitment) {
-      posthog.capture('onboarding_commitment_completed', {
-        goal: draft.goal,
-        care_interests: draft.careInterests,
+      void trackEvent('onboarding_commitment_completed', {
+        goal: draft.goal ?? '',
+        care_interests: draft.careInterests.join(','),
       });
       update(acceptCommitment);
       setPhase('paywall');
@@ -273,7 +272,6 @@ export const OnboardingFunnelScreen: React.FC = () => {
     goNext();
   }, [
     step,
-    posthog,
     draft.problems,
     draft.goal,
     draft.careInterests,

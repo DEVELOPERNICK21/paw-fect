@@ -6,6 +6,7 @@ import type {
   AnalyticsFacade,
   AnalyticsParams,
   IdentifyTraits,
+  PostHogAnalyticsClient,
 } from './types';
 
 export function createAnalytics(deps: AnalyticsDeps): AnalyticsFacade {
@@ -98,7 +99,7 @@ export function createAnalytics(deps: AnalyticsDeps): AnalyticsFacade {
 }
 
 const defaultAnalytics = createAnalytics({
-  posthog,
+  posthog: posthog as unknown as PostHogAnalyticsClient,
   firebase: createFirebaseAnalyticsPort(),
   isDev: __DEV__,
 });

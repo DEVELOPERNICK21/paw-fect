@@ -1,5 +1,4 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { usePostHog } from 'posthog-react-native';
 import {
   ActivityIndicator,
   Pressable,
@@ -10,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { trackEvent } from '../../../../../infrastructure/analytics/analytics';
 import { useTheme } from '../../../../../shared/hooks/useTheme';
 import { lineHeights } from '../../../../../shared/theme/typography';
 import { useSettingsStore } from '../../../../settings/store/settingsStore';
@@ -142,7 +142,6 @@ const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
   });
 
 export const OnboardingTipsScreen: React.FC = () => {
-  const posthog = usePostHog();
   const { colors, fontFamilies, fontSizes, spacing, radius, isDarkMode } =
     useTheme();
   const styles = useMemo(
@@ -175,11 +174,11 @@ export const OnboardingTipsScreen: React.FC = () => {
       return;
     }
 
-    posthog.capture('onboarding_completed', {
+    void trackEvent('onboarding_completed', {
       skipped_paywall: skippedPaywall,
-      care_interests: careInterests,
+      care_interests: careInterests.join(','),
     });
-  }, [completing, draft.skippedPaywall, draft.careInterests, posthog, completeFunnel]);
+  }, [completing, draft.skippedPaywall, draft.careInterests, completeFunnel]);
 
   return (
     <SafeAreaView style={styles.safeArea}>

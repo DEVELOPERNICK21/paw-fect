@@ -17,6 +17,7 @@ import {
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Svg, { Path } from 'react-native-svg';
 
+import { trackEvent } from '../../../../infrastructure/analytics/analytics';
 import type { PetsStackParamList } from '../../../../app/navigation/types';
 import { validateLastDewormingDate } from '../../../records/domain/utils/DewormingEngine';
 import { useTheme } from '../../../../shared/hooks/useTheme';
@@ -35,7 +36,6 @@ import { icons } from '../../../../shared/assets/icons';
 import { DatePickerField } from '../../../../shared/components/DatePickerField';
 import { spacing } from '../../../../shared/theme/spacing';
 import { inferDefaultPetRegion } from '../../../../shared/utils/inferDefaultPetRegion';
-import { usePostHog } from 'posthog-react-native';
 import {
   computePetFormProgress,
 } from '../../domain/utils/computePetFormProgress';
@@ -92,7 +92,6 @@ export const AddPetScreen: React.FC = () => {
   const petId = route.params?.petId;
   const isEditMode = petId != null && petId.length > 0;
 
-  const posthog = usePostHog();
   const { colors, fontFamilies } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const createPetProfile = usePetStore(s => s.createPetProfile);
@@ -331,7 +330,7 @@ export const AddPetScreen: React.FC = () => {
       setError(result.error ?? 'Unable to save changes.');
       return;
     }
-    posthog.capture('pet_profile_updated', { pet_type: petType });
+    void trackEvent('pet_profile_updated', { pet_type: petType });
     setIsSaving(false);
     if (navigation.canGoBack()) {
       navigation.goBack();
@@ -528,7 +527,7 @@ export const AddPetScreen: React.FC = () => {
       setError(toFriendlyAddPetError(result.error));
       return;
     }
-    posthog.capture('pet_profile_created', {
+    void trackEvent('pet_profile_created', {
       pet_type: petType,
       has_breed: Boolean(breed.trim()),
       lifestyle_type: lifestyleType,
@@ -1587,7 +1586,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
     borderRadius: 12,
   },
   petTypeOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 12,
     backgroundColor: 'rgba(0,0,0,0.45)',
   },

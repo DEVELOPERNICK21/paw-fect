@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo } from 'react';
-import { usePostHog } from 'posthog-react-native';
 import {
   ActivityIndicator,
   Pressable,
@@ -11,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
+import { trackEvent } from '../../../../infrastructure/analytics/analytics';
 import type { PaywallRouteParams } from '../../../../app/navigation/types';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
 import { useTheme } from '../../../../shared/hooks/useTheme';
@@ -46,15 +46,14 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
   const startPlayStoreCheckout = useSubscriptionStore(
     s => s.startPlayStoreCheckout,
   );
-  const posthog = usePostHog();
 
   useEffect(() => {
-    posthog.capture('paywall_viewed', { source });
-  }, [posthog, source]);
+    void trackEvent('paywall_viewed', { source });
+  }, [source]);
 
   const handleDismiss = (): void => {
     if (source === 'onboarding') {
-      posthog.capture('paywall_dismissed', { source });
+      void trackEvent('paywall_dismissed', { source });
     }
     if (onDismiss) {
       onDismiss();
@@ -247,7 +246,7 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
             style={styles.cta}
             disabled={checkoutLoading}
             onPress={() => {
-              posthog.capture('subscription_checkout_started', { plan: PLAN_CARE_PLUS, billing: 'monthly', source });
+              void trackEvent('subscription_checkout_started', { plan: PLAN_CARE_PLUS, billing: 'monthly', source });
               void startPlayStoreCheckout(PLAN_CARE_PLUS, 'monthly');
             }}
           >
@@ -263,7 +262,7 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
             style={[styles.cta, { backgroundColor: colors.text.heading, marginTop: spacing.sm }]}
             disabled={checkoutLoading}
             onPress={() => {
-              posthog.capture('subscription_checkout_started', { plan: PLAN_CARE_PLUS, billing: 'annual', source });
+              void trackEvent('subscription_checkout_started', { plan: PLAN_CARE_PLUS, billing: 'annual', source });
               void startPlayStoreCheckout(PLAN_CARE_PLUS, 'annual');
             }}
           >
@@ -287,7 +286,7 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
             style={styles.cta}
             disabled={checkoutLoading}
             onPress={() => {
-              posthog.capture('subscription_checkout_started', { plan: PLAN_FAMILY, billing: 'monthly', source });
+              void trackEvent('subscription_checkout_started', { plan: PLAN_FAMILY, billing: 'monthly', source });
               void startPlayStoreCheckout(PLAN_FAMILY, 'monthly');
             }}
           >
@@ -299,7 +298,7 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
             style={[styles.cta, { backgroundColor: colors.text.heading, marginTop: spacing.sm }]}
             disabled={checkoutLoading}
             onPress={() => {
-              posthog.capture('subscription_checkout_started', { plan: PLAN_FAMILY, billing: 'annual', source });
+              void trackEvent('subscription_checkout_started', { plan: PLAN_FAMILY, billing: 'annual', source });
               void startPlayStoreCheckout(PLAN_FAMILY, 'annual');
             }}
           >

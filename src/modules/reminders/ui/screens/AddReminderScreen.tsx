@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { usePostHog } from 'posthog-react-native';
 import {
   Image,
   Pressable,
@@ -12,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
+import { trackEvent } from '../../../../infrastructure/analytics/analytics';
 import type { NotificationsStackParamList } from '../../../../app/navigation/types';
 import { useAppTabBarInset } from '../../../../app/navigation/layout';
 import { AppText } from '../../../../shared/components/AppText';
@@ -149,7 +149,6 @@ export const AddReminderScreen: React.FC = () => {
     useNavigation<
       NativeStackNavigationProp<NotificationsStackParamList, 'AddReminder'>
     >();
-  const posthog = usePostHog();
   const theme = useTheme();
   const { colors, spacing, textStyles, fontFamilies, radius } = theme;
   const tabBarInset = useAppTabBarInset();
@@ -203,7 +202,7 @@ export const AddReminderScreen: React.FC = () => {
       setError(result.error ?? 'Unable to save reminder.');
       return;
     }
-    posthog.capture('reminder_created', { has_notes: Boolean(notes.trim()) });
+    void trackEvent('reminder_created', { has_notes: Boolean(notes.trim()) });
     navigation.navigate('ReminderList');
   }, [
     activePet?.id,
@@ -211,7 +210,6 @@ export const AddReminderScreen: React.FC = () => {
     date,
     navigation,
     notes,
-    posthog,
     selectedPetId,
     time,
     title,

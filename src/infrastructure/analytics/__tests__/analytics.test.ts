@@ -18,12 +18,21 @@ jest.mock('@react-native-firebase/analytics', () => ({
 import { createAnalytics } from '../analytics';
 import type { FirebaseAnalyticsPort } from '../types';
 
-function createMockFirebase(): jest.Mocked<FirebaseAnalyticsPort> {
+function createMockFirebase(): FirebaseAnalyticsPort {
   return {
-    setCollectionEnabled: jest.fn(async () => undefined),
-    logEvent: jest.fn(async () => undefined),
-    logScreenView: jest.fn(async () => undefined),
-    setUserId: jest.fn(async () => undefined),
+    setCollectionEnabled: jest.fn(
+      async (_enabled: boolean): Promise<void> => undefined,
+    ),
+    logEvent: jest.fn(
+      async (_name: string, _params?: unknown): Promise<void> => undefined,
+    ),
+    logScreenView: jest.fn(
+      async (_params: {
+        screen_name: string;
+        screen_class: string;
+      }): Promise<void> => undefined,
+    ),
+    setUserId: jest.fn(async (_userId: string): Promise<void> => undefined),
   };
 }
 
@@ -145,7 +154,9 @@ describe('createAnalytics', () => {
 
   it('swallows Firebase errors so callers are not rejected', async () => {
     const firebase = createMockFirebase();
-    firebase.logEvent.mockRejectedValueOnce(new Error('native boom'));
+    (firebase.logEvent as jest.Mock).mockRejectedValueOnce(
+      new Error('native boom'),
+    );
     const posthog = createMockPostHog();
     const analytics = createAnalytics({
       posthog,

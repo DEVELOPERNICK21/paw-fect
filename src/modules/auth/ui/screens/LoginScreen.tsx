@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { usePostHog } from 'posthog-react-native';
 import {
   Animated,
   Image,
@@ -9,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { trackEvent } from '../../../../infrastructure/analytics/analytics';
 import { useAuthStore } from '../../store/authStore';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import type { Theme } from '../../../../shared/hooks/useTheme';
@@ -42,7 +42,6 @@ export const LoginScreen: React.FC = () => {
     state => state.sendPasswordResetEmail,
   );
   const authNotice = useAuthStore(state => state.authNotice);
-  const posthog = usePostHog();
   const { colors, space, radius, spacing, textStyles } = useTheme();
   const styles = useMemo(
     () => createStyles({ colors, space, radius, spacing, textStyles }),
@@ -87,14 +86,14 @@ export const LoginScreen: React.FC = () => {
     if (isCreateMode) {
       await signup(validationResult.normalizedEmail, password);
       if (!useAuthStore.getState().authError) {
-        posthog.capture('user_signed_up', { method: 'email' });
+        void trackEvent('user_signed_up', { method: 'email' });
       }
       return;
     }
 
     await login(validationResult.normalizedEmail, password);
     if (!useAuthStore.getState().authError) {
-      posthog.capture('user_logged_in', { method: 'email' });
+      void trackEvent('user_logged_in', { method: 'email' });
     }
   };
 
@@ -103,7 +102,7 @@ export const LoginScreen: React.FC = () => {
     clearAuthError();
     const success = await loginWithGoogle();
     if (success) {
-      posthog.capture('user_logged_in', { method: 'google' });
+      void trackEvent('user_logged_in', { method: 'google' });
     }
   };
 
