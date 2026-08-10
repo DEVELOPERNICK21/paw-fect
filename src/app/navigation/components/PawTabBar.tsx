@@ -24,6 +24,12 @@ import { useTheme } from '../../../shared/hooks/useTheme';
 import type { Theme } from '../../../shared/hooks/useTheme';
 import { icons } from '../../../shared/assets/icons';
 import { resolvePetAvatarSource } from '../../../shared/utils/petDisplayPhoto';
+import {
+  SIDE_TAB_ORDER,
+  isSideTabActive,
+  pillTranslateX,
+  sideTabIndex,
+} from './pawTabBarMotion';
 
 export { TAB_BAR_VISUAL_HEIGHT as APP_TAB_BAR_HEIGHT } from '../layout';
 
@@ -34,6 +40,12 @@ const FAB_BOTTOM = 28;
 const BAR_ROW_MIN_HEIGHT = 56;
 const ORBIT_AVATAR = 52;
 const ORBIT_ITEM_WIDTH = 76;
+const PILL_SIZE = 40;
+
+const HOME_SIDE_INDEX = SIDE_TAB_ORDER.indexOf('home');
+const HEALTH_SIDE_INDEX = SIDE_TAB_ORDER.indexOf('health');
+const NOTIFICATIONS_SIDE_INDEX = SIDE_TAB_ORDER.indexOf('notifications');
+const SETTINGS_SIDE_INDEX = SIDE_TAB_ORDER.indexOf('settings');
 
 type TabIconName =
   | 'home'
@@ -132,6 +144,9 @@ interface TabSlotProps {
   compactLabel?: boolean;
   fontFamilies: ReturnType<typeof useTheme>['fontFamilies'];
   colors: Theme['colors'];
+  /** Index of this tab within `SIDE_TAB_ORDER`; used by the parent to key measured centers. */
+  sideIndex: number;
+  onCenterMeasured?: (pageX: number, width: number) => void;
 }
 
 const TabSlot = React.memo(function TabSlot({
@@ -143,9 +158,12 @@ const TabSlot = React.memo(function TabSlot({
   compactLabel,
   fontFamilies,
   colors,
+  sideIndex,
+  onCenterMeasured,
 }: TabSlotProps) {
   const scale = useRef(new Animated.Value(1)).current;
   const activePop = useRef(new Animated.Value(active ? 1 : 0)).current;
+  const slotRef = useRef<View>(null);
 
   const pressIn = () => {
     Animated.spring(scale, { ...springPress, toValue: 0.93 }).start();
@@ -179,63 +197,72 @@ const TabSlot = React.memo(function TabSlot({
   });
 
   return (
-    <Pressable
-      onPressIn={pressIn}
-      onPressOut={pressOut}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ selected: active }}
-      hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
-      style={itemStyles.tabHit}
+    <View
+      ref={slotRef}
+      onLayout={() => {
+        slotRef.current?.measureInWindow((x, _y, width) => {
+          onCenterMeasured?.(x, width);
+        });
+      }}
     >
-      <Animated.View
-        style={[
-          itemStyles.tabChip,
-          {
-            transform: [{ scale }],
-            backgroundColor: active ? colors.primaryLight : 'transparent',
-          },
-        ]}
+      <Pressable
+        onPressIn={pressIn}
+        onPressOut={pressOut}
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityState={{ selected: active }}
+        hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
+        style={itemStyles.tabHit}
+        testID={`paw-tab-slot-${sideIndex}`}
       >
         <Animated.View
-          style={{
-            transform: [{ scale: iconPopScale }, { translateY: iconLift }],
-          }}
-        >
-          <View style={{ width: 28, height: 28, justifyContent: 'center' }}>
-            <Animated.View
-              style={{ position: 'absolute', left: 0, right: 0, opacity: activeOpacity }}
-            >
-              <MaterialIcon name={icon} size={24} color={colors.accent} />
-            </Animated.View>
-            <Animated.View
-              style={{
-                position: 'absolute',
-                left: 0,
-                right: 0,
-                opacity: inactiveOpacity,
-              }}
-            >
-              <MaterialIcon name={icon} size={24} color={colors.text.subdued} />
-            </Animated.View>
-          </View>
-        </Animated.View>
-        <Text
           style={[
-            active ? itemStyles.navLabelActive : itemStyles.navLabel,
-            compactLabel && itemStyles.navLabelCompact,
+            itemStyles.tabChip,
             {
-              fontFamily: active ? fontFamilies.bold : fontFamilies.medium,
-              color: active ? colors.accent : colors.text.subdued,
+              transform: [{ scale }],
             },
           ]}
-          numberOfLines={1}
         >
-          {label}
-        </Text>
-      </Animated.View>
-    </Pressable>
+          <Animated.View
+            style={{
+              transform: [{ scale: iconPopScale }, { translateY: iconLift }],
+            }}
+          >
+            <View style={{ width: 28, height: 28, justifyContent: 'center' }}>
+              <Animated.View
+                style={{ position: 'absolute', left: 0, right: 0, opacity: activeOpacity }}
+              >
+                <MaterialIcon name={icon} size={24} color={colors.accent} />
+              </Animated.View>
+              <Animated.View
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  opacity: inactiveOpacity,
+                }}
+              >
+                <MaterialIcon name={icon} size={24} color={colors.text.subdued} />
+              </Animated.View>
+            </View>
+          </Animated.View>
+          <Text
+            style={[
+              active ? itemStyles.navLabelActive : itemStyles.navLabel,
+              compactLabel && itemStyles.navLabelCompact,
+              {
+                fontFamily: active ? fontFamilies.bold : fontFamilies.medium,
+                color: active ? colors.accent : colors.text.subdued,
+              },
+            ]}
+            numberOfLines={1}
+          >
+            {label}
+          </Text>
+        </Animated.View>
+      </Pressable>
+    </View>
   );
 });
 
@@ -268,6 +295,87 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
 
   const currentRoute = state.routes[state.index];
   const currentKey = tabKeyFromRouteName(currentRoute.name);
+
+  const barRowRef = useRef<View>(null);
+  const centersXRef = useRef<Array<number | undefined>>([
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+  ]);
+  const pillX = useRef(new Animated.Value(0)).current;
+  const pillOpacity = useRef(
+    new Animated.Value(isSideTabActive(currentKey) ? 1 : 0),
+  ).current;
+  const pillScale = useRef(new Animated.Value(1)).current;
+  const hasPositionedPill = useRef(false);
+
+  const onTabCenter = useCallback(
+    (sideIndex: number, pageX: number, width: number) => {
+      barRowRef.current?.measureInWindow(barX => {
+        const centerInBar = pageX + width / 2 - barX;
+        centersXRef.current[sideIndex] = centerInBar;
+        const activeIndex = sideTabIndex(currentKey);
+        if (activeIndex === sideIndex) {
+          const x = pillTranslateX(centersXRef.current, activeIndex, PILL_SIZE);
+          if (x != null && !hasPositionedPill.current) {
+            pillX.setValue(x);
+            hasPositionedPill.current = true;
+          }
+        }
+      });
+    },
+    [currentKey, pillX],
+  );
+
+  useEffect(() => {
+    const index = sideTabIndex(currentKey);
+    const show = index != null;
+    Animated.timing(pillOpacity, {
+      toValue: show ? 1 : 0,
+      duration: 180,
+      useNativeDriver: true,
+    }).start();
+
+    if (index == null) {
+      return;
+    }
+    const x = pillTranslateX(centersXRef.current, index, PILL_SIZE);
+    if (x == null) {
+      return;
+    }
+    if (!hasPositionedPill.current) {
+      pillX.setValue(x);
+      hasPositionedPill.current = true;
+      return;
+    }
+    Animated.parallel([
+      Animated.spring(pillX, {
+        toValue: x,
+        friction: 7,
+        tension: 180,
+        useNativeDriver: true,
+      }),
+      Animated.sequence([
+        Animated.timing(pillScale, {
+          toValue: 0.88,
+          duration: 90,
+          useNativeDriver: true,
+        }),
+        Animated.spring(pillScale, {
+          toValue: 1,
+          friction: 5,
+          tension: 220,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
+  }, [currentKey, pillOpacity, pillScale, pillX]);
+
+  useEffect(() => {
+    hasPositionedPill.current = false;
+    centersXRef.current = [undefined, undefined, undefined, undefined];
+  }, [winW]);
 
   const fabScale = useRef(new Animated.Value(1)).current;
   const fabLift = useRef(new Animated.Value(0)).current;
@@ -496,7 +604,23 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
       ]}
       pointerEvents="box-none"
     >
-      <View style={[styles.barRow, { minHeight: BAR_ROW_MIN_HEIGHT }]}>
+      <View
+        ref={barRowRef}
+        style={[styles.barRow, { minHeight: BAR_ROW_MIN_HEIGHT }]}
+      >
+        <Animated.View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: 8,
+            width: PILL_SIZE,
+            height: PILL_SIZE,
+            borderRadius: PILL_SIZE / 2,
+            backgroundColor: colors.primaryLight,
+            opacity: pillOpacity,
+            transform: [{ translateX: pillX }, { scale: pillScale }],
+          }}
+        />
         <View style={styles.side}>
           <TabSlot
             label="Home"
@@ -506,6 +630,8 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
             onPress={() => jumpToTabRoot('HomeTab')}
             fontFamilies={fontFamilies}
             colors={colors}
+            sideIndex={HOME_SIDE_INDEX}
+            onCenterMeasured={(pageX, width) => onTabCenter(HOME_SIDE_INDEX, pageX, width)}
           />
           <TabSlot
             label="Health Records"
@@ -516,6 +642,8 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
             compactLabel
             fontFamilies={fontFamilies}
             colors={colors}
+            sideIndex={HEALTH_SIDE_INDEX}
+            onCenterMeasured={(pageX, width) => onTabCenter(HEALTH_SIDE_INDEX, pageX, width)}
           />
         </View>
 
@@ -530,6 +658,10 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
             onPress={() => jumpToTabRoot('NotificationsTab')}
             fontFamilies={fontFamilies}
             colors={colors}
+            sideIndex={NOTIFICATIONS_SIDE_INDEX}
+            onCenterMeasured={(pageX, width) =>
+              onTabCenter(NOTIFICATIONS_SIDE_INDEX, pageX, width)
+            }
           />
           <TabSlot
             label="Settings"
@@ -539,6 +671,8 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
             onPress={() => jumpToTabRoot('SettingsTab')}
             fontFamilies={fontFamilies}
             colors={colors}
+            sideIndex={SETTINGS_SIDE_INDEX}
+            onCenterMeasured={(pageX, width) => onTabCenter(SETTINGS_SIDE_INDEX, pageX, width)}
           />
         </View>
       </View>
@@ -800,6 +934,7 @@ const createStyles = () =>
       justifyContent: 'space-between',
       paddingHorizontal: 4,
       paddingTop: 4,
+      overflow: 'visible',
     },
     side: {
       flex: 1,
