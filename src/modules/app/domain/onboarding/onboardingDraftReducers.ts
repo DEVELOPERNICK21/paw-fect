@@ -16,8 +16,10 @@ export const createDefaultOnboardingDraft = (): OnboardingDraft => ({
   goal: null,
   careInterests: [],
   commitmentAccepted: false,
+  committedAt: null,
   phase: 'quiz',
   skippedPaywall: false,
+  paywallOutcome: null,
 });
 
 export const advanceStep = (draft: OnboardingDraft): OnboardingDraft => ({
@@ -57,9 +59,13 @@ export const setCareInterests = (
   careInterests: [...careInterests],
 });
 
-export const acceptCommitment = (draft: OnboardingDraft): OnboardingDraft => ({
+export const acceptCommitment = (
+  draft: OnboardingDraft,
+  committedAt: string = new Date().toISOString(),
+): OnboardingDraft => ({
   ...draft,
   commitmentAccepted: true,
+  committedAt: draft.committedAt ?? committedAt,
 });
 
 export const setPhase = (

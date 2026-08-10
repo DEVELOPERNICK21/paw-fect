@@ -1,10 +1,12 @@
 import { create } from 'zustand';
 
+import { trackEvent } from '../../../infrastructure/analytics/analytics';
 import { createOnboardingDraftDataSource } from '../data/onboarding/OnboardingDraftDataSource';
 import type {
   OnboardingDraft,
   OnboardingPhase,
 } from '../domain/onboarding/OnboardingDraft';
+import { buildOnboardingProfile } from '../domain/onboarding/buildOnboardingProfile';
 import {
   advanceStep,
   createDefaultOnboardingDraft,
@@ -85,7 +87,8 @@ export const useOnboardingDraftStore = create<OnboardingDraftState>((set, get) =
 
   completeFunnel: async () => {
     try {
-      const { careInterests } = get().draft;
+      const draft = get().draft;
+      const { careInterests } = draft;
 
       const currentSettings = useSettingsStore.getState().settings;
       if (!currentSettings) {
@@ -97,24 +100,35 @@ export const useOnboardingDraftStore = create<OnboardingDraftState>((set, get) =
         return;
       }
 
+      const onboardingProfile = buildOnboardingProfile(draft);
+
       await useSettingsStore.getState().updateSettings({
         ...currentSettings,
         careInterests: [...careInterests],
         onboardingCompleted: true,
+        onboardingProfile,
       });
 
       const updatedSettings = useSettingsStore.getState().settings;
-      if (updatedSettings?.onboardingCompleted !== true) {
+      if (
+        updatedSettings?.onboardingCompleted !== true ||
+        !updatedSettings.onboardingProfile
+      ) {
         // updateSettings swallows storage errors internally, so a failed
         // write leaves onboardingCompleted false without throwing. Keep the
         // draft intact so the user can retry instead of losing their answers.
         // eslint-disable-next-line no-console
         console.error(
           '[onboardingDraftStore] completeFunnel error',
-          'settings update did not persist onboardingCompleted',
+          'settings update did not persist onboarding profile',
         );
         return;
       }
+
+      void trackEvent('onboarding_draft_persisted', {
+        hasNickname: Boolean(onboardingProfile.pet.nickname.trim()),
+        paywallOutcome: onboardingProfile.paywallOutcome,
+      });
 
       await dataSource.clearDraft();
       set({ draft: createDefaultOnboardingDraft() });

@@ -14,6 +14,10 @@ jest.mock('../../../../infrastructure/storage/storageService', () => ({
   },
 }));
 
+jest.mock('../../../../infrastructure/analytics/analytics', () => ({
+  trackEvent: jest.fn(),
+}));
+
 jest.mock('../../../settings/store/settingsStore', () => ({
   useSettingsStore: {
     getState: jest.fn(),
@@ -86,6 +90,10 @@ describe('onboardingDraftStore', () => {
       expect.objectContaining({
         careInterests: ['vaccines', 'walks'],
         onboardingCompleted: true,
+        onboardingProfile: expect.objectContaining({
+          careInterests: ['vaccines', 'walks'],
+          paywallOutcome: 'purchased',
+        }),
       }),
     );
     expect(mockRemoveItem).toHaveBeenCalledWith('onboarding_draft');

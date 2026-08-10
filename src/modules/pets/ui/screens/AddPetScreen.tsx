@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -22,6 +22,7 @@ import type { PetsStackParamList } from '../../../../app/navigation/types';
 import { validateLastDewormingDate } from '../../../records/domain/utils/DewormingEngine';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { useSubscriptionStore } from '../../../subscription/store/subscriptionStore';
+import { useSettingsStore } from '../../../settings/store/settingsStore';
 import { usePetStore } from '../../store/petStore';
 import type {
   Pet,
@@ -32,6 +33,7 @@ import type {
   PetType,
 } from '../../domain/models/Pet';
 import { isPetPhotoPlaceholderUri } from '../../domain/utils/petPhotoPlaceholder';
+import { prefillFromOnboardingProfile } from '../../domain/utils/prefillFromOnboardingProfile';
 import { icons } from '../../../../shared/assets/icons';
 import { DatePickerField } from '../../../../shared/components/DatePickerField';
 import { spacing } from '../../../../shared/theme/spacing';
@@ -98,9 +100,23 @@ export const AddPetScreen: React.FC = () => {
   const updatePet = usePetStore(s => s.updatePet);
   const petsUsed = usePetStore(s => s.pets.length);
   const entitlement = useSubscriptionStore(s => s.entitlement);
+  const onboardingProfile = useSettingsStore(
+    s => s.settings?.onboardingProfile,
+  );
 
-  const [name, setName] = useState('');
-  const [petType, setPetType] = useState<PetType>('dog');
+  const initialPrefill = useMemo(
+    () =>
+      !isEditMode ? prefillFromOnboardingProfile(onboardingProfile) : null,
+    // Only seed once from the profile present at first mount of create mode.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional one-shot defaults
+    [isEditMode],
+  );
+  const prefilledFieldsRef = useRef(initialPrefill?.fieldsPrefilled ?? []);
+
+  const [name, setName] = useState(initialPrefill?.name ?? '');
+  const [petType, setPetType] = useState<PetType>(
+    initialPrefill?.petType ?? 'dog',
+  );
   const [breed, setBreed] = useState('');
   const [photoUri, setPhotoUri] = useState<string>(PROFILE_PLACEHOLDER);
   const [dob, setDob] = useState<string>('');
@@ -533,6 +549,25 @@ export const AddPetScreen: React.FC = () => {
       lifestyle_type: lifestyleType,
       region,
     });
+    if (prefilledFieldsRef.current.length > 0) {
+      const fieldsEdited: string[] = [];
+      if (
+        prefilledFieldsRef.current.includes('name') &&
+        name.trim() !== (initialPrefill?.name ?? '')
+      ) {
+        fieldsEdited.push('name');
+      }
+      if (
+        prefilledFieldsRef.current.includes('petType') &&
+        petType !== (initialPrefill?.petType ?? 'dog')
+      ) {
+        fieldsEdited.push('petType');
+      }
+      void trackEvent('post_onboarding_prefill_used', {
+        fields_prefilled: prefilledFieldsRef.current.join(','),
+        fields_edited: fieldsEdited.join(','),
+      });
+    }
     setIsSaving(false);
     if (navigation.canGoBack()) {
       navigation.goBack();

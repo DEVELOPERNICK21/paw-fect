@@ -1,7 +1,13 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+
+import { trackEvent } from '../../../../infrastructure/analytics/analytics';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import type { CareInterest } from '../../../settings/domain/models/Settings';
+import {
+  validationCopyForCareInterests,
+  validationVariantIdForCareInterests,
+} from '../../domain/onboarding/onboardingValidationCopy';
 import { CARE_INTEREST_OPTIONS } from '../onboarding/careInterestUtils';
 
 type Props = {
@@ -61,6 +67,13 @@ const createStyles = ({ colors, spacing, radius }: ThemeParams) =>
       fontSize: 14,
       lineHeight: 20,
     },
+    validation: {
+      marginTop: spacing.md,
+      fontSize: 13,
+      lineHeight: 18,
+      color: colors.text.body,
+      textAlign: 'center',
+    },
   });
 
 export const OnboardingCareInterestsStep: React.FC<Props> = ({
@@ -72,6 +85,21 @@ export const OnboardingCareInterestsStep: React.FC<Props> = ({
     () => createStyles({ colors, spacing, radius }),
     [colors, spacing, radius],
   );
+
+  const validation = validationCopyForCareInterests(selected);
+  const variant = validationVariantIdForCareInterests(selected);
+  const lastTrackedVariant = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!variant || variant === lastTrackedVariant.current) {
+      return;
+    }
+    lastTrackedVariant.current = variant;
+    void trackEvent('onboarding_validation_shown', {
+      step: 5,
+      variant_shown: variant,
+    });
+  }, [variant]);
 
   return (
     <View style={styles.container}>
@@ -113,6 +141,11 @@ export const OnboardingCareInterestsStep: React.FC<Props> = ({
           );
         })}
       </View>
+      {validation ? (
+        <Text style={[styles.validation, { fontFamily: fontFamilies.medium }]}>
+          {validation}
+        </Text>
+      ) : null}
     </View>
   );
 };

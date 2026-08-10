@@ -12,24 +12,36 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 
 import { trackEvent } from '../../../../infrastructure/analytics/analytics';
 import type { PaywallRouteParams } from '../../../../app/navigation/types';
+import type { OnboardingDraft } from '../../../app/domain/onboarding/OnboardingDraft';
+import {
+  buildOnboardingCtaLabel,
+  buildOnboardingLossLine,
+  buildOnboardingSocialProofLine,
+  orderPlanFeaturesForOnboarding,
+  petDisplayName,
+  PLAN_FEATURE_COPY,
+} from '../../../app/domain/onboarding/onboardingPaywallCopy';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
 import { useTheme } from '../../../../shared/hooks/useTheme';
-import { PLAN_CATALOG, PLAN_CARE_PLUS, PLAN_FAMILY } from '../../../../shared/subscription/planCatalog';
+import {
+  PLAN_CATALOG,
+  PLAN_CARE_PLUS,
+  PLAN_FAMILY,
+} from '../../../../shared/subscription/planCatalog';
 import { useSubscriptionStore } from '../../store/subscriptionStore';
 
 export type PaywallScreenProps = {
-  /** Overrides the route-derived source; used by composition roots (e.g. onboarding) that render this screen outside its normal stack. */
   sourceOverride?: PaywallRouteParams['source'];
-  /** Called instead of `navigation.goBack()` when the back arrow / skip affordance is pressed. Lets a host own dead-stack-free dismissal. */
   onDismiss?: () => void;
-  /** Overrides the header banner headline; used by onboarding to show a personalised plan headline. */
   headlineOverride?: string;
+  onboardingDraft?: OnboardingDraft | null;
 };
 
 export const PaywallScreen: React.FC<PaywallScreenProps> = ({
   sourceOverride,
   onDismiss,
   headlineOverride,
+  onboardingDraft,
 }) => {
   const navigation = useNavigation();
   const route = useRoute();
@@ -47,9 +59,51 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
     s => s.startPlayStoreCheckout,
   );
 
+  const isOnboarding = source === 'onboarding';
+  const nickname = petDisplayName(onboardingDraft?.petDraft);
+  const lossLine = useMemo(() => {
+    if (!isOnboarding) {
+      return null;
+    }
+    return buildOnboardingLossLine(
+      onboardingDraft
+        ? {
+            problems: onboardingDraft.problems,
+            goal: onboardingDraft.goal,
+            pet: onboardingDraft.petDraft ?? {
+              species: 'dog',
+              ageBand: 'adult',
+              nickname: '',
+            },
+          }
+        : null,
+    );
+  }, [isOnboarding, onboardingDraft]);
+
+  const socialProofLine = isOnboarding
+    ? buildOnboardingSocialProofLine()
+    : null;
+
+  const featureOrder = useMemo(
+    () =>
+      isOnboarding
+        ? orderPlanFeaturesForOnboarding({
+            goal: onboardingDraft?.goal ?? null,
+            careInterests: onboardingDraft?.careInterests ?? [],
+          })
+        : null,
+    [isOnboarding, onboardingDraft],
+  );
+
   useEffect(() => {
     void trackEvent('paywall_viewed', { source });
-  }, [source]);
+    if (isOnboarding) {
+      void trackEvent('onboarding_paywall_variant_shown', {
+        source: 'onboarding',
+        has_loss_line: Boolean(lossLine),
+      });
+    }
+  }, [source, isOnboarding, lossLine]);
 
   const handleDismiss = (): void => {
     if (source === 'onboarding') {
@@ -120,7 +174,10 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
           marginBottom: spacing.sm,
         },
         bannerOnboarding: { borderColor: colors.accent, borderWidth: 1 },
-        skipButton: { paddingHorizontal: spacing.xs, paddingVertical: spacing.xs },
+        skipButton: {
+          paddingHorizontal: spacing.xs,
+          paddingVertical: spacing.xs,
+        },
         skipText: { fontSize: fontSizes.sm, color: colors.text.subdued },
         card: {
           backgroundColor: colors.surface,
@@ -132,7 +189,11 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
         },
         cardPopular: { borderColor: colors.primary, borderWidth: 2 },
         planName: { fontSize: 17, color: colors.text.heading },
-        price: { fontSize: 22, color: colors.text.heading, marginTop: spacing.xs },
+        price: {
+          fontSize: 22,
+          color: colors.text.heading,
+          marginTop: spacing.xs,
+        },
         meta: { fontSize: 13, color: colors.text.subdued, marginTop: spacing.xs },
         row: { fontSize: 14, color: colors.text.body, marginTop: spacing.sm },
         cta: {
@@ -144,7 +205,11 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
         },
         ctaText: { color: colors.surface, fontSize: 15 },
         error: { color: colors.danger, marginTop: spacing.md, fontSize: 14 },
-        current: { fontSize: 13, color: colors.accent, marginBottom: spacing.md },
+        current: {
+          fontSize: 13,
+          color: colors.accent,
+          marginBottom: spacing.md,
+        },
       }),
     [colors, radius, spacing, fontSizes],
   );
@@ -155,11 +220,23 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
   const upgradeLabel =
     upgradePlan.key === PLAN_CARE_PLUS ? 'Care+' : 'Family';
 
+  const careFeatureLines = featureOrder
+    ? featureOrder.map(id => PLAN_FEATURE_COPY[id])
+    : null;
+
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
-        <Pressable onPress={handleDismiss} hitSlop={12} accessibilityRole="button">
-          <MaterialIcon name="arrow_back" size={22} color={colors.text.heading} />
+        <Pressable
+          onPress={handleDismiss}
+          hitSlop={12}
+          accessibilityRole="button"
+        >
+          <MaterialIcon
+            name="arrow_back"
+            size={22}
+            color={colors.text.heading}
+          />
         </Pressable>
         <Text style={[styles.title, { fontFamily: fontFamilies.bold }]}>
           PawCare plans
@@ -184,20 +261,29 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
         {source === 'pet_limit' ? (
           <View style={[styles.banner, styles.bannerThreat]}>
             <Text style={[styles.anchorLine, { fontFamily: fontFamilies.bold }]}>
-              Slot {nextSlot} of {upgradePlan.maxPets} opens on {upgradeLabel} · you
-              have {maxPets} on your current plan
+              Slot {nextSlot} of {upgradePlan.maxPets} opens on {upgradeLabel} ·
+              you have {maxPets} on your current plan
             </Text>
-            <Text style={[styles.bannerHeadline, { fontFamily: fontFamilies.bold }]}>
+            <Text
+              style={[styles.bannerHeadline, { fontFamily: fontFamilies.bold }]}
+            >
               {draftName
                 ? `${draftName}'s profile cannot be saved yet`
                 : 'Another pet profile cannot be saved yet'}
             </Text>
-            <Text style={[styles.bannerText, { fontFamily: fontFamilies.medium }]}>
-              Without an upgrade you keep your current pet{maxPets === 1 ? '' : 's'},
-              but you lose the ability to add {draftName || 'this pet'} and unlock
-              their care timeline.
+            <Text
+              style={[styles.bannerText, { fontFamily: fontFamilies.medium }]}
+            >
+              Without an upgrade you keep your current pet
+              {maxPets === 1 ? '' : 's'}, but you lose the ability to add{' '}
+              {draftName || 'this pet'} and unlock their care timeline.
             </Text>
-            <Text style={[styles.bannerLoss, { fontFamily: fontFamilies.semibold }]}>
+            <Text
+              style={[
+                styles.bannerLoss,
+                { fontFamily: fontFamilies.semibold },
+              ]}
+            >
               If you stay on your current plan you miss out on:
             </Text>
             <Text style={[styles.lossItem, { fontFamily: fontFamilies.regular }]}>
@@ -205,7 +291,8 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
               {draftName || 'your next pet'}
             </Text>
             <Text style={[styles.lossItem, { fontFamily: fontFamilies.regular }]}>
-              · Up to {upgradePlan.maxPets} pets on {upgradeLabel} (vs {maxPets} now)
+              · Up to {upgradePlan.maxPets} pets on {upgradeLabel} (vs {maxPets}{' '}
+              now)
             </Text>
             <Text style={[styles.lossItem, { fontFamily: fontFamilies.regular }]}>
               · Unlimited history, week view, Pro care tasks, and wellness score
@@ -213,11 +300,32 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
           </View>
         ) : null}
 
-        {source === 'onboarding' && headlineOverride ? (
+        {isOnboarding && (headlineOverride || lossLine) ? (
           <View style={[styles.banner, styles.bannerOnboarding]}>
-            <Text style={[styles.bannerHeadline, { fontFamily: fontFamilies.bold }]}>
-              {headlineOverride}
-            </Text>
+            {headlineOverride ? (
+              <Text
+                style={[
+                  styles.bannerHeadline,
+                  { fontFamily: fontFamilies.bold },
+                ]}
+              >
+                {headlineOverride}
+              </Text>
+            ) : null}
+            {lossLine ? (
+              <Text
+                style={[styles.bannerText, { fontFamily: fontFamilies.medium }]}
+              >
+                {lossLine}
+              </Text>
+            ) : null}
+            {socialProofLine ? (
+              <Text
+                style={[styles.bannerLoss, { fontFamily: fontFamilies.medium }]}
+              >
+                {socialProofLine}
+              </Text>
+            ) : null}
           </View>
         ) : null}
 
@@ -235,10 +343,21 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
           <Text style={[styles.price, { fontFamily: fontFamilies.bold }]}>
             ₹{care.priceMonthlyInr}/mo · ₹{care.priceAnnualInr}/yr
           </Text>
-          <Text style={[styles.meta, { fontFamily: fontFamilies.regular }]}>
-            Up to {care.maxPets} pets · unlimited history · week view · Pro care
-            tasks · wellness score
-          </Text>
+          {careFeatureLines ? (
+            careFeatureLines.map(line => (
+              <Text
+                key={line}
+                style={[styles.row, { fontFamily: fontFamilies.regular }]}
+              >
+                · {line}
+              </Text>
+            ))
+          ) : (
+            <Text style={[styles.meta, { fontFamily: fontFamilies.regular }]}>
+              Up to {care.maxPets} pets · unlimited history · week view · Pro
+              care tasks · wellness score
+            </Text>
+          )}
           <Text style={[styles.row, { fontFamily: fontFamilies.regular }]}>
             Annual billing = 10× monthly (2 months free).
           </Text>
@@ -246,7 +365,11 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
             style={styles.cta}
             disabled={checkoutLoading}
             onPress={() => {
-              void trackEvent('subscription_checkout_started', { plan: PLAN_CARE_PLUS, billing: 'monthly', source });
+              void trackEvent('subscription_checkout_started', {
+                plan: PLAN_CARE_PLUS,
+                billing: 'monthly',
+                source,
+              });
               void startPlayStoreCheckout(PLAN_CARE_PLUS, 'monthly');
             }}
           >
@@ -254,20 +377,34 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
               <ActivityIndicator color={colors.surface} />
             ) : (
               <Text style={[styles.ctaText, { fontFamily: fontFamilies.bold }]}>
-                Subscribe Care+ monthly
+                {isOnboarding
+                  ? buildOnboardingCtaLabel(nickname, 'Care+', 'monthly')
+                  : 'Subscribe Care+ monthly'}
               </Text>
             )}
           </Pressable>
           <Pressable
-            style={[styles.cta, { backgroundColor: colors.text.heading, marginTop: spacing.sm }]}
+            style={[
+              styles.cta,
+              {
+                backgroundColor: colors.text.heading,
+                marginTop: spacing.sm,
+              },
+            ]}
             disabled={checkoutLoading}
             onPress={() => {
-              void trackEvent('subscription_checkout_started', { plan: PLAN_CARE_PLUS, billing: 'annual', source });
+              void trackEvent('subscription_checkout_started', {
+                plan: PLAN_CARE_PLUS,
+                billing: 'annual',
+                source,
+              });
               void startPlayStoreCheckout(PLAN_CARE_PLUS, 'annual');
             }}
           >
             <Text style={[styles.ctaText, { fontFamily: fontFamilies.bold }]}>
-              Subscribe Care+ annual
+              {isOnboarding
+                ? buildOnboardingCtaLabel(nickname, 'Care+', 'annual')
+                : 'Subscribe Care+ annual'}
             </Text>
           </Pressable>
         </View>
@@ -286,24 +423,42 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
             style={styles.cta}
             disabled={checkoutLoading}
             onPress={() => {
-              void trackEvent('subscription_checkout_started', { plan: PLAN_FAMILY, billing: 'monthly', source });
+              void trackEvent('subscription_checkout_started', {
+                plan: PLAN_FAMILY,
+                billing: 'monthly',
+                source,
+              });
               void startPlayStoreCheckout(PLAN_FAMILY, 'monthly');
             }}
           >
             <Text style={[styles.ctaText, { fontFamily: fontFamilies.bold }]}>
-              Subscribe Family monthly
+              {isOnboarding
+                ? buildOnboardingCtaLabel(nickname, 'Family', 'monthly')
+                : 'Subscribe Family monthly'}
             </Text>
           </Pressable>
           <Pressable
-            style={[styles.cta, { backgroundColor: colors.text.heading, marginTop: spacing.sm }]}
+            style={[
+              styles.cta,
+              {
+                backgroundColor: colors.text.heading,
+                marginTop: spacing.sm,
+              },
+            ]}
             disabled={checkoutLoading}
             onPress={() => {
-              void trackEvent('subscription_checkout_started', { plan: PLAN_FAMILY, billing: 'annual', source });
+              void trackEvent('subscription_checkout_started', {
+                plan: PLAN_FAMILY,
+                billing: 'annual',
+                source,
+              });
               void startPlayStoreCheckout(PLAN_FAMILY, 'annual');
             }}
           >
             <Text style={[styles.ctaText, { fontFamily: fontFamilies.bold }]}>
-              Subscribe Family annual
+              {isOnboarding
+                ? buildOnboardingCtaLabel(nickname, 'Family', 'annual')
+                : 'Subscribe Family annual'}
             </Text>
           </Pressable>
         </View>
@@ -314,11 +469,18 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
           </Text>
         ) : null}
 
-        <Text style={[styles.meta, { fontFamily: fontFamilies.regular, marginTop: spacing.lg }]}>
-          On Android, payments are processed securely through Google Play Billing.
-          Your plan updates as soon as purchase verification completes.
+        <Text
+          style={[
+            styles.meta,
+            { fontFamily: fontFamilies.regular, marginTop: spacing.lg },
+          ]}
+        >
+          On Android, payments are processed securely through Google Play
+          Billing. Your plan updates as soon as purchase verification completes.
         </Text>
       </ScrollView>
     </SafeAreaView>
   );
 };
+
+export default PaywallScreen;

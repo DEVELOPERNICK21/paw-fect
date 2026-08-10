@@ -21,18 +21,23 @@ type Tip = {
   body: string;
 };
 
-const TIPS: Tip[] = [
-  {
-    glyph: '🔔',
-    title: 'Timely reminders',
-    body: 'Gentle nudges for vaccines, walks, and medicines, so nothing slips through the cracks.',
-  },
-  {
-    glyph: '📋',
-    title: 'One health record',
-    body: 'Vaccination and vet visit history kept in one place, ready whenever you need it.',
-  },
-];
+const buildTips = (nickname: string): Tip[] => {
+  const petLabel = nickname.trim().length > 0 ? nickname.trim() : null;
+  return [
+    {
+      glyph: '🔔',
+      title: 'Timely reminders',
+      body: petLabel
+        ? `Gentle nudges for ${petLabel}'s vaccines, walks, and medicines, so nothing slips through the cracks.`
+        : 'Gentle nudges for vaccines, walks, and medicines, so nothing slips through the cracks.',
+    },
+    {
+      glyph: '📋',
+      title: 'One health record',
+      body: 'Vaccination and vet visit history kept in one place, ready whenever you need it.',
+    },
+  ];
+};
 
 type ThemeParams = {
   colors: ReturnType<typeof useTheme>['colors'];
@@ -151,6 +156,10 @@ export const OnboardingTipsScreen: React.FC = () => {
 
   const draft = useOnboardingDraftStore(state => state.draft);
   const completeFunnel = useOnboardingDraftStore(state => state.completeFunnel);
+  const tips = useMemo(
+    () => buildTips(draft.petDraft?.nickname ?? ''),
+    [draft.petDraft?.nickname],
+  );
 
   const [completing, setCompleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -198,7 +207,7 @@ export const OnboardingTipsScreen: React.FC = () => {
         </View>
 
         <View style={styles.tipList}>
-          {TIPS.map(tip => (
+          {tips.map(tip => (
             <View key={tip.title} style={styles.tipCard}>
               <View style={styles.tipBadge}>
                 <Text style={styles.tipGlyph}>{tip.glyph}</Text>

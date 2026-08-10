@@ -1,9 +1,14 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { trackEvent } from '../../../../../infrastructure/analytics/analytics';
 import { useTheme } from '../../../../../shared/hooks/useTheme';
 import { lineHeights } from '../../../../../shared/theme/typography';
 import type { OnboardingProblem } from '../../../domain/onboarding/OnboardingDraft';
+import {
+  validationCopyForProblems,
+  validationVariantIdForProblems,
+} from '../../../domain/onboarding/onboardingValidationCopy';
 
 type ProblemOption = {
   id: OnboardingProblem;
@@ -55,6 +60,13 @@ const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
       marginTop: spacing.xl,
       width: '100%',
     },
+    validation: {
+      marginTop: spacing.md,
+      fontSize: fontSizes.sm,
+      lineHeight: lineHeights.sm,
+      color: colors.text.body,
+      textAlign: 'center',
+    },
     card: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -90,6 +102,21 @@ export const ProblemNamingStep: React.FC<Props> = ({ selected, onToggle }) => {
     [colors, spacing, radius, fontSizes],
   );
 
+  const validation = validationCopyForProblems(selected);
+  const variant = validationVariantIdForProblems(selected);
+  const lastTrackedVariant = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!variant || variant === lastTrackedVariant.current) {
+      return;
+    }
+    lastTrackedVariant.current = variant;
+    void trackEvent('onboarding_validation_shown', {
+      step: 2,
+      variant_shown: variant,
+    });
+  }, [variant]);
+
   return (
     <View style={styles.container}>
       <Text style={[styles.title, { fontFamily: fontFamilies.extrabold }]}>
@@ -123,6 +150,11 @@ export const ProblemNamingStep: React.FC<Props> = ({ selected, onToggle }) => {
           );
         })}
       </View>
+      {validation ? (
+        <Text style={[styles.validation, { fontFamily: fontFamilies.medium }]}>
+          {validation}
+        </Text>
+      ) : null}
     </View>
   );
 };

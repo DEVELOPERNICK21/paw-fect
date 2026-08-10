@@ -355,7 +355,11 @@ export const OnboardingFunnelScreen: React.FC = () => {
               />
             ) : null}
             {step === STEP_INDEX.processing ? (
-              <ProcessingStep nickname={petDraft.nickname} onDone={goNext} />
+              <ProcessingStep
+                nickname={petDraft.nickname}
+                species={petDraft.species}
+                onDone={goNext}
+              />
             ) : null}
             {step === STEP_INDEX.planReveal ? (
               <PlanRevealStep summary={summary} />

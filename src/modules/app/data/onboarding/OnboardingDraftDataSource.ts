@@ -22,6 +22,10 @@ class OnboardingDraftDataSourceImpl implements OnboardingDraftDataSource {
     return {
       ...createDefaultOnboardingDraft(),
       ...stored,
+      problems: stored.problems ?? [],
+      careInterests: stored.careInterests ?? [],
+      committedAt: stored.committedAt ?? null,
+      paywallOutcome: stored.paywallOutcome ?? null,
     };
   }
 

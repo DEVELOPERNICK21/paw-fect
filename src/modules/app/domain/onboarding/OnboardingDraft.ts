@@ -1,5 +1,7 @@
 import type { CareInterest } from '../../../settings/domain/models/Settings';
 
+import type { PaywallOutcome } from './OnboardingProfile';
+
 export type OnboardingProblem =
   | 'missed_vaccines'
   | 'no_records'
@@ -29,6 +31,10 @@ export type OnboardingDraft = {
   goal: OnboardingGoal | null;
   careInterests: CareInterest[];
   commitmentAccepted: boolean;
+  /** ISO timestamp set when the commitment pledge is accepted. */
+  committedAt: string | null;
   phase: OnboardingPhase;
   skippedPaywall: boolean;
+  /** Set by paywall host when advancing to tips. */
+  paywallOutcome: PaywallOutcome | null;
 };

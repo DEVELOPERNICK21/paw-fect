@@ -1,13 +1,17 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../../../../../shared/hooks/useTheme';
 import { lineHeights } from '../../../../../shared/theme/typography';
+import { buildProcessingLines } from '../../../domain/onboarding/buildProcessingLines';
+import type { PetDraft } from '../../../domain/onboarding/OnboardingDraft';
 
 const PROCESSING_DURATION_MS = 2000;
+const LINE_ROTATE_MS = 650;
 
 type Props = {
   nickname: string;
+  species?: PetDraft['species'] | null;
   onDone: () => void;
 };
 
@@ -24,45 +28,57 @@ const createStyles = ({ colors, spacing, fontSizes }: ThemeParams) =>
       paddingTop: spacing['4xl'],
       alignItems: 'center',
     },
-    title: {
+    lineSlot: {
       marginTop: spacing.xl,
+      minHeight: lineHeights.lg * 2,
+      justifyContent: 'center',
+      width: '100%',
+    },
+    title: {
       fontSize: fontSizes.lg,
       lineHeight: lineHeights.lg,
       color: colors.text.heading,
       textAlign: 'center',
     },
-    subtitle: {
-      marginTop: spacing.sm,
-      fontSize: fontSizes.lead,
-      lineHeight: lineHeights.md,
-      color: colors.text.body,
-      textAlign: 'center',
-    },
   });
 
-export const ProcessingStep: React.FC<Props> = ({ nickname, onDone }) => {
+export const ProcessingStep: React.FC<Props> = ({
+  nickname,
+  species,
+  onDone,
+}) => {
   const { colors, fontFamilies, fontSizes, spacing } = useTheme();
   const styles = useMemo(
     () => createStyles({ colors, spacing, fontSizes }),
     [colors, spacing, fontSizes],
   );
 
+  const lines = useMemo(
+    () => buildProcessingLines(nickname, species),
+    [nickname, species],
+  );
+  const [lineIndex, setLineIndex] = useState(0);
+
   useEffect(() => {
     const timer = setTimeout(onDone, PROCESSING_DURATION_MS);
     return () => clearTimeout(timer);
   }, [onDone]);
 
-  const petLabel = nickname.trim().length > 0 ? nickname.trim() : 'your pet';
+  useEffect(() => {
+    const rotate = setInterval(() => {
+      setLineIndex(prev => (prev + 1) % lines.length);
+    }, LINE_ROTATE_MS);
+    return () => clearInterval(rotate);
+  }, [lines.length]);
 
   return (
     <View style={styles.container}>
       <ActivityIndicator size="large" color={colors.accent} />
-      <Text style={[styles.title, { fontFamily: fontFamilies.bold }]}>
-        Building {petLabel}&apos;s care plan…
-      </Text>
-      <Text style={[styles.subtitle, { fontFamily: fontFamilies.medium }]}>
-        Matching your answers to a routine that fits.
-      </Text>
+      <View style={styles.lineSlot}>
+        <Text style={[styles.title, { fontFamily: fontFamilies.bold }]}>
+          {lines[lineIndex]}
+        </Text>
+      </View>
     </View>
   );
 };

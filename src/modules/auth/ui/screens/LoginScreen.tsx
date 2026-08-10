@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { trackEvent } from '../../../../infrastructure/analytics/analytics';
+import { useOnboardingDraftStore } from '../../../app/store/onboardingDraftStore';
 import { useAuthStore } from '../../store/authStore';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import type { Theme } from '../../../../shared/hooks/useTheme';
@@ -42,6 +43,15 @@ export const LoginScreen: React.FC = () => {
     state => state.sendPasswordResetEmail,
   );
   const authNotice = useAuthStore(state => state.authNotice);
+  const onboardingCommitmentAccepted = useOnboardingDraftStore(
+    state => state.draft.commitmentAccepted,
+  );
+  const onboardingNickname = useOnboardingDraftStore(
+    state => state.draft.petDraft?.nickname?.trim() ?? '',
+  );
+  const showPlanContinuityCopy = onboardingCommitmentAccepted;
+  const planPetLabel =
+    onboardingNickname.length > 0 ? onboardingNickname : "your pet";
   const { colors, space, radius, spacing, textStyles } = useTheme();
   const styles = useMemo(
     () => createStyles({ colors, space, radius, spacing, textStyles }),
@@ -128,8 +138,16 @@ export const LoginScreen: React.FC = () => {
             </Animated.View>
             <AppText style={styles.brandTitle}>Pawsoul</AppText>
             <AppText style={styles.brandSubtitle}>
-              Premium care for your beloved companions.
+              {showPlanContinuityCopy
+                ? `Save ${planPetLabel}'s plan`
+                : 'Premium care for your beloved companions.'}
             </AppText>
+            {showPlanContinuityCopy ? (
+              <AppText style={styles.continuitySubhead}>
+                Create an account so your plan for {planPetLabel} doesn&apos;t
+                disappear if you close the app.
+              </AppText>
+            ) : null}
           </View>
 
           <View style={styles.formSection}>
@@ -238,6 +256,11 @@ export const LoginScreen: React.FC = () => {
                 <icons.google width={space('2xl')} height={space('2xl')} />
               }
             />
+            {showPlanContinuityCopy ? (
+              <AppText style={styles.continuityFinePrint}>
+                Takes 10 seconds. No credit card required here.
+              </AppText>
+            ) : null}
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={
@@ -345,6 +368,18 @@ const createStyles = ({
       ...ts.marketingLead,
       marginTop: space('xxs'),
       color: colors.text.body,
+      textAlign: 'center',
+    },
+    continuitySubhead: {
+      ...ts.caption,
+      marginTop: space('sm'),
+      color: colors.text.body,
+      textAlign: 'center',
+    },
+    continuityFinePrint: {
+      ...ts.caption,
+      marginTop: space('sm'),
+      color: colors.text.subdued,
       textAlign: 'center',
     },
     formSection: {

@@ -15,6 +15,7 @@ import {
 } from '../../store/homeQuickActionsUsageStore';
 import { useScheduleStore } from '../../../schedule/store/scheduleStore';
 import { usePetStore } from '../../../pets/store/petStore';
+import { useSettingsStore } from '../../../settings/store/settingsStore';
 
 import { HomeHeader } from '../../../../shared/components/HomeHeader';
 import { HomeAttentionBanner } from '../components/home/HomeAttentionBanner';
@@ -40,6 +41,9 @@ export const HomeScreen: React.FC = () => {
   const storeActivePetId = usePetStore(s => s.activePet?.id ?? null);
   const setActivePet = usePetStore(s => s.setActivePet);
   const loadPets = usePetStore(s => s.loadPets);
+  const onboardingNickname = useSettingsStore(
+    s => s.settings?.onboardingProfile?.pet.nickname?.trim() ?? '',
+  );
   const recordQuickActionTap = useHomeQuickActionsUsageStore(s => s.recordTap);
   const quickActionCounts = useHomeQuickActionsUsageStore(s => s.counts);
 
@@ -97,6 +101,10 @@ export const HomeScreen: React.FC = () => {
   }, [activePetId, navigation]);
 
   const goHealthRecords = useCallback(() => {
+    navigation.navigate('HealthTab', { screen: 'HealthRecords' });
+  }, [navigation]);
+
+  const goLogWeight = useCallback(() => {
     navigation.navigate('HealthTab', { screen: 'HealthRecords' });
   }, [navigation]);
 
@@ -334,7 +342,9 @@ export const HomeScreen: React.FC = () => {
                     { color: colors.text.secondary, textAlign: 'center' },
                   ]}
                 >
-                  Add a pet profile to see care tasks and reminders here.
+                  {onboardingNickname
+                    ? `Ready to set up ${onboardingNickname}'s profile?`
+                    : 'Add a pet profile to see care tasks and reminders here.'}
                 </AppText>
               </View>
             )}

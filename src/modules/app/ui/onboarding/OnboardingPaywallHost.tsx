@@ -76,6 +76,10 @@ export const OnboardingPaywallHost: React.FC = () => {
     if (wasFreeAtSyncRef.current === null) {
       if (isPaidOrTrial(entitlementSource)) {
         wasFreeAtSyncRef.current = false;
+        update(current => ({
+          ...current,
+          paywallOutcome: 'entitled_auto_skip',
+        }));
         void trackEvent('paywall_skipped_entitled', { source: 'onboarding' });
         setPhase('tips');
       } else {
@@ -87,6 +91,10 @@ export const OnboardingPaywallHost: React.FC = () => {
     if (armedByTimeoutRef.current && isPaidOrTrial(entitlementSource)) {
       wasFreeAtSyncRef.current = false;
       armedByTimeoutRef.current = false;
+      update(current => ({
+        ...current,
+        paywallOutcome: 'entitled_auto_skip',
+      }));
       void trackEvent('paywall_skipped_entitled', { source: 'onboarding' });
       setPhase('tips');
       return;
@@ -97,12 +105,20 @@ export const OnboardingPaywallHost: React.FC = () => {
       isPaidOrTrial(entitlementSource)
     ) {
       wasFreeAtSyncRef.current = false;
+      update(current => ({
+        ...current,
+        paywallOutcome: 'purchased',
+      }));
       setPhase('tips');
     }
-  }, [serverSynced, syncTimedOut, entitlementSource, setPhase]);
+  }, [serverSynced, syncTimedOut, entitlementSource, setPhase, update]);
 
   const handleDismiss = (): void => {
-    update(current => ({ ...current, skippedPaywall: true }));
+    update(current => ({
+      ...current,
+      skippedPaywall: true,
+      paywallOutcome: 'skipped',
+    }));
     setPhase('tips');
   };
 
@@ -133,6 +149,7 @@ export const OnboardingPaywallHost: React.FC = () => {
     <PaywallScreen
       sourceOverride="onboarding"
       headlineOverride={summary.paywallHeadline}
+      onboardingDraft={draft}
       onDismiss={handleDismiss}
     />
   );
