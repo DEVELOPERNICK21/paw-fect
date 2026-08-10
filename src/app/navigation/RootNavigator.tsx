@@ -19,6 +19,12 @@ import {
   cancelDeferredNotificationResync,
   scheduleDeferredNotificationResync,
 } from '../../infrastructure/notifications/deferredNotificationResync';
+import {
+  identifyUser,
+  initAnalytics,
+  resetUser,
+  trackScreen,
+} from '../../infrastructure/analytics/analytics';
 import { registerCrashlyticsUserSync } from '../../infrastructure/crashlytics/registerCrashlyticsUserSync';
 import '../../modules/app/application/registerAppSessionPortSync';
 import { appOrchestrator } from '../../modules/app/appComposition';
@@ -76,7 +82,7 @@ export const RootNavigator: React.FC = () => {
   const { colors, isDarkMode } = useTheme();
   const [bootstrapped, setBootstrapped] = useState(false);
   const lastSyncedUserIdRef = useRef<string | null>(null);
-  const routeNameRef = useRef<string | undefined>();
+  const routeNameRef = useRef<string | undefined>(undefined);
   const authDataSyncGenerationRef = useRef(0);
   const appStateResumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
@@ -162,6 +168,7 @@ export const RootNavigator: React.FC = () => {
       return;
     }
     registerCrashlyticsUserSync();
+    void initAnalytics();
     startupLog('post_bootstrap.notifications.begin');
     void bootstrapLocalNotifications()
       .then(() => startupLog('post_bootstrap.notifications.done'))
@@ -347,14 +354,12 @@ export const RootNavigator: React.FC = () => {
 
   useEffect(() => {
     if (user?.id) {
-      posthog.identify(user.id, {
-        $set: {
-          email: user.email ?? undefined,
-          display_name: user.displayName ?? undefined,
-        },
+      void identifyUser(user.id, {
+        email: user.email ?? undefined,
+        displayName: user.displayName ?? undefined,
       });
     } else if (userId === null || userId === undefined) {
-      posthog.reset();
+      void resetUser();
     }
   }, [user, userId]);
 
@@ -387,7 +392,12 @@ export const RootNavigator: React.FC = () => {
         const previousRouteName = routeNameRef.current;
         const currentRouteName = navigationRef.current?.getCurrentRoute()?.name;
         if (previousRouteName !== currentRouteName && currentRouteName) {
-          posthog.screen(currentRouteName, { previous_screen: previousRouteName });
+          void trackScreen(
+            currentRouteName,
+            previousRouteName
+              ? { previous_screen: previousRouteName }
+              : undefined,
+          );
         }
         routeNameRef.current = currentRouteName;
       }}
