@@ -58,7 +58,7 @@ type TabKey = 'home' | 'health' | 'notifications' | 'settings' | 'pets';
 
 const ORBIT_AVATAR = 52;
 const ORBIT_ITEM_WIDTH = 76;
-const PILL_SIZE = 40;
+const PILL_SIZE = 42;
 
 const HOME_SIDE_INDEX = SIDE_TAB_ORDER.indexOf('home');
 const HEALTH_SIDE_INDEX = SIDE_TAB_ORDER.indexOf('health');
@@ -66,13 +66,23 @@ const NOTIFICATIONS_SIDE_INDEX = SIDE_TAB_ORDER.indexOf('notifications');
 const SETTINGS_SIDE_INDEX = SIDE_TAB_ORDER.indexOf('settings');
 
 type TabIconName =
-  | 'home'
-  | 'monitor_heart'
-  | 'stethoscope'
-  | 'notifications'
-  | 'analytics'
-  | 'schedule'
-  | 'settings';
+  | 'home_paw'
+  | 'bone_cross'
+  | 'heart_paw'
+  | 'collar_settings';
+
+type TabOutlineIconName =
+  | 'home_paw_outline'
+  | 'bone_cross_outline'
+  | 'heart_paw_outline'
+  | 'collar_settings_outline';
+
+const TAB_OUTLINE: Record<TabIconName, TabOutlineIconName> = {
+  home_paw: 'home_paw_outline',
+  bone_cross: 'bone_cross_outline',
+  heart_paw: 'heart_paw_outline',
+  collar_settings: 'collar_settings_outline',
+};
 
 const TAB_ROOT_SCREENS: Record<keyof AppTabParamList, string> = {
   HomeTab: 'Home',
@@ -111,14 +121,14 @@ function tabKeyFromRouteName(name: keyof AppTabParamList | string): TabKey {
 }
 
 const springPress = {
-  friction: 6,
-  tension: 380,
+  friction: 5,
+  tension: 420,
   useNativeDriver: true as const,
 };
 
 const springRelease = {
-  friction: 7,
-  tension: 280,
+  friction: 6,
+  tension: 300,
   useNativeDriver: true as const,
 };
 
@@ -130,8 +140,14 @@ const itemStyles = StyleSheet.create({
   tabChip: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 8,
+  },
+  iconWell: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 
@@ -154,10 +170,12 @@ const TabSlot = React.memo(function TabSlot({
 }: TabSlotProps) {
   const scale = useRef(new Animated.Value(1)).current;
   const activePop = useRef(new Animated.Value(active ? 1 : 0)).current;
+  const bounce = useRef(new Animated.Value(1)).current;
   const slotRef = useRef<View>(null);
+  const outlineIcon = TAB_OUTLINE[icon];
 
   const pressIn = () => {
-    Animated.spring(scale, { ...springPress, toValue: 0.93 }).start();
+    Animated.spring(scale, { ...springPress, toValue: 0.86 }).start();
   };
   const pressOut = () => {
     Animated.spring(scale, { ...springRelease, toValue: 1 }).start();
@@ -166,10 +184,19 @@ const TabSlot = React.memo(function TabSlot({
   useEffect(() => {
     Animated.timing(activePop, {
       toValue: active ? 1 : 0,
-      duration: 220,
+      duration: 200,
       useNativeDriver: true,
     }).start();
-  }, [active, activePop]);
+    if (active) {
+      bounce.setValue(0.82);
+      Animated.spring(bounce, {
+        toValue: 1,
+        friction: 4,
+        tension: 260,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [active, activePop, bounce]);
 
   const activeOpacity = activePop;
   const inactiveOpacity = activePop.interpolate({
@@ -179,12 +206,7 @@ const TabSlot = React.memo(function TabSlot({
 
   const iconPopScale = activePop.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 1.08],
-  });
-
-  const iconLift = activePop.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -2],
+    outputRange: [1, 1.12],
   });
 
   return (
@@ -215,24 +237,33 @@ const TabSlot = React.memo(function TabSlot({
       >
         <Animated.View
           style={{
-            transform: [{ scale: iconPopScale }, { translateY: iconLift }],
+            transform: [{ scale: Animated.multiply(iconPopScale, bounce) }],
           }}
         >
-          <View style={{ width: 28, height: 28, justifyContent: 'center' }}>
+          <View style={itemStyles.iconWell}>
             <Animated.View
-              style={{ position: 'absolute', left: 0, right: 0, opacity: activeOpacity }}
+              style={{
+                position: 'absolute',
+                opacity: activeOpacity,
+              }}
             >
-              <MaterialIcon name={icon} size={24} color={colors.accent} />
+              <MaterialIcon
+                name={icon}
+                size={24}
+                color={colors.text.inverse}
+              />
             </Animated.View>
             <Animated.View
               style={{
                 position: 'absolute',
-                left: 0,
-                right: 0,
                 opacity: inactiveOpacity,
               }}
             >
-              <MaterialIcon name={icon} size={24} color={colors.text.subdued} />
+              <MaterialIcon
+                name={outlineIcon}
+                size={24}
+                color={colors.text.subdued}
+              />
             </Animated.View>
           </View>
         </Animated.View>
@@ -547,11 +578,11 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
           flex: 1,
         },
         backdrop: {
-          ...StyleSheet.absoluteFillObject,
+          ...StyleSheet.absoluteFill,
           backgroundColor: 'rgba(0,0,0,0.5)',
         },
         orbitLayer: {
-          ...StyleSheet.absoluteFillObject,
+          ...StyleSheet.absoluteFill,
         },
         closeFab: {
           position: 'absolute',
@@ -696,7 +727,7 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
               width: PILL_SIZE,
               height: PILL_SIZE,
               borderRadius: PILL_SIZE / 2,
-              backgroundColor: colors.primaryLight,
+              backgroundColor: colors.accent,
               opacity: pillOpacity,
               transform: [{ translateX: pillX }, { scale: pillScale }],
             }}
@@ -704,7 +735,7 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
           <View style={styles.side}>
             <TabSlot
               accessibilityLabel="Home"
-              icon="home"
+              icon="home_paw"
               active={currentKey === 'home'}
               onPress={() => jumpToTabRoot('HomeTab')}
               colors={colors}
@@ -712,7 +743,7 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
             />
             <TabSlot
               accessibilityLabel="Health records"
-              icon="monitor_heart"
+              icon="bone_cross"
               active={currentKey === 'health'}
               onPress={() => jumpToTabRoot('HealthTab')}
               colors={colors}
@@ -725,7 +756,7 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
           <View style={styles.side}>
             <TabSlot
               accessibilityLabel="Wellness"
-              icon="analytics"
+              icon="heart_paw"
               active={currentKey === 'notifications'}
               onPress={() => jumpToTabRoot('NotificationsTab')}
               colors={colors}
@@ -735,7 +766,7 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
             />
             <TabSlot
               accessibilityLabel="Settings"
-              icon="settings"
+              icon="collar_settings"
               active={currentKey === 'settings'}
               onPress={() => jumpToTabRoot('SettingsTab')}
               colors={colors}
