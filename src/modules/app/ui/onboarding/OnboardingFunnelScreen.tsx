@@ -1,6 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Animated,
   Pressable,
   ScrollView,
   StatusBar,
@@ -83,7 +82,9 @@ const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
       width: 44,
       height: 44,
       borderRadius: radius.round,
-      backgroundColor: colors.text.heading,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.borderSubtle,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -93,7 +94,7 @@ const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
     },
     backGlyph: {
       fontSize: fontSizes.lg,
-      color: colors.text.inverse,
+      color: colors.text.heading,
       marginTop: -1,
     },
     progressSection: {
@@ -124,7 +125,7 @@ const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
       paddingBottom: spacing.sm,
     },
     primaryButton: {
-      backgroundColor: colors.text.heading,
+      backgroundColor: colors.accent,
       borderRadius: radius.xl,
       paddingVertical: spacing.lg,
       alignItems: 'center',
@@ -156,10 +157,6 @@ export const OnboardingFunnelScreen: React.FC = () => {
   const setPhase = useOnboardingDraftStore(state => state.setPhase);
 
   const [commitmentGesture, setCommitmentGesture] = useState(false);
-  const fade = useRef(new Animated.Value(1)).current;
-  const slideX = useRef(new Animated.Value(0)).current;
-  const stepDirectionRef = useRef<1 | -1>(1);
-  const previousStepRef = useRef(draft.step);
 
   const step = draft.step;
   const petDraft = draft.petDraft ?? DEFAULT_PET_DRAFT;
@@ -181,27 +178,6 @@ export const OnboardingFunnelScreen: React.FC = () => {
       });
     }
   }, [step, summary.bullets.length]);
-
-  useEffect(() => {
-    const previous = previousStepRef.current;
-    stepDirectionRef.current = step >= previous ? 1 : -1;
-    previousStepRef.current = step;
-
-    fade.setValue(0);
-    slideX.setValue(18 * stepDirectionRef.current);
-    Animated.parallel([
-      Animated.timing(fade, {
-        toValue: 1,
-        duration: 260,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideX, {
-        toValue: 0,
-        duration: 260,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [fade, slideX, step]);
 
   useEffect(() => {
     if (step !== STEP_INDEX.commitment) {
@@ -359,12 +335,7 @@ export const OnboardingFunnelScreen: React.FC = () => {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <Animated.View
-            style={{
-              opacity: fade,
-              transform: [{ translateX: slideX }],
-            }}
-          >
+          <View key={step}>
             {step === STEP_INDEX.trustOpen ? <TrustOpenStep /> : null}
             {step === STEP_INDEX.problemNaming ? (
               <ProblemNamingStep
@@ -401,7 +372,7 @@ export const OnboardingFunnelScreen: React.FC = () => {
                 onToggle={handleCommitmentToggle}
               />
             ) : null}
-          </Animated.View>
+          </View>
         </ScrollView>
 
         {showPrimaryButton ? (
