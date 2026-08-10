@@ -109,8 +109,8 @@ export const HomeScreen: React.FC = () => {
   }, [navigation]);
 
   const viewportMinHeight = useMemo(
-    () => Math.max(Dimensions.get('window').height - tabBarInset, 640),
-    [tabBarInset],
+    () => Math.max(Dimensions.get('window').height, 884),
+    [],
   );
 
   const quickActionPool = useMemo((): HomeQuickActionId[] => {
@@ -238,7 +238,7 @@ export const HomeScreen: React.FC = () => {
           </View>
         ) : (
           <ScrollView
-            style={{ flex: 1, marginBottom: tabBarInset }}
+            style={{ flex: 1 }}
             contentContainerStyle={[
               styles.scrollContent,
               {
@@ -246,7 +246,9 @@ export const HomeScreen: React.FC = () => {
                 minHeight: viewportMinHeight,
                 paddingHorizontal: spacing.lg,
                 paddingTop: spacing.lg,
-                paddingBottom: spacing['2xl'],
+                // Content scrolls under the glass tab; padding keeps the last
+                // section clear when scrolled to the end (no empty “back” strip).
+                paddingBottom: tabBarInset + spacing['3xl'],
                 gap: spacing.xl,
               },
             ]}
