@@ -10,6 +10,13 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import {
+  BackdropBlur,
+  Canvas,
+  Fill,
+  Path as SkiaPath,
+  Skia,
+} from '@shopify/react-native-skia';
 import Svg, { G, Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -265,6 +272,10 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
         scoopDepth: DEFAULT_TAB_BAR_SCOOP_DEPTH,
       }),
     [islandWidth],
+  );
+  const skShellPath = useMemo(
+    () => Skia.Path.MakeFromSVGString(shellPath),
+    [shellPath],
   );
   /** Vertical center of the paw FAB on screen (for orbit layout). */
   const fabCenterY =
@@ -630,7 +641,8 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
       ]}
       pointerEvents="box-none"
     >
-      <View style={[styles.islandWrap, shadows.lg]}>
+      <View style={[styles.islandWrap, Platform.OS === 'ios' ? shadows.lg : null]}>
+        {/* Soft drop shadow follows the scoop silhouette */}
         <Svg
           width={islandWidth}
           height={BAR_HEIGHT}
@@ -640,8 +652,39 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
           <G transform="translate(0, 2.5)">
             <Path d={shellPath} fill={colors.shadow} />
           </G>
-          <Path d={shellPath} fill={colors.tabBarBackground} />
         </Svg>
+        {/* Frosted glass: backdrop blur clipped to the notched island */}
+        {skShellPath != null ? (
+          <Canvas
+            style={{ width: islandWidth, height: BAR_HEIGHT }}
+            pointerEvents="none"
+          >
+            <BackdropBlur blur={22} clip={skShellPath}>
+              <Fill color={colors.tabBarGlass} />
+            </BackdropBlur>
+            <SkiaPath
+              path={skShellPath}
+              color={colors.tabBarGlassBorder}
+              style="stroke"
+              strokeWidth={1.25}
+            />
+          </Canvas>
+        ) : (
+          <Svg
+            width={islandWidth}
+            height={BAR_HEIGHT}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          >
+            <Path d={shellPath} fill={colors.tabBarGlass} />
+            <Path
+              d={shellPath}
+              fill="none"
+              stroke={colors.tabBarGlassBorder}
+              strokeWidth={1.25}
+            />
+          </Svg>
+        )}
 
         <View
           ref={barRowRef}
