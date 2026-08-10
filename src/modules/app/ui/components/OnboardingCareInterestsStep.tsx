@@ -1,13 +1,16 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { trackEvent } from '../../../../infrastructure/analytics/analytics';
 import { useTheme } from '../../../../shared/hooks/useTheme';
+import { lineHeights } from '../../../../shared/theme/typography';
 import type { CareInterest } from '../../../settings/domain/models/Settings';
 import {
   validationCopyForCareInterests,
   validationVariantIdForCareInterests,
 } from '../../domain/onboarding/onboardingValidationCopy';
+import { AccentHeadline } from '../onboarding/components/AccentHeadline';
+import { ScalePressable } from '../onboarding/components/ScalePressable';
 import { CARE_INTEREST_OPTIONS } from '../onboarding/careInterestUtils';
 
 type Props = {
@@ -19,26 +22,20 @@ type ThemeParams = {
   colors: ReturnType<typeof useTheme>['colors'];
   spacing: ReturnType<typeof useTheme>['spacing'];
   radius: ReturnType<typeof useTheme>['radius'];
+  fontSizes: ReturnType<typeof useTheme>['fontSizes'];
 };
 
-const createStyles = ({ colors, spacing, radius }: ThemeParams) =>
+const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
   StyleSheet.create({
     container: {
       paddingHorizontal: spacing.xl,
       paddingTop: spacing.xl,
       alignItems: 'center',
     },
-    title: {
-      fontSize: 28,
-      lineHeight: 34,
-      color: colors.text.heading,
-      textAlign: 'center',
-      letterSpacing: -0.75,
-    },
     subtitle: {
       marginTop: spacing.md,
-      fontSize: 14,
-      lineHeight: 20,
+      fontSize: fontSizes.md,
+      lineHeight: lineHeights.base,
       color: colors.text.body,
       textAlign: 'center',
     },
@@ -53,24 +50,26 @@ const createStyles = ({ colors, spacing, radius }: ThemeParams) =>
       paddingHorizontal: spacing.lg,
       paddingVertical: spacing.md,
       borderRadius: radius.pill,
-      borderWidth: 1,
+      borderWidth: 2,
+      minHeight: 48,
+      justifyContent: 'center',
     },
     chipSelected: {
       backgroundColor: colors.accent,
       borderColor: colors.accent,
     },
     chipIdle: {
-      backgroundColor: colors.brandTint5,
+      backgroundColor: colors.surface,
       borderColor: colors.brandTint20,
     },
     chipLabel: {
-      fontSize: 14,
-      lineHeight: 20,
+      fontSize: fontSizes.lead,
+      lineHeight: lineHeights.md,
     },
     validation: {
       marginTop: spacing.md,
-      fontSize: 13,
-      lineHeight: 18,
+      fontSize: fontSizes.sm,
+      lineHeight: lineHeights.sm,
       color: colors.text.body,
       textAlign: 'center',
     },
@@ -80,10 +79,10 @@ export const OnboardingCareInterestsStep: React.FC<Props> = ({
   selected,
   onToggle,
 }) => {
-  const { colors, fontFamilies, spacing, radius } = useTheme();
+  const { colors, fontFamilies, fontSizes, spacing, radius } = useTheme();
   const styles = useMemo(
-    () => createStyles({ colors, spacing, radius }),
-    [colors, spacing, radius],
+    () => createStyles({ colors, spacing, radius, fontSizes }),
+    [colors, spacing, radius, fontSizes],
   );
 
   const validation = validationCopyForCareInterests(selected);
@@ -103,18 +102,22 @@ export const OnboardingCareInterestsStep: React.FC<Props> = ({
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.title, { fontFamily: fontFamilies.extrabold }]}>
-        What do you care about most?
-      </Text>
+      <AccentHeadline
+        segments={[
+          { type: 'text', value: 'What do you care about ' },
+          { type: 'accent', value: 'most' },
+          { type: 'text', value: '?' },
+        ]}
+      />
       <Text style={[styles.subtitle, { fontFamily: fontFamilies.medium }]}>
-        Pick the reminders that matter — you can change focus anytime by building
-        your routine.
+        Pick the reminders that matter — you can change focus anytime by
+        building your routine.
       </Text>
       <View style={styles.chips}>
         {CARE_INTEREST_OPTIONS.map(option => {
           const isSelected = selected.includes(option.id);
           return (
-            <Pressable
+            <ScalePressable
               key={option.id}
               onPress={() => onToggle(option.id)}
               style={[
@@ -137,7 +140,7 @@ export const OnboardingCareInterestsStep: React.FC<Props> = ({
               >
                 {option.label}
               </Text>
-            </Pressable>
+            </ScalePressable>
           );
         })}
       </View>

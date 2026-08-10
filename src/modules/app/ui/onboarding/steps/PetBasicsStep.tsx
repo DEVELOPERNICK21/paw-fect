@@ -1,9 +1,12 @@
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useTheme } from '../../../../../shared/hooks/useTheme';
 import { lineHeights } from '../../../../../shared/theme/typography';
 import type { PetDraft } from '../../../domain/onboarding/OnboardingDraft';
+import { AccentHeadline } from '../components/AccentHeadline';
+import { OnboardingBlobBackdrop } from '../components/OnboardingBlobBackdrop';
+import { ScalePressable } from '../components/ScalePressable';
 
 type SpeciesOption = { id: PetDraft['species']; label: string; glyph: string };
 type AgeBandOption = { id: PetDraft['ageBand']; label: string };
@@ -34,17 +37,15 @@ type ThemeParams = {
 
 const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
   StyleSheet.create({
+    root: {
+      overflow: 'hidden',
+      minHeight: 280,
+    },
     container: {
       paddingHorizontal: spacing.xl,
       paddingTop: spacing.xl,
       alignItems: 'center',
-    },
-    title: {
-      fontSize: fontSizes['2xl'],
-      lineHeight: lineHeights['2xl'],
-      color: colors.text.heading,
-      textAlign: 'center',
-      letterSpacing: -0.6,
+      zIndex: 1,
     },
     subtitle: {
       marginTop: spacing.md,
@@ -71,16 +72,17 @@ const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
       paddingHorizontal: spacing.lg,
       paddingVertical: spacing.md,
       borderRadius: radius.pill,
-      borderWidth: 1,
+      borderWidth: 2,
       flexDirection: 'row',
       alignItems: 'center',
+      minHeight: 48,
     },
     chipSelected: {
       backgroundColor: colors.accent,
       borderColor: colors.accent,
     },
     chipIdle: {
-      backgroundColor: colors.brandTint5,
+      backgroundColor: colors.surface,
       borderColor: colors.brandTint20,
     },
     chipGlyph: {
@@ -94,9 +96,9 @@ const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
     textInput: {
       marginTop: spacing.sm,
       width: '100%',
-      height: 52,
-      borderRadius: radius.md,
-      borderWidth: 1,
+      height: 56,
+      borderRadius: radius.lg,
+      borderWidth: 2,
       borderColor: colors.borderSubtle,
       backgroundColor: colors.surface,
       paddingHorizontal: spacing.lg,
@@ -113,95 +115,107 @@ export const PetBasicsStep: React.FC<Props> = ({ value, onChange }) => {
   );
 
   return (
-    <View style={styles.container}>
-      <Text style={[styles.title, { fontFamily: fontFamilies.extrabold }]}>
-        Tell us about your pet
-      </Text>
-      <Text style={[styles.subtitle, { fontFamily: fontFamilies.medium }]}>
-        We&apos;ll personalise your plan around them.
-      </Text>
+    <View style={styles.root}>
+      <OnboardingBlobBackdrop variant="compact" />
+      <View style={styles.container}>
+        <AccentHeadline
+          segments={[
+            { type: 'text', value: 'Tell us about ' },
+            { type: 'accent', value: 'your pet' },
+          ]}
+        />
+        <Text style={[styles.subtitle, { fontFamily: fontFamilies.medium }]}>
+          We&apos;ll personalise your plan around them.
+        </Text>
 
-      <Text style={[styles.sectionLabel, { fontFamily: fontFamilies.semibold }]}>
-        SPECIES
-      </Text>
-      <View style={styles.row}>
-        {SPECIES_OPTIONS.map(option => {
-          const isSelected = value.species === option.id;
-          return (
-            <Pressable
-              key={option.id}
-              onPress={() => onChange({ ...value, species: option.id })}
-              style={[
-                styles.chip,
-                isSelected ? styles.chipSelected : styles.chipIdle,
-              ]}
-              accessibilityRole="radio"
-              accessibilityState={{ checked: isSelected }}
-            >
-              <Text style={styles.chipGlyph}>{option.glyph}</Text>
-              <Text
+        <Text
+          style={[styles.sectionLabel, { fontFamily: fontFamilies.semibold }]}
+        >
+          SPECIES
+        </Text>
+        <View style={styles.row}>
+          {SPECIES_OPTIONS.map(option => {
+            const isSelected = value.species === option.id;
+            return (
+              <ScalePressable
+                key={option.id}
+                onPress={() => onChange({ ...value, species: option.id })}
                 style={[
-                  styles.chipLabel,
-                  {
-                    fontFamily: fontFamilies.bold,
-                    color: isSelected
-                      ? colors.text.inverse
-                      : colors.text.heading,
-                  },
+                  styles.chip,
+                  isSelected ? styles.chipSelected : styles.chipIdle,
                 ]}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: isSelected }}
               >
-                {option.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+                <Text style={styles.chipGlyph}>{option.glyph}</Text>
+                <Text
+                  style={[
+                    styles.chipLabel,
+                    {
+                      fontFamily: fontFamilies.bold,
+                      color: isSelected
+                        ? colors.text.inverse
+                        : colors.text.heading,
+                    },
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </ScalePressable>
+            );
+          })}
+        </View>
 
-      <Text style={[styles.sectionLabel, { fontFamily: fontFamilies.semibold }]}>
-        AGE
-      </Text>
-      <View style={styles.row}>
-        {AGE_BAND_OPTIONS.map(option => {
-          const isSelected = value.ageBand === option.id;
-          return (
-            <Pressable
-              key={option.id}
-              onPress={() => onChange({ ...value, ageBand: option.id })}
-              style={[
-                styles.chip,
-                isSelected ? styles.chipSelected : styles.chipIdle,
-              ]}
-              accessibilityRole="radio"
-              accessibilityState={{ checked: isSelected }}
-            >
-              <Text
+        <Text
+          style={[styles.sectionLabel, { fontFamily: fontFamilies.semibold }]}
+        >
+          AGE
+        </Text>
+        <View style={styles.row}>
+          {AGE_BAND_OPTIONS.map(option => {
+            const isSelected = value.ageBand === option.id;
+            return (
+              <ScalePressable
+                key={option.id}
+                onPress={() => onChange({ ...value, ageBand: option.id })}
                 style={[
-                  styles.chipLabel,
-                  {
-                    fontFamily: fontFamilies.bold,
-                    color: isSelected
-                      ? colors.text.inverse
-                      : colors.text.heading,
-                  },
+                  styles.chip,
+                  isSelected ? styles.chipSelected : styles.chipIdle,
                 ]}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: isSelected }}
               >
-                {option.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+                <Text
+                  style={[
+                    styles.chipLabel,
+                    {
+                      fontFamily: fontFamilies.bold,
+                      color: isSelected
+                        ? colors.text.inverse
+                        : colors.text.heading,
+                    },
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </ScalePressable>
+            );
+          })}
+        </View>
 
-      <Text style={[styles.sectionLabel, { fontFamily: fontFamilies.semibold }]}>
-        NICKNAME
-      </Text>
-      <TextInput
-        value={value.nickname}
-        onChangeText={nickname => onChange({ ...value, nickname })}
-        placeholder="e.g. Luna"
-        placeholderTextColor={colors.input.placeholder}
-        style={[styles.textInput, { fontFamily: fontFamilies.medium }]}
-      />
+        <Text
+          style={[styles.sectionLabel, { fontFamily: fontFamilies.semibold }]}
+        >
+          NICKNAME
+        </Text>
+        <TextInput
+          value={value.nickname}
+          onChangeText={nickname => onChange({ ...value, nickname })}
+          placeholder="e.g. Luna"
+          placeholderTextColor={colors.input.placeholder}
+          style={[styles.textInput, { fontFamily: fontFamilies.medium }]}
+        />
+      </View>
     </View>
   );
 };

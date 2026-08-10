@@ -1,10 +1,17 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Animated,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { useTheme } from '../../../../../shared/hooks/useTheme';
 import { lineHeights } from '../../../../../shared/theme/typography';
 import { buildProcessingLines } from '../../../domain/onboarding/buildProcessingLines';
 import type { PetDraft } from '../../../domain/onboarding/OnboardingDraft';
+import { OnboardingBlobBackdrop } from '../components/OnboardingBlobBackdrop';
 
 const PROCESSING_DURATION_MS = 2000;
 const LINE_ROTATE_MS = 650;
@@ -23,10 +30,19 @@ type ThemeParams = {
 
 const createStyles = ({ colors, spacing, fontSizes }: ThemeParams) =>
   StyleSheet.create({
+    root: {
+      minHeight: 320,
+      overflow: 'hidden',
+    },
     container: {
       paddingHorizontal: spacing.xl,
       paddingTop: spacing['4xl'],
       alignItems: 'center',
+      zIndex: 1,
+    },
+    pulseWrap: {
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     lineSlot: {
       marginTop: spacing.xl,
@@ -58,6 +74,7 @@ export const ProcessingStep: React.FC<Props> = ({
     [nickname, species],
   );
   const [lineIndex, setLineIndex] = useState(0);
+  const pulse = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     const timer = setTimeout(onDone, PROCESSING_DURATION_MS);
@@ -71,13 +88,39 @@ export const ProcessingStep: React.FC<Props> = ({
     return () => clearInterval(rotate);
   }, [lines.length]);
 
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 1.08,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
+
   return (
-    <View style={styles.container}>
-      <ActivityIndicator size="large" color={colors.accent} />
-      <View style={styles.lineSlot}>
-        <Text style={[styles.title, { fontFamily: fontFamilies.bold }]}>
-          {lines[lineIndex]}
-        </Text>
+    <View style={styles.root}>
+      <OnboardingBlobBackdrop />
+      <View style={styles.container}>
+        <Animated.View
+          style={[styles.pulseWrap, { transform: [{ scale: pulse }] }]}
+        >
+          <ActivityIndicator size="large" color={colors.accent} />
+        </Animated.View>
+        <View style={styles.lineSlot}>
+          <Text style={[styles.title, { fontFamily: fontFamilies.bold }]}>
+            {lines[lineIndex]}
+          </Text>
+        </View>
       </View>
     </View>
   );

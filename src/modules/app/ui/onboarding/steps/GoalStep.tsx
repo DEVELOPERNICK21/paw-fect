@@ -1,9 +1,11 @@
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../../../../../shared/hooks/useTheme';
 import { lineHeights } from '../../../../../shared/theme/typography';
 import type { OnboardingGoal } from '../../../domain/onboarding/OnboardingDraft';
+import { AccentHeadline } from '../components/AccentHeadline';
+import { ScalePressable } from '../components/ScalePressable';
 
 type GoalOption = {
   id: OnboardingGoal;
@@ -52,13 +54,6 @@ const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
       paddingTop: spacing.xl,
       alignItems: 'center',
     },
-    title: {
-      fontSize: fontSizes['2xl'],
-      lineHeight: lineHeights['2xl'],
-      color: colors.text.heading,
-      textAlign: 'center',
-      letterSpacing: -0.6,
-    },
     subtitle: {
       marginTop: spacing.md,
       fontSize: fontSizes.lead,
@@ -72,12 +67,13 @@ const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
     },
     card: {
       borderRadius: radius.lg,
-      borderWidth: 1,
+      borderWidth: 2,
       padding: spacing.lg,
       marginBottom: spacing.sm,
+      width: '100%',
     },
     cardSelected: {
-      backgroundColor: colors.brandTint5,
+      backgroundColor: colors.brandTint10,
       borderColor: colors.accent,
     },
     cardIdle: {
@@ -114,9 +110,13 @@ export const GoalStep: React.FC<Props> = ({ selected, onSelect }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.title, { fontFamily: fontFamilies.extrabold }]}>
-        What would make the biggest difference?
-      </Text>
+      <AccentHeadline
+        segments={[
+          { type: 'text', value: 'What would make the ' },
+          { type: 'accent', value: 'biggest' },
+          { type: 'text', value: ' difference?' },
+        ]}
+      />
       <Text style={[styles.subtitle, { fontFamily: fontFamilies.medium }]}>
         Choose the outcome that matters most right now.
       </Text>
@@ -124,7 +124,7 @@ export const GoalStep: React.FC<Props> = ({ selected, onSelect }) => {
         {GOAL_OPTIONS.map(option => {
           const isSelected = selected === option.id;
           return (
-            <Pressable
+            <ScalePressable
               key={option.id}
               onPress={() => onSelect(option.id)}
               style={[
@@ -150,7 +150,7 @@ export const GoalStep: React.FC<Props> = ({ selected, onSelect }) => {
               >
                 {option.description}
               </Text>
-            </Pressable>
+            </ScalePressable>
           );
         })}
       </View>

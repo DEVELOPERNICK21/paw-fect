@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { trackEvent } from '../../../../../infrastructure/analytics/analytics';
 import { useTheme } from '../../../../../shared/hooks/useTheme';
@@ -9,6 +9,8 @@ import {
   validationCopyForProblems,
   validationVariantIdForProblems,
 } from '../../../domain/onboarding/onboardingValidationCopy';
+import { AccentHeadline } from '../components/AccentHeadline';
+import { ScalePressable } from '../components/ScalePressable';
 
 type ProblemOption = {
   id: OnboardingProblem;
@@ -42,13 +44,6 @@ const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
       paddingTop: spacing.xl,
       alignItems: 'center',
     },
-    title: {
-      fontSize: fontSizes['2xl'],
-      lineHeight: lineHeights['2xl'],
-      color: colors.text.heading,
-      textAlign: 'center',
-      letterSpacing: -0.6,
-    },
     subtitle: {
       marginTop: spacing.md,
       fontSize: fontSizes.lead,
@@ -71,12 +66,15 @@ const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
       flexDirection: 'row',
       alignItems: 'center',
       borderRadius: radius.lg,
-      borderWidth: 1,
-      padding: spacing.lg,
+      borderWidth: 2,
+      paddingVertical: spacing.lg,
+      paddingHorizontal: spacing.lg,
       marginBottom: spacing.sm,
+      width: '100%',
+      minHeight: 64,
     },
     cardSelected: {
-      backgroundColor: colors.brandTint5,
+      backgroundColor: colors.brandTint10,
       borderColor: colors.accent,
     },
     cardIdle: {
@@ -119,9 +117,13 @@ export const ProblemNamingStep: React.FC<Props> = ({ selected, onToggle }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.title, { fontFamily: fontFamilies.extrabold }]}>
-        What&apos;s been hardest for you and your pet?
-      </Text>
+      <AccentHeadline
+        segments={[
+          { type: 'text', value: "What's been " },
+          { type: 'accent', value: 'hardest' },
+          { type: 'text', value: ' for you and your pet?' },
+        ]}
+      />
       <Text style={[styles.subtitle, { fontFamily: fontFamilies.medium }]}>
         Pick everything that feels familiar — we&apos;ll build your plan
         around it.
@@ -130,7 +132,7 @@ export const ProblemNamingStep: React.FC<Props> = ({ selected, onToggle }) => {
         {PROBLEM_OPTIONS.map(option => {
           const isSelected = selected.includes(option.id);
           return (
-            <Pressable
+            <ScalePressable
               key={option.id}
               onPress={() => onToggle(option.id)}
               style={[
@@ -146,7 +148,7 @@ export const ProblemNamingStep: React.FC<Props> = ({ selected, onToggle }) => {
               >
                 {option.label}
               </Text>
-            </Pressable>
+            </ScalePressable>
           );
         })}
       </View>

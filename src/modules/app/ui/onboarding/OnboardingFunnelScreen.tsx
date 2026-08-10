@@ -80,14 +80,21 @@ const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
       paddingBottom: spacing.xs,
     },
     backButton: {
-      width: 40,
-      height: 40,
+      width: 44,
+      height: 44,
+      borderRadius: radius.round,
+      backgroundColor: colors.text.heading,
       alignItems: 'center',
       justifyContent: 'center',
     },
+    backButtonPlaceholder: {
+      width: 44,
+      height: 44,
+    },
     backGlyph: {
-      fontSize: fontSizes.xl,
-      color: colors.text.heading,
+      fontSize: fontSizes.lg,
+      color: colors.text.inverse,
+      marginTop: -1,
     },
     progressSection: {
       paddingHorizontal: spacing.lg,
@@ -95,7 +102,7 @@ const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
       paddingBottom: spacing.md,
     },
     progressTrack: {
-      height: 6,
+      height: 8,
       borderRadius: radius.pill,
       backgroundColor: colors.brandTint10,
       overflow: 'hidden',
@@ -117,14 +124,15 @@ const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
       paddingBottom: spacing.sm,
     },
     primaryButton: {
-      backgroundColor: colors.accent,
+      backgroundColor: colors.text.heading,
       borderRadius: radius.xl,
       paddingVertical: spacing.lg,
       alignItems: 'center',
       justifyContent: 'center',
+      minHeight: 56,
     },
     primaryButtonDisabled: {
-      opacity: 0.45,
+      opacity: 0.4,
     },
     primaryButtonText: {
       fontSize: fontSizes.base,
@@ -149,6 +157,9 @@ export const OnboardingFunnelScreen: React.FC = () => {
 
   const [commitmentGesture, setCommitmentGesture] = useState(false);
   const fade = useRef(new Animated.Value(1)).current;
+  const slideX = useRef(new Animated.Value(0)).current;
+  const stepDirectionRef = useRef<1 | -1>(1);
+  const previousStepRef = useRef(draft.step);
 
   const step = draft.step;
   const petDraft = draft.petDraft ?? DEFAULT_PET_DRAFT;
@@ -172,13 +183,25 @@ export const OnboardingFunnelScreen: React.FC = () => {
   }, [step, summary.bullets.length]);
 
   useEffect(() => {
+    const previous = previousStepRef.current;
+    stepDirectionRef.current = step >= previous ? 1 : -1;
+    previousStepRef.current = step;
+
     fade.setValue(0);
-    Animated.timing(fade, {
-      toValue: 1,
-      duration: 220,
-      useNativeDriver: true,
-    }).start();
-  }, [fade, step]);
+    slideX.setValue(18 * stepDirectionRef.current);
+    Animated.parallel([
+      Animated.timing(fade, {
+        toValue: 1,
+        duration: 260,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideX, {
+        toValue: 0,
+        duration: 260,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [fade, slideX, step]);
 
   useEffect(() => {
     if (step !== STEP_INDEX.commitment) {
@@ -313,11 +336,13 @@ export const OnboardingFunnelScreen: React.FC = () => {
               onPress={handleBack}
               style={styles.backButton}
               hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Go back"
             >
-              <Text style={styles.backGlyph}>←</Text>
+              <Text style={styles.backGlyph}>‹</Text>
             </Pressable>
           ) : (
-            <View style={styles.backButton} />
+            <View style={styles.backButtonPlaceholder} />
           )}
         </View>
 
@@ -334,7 +359,12 @@ export const OnboardingFunnelScreen: React.FC = () => {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <Animated.View style={{ opacity: fade }}>
+          <Animated.View
+            style={{
+              opacity: fade,
+              transform: [{ translateX: slideX }],
+            }}
+          >
             {step === STEP_INDEX.trustOpen ? <TrustOpenStep /> : null}
             {step === STEP_INDEX.problemNaming ? (
               <ProblemNamingStep

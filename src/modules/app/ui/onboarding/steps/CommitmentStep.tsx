@@ -1,8 +1,11 @@
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../../../../../shared/hooks/useTheme';
 import { lineHeights } from '../../../../../shared/theme/typography';
+import { AccentHeadline } from '../components/AccentHeadline';
+import { OnboardingBlobBackdrop } from '../components/OnboardingBlobBackdrop';
+import { ScalePressable } from '../components/ScalePressable';
 
 type Props = {
   nickname: string;
@@ -19,17 +22,15 @@ type ThemeParams = {
 
 const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
   StyleSheet.create({
+    root: {
+      minHeight: 320,
+      overflow: 'hidden',
+    },
     container: {
       paddingHorizontal: spacing.xl,
       paddingTop: spacing.xl,
       alignItems: 'center',
-    },
-    title: {
-      fontSize: fontSizes['2xl'],
-      lineHeight: lineHeights['2xl'],
-      color: colors.text.heading,
-      textAlign: 'center',
-      letterSpacing: -0.6,
+      zIndex: 1,
     },
     subtitle: {
       marginTop: spacing.md,
@@ -97,31 +98,37 @@ export const CommitmentStep: React.FC<Props> = ({
   const petLabel = nickname.trim().length > 0 ? nickname.trim() : 'your pet';
 
   return (
-    <View style={styles.container}>
-      <Text style={[styles.title, { fontFamily: fontFamilies.extrabold }]}>
-        This is your moment to decide
-      </Text>
-      <Text style={[styles.subtitle, { fontFamily: fontFamilies.medium }]}>
-        We&apos;ll help you keep the promise — one gentle reminder at a time.
-      </Text>
-      <Pressable
-        onPress={onToggle}
-        style={[styles.card, accepted ? styles.cardSelected : styles.cardIdle]}
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked: accepted }}
-      >
-        <View
-          style={[
-            styles.checkCircle,
-            accepted ? styles.checkCircleSelected : styles.checkCircleIdle,
+    <View style={styles.root}>
+      <OnboardingBlobBackdrop />
+      <View style={styles.container}>
+        <AccentHeadline
+          segments={[
+            { type: 'text', value: 'This is your moment to ' },
+            { type: 'accent', value: 'decide' },
           ]}
-        >
-          {accepted ? <Text style={styles.checkGlyph}>✓</Text> : null}
-        </View>
-        <Text style={[styles.cardLabel, { fontFamily: fontFamilies.bold }]}>
-          I&apos;m ready to stay on top of {petLabel}&apos;s health.
+        />
+        <Text style={[styles.subtitle, { fontFamily: fontFamilies.medium }]}>
+          We&apos;ll help you keep the promise — one gentle reminder at a time.
         </Text>
-      </Pressable>
+        <ScalePressable
+          onPress={onToggle}
+          style={[styles.card, accepted ? styles.cardSelected : styles.cardIdle]}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: accepted }}
+        >
+          <View
+            style={[
+              styles.checkCircle,
+              accepted ? styles.checkCircleSelected : styles.checkCircleIdle,
+            ]}
+          >
+            {accepted ? <Text style={styles.checkGlyph}>✓</Text> : null}
+          </View>
+          <Text style={[styles.cardLabel, { fontFamily: fontFamilies.bold }]}>
+            I&apos;m ready to stay on top of {petLabel}&apos;s health.
+          </Text>
+        </ScalePressable>
+      </View>
     </View>
   );
 };

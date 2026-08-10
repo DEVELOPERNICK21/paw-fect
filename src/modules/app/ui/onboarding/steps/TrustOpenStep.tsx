@@ -3,6 +3,8 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../../../../../shared/hooks/useTheme';
 import { lineHeights } from '../../../../../shared/theme/typography';
+import { AccentHeadline } from '../components/AccentHeadline';
+import { OnboardingBlobBackdrop } from '../components/OnboardingBlobBackdrop';
 
 type ThemeParams = {
   colors: ReturnType<typeof useTheme>['colors'];
@@ -13,29 +15,29 @@ type ThemeParams = {
 
 const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
   StyleSheet.create({
+    root: {
+      minHeight: 360,
+      overflow: 'hidden',
+    },
     container: {
       paddingHorizontal: spacing.xl,
       paddingTop: spacing['3xl'],
       alignItems: 'center',
+      zIndex: 1,
     },
     badge: {
-      width: 64,
-      height: 64,
+      width: 72,
+      height: 72,
       borderRadius: radius.round,
       backgroundColor: colors.brandTint10,
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: spacing.xl,
+      borderWidth: 1,
+      borderColor: colors.brandTint20,
     },
     badgeGlyph: {
       fontSize: fontSizes['2xl'],
-    },
-    title: {
-      fontSize: fontSizes['2xl'],
-      lineHeight: lineHeights['2xl'],
-      color: colors.text.heading,
-      textAlign: 'center',
-      letterSpacing: -0.6,
     },
     subtitle: {
       marginTop: spacing.md,
@@ -49,7 +51,10 @@ const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
       paddingHorizontal: spacing.lg,
       paddingVertical: spacing.md,
       borderRadius: radius.lg,
-      backgroundColor: colors.brandTint5,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.brandTint10,
+      width: '100%',
     },
     reassuranceText: {
       fontSize: fontSizes.sm,
@@ -67,24 +72,34 @@ export const TrustOpenStep: React.FC = () => {
   );
 
   return (
-    <View style={styles.container}>
-      <View style={styles.badge}>
-        <Text style={styles.badgeGlyph}>🐾</Text>
-      </View>
-      <Text style={[styles.title, { fontFamily: fontFamilies.extrabold }]}>
-        You haven&apos;t missed anything important — yet.
-      </Text>
-      <Text style={[styles.subtitle, { fontFamily: fontFamilies.medium }]}>
-        Pawsoul is built for pet parents who worry they&apos;ve missed a
-        vaccine, a walk, or a warning sign — and want to feel calm and in
-        control again.
-      </Text>
-      <View style={styles.reassurance}>
-        <Text
-          style={[styles.reassuranceText, { fontFamily: fontFamilies.medium }]}
-        >
-          A few quick questions, then a plan made just for your pet.
+    <View style={styles.root}>
+      <OnboardingBlobBackdrop />
+      <View style={styles.container}>
+        <View style={styles.badge}>
+          <Text style={styles.badgeGlyph}>🐾</Text>
+        </View>
+        <AccentHeadline
+          segments={[
+            { type: 'text', value: "You haven't missed anything important — " },
+            { type: 'accent', value: 'yet' },
+            { type: 'text', value: '.' },
+          ]}
+        />
+        <Text style={[styles.subtitle, { fontFamily: fontFamilies.medium }]}>
+          Pawsoul is built for pet parents who worry they&apos;ve missed a
+          vaccine, a walk, or a warning sign — and want to feel calm and in
+          control again.
         </Text>
+        <View style={styles.reassurance}>
+          <Text
+            style={[
+              styles.reassuranceText,
+              { fontFamily: fontFamilies.medium },
+            ]}
+          >
+            A few quick questions, then a plan made just for your pet.
+          </Text>
+        </View>
       </View>
     </View>
   );
