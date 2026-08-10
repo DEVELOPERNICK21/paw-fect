@@ -2,8 +2,16 @@ import {
   DEFAULT_TAB_BAR_CORNER_RADIUS,
   DEFAULT_TAB_BAR_SCOOP_DEPTH,
   DEFAULT_TAB_BAR_SCOOP_RADIUS,
+  FAB_OVERHANG,
+  FAB_SIZE,
   buildPawTabBarShellPath,
 } from '../pawTabBarShellPath';
+
+describe('pawTabBarShellPath constants', () => {
+  it('scoop depth matches FAB dip into bar', () => {
+    expect(DEFAULT_TAB_BAR_SCOOP_DEPTH).toBe(FAB_SIZE - FAB_OVERHANG);
+  });
+});
 
 describe('buildPawTabBarShellPath', () => {
   const base = {

@@ -10,7 +10,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { G, Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { AppTabParamList } from '../types';
@@ -29,9 +29,12 @@ import type { Theme } from '../../../shared/hooks/useTheme';
 import { icons } from '../../../shared/assets/icons';
 import { resolvePetAvatarSource } from '../../../shared/utils/petDisplayPhoto';
 import {
+  BAR_HEIGHT,
   DEFAULT_TAB_BAR_CORNER_RADIUS,
   DEFAULT_TAB_BAR_SCOOP_DEPTH,
   DEFAULT_TAB_BAR_SCOOP_RADIUS,
+  FAB_BOTTOM_OFFSET,
+  FAB_SIZE,
   buildPawTabBarShellPath,
 } from './pawTabBarShellPath';
 import {
@@ -45,13 +48,6 @@ export { TAB_BAR_VISUAL_HEIGHT as APP_TAB_BAR_HEIGHT } from '../layout';
 
 type TabKey = 'home' | 'health' | 'notifications' | 'settings' | 'pets';
 
-const FAB_SIZE = 58;
-/** Height of the SVG scoop shell (excludes float gap + safe-area pad). */
-const BAR_HEIGHT = 64;
-/** How much of the FAB visually sits above the bar's top edge, into the scoop. */
-const FAB_OVERHANG = 30;
-/** Distance from the island's bottom edge to the FAB layer's bottom edge, so the FAB dips into the scoop by `FAB_SIZE - FAB_OVERHANG`. */
-const FAB_BOTTOM_OFFSET = BAR_HEIGHT - (FAB_SIZE - FAB_OVERHANG);
 const ORBIT_AVATAR = 52;
 const ORBIT_ITEM_WIDTH = 76;
 const PILL_SIZE = 40;
@@ -128,7 +124,6 @@ const itemStyles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 8,
     paddingVertical: 10,
-    borderRadius: 14,
   },
 });
 
@@ -631,18 +626,20 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
           height: shellHeight,
           paddingBottom: bottomPad + TAB_BAR_FLOAT_GAP,
           paddingHorizontal: TAB_BAR_HORIZONTAL_INSET,
-          backgroundColor: 'transparent',
         },
       ]}
       pointerEvents="box-none"
     >
-      <View style={[styles.islandWrap, shadows.lg, { width: islandWidth }]}>
+      <View style={[styles.islandWrap, shadows.lg]}>
         <Svg
           width={islandWidth}
           height={BAR_HEIGHT}
           style={StyleSheet.absoluteFill}
           pointerEvents="none"
         >
+          <G transform="translate(0, 2.5)">
+            <Path d={shellPath} fill={colors.shadow} />
+          </G>
           <Path d={shellPath} fill={colors.tabBarBackground} />
         </Svg>
 
@@ -706,46 +703,46 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
             />
           </View>
         </View>
+      </View>
 
-        <View style={styles.fabLayer} pointerEvents="box-none">
+      <View style={styles.fabLayer}>
+        <Animated.View
+          style={[
+            { transform: [{ translateY: fabTranslateY }] },
+          ]}
+        >
           <Animated.View
             style={[
-              { transform: [{ translateY: fabTranslateY }] },
+              styles.fabLift,
+              { transform: [{ scale: fabScale }] },
+              fabShadow,
             ]}
           >
-            <Animated.View
+            <Pressable
               style={[
-                styles.fabLift,
-                { transform: [{ scale: fabScale }] },
-                fabShadow,
+                styles.fabButton,
+                { backgroundColor: colors.accent },
+                currentKey === 'pets' && styles.fabButtonActive,
               ]}
+              onPress={() => jumpToTabRoot('PetsTab')}
+              onLongPress={openPetPicker}
+              delayLongPress={380}
+              onPressIn={() => animateFabPress(true)}
+              onPressOut={() => animateFabPress(false)}
+              accessibilityRole="button"
+              accessibilityLabel="Pets"
+              accessibilityHint="Tap to open pet profile. Long press to switch pets."
+              accessibilityState={{ selected: currentKey === 'pets' }}
+              android_ripple={{
+                color: 'rgba(255,255,255,0.35)',
+                borderless: true,
+                radius: FAB_SIZE / 2,
+              }}
             >
-              <Pressable
-                style={[
-                  styles.fabButton,
-                  { backgroundColor: colors.accent },
-                  currentKey === 'pets' && styles.fabButtonActive,
-                ]}
-                onPress={() => jumpToTabRoot('PetsTab')}
-                onLongPress={openPetPicker}
-                delayLongPress={380}
-                onPressIn={() => animateFabPress(true)}
-                onPressOut={() => animateFabPress(false)}
-                accessibilityRole="button"
-                accessibilityLabel="Pets"
-                accessibilityHint="Tap to open pet profile. Long press to switch pets."
-                accessibilityState={{ selected: currentKey === 'pets' }}
-                android_ripple={{
-                  color: 'rgba(255,255,255,0.35)',
-                  borderless: true,
-                  radius: FAB_SIZE / 2,
-                }}
-              >
-                <icons.paws width={32} height={32} />
-              </Pressable>
-            </Animated.View>
+              <icons.paws width={32} height={32} />
+            </Pressable>
           </Animated.View>
-        </View>
+        </Animated.View>
       </View>
     </View>
 
