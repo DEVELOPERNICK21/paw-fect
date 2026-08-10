@@ -21,6 +21,25 @@ export const DEFAULT_TAB_BAR_SCOOP_RADIUS = 44;
 /** Depth of the top scoop cutout — must match how far the FAB dips below the bar top. */
 export const DEFAULT_TAB_BAR_SCOOP_DEPTH = FAB_SIZE - FAB_OVERHANG;
 
+/** Air gap between FAB edge and the circular cradle path. */
+const CRADLE_GAP = 6;
+
+/**
+ * Horizontal gap reserved in the icon row for the scoop + FAB.
+ * Slightly wider than the cradle opening so side icons don't crowd the notch.
+ */
+export function getTabBarFabGapWidth(
+  scoopRadius: number = DEFAULT_TAB_BAR_SCOOP_RADIUS,
+  scoopDepth: number = DEFAULT_TAB_BAR_SCOOP_DEPTH,
+): number {
+  const arcR = Math.min(scoopRadius + CRADLE_GAP, scoopDepth + CRADLE_GAP + 4);
+  const circleCy = scoopDepth - arcR;
+  const chordUnder = arcR * arcR - circleCy * circleCy;
+  const halfChord =
+    chordUnder > 0 ? Math.sqrt(chordUnder) : Math.max(scoopRadius * 0.85, 8);
+  return Math.ceil(halfChord * 2 + 28);
+}
+
 /**
  * Closed SVG path for a floating tab bar with rounded ends and a center scoop.
  * Coordinate origin: top-left of the bar rect (0,0). Scoop dips downward (+y).
@@ -46,7 +65,7 @@ export function buildPawTabBarShellPath(params: PawTabBarShellParams): string {
 
   const cx = width / 2;
   // Cradle radius: FAB half-size + air gap so background shows through the merge.
-  const cradleGap = 6;
+  const cradleGap = CRADLE_GAP;
   const arcR = Math.min(scoopR + cradleGap, scoopDepth + cradleGap + 4);
   // Circle centered so its lowest point sits at scoopDepth (cradles the FAB).
   const circleCy = scoopDepth - arcR;

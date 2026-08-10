@@ -43,6 +43,7 @@ import {
   FAB_BOTTOM_OFFSET,
   FAB_SIZE,
   buildPawTabBarShellPath,
+  getTabBarFabGapWidth,
 } from './pawTabBarShellPath';
 import {
   SIDE_TAB_ORDER,
@@ -659,7 +660,7 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
             style={{ width: islandWidth, height: BAR_HEIGHT }}
             pointerEvents="none"
           >
-            <BackdropBlur blur={22} clip={skShellPath}>
+            <BackdropBlur blur={16} clip={skShellPath}>
               <Fill color={colors.tabBarGlass} />
             </BackdropBlur>
             <SkiaPath
@@ -993,7 +994,7 @@ const createStyles = () =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingHorizontal: 8,
+      paddingHorizontal: 12,
       overflow: 'visible',
     },
     side: {
@@ -1003,7 +1004,7 @@ const createStyles = () =>
       alignItems: 'center',
     },
     fabGap: {
-      width: DEFAULT_TAB_BAR_SCOOP_RADIUS * 2,
+      width: getTabBarFabGapWidth(),
     },
     fabLayer: {
       position: 'absolute',

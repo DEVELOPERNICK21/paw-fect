@@ -5,11 +5,18 @@ import {
   FAB_OVERHANG,
   FAB_SIZE,
   buildPawTabBarShellPath,
+  getTabBarFabGapWidth,
 } from '../pawTabBarShellPath';
 
 describe('pawTabBarShellPath constants', () => {
   it('scoop depth matches FAB dip into bar', () => {
     expect(DEFAULT_TAB_BAR_SCOOP_DEPTH).toBe(FAB_SIZE - FAB_OVERHANG);
+  });
+
+  it('fab gap is wider than the cradle opening so icons clear the notch', () => {
+    const gap = getTabBarFabGapWidth();
+    expect(gap).toBeGreaterThan(FAB_SIZE);
+    expect(gap).toBeGreaterThan(DEFAULT_TAB_BAR_SCOOP_RADIUS);
   });
 });
 

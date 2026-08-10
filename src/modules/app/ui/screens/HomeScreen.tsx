@@ -109,8 +109,8 @@ export const HomeScreen: React.FC = () => {
   }, [navigation]);
 
   const viewportMinHeight = useMemo(
-    () => Math.max(Dimensions.get('window').height, 884),
-    [],
+    () => Math.max(Dimensions.get('window').height - tabBarInset, 640),
+    [tabBarInset],
   );
 
   const quickActionPool = useMemo((): HomeQuickActionId[] => {
@@ -238,6 +238,7 @@ export const HomeScreen: React.FC = () => {
           </View>
         ) : (
           <ScrollView
+            style={{ flex: 1, marginBottom: tabBarInset }}
             contentContainerStyle={[
               styles.scrollContent,
               {
@@ -245,7 +246,7 @@ export const HomeScreen: React.FC = () => {
                 minHeight: viewportMinHeight,
                 paddingHorizontal: spacing.lg,
                 paddingTop: spacing.lg,
-                paddingBottom: tabBarInset + spacing['3xl'],
+                paddingBottom: spacing['2xl'],
                 gap: spacing.xl,
               },
             ]}
