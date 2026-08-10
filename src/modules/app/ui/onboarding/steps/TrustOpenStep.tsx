@@ -16,14 +16,13 @@ type ThemeParams = {
 const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
   StyleSheet.create({
     root: {
-      minHeight: 360,
-      overflow: 'hidden',
+      position: 'relative',
+      paddingBottom: spacing.md,
     },
     container: {
       paddingHorizontal: spacing.xl,
       paddingTop: spacing['3xl'],
       alignItems: 'center',
-      zIndex: 1,
     },
     badge: {
       width: 72,

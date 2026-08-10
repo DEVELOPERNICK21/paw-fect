@@ -23,14 +23,13 @@ type ThemeParams = {
 const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
   StyleSheet.create({
     root: {
-      minHeight: 320,
-      overflow: 'hidden',
+      position: 'relative',
+      paddingBottom: spacing.md,
     },
     container: {
       paddingHorizontal: spacing.xl,
       paddingTop: spacing.xl,
       alignItems: 'center',
-      zIndex: 1,
     },
     subtitle: {
       marginTop: spacing.md,

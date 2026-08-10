@@ -31,14 +31,13 @@ type ThemeParams = {
 const createStyles = ({ colors, spacing, fontSizes }: ThemeParams) =>
   StyleSheet.create({
     root: {
-      minHeight: 320,
-      overflow: 'hidden',
+      position: 'relative',
+      paddingBottom: spacing.md,
     },
     container: {
       paddingHorizontal: spacing.xl,
       paddingTop: spacing['4xl'],
       alignItems: 'center',
-      zIndex: 1,
     },
     pulseWrap: {
       alignItems: 'center',
