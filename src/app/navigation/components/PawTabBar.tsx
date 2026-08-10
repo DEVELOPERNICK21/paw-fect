@@ -304,11 +304,26 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
     undefined,
   ]);
   const pillX = useRef(new Animated.Value(0)).current;
-  const pillOpacity = useRef(
-    new Animated.Value(isSideTabActive(currentKey) ? 1 : 0),
-  ).current;
+  // Seeded to 0 (not based on `currentKey`) so the pill never flashes at
+  // `translateX: 0` before its first real position is measured.
+  const pillOpacity = useRef(new Animated.Value(0)).current;
   const pillScale = useRef(new Animated.Value(1)).current;
   const hasPositionedPill = useRef(false);
+
+  const revealPill = useCallback(
+    (x: number) => {
+      pillX.setValue(x);
+      hasPositionedPill.current = true;
+      if (isSideTabActive(currentKey)) {
+        Animated.timing(pillOpacity, {
+          toValue: 1,
+          duration: 180,
+          useNativeDriver: true,
+        }).start();
+      }
+    },
+    [currentKey, pillOpacity, pillX],
+  );
 
   const onTabCenter = useCallback(
     (sideIndex: number, pageX: number, width: number) => {
@@ -316,39 +331,46 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
         const centerInBar = pageX + width / 2 - barX;
         centersXRef.current[sideIndex] = centerInBar;
         const activeIndex = sideTabIndex(currentKey);
-        if (activeIndex === sideIndex) {
+        if (activeIndex === sideIndex && !hasPositionedPill.current) {
           const x = pillTranslateX(centersXRef.current, activeIndex, PILL_SIZE);
-          if (x != null && !hasPositionedPill.current) {
-            pillX.setValue(x);
-            hasPositionedPill.current = true;
+          if (x != null) {
+            revealPill(x);
           }
         }
       });
     },
-    [currentKey, pillX],
+    [currentKey, revealPill],
   );
 
   useEffect(() => {
     const index = sideTabIndex(currentKey);
-    const show = index != null;
+
+    if (index == null) {
+      Animated.timing(pillOpacity, {
+        toValue: 0,
+        duration: 180,
+        useNativeDriver: true,
+      }).start();
+      return;
+    }
+
+    const x = pillTranslateX(centersXRef.current, index, PILL_SIZE);
+    if (x == null) {
+      // Not measured yet; `onTabCenter` reveals the pill once layout lands.
+      return;
+    }
+
+    if (!hasPositionedPill.current) {
+      revealPill(x);
+      return;
+    }
+
     Animated.timing(pillOpacity, {
-      toValue: show ? 1 : 0,
+      toValue: 1,
       duration: 180,
       useNativeDriver: true,
     }).start();
 
-    if (index == null) {
-      return;
-    }
-    const x = pillTranslateX(centersXRef.current, index, PILL_SIZE);
-    if (x == null) {
-      return;
-    }
-    if (!hasPositionedPill.current) {
-      pillX.setValue(x);
-      hasPositionedPill.current = true;
-      return;
-    }
     Animated.parallel([
       Animated.spring(pillX, {
         toValue: x,
@@ -370,7 +392,7 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
         }),
       ]),
     ]).start();
-  }, [currentKey, pillOpacity, pillScale, pillX]);
+  }, [currentKey, pillOpacity, pillScale, pillX, revealPill]);
 
   useEffect(() => {
     hasPositionedPill.current = false;
@@ -613,6 +635,7 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
           style={{
             position: 'absolute',
             top: 8,
+            left: 0,
             width: PILL_SIZE,
             height: PILL_SIZE,
             borderRadius: PILL_SIZE / 2,
