@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  ActionSheetIOS,
   Alert,
-  type AlertButton,
   Image,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -370,41 +371,85 @@ export const AddPetScreen: React.FC = () => {
     }
   };
 
-  const openPhotoOptions = (): void => {
-    const options: AlertButton[] = [
-      {
-        text: 'Take photo',
-        onPress: () => {
-          handlePick('camera').catch(() => undefined);
-        },
-      },
-      {
-        text: 'Choose from library',
-        onPress: () => {
-          handlePick('library').catch(() => undefined);
-        },
-      },
-    ];
+  const removePhoto = (): void => {
+    setPhotoUri(PROFILE_PLACEHOLDER);
+    setPendingPhoto(null);
+    setPhotoCleared(true);
+    setError(null);
+  };
 
-    if (photoFilled) {
-      options.push({
-        text: 'Remove photo',
-        style: 'destructive',
-        onPress: () => {
-          setPhotoUri(PROFILE_PLACEHOLDER);
-          setPendingPhoto(null);
-          setPhotoCleared(true);
-          setError(null);
+  const openPhotoOptions = (): void => {
+    if (Platform.OS === 'ios') {
+      const options = photoFilled
+        ? ['Take photo', 'Choose from library', 'Remove photo', 'Cancel']
+        : ['Take photo', 'Choose from library', 'Cancel'];
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options,
+          cancelButtonIndex: options.length - 1,
+          destructiveButtonIndex: photoFilled ? 2 : undefined,
+          title: 'Pet photo',
         },
-      });
+        selectedIndex => {
+          if (selectedIndex === 0) {
+            handlePick('camera').catch(() => undefined);
+          } else if (selectedIndex === 1) {
+            handlePick('library').catch(() => undefined);
+          } else if (photoFilled && selectedIndex === 2) {
+            removePhoto();
+          }
+        },
+      );
+      return;
     }
 
-    options.push({
-      text: 'Cancel',
-      style: 'cancel',
-    });
-
-    Alert.alert('Pet photo', 'Choose a photo option', options);
+    Alert.alert(
+      'Pet photo',
+      'Choose a photo option',
+      photoFilled
+        ? [
+            {
+              text: 'Take photo',
+              onPress: () => {
+                handlePick('camera').catch(() => undefined);
+              },
+            },
+            {
+              text: 'Choose from library',
+              onPress: () => {
+                handlePick('library').catch(() => undefined);
+              },
+            },
+            {
+              text: 'More…',
+              onPress: () => {
+                Alert.alert('More photo options', undefined, [
+                  {
+                    text: 'Remove photo',
+                    style: 'destructive',
+                    onPress: removePhoto,
+                  },
+                  { text: 'Cancel', style: 'cancel' },
+                ]);
+              },
+            },
+          ]
+        : [
+            {
+              text: 'Take photo',
+              onPress: () => {
+                handlePick('camera').catch(() => undefined);
+              },
+            },
+            {
+              text: 'Choose from library',
+              onPress: () => {
+                handlePick('library').catch(() => undefined);
+              },
+            },
+            { text: 'Cancel', style: 'cancel' },
+          ],
+    );
   };
 
   const resolvePhotoForSave = async (): Promise<
