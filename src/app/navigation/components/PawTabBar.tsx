@@ -17,7 +17,7 @@ import {
   Path as SkiaPath,
   Skia,
 } from '@shopify/react-native-skia';
-import Svg, { G, Path } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { AppTabParamList } from '../types';
@@ -642,39 +642,35 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
       ]}
       pointerEvents="box-none"
     >
-      <View style={[styles.islandWrap, Platform.OS === 'ios' ? shadows.lg : null]}>
-        {/* Soft drop shadow follows the scoop silhouette */}
-        <Svg
-          width={islandWidth}
-          height={BAR_HEIGHT}
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
-        >
-          <G transform="translate(0, 2.5)">
-            <Path d={shellPath} fill={colors.shadow} />
-          </G>
-        </Svg>
-        {/* Frosted glass: backdrop blur clipped to the notched island */}
+      <View
+        style={[
+          styles.islandWrap,
+          { height: BAR_HEIGHT, width: islandWidth },
+          Platform.OS === 'ios' ? shadows.md : null,
+        ]}
+      >
+        {/* Frosted glass clipped to the scooped island (must be absolute so it
+            overlays the icon row — not stacked above it). */}
         {skShellPath != null ? (
           <Canvas
-            style={{ width: islandWidth, height: BAR_HEIGHT }}
+            style={styles.islandLayer}
             pointerEvents="none"
           >
-            <BackdropBlur blur={16} clip={skShellPath}>
+            <BackdropBlur blur={18} clip={skShellPath}>
               <Fill color={colors.tabBarGlass} />
             </BackdropBlur>
             <SkiaPath
               path={skShellPath}
               color={colors.tabBarGlassBorder}
               style="stroke"
-              strokeWidth={1.25}
+              strokeWidth={1}
             />
           </Canvas>
         ) : (
           <Svg
             width={islandWidth}
             height={BAR_HEIGHT}
-            style={StyleSheet.absoluteFill}
+            style={styles.islandLayer}
             pointerEvents="none"
           >
             <Path d={shellPath} fill={colors.tabBarGlass} />
@@ -682,7 +678,7 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
               d={shellPath}
               fill="none"
               stroke={colors.tabBarGlassBorder}
-              strokeWidth={1.25}
+              strokeWidth={1}
             />
           </Svg>
         )}
@@ -986,16 +982,20 @@ const createStyles = () =>
       justifyContent: 'flex-end',
     },
     islandWrap: {
-      borderRadius: DEFAULT_TAB_BAR_CORNER_RADIUS,
       overflow: 'visible',
       backgroundColor: 'transparent',
+      alignSelf: 'center',
+    },
+    islandLayer: {
+      ...StyleSheet.absoluteFill,
     },
     barRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingHorizontal: 12,
+      paddingHorizontal: 10,
       overflow: 'visible',
+      zIndex: 1,
     },
     side: {
       flex: 1,

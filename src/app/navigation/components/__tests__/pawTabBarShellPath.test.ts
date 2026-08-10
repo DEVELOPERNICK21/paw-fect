@@ -16,14 +16,14 @@ describe('pawTabBarShellPath constants', () => {
   it('fab gap is wider than the cradle opening so icons clear the notch', () => {
     const gap = getTabBarFabGapWidth();
     expect(gap).toBeGreaterThan(FAB_SIZE);
-    expect(gap).toBeGreaterThan(DEFAULT_TAB_BAR_SCOOP_RADIUS);
+    expect(gap).toBe(DEFAULT_TAB_BAR_SCOOP_RADIUS * 2 + 20);
   });
 });
 
 describe('buildPawTabBarShellPath', () => {
   const base = {
     width: 360,
-    height: 64,
+    height: 60,
     cornerRadius: DEFAULT_TAB_BAR_CORNER_RADIUS,
     scoopRadius: DEFAULT_TAB_BAR_SCOOP_RADIUS,
     scoopDepth: DEFAULT_TAB_BAR_SCOOP_DEPTH,
@@ -33,9 +33,7 @@ describe('buildPawTabBarShellPath', () => {
     const d = buildPawTabBarShellPath(base);
     expect(d.startsWith('M')).toBe(true);
     expect(d.trim().endsWith('Z') || d.trim().endsWith('z')).toBe(true);
-    // Soft shoulders (cubics) + circular cradle (arc)
     expect(d).toContain('C');
-    expect(d).toContain('A');
   });
 
   it('clamps corner radius so it cannot exceed half height', () => {

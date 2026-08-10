@@ -13,9 +13,9 @@ export const lightColors = {
   elevated: '#FFFFFF',
   tabBarBackground: 'rgba(248, 247, 246, 0.96)',
   /** Floating tab island frosted fill (used with backdrop blur). */
-  tabBarGlass: 'rgba(255, 255, 255, 0.72)',
+  tabBarGlass: 'rgba(255, 255, 255, 0.55)',
   /** Light rim on the glass tab island. */
-  tabBarGlassBorder: 'rgba(255, 255, 255, 0.65)',
+  tabBarGlassBorder: 'rgba(255, 255, 255, 0.45)',
 
   text: {
     primary: '#1F2933',
@@ -67,8 +67,8 @@ export const darkColors = {
   surfaceAlt: '#243244',
   elevated: '#202D3E',
   tabBarBackground: 'rgba(19, 27, 38, 0.96)',
-  tabBarGlass: 'rgba(19, 27, 38, 0.78)',
-  tabBarGlassBorder: 'rgba(255, 255, 255, 0.2)',
+  tabBarGlass: 'rgba(27, 38, 52, 0.62)',
+  tabBarGlassBorder: 'rgba(255, 255, 255, 0.18)',
 
   text: {
     primary: '#E5E7EB',

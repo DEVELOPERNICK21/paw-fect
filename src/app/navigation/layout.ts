@@ -10,9 +10,9 @@ export const TAB_BAR_FLOAT_GAP = 8;
 /**
  * Visual chrome height above the safe-area pad: floating bar + FAB overhang + float gap.
  * Must stay in sync with `PawTabBar` geometry.
- * Budget: FLOAT_GAP(8) + BAR_HEIGHT(64) + FAB_OVERHANG(30) + content clearance(24) = 126.
+ * Budget: FLOAT_GAP(8) + BAR_HEIGHT(60) + FAB_OVERHANG(26) + clearance(16) = 110.
  */
-export const TAB_BAR_VISUAL_HEIGHT = 126;
+export const TAB_BAR_VISUAL_HEIGHT = 110;
 
 /**
  * Bottom inset below scroll content: matches floating `PawTabBar`
