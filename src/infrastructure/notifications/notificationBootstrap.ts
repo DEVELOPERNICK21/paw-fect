@@ -94,7 +94,10 @@ function dispatchNotificationNavigationTarget(
           name: 'HealthTab',
           params: {
             screen: 'HealthRecords',
-            params: { focusRecordId: target.focusRecordId },
+            params: {
+              focusRecordId: target.focusRecordId,
+              petId: target.petId,
+            },
           },
         }),
       );

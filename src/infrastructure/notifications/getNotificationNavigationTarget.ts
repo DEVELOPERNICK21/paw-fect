@@ -1,6 +1,6 @@
 export type NotificationNavigationTarget =
   | { target: 'reminderDetail'; reminderId: string }
-  | { target: 'healthRecords'; focusRecordId: string }
+  | { target: 'healthRecords'; focusRecordId: string; petId?: string }
   | { target: 'wellnessHub'; petId: string; blockId?: string }
   | { target: 'petProfile' }
   | { target: 'home' };
@@ -15,7 +15,11 @@ export function getNotificationNavigationTarget(
     return { target: 'reminderDetail', reminderId: data.reminderId };
   }
   if (data.kind === 'smartHealth' && data.recordId) {
-    return { target: 'healthRecords', focusRecordId: data.recordId };
+    return {
+      target: 'healthRecords',
+      focusRecordId: data.recordId,
+      petId: data.petId,
+    };
   }
   if (data.kind === 'dailySchedule' && data.petId) {
     return {

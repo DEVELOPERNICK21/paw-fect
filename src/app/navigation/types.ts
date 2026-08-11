@@ -21,7 +21,7 @@ export type HomeStackParamList = {
 };
 
 export type HealthStackParamList = {
-  HealthRecords: { focusRecordId?: string } | undefined;
+  HealthRecords: { focusRecordId?: string; petId?: string } | undefined;
   AddHealthRecord: undefined;
 };
 

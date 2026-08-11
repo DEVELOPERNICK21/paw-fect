@@ -11,14 +11,14 @@ describe('getNotificationNavigationTarget', () => {
     ).toEqual({ target: 'reminderDetail', reminderId: 'r1' });
   });
 
-  it('returns healthRecords with focusRecordId for smartHealth', () => {
+  it('returns healthRecords with focusRecordId and petId for smartHealth', () => {
     expect(
       getNotificationNavigationTarget({
         kind: 'smartHealth',
         recordId: 'rec1',
         petId: 'p1',
       }),
-    ).toEqual({ target: 'healthRecords', focusRecordId: 'rec1' });
+    ).toEqual({ target: 'healthRecords', focusRecordId: 'rec1', petId: 'p1' });
   });
 
   it('ignores recordId without smartHealth kind', () => {

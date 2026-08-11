@@ -57,6 +57,7 @@ export const HealthRecordScreen: React.FC = () => {
   const navigation = useNavigation<HealthRecordsRootNavigation>();
   const route = useRoute<RouteProp<HealthStackParamList, 'HealthRecords'>>();
   const focusRecordId = route.params?.focusRecordId;
+  const focusPetId = route.params?.petId;
   const theme = useTheme();
   const tabBarInset = useAppTabBarInset();
   const { colors, space, radius, textStyles, fontFamilies } = theme;
@@ -220,12 +221,34 @@ export const HealthRecordScreen: React.FC = () => {
     setDewormingLogError(null);
   };
 
+  React.useEffect(() => {
+    setFocusUnavailableDismissed(false);
+  }, [focusRecordId, focusPetId]);
+
   useFocusEffect(
     React.useCallback(() => {
-      if (activePet?.id) {
-        void useSmartHealthRecordStore.getState().loadPetRecords(activePet.id);
-      }
-    }, [activePet?.id]),
+      let cancelled = false;
+
+      const loadRecordsForFocus = async (): Promise<void> => {
+        if (focusPetId != null && focusPetId !== activePet?.id) {
+          await usePetStore.getState().setActivePet(focusPetId);
+        }
+
+        const petIdToLoad =
+          focusPetId ?? usePetStore.getState().activePet?.id ?? null;
+        if (cancelled || petIdToLoad == null) {
+          return;
+        }
+
+        await useSmartHealthRecordStore.getState().loadPetRecords(petIdToLoad);
+      };
+
+      void loadRecordsForFocus();
+
+      return () => {
+        cancelled = true;
+      };
+    }, [focusPetId, activePet?.id]),
   );
 
   const focusedRecord = useMemo(() => {

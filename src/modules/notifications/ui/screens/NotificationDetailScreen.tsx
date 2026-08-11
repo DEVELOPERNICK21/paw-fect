@@ -92,7 +92,10 @@ function openRelated(navigation: DetailNavigation, data: Record<string, string>)
     case 'healthRecords':
       tab?.navigate('HealthTab', {
         screen: 'HealthRecords',
-        params: { focusRecordId: target.focusRecordId },
+        params: {
+          focusRecordId: target.focusRecordId,
+          petId: target.petId,
+        },
       });
       return;
     case 'wellnessHub':
