@@ -4,7 +4,10 @@
 import { useSmartHealthRecordStore } from '../records/store/smartHealthRecordStore';
 import { ensureNotificationsReady } from '../../infrastructure/notifications/notificationDiagnostics';
 import { notificationService } from '../../infrastructure/notifications/notificationService';
-import { syncDailyRoutineNotificationsForPets } from '../../infrastructure/notifications/dailyCareNotifications';
+import {
+  cancelDailyRoutineForPet,
+  syncDailyRoutineNotificationsForPets,
+} from '../../infrastructure/notifications/dailyCareNotifications';
 import { createFirestorePetPhotoEncoder } from './data/photos/FirestorePetPhotoEncoder';
 import { createPetRepository } from './data/repositories/PetRepositoryImpl';
 import type { Pet } from './domain/models/Pet';
@@ -94,6 +97,16 @@ export const petComposition = {
     await syncDailyRoutineNotificationsForPets(
       pets.map(p => ({ id: p.id, name: p.name, type: p.type })),
       notificationService,
+    );
+  },
+  cancelDailyRoutineNotificationsForPet: async (petId: string): Promise<void> => {
+    await cancelDailyRoutineForPet(petId, notificationService);
+  },
+  cancelDailyRoutineNotificationsForPets: async (pets: Pet[]): Promise<void> => {
+    await Promise.all(
+      pets.map(pet =>
+        cancelDailyRoutineForPet(pet.id, notificationService),
+      ),
     );
   },
   /**

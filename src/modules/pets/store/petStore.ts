@@ -81,7 +81,7 @@ export const usePetStore = create<PetState>((set, get) => ({
   resyncDailyRoutineNotifications: async () => {
     const pets = get().pets;
     try {
-      await pc.syncDailyRoutineNotifications(pets);
+      await pc.cancelDailyRoutineNotificationsForPets(pets);
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('[petStore] resyncDailyRoutineNotifications error', error);
@@ -142,7 +142,6 @@ export const usePetStore = create<PetState>((set, get) => ({
       }
 
       set({ pets, activePet, loading: false, loadError: null });
-      void pc.syncDailyRoutineNotifications(pets).catch(() => {});
       void recordsComposition
         .syncDueNotificationsForPets(
           userId,
@@ -169,7 +168,7 @@ export const usePetStore = create<PetState>((set, get) => ({
       const { pets } = get();
       const next = [...pets.filter(p => p.id !== created.id), created];
       set({ pets: next });
-      void pc.syncDailyRoutineNotifications(next).catch(() => {});
+      void pc.cancelDailyRoutineNotificationsForPet(created.id).catch(() => {});
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('[petStore] createPet error', error);
@@ -250,7 +249,7 @@ export const usePetStore = create<PetState>((set, get) => ({
         pets: nextPets,
         activePet: activePet?.id === updated.id ? updated : activePet,
       });
-      void pc.syncDailyRoutineNotifications(nextPets).catch(() => {});
+      void pc.cancelDailyRoutineNotificationsForPet(updated.id).catch(() => {});
 
       // Re-bootstrap health schedule if DOB changed
       await getPetCoordinationPorts().bootstrapPetHealthSchedule({
@@ -307,7 +306,7 @@ export const usePetStore = create<PetState>((set, get) => ({
     }
 
     set({ pets, activePet: nextActive });
-    void pc.syncDailyRoutineNotifications(pets).catch(() => {});
+    void pc.cancelDailyRoutineNotificationsForPet(id).catch(() => {});
 
     await getPetCoordinationPorts().resyncHealthRecordsAfterPetRemoval(
       nextActive?.id,
