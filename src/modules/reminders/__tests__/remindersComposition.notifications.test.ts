@@ -14,8 +14,23 @@ jest.mock('../data/repositories/ReminderRepositoryImpl', () => ({
   createReminderRepository: () => ({}),
 }));
 
+jest.mock('../../settings/store/settingsStore', () => ({
+  useSettingsStore: {
+    getState: jest.fn(() => ({
+      settings: { notificationsEnabled: true },
+    })),
+  },
+}));
+
+import notifee, { AuthorizationStatus } from '@notifee/react-native';
+
 import { requestNotificationResync } from '../../../infrastructure/notifications/requestNotificationResync';
-import { remindersComposition } from '../remindersComposition';
+import { useSettingsStore } from '../../settings/store/settingsStore';
+import {
+  REMINDER_NOTIFICATIONS_BLOCKED_MESSAGE,
+  REMINDER_NOTIFICATIONS_BUDGET_MESSAGE,
+  remindersComposition,
+} from '../remindersComposition';
 
 const mockRequestNotificationResync = requestNotificationResync as jest.MockedFunction<
   typeof requestNotificationResync
@@ -25,6 +40,12 @@ describe('remindersComposition notification sync', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockGetTriggerNotificationIds.mockResolvedValue([]);
+    (notifee.getNotificationSettings as jest.Mock).mockResolvedValue({
+      authorizationStatus: AuthorizationStatus.AUTHORIZED,
+    });
+    (useSettingsStore.getState as jest.Mock).mockReturnValue({
+      settings: { notificationsEnabled: true },
+    });
   });
 
   it('resyncMustFireNotifications delegates to planner resync', async () => {
@@ -50,14 +71,38 @@ describe('remindersComposition verifyReminderNotificationsScheduled', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockGetTriggerNotificationIds.mockResolvedValue([]);
+    (notifee.getNotificationSettings as jest.Mock).mockResolvedValue({
+      authorizationStatus: AuthorizationStatus.AUTHORIZED,
+    });
+    (useSettingsStore.getState as jest.Mock).mockReturnValue({
+      settings: { notificationsEnabled: true },
+    });
   });
 
-  it('throws when a future reminder has no scheduled leads after resync', async () => {
+  it('throws budget message when permission is ok but no leads are pending', async () => {
     await expect(
       remindersComposition.verifyReminderNotificationsScheduled(futureReminder),
-    ).rejects.toThrow(
-      'Notifications are off or blocked. Turn on alerts in Settings and allow Pawsoul in system settings.',
-    );
+    ).rejects.toThrow(REMINDER_NOTIFICATIONS_BUDGET_MESSAGE);
+  });
+
+  it('throws blocked message when notifications are disabled in settings', async () => {
+    (useSettingsStore.getState as jest.Mock).mockReturnValue({
+      settings: { notificationsEnabled: false },
+    });
+
+    await expect(
+      remindersComposition.verifyReminderNotificationsScheduled(futureReminder),
+    ).rejects.toThrow(REMINDER_NOTIFICATIONS_BLOCKED_MESSAGE);
+  });
+
+  it('throws blocked message when system notification permission is denied', async () => {
+    (notifee.getNotificationSettings as jest.Mock).mockResolvedValue({
+      authorizationStatus: AuthorizationStatus.DENIED,
+    });
+
+    await expect(
+      remindersComposition.verifyReminderNotificationsScheduled(futureReminder),
+    ).rejects.toThrow(REMINDER_NOTIFICATIONS_BLOCKED_MESSAGE);
   });
 
   it('passes when at least one reminder lead is pending', async () => {
@@ -66,6 +111,8 @@ describe('remindersComposition verifyReminderNotificationsScheduled', () => {
     await expect(
       remindersComposition.verifyReminderNotificationsScheduled(futureReminder),
     ).resolves.toBeUndefined();
+
+    expect(notifee.getNotificationSettings).not.toHaveBeenCalled();
   });
 
   it('passes when due time is in the past even if no leads are pending', async () => {
