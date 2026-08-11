@@ -1,6 +1,9 @@
 import type { SmartHealthRecord } from '../../modules/records/domain/models/SmartHealthRecord';
-import { getTodayIsoDateLocal } from '../../shared/utils/calendarDate';
 import type { NotificationService } from './notificationService';
+import {
+  priorityForSmartHealthSlot,
+  type NotificationCandidate,
+} from './notificationCandidate';
 import { attentionTierFromHealthSlot } from './notificationSoundCatalog';
 import {
   withNotificationSound,
@@ -25,46 +28,20 @@ export {
 const DUE_HOUR = 9;
 const DUE_MINUTE = 0;
 
-export function smartHealthNotificationIds(
-  recordId: string,
-): [string, string, string] {
-  const base = `health-${recordId}`;
-  return [`${base}-d2`, `${base}-due`, `${base}-overdue`];
+function getLocalIsoDateFromMs(ms: number): string {
+  const d = new Date(ms);
+  const pad2 = (n: number): string => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
 
-export function localDateOnCalendarDay(
-  ymd: string,
-  hour: number,
-  minute: number,
-): Date {
-  const parts = ymd.split('-').map(Number);
-  if (parts.length !== 3 || parts.some(n => Number.isNaN(n))) {
-    return new Date(Number.NaN);
-  }
-  const [y, mo, d] = parts;
-  return new Date(y, mo - 1, d, hour, minute, 0, 0);
-}
-
-export async function cancelSmartHealthNotificationsForRecord(
-  recordId: string,
-  service: NotificationService,
-): Promise<void> {
-  for (const id of smartHealthNotificationIds(recordId)) {
-    await service.cancelNotification(id);
-  }
-}
-
-export async function scheduleSmartHealthDueNotifications(
+export function buildSmartHealthNotificationCandidates(
   record: SmartHealthRecord,
-  service: NotificationService,
   petSpecies?: PetNotificationSpecies,
-): Promise<void> {
+  nowMs: number = Date.now(),
+): NotificationCandidate[] {
   if (record.status === 'completed' || record.status === 'skipped') {
-    await cancelSmartHealthNotificationsForRecord(record.id, service);
-    return;
+    return [];
   }
-
-  await cancelSmartHealthNotificationsForRecord(record.id, service);
 
   const dueDate = localDateOnCalendarDay(record.dueDate, DUE_HOUR, DUE_MINUTE);
   const twoDaysBefore = new Date(dueDate);
@@ -73,7 +50,7 @@ export async function scheduleSmartHealthDueNotifications(
   const overdueDate = new Date(dueDate);
   overdueDate.setDate(overdueDate.getDate() + 1);
 
-  const isOverdueContext = getTodayIsoDateLocal() > record.dueDate;
+  const isOverdueContext = getLocalIsoDateFromMs(nowMs) > record.dueDate;
   const baseData: Record<string, string> = {
     recordId: record.id,
     petId: record.petId,
@@ -124,17 +101,88 @@ export async function scheduleSmartHealthDueNotifications(
     },
   ];
 
+  const candidates: NotificationCandidate[] = [];
   for (const slot of slots) {
-    if (slot.scheduledDate.getTime() <= Date.now() + 1500) {
+    if (slot.scheduledDate.getTime() <= nowMs + 1500) {
       continue;
     }
-    await service.scheduleNotification({
+    candidates.push({
       id: slot.id,
-      title: slot.title,
-      body: slot.body,
-      scheduledDate: slot.scheduledDate,
-      data: dataForSlot(slot.slot),
+      kind: 'smartHealth',
+      petId: record.petId,
+      fireAt: slot.scheduledDate,
+      priority: priorityForSmartHealthSlot(slot.slot),
+      payload: {
+        id: slot.id,
+        title: slot.title,
+        body: slot.body,
+        scheduledDate: slot.scheduledDate,
+        data: dataForSlot(slot.slot),
+      },
     });
+  }
+
+  return candidates;
+}
+
+export function buildSmartHealthCandidatesForRecords(
+  records: SmartHealthRecord[],
+  petSpeciesByPetId?: ReadonlyMap<string, PetNotificationSpecies>,
+  nowMs: number = Date.now(),
+): NotificationCandidate[] {
+  const selected = selectHealthRecordsForNotifications(records);
+  return selected.flatMap(record =>
+    buildSmartHealthNotificationCandidates(
+      record,
+      petSpeciesByPetId?.get(record.petId),
+      nowMs,
+    ),
+  );
+}
+
+export function smartHealthNotificationIds(
+  recordId: string,
+): [string, string, string] {
+  const base = `health-${recordId}`;
+  return [`${base}-d2`, `${base}-due`, `${base}-overdue`];
+}
+
+export function localDateOnCalendarDay(
+  ymd: string,
+  hour: number,
+  minute: number,
+): Date {
+  const parts = ymd.split('-').map(Number);
+  if (parts.length !== 3 || parts.some(n => Number.isNaN(n))) {
+    return new Date(Number.NaN);
+  }
+  const [y, mo, d] = parts;
+  return new Date(y, mo - 1, d, hour, minute, 0, 0);
+}
+
+export async function cancelSmartHealthNotificationsForRecord(
+  recordId: string,
+  service: NotificationService,
+): Promise<void> {
+  for (const id of smartHealthNotificationIds(recordId)) {
+    await service.cancelNotification(id);
+  }
+}
+
+export async function scheduleSmartHealthDueNotifications(
+  record: SmartHealthRecord,
+  service: NotificationService,
+  petSpecies?: PetNotificationSpecies,
+): Promise<void> {
+  await cancelSmartHealthNotificationsForRecord(record.id, service);
+
+  if (record.status === 'completed' || record.status === 'skipped') {
+    return;
+  }
+
+  const candidates = buildSmartHealthNotificationCandidates(record, petSpecies);
+  for (const candidate of candidates) {
+    await service.scheduleNotification(candidate.payload);
   }
 }
 
