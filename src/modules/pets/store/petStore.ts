@@ -6,7 +6,7 @@ import {
 } from '../../../shared/session/appSessionPorts';
 import { getPetAccess } from '../../../shared/subscription/petAccess';
 import { getPetCoordinationPorts } from './petCoordinationPorts';
-import { recordsComposition } from '../../records/recordsComposition';
+import { requestNotificationResync } from '../../../infrastructure/notifications/requestNotificationResync';
 import { petComposition } from '../petComposition';
 import type { Pet } from '../domain/models/Pet';
 import type { PetType } from '../domain/models/Pet';
@@ -98,10 +98,7 @@ export const usePetStore = create<PetState>((set, get) => ({
       return;
     }
     try {
-      await recordsComposition.syncDueNotificationsForPets(
-        userId,
-        pets.map(pet => pet.id),
-      );
+      await requestNotificationResync();
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('[petStore] resyncCareNotifications error', error);
@@ -142,12 +139,7 @@ export const usePetStore = create<PetState>((set, get) => ({
       }
 
       set({ pets, activePet, loading: false, loadError: null });
-      void recordsComposition
-        .syncDueNotificationsForPets(
-          userId,
-          pets.map(pet => pet.id),
-        )
-        .catch(() => {});
+      void requestNotificationResync().catch(() => {});
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('[petStore] loadPets error', error);

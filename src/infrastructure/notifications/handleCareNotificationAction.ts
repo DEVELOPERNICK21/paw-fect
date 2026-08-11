@@ -1,6 +1,7 @@
 import notifee from '@notifee/react-native';
 
 import { scheduleComposition } from '../../modules/schedule/scheduleComposition';
+import { requestNotificationResync } from './requestNotificationResync';
 import { getAppSessionUserId } from '../../shared/session/appSessionPorts';
 import { appOrchestrator } from '../../modules/app/appComposition';
 
@@ -42,6 +43,7 @@ export async function handleCareNotificationAction(
     if (data.notificationId != null && data.notificationId.length > 0) {
       await notifee.cancelNotification(data.notificationId);
     }
+    await requestNotificationResync();
     appOrchestrator.invalidateHomeDashboard();
     return true;
   }
@@ -65,16 +67,14 @@ export async function handleCareNotificationAction(
     snoozeMinutes,
   });
 
+  await scheduleComposition.cancelScheduleBlockNotification(blockId, petId);
+  await requestNotificationResync();
   const schedule = await scheduleComposition.buildDailySchedule.execute({
     userId,
     petId,
     date,
   });
   if (schedule != null) {
-    await scheduleComposition.syncScheduleNotifications(
-      schedule,
-      schedule.blocks,
-    );
     await scheduleComposition.syncGlanceForSchedule(schedule);
   }
 

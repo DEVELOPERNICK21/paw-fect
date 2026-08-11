@@ -1,14 +1,9 @@
-import { getAppSessionUserId } from '../../shared/session/appSessionPorts';
 import { isLikelyOfflineError } from '../../shared/utils/isLikelyOfflineError';
-import { ensureNotificationsReady } from '../../infrastructure/notifications/notificationDiagnostics';
 import { notificationService } from '../../infrastructure/notifications/notificationService';
-import {
-  cancelSmartHealthNotificationsForRecord,
-  syncAllSmartHealthDueNotifications,
-} from '../../infrastructure/notifications/smartHealthNotificationSchedule';
+import { cancelSmartHealthNotificationsForRecord } from '../../infrastructure/notifications/smartHealthNotificationSchedule';
+import { requestNotificationResync } from '../../infrastructure/notifications/requestNotificationResync';
 import type { SmartHealthRecord } from './domain/models/SmartHealthRecord';
 import type { SmartHealthQueueEntryInput } from './domain/models/SmartHealthQueueEntry';
-import { createPetRepository } from '../pets/data/repositories/PetRepositoryImpl';
 import { createHealthRecordRepository } from './data/repositories/HealthRecordRepositoryImpl';
 import {
   configureSmartHealthQueueHooks,
@@ -25,33 +20,11 @@ import { RescheduleSmartHealthRecord } from './domain/usecases/RescheduleSmartHe
 import { SkipSmartHealthRecord } from './domain/usecases/SkipSmartHealthRecord';
 
 const healthRecordRepository = createHealthRecordRepository();
-const petRepository = createPetRepository();
 
 async function syncSmartHealthNotificationsForRecords(
-  records: SmartHealthRecord[],
+  _records: SmartHealthRecord[],
 ): Promise<void> {
-  const granted = await ensureNotificationsReady();
-  if (!granted) {
-    return;
-  }
-  const userId = getAppSessionUserId();
-  if (userId == null) {
-    return;
-  }
-  const petIds = [...new Set(records.map(record => record.petId))];
-  const pets = await Promise.all(
-    petIds.map(petId => petRepository.getPetById(userId, petId)),
-  );
-  const petSpeciesByPetId = new Map(
-    pets
-      .filter((pet): pet is NonNullable<(typeof pets)[number]> => pet != null)
-      .map(pet => [pet.id, pet.type] as const),
-  );
-  await syncAllSmartHealthDueNotifications(
-    records,
-    notificationService,
-    petSpeciesByPetId,
-  );
+  await requestNotificationResync();
 }
 
 const smartHealthRepository = createSmartHealthRecordRepository();
@@ -200,14 +173,9 @@ export const recordsComposition = {
   notificationService,
   syncSmartHealthNotificationsForRecords,
   syncDueNotificationsForPets: async (
-    userId: string,
-    petIds: string[],
+    _userId: string,
+    _petIds: string[],
   ): Promise<void> => {
-    const records = (
-      await Promise.all(
-        petIds.map(petId => getSmartHealthRecords.execute(userId, petId)),
-      )
-    ).flat();
-    await syncSmartHealthNotificationsForRecords(records);
+    await requestNotificationResync();
   },
 } as const;

@@ -1,11 +1,8 @@
 import { notificationService } from '../../infrastructure/notifications/notificationService';
-import { ensureNotificationsReady } from '../../infrastructure/notifications/notificationDiagnostics';
+import { requestNotificationResync } from '../../infrastructure/notifications/requestNotificationResync';
 import { syncDeviceGlanceSurfaces } from '../../infrastructure/widgets/syncDeviceGlanceSurfaces';
 import { getAppSessionUserId } from '../../shared/session/appSessionPorts';
-import {
-  cancelScheduleBlockNotification,
-  syncScheduleNotifications,
-} from './data/notifications/scheduleNotificationSync';
+import { cancelScheduleBlockNotification } from './data/notifications/scheduleNotificationSync';
 import { createPetRepository } from '../pets/data/repositories/PetRepositoryImpl';
 import { createScheduleRepository } from './data/repositories/ScheduleRepositoryImpl';
 import { BuildDailySchedule } from './domain/usecases/BuildDailySchedule';
@@ -32,26 +29,8 @@ export const scheduleComposition = {
     dates: string[],
   ): Promise<Record<string, number | null>> =>
     scheduleRepository.getDailyCompletionPercents(userId, petId, dates),
-  syncScheduleNotifications: async (
-    schedule: DailySchedule,
-    blocks: DailyCareBlock[],
-  ): Promise<number> => {
-    const granted = await ensureNotificationsReady();
-    if (!granted) {
-      return 0;
-    }
-    const userId = getAppSessionUserId();
-    let petSpecies: 'dog' | 'cat' | undefined;
-    if (userId != null) {
-      const pet = await petRepository.getPetById(userId, schedule.petId);
-      petSpecies = pet?.type;
-    }
-    return syncScheduleNotifications(
-      schedule,
-      blocks,
-      notificationService,
-      petSpecies,
-    );
+  resyncMustFireNotifications: async (): Promise<void> => {
+    await requestNotificationResync();
   },
   cancelScheduleBlockNotification: async (blockId: string, petId: string): Promise<void> => {
     await cancelScheduleBlockNotification(blockId, petId, notificationService);
