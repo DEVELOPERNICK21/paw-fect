@@ -20,6 +20,7 @@ import { UserAvatar } from '../../../../shared/components/UserAvatar';
 import { icons } from '../../../../shared/assets/icons';
 import { images } from '../../../../shared/assets/images';
 import { APP_VERSION_LABEL } from '../../../../shared/constants/appMeta';
+import { trackEvent } from '../../../../infrastructure/analytics/analytics';
 import {
   countPendingReminderNotifications,
   countPendingTriggerNotifications,
@@ -109,7 +110,7 @@ export const SettingsScreen: React.FC = () => {
       if (!settings?.notificationsEnabled) {
         Alert.alert(
           'Notifications are off',
-          'Turn on Push Notifications first, then refresh reminders.',
+          'Turn on Notifications first, then refresh reminders.',
         );
         return;
       }
@@ -151,6 +152,7 @@ export const SettingsScreen: React.FC = () => {
       await updateSettings({ ...settings, notificationsEnabled: nextEnabled });
       if (!nextEnabled) {
         await notificationService.cancelAllNotifications();
+        void trackEvent('notifications_disabled');
         return;
       }
       const granted = await ensureNotificationsReady({
@@ -165,6 +167,7 @@ export const SettingsScreen: React.FC = () => {
       }
       await loadReminders();
       await resyncAllLocalNotifications();
+      void trackEvent('notifications_enabled');
     })();
   };
 
@@ -173,7 +176,7 @@ export const SettingsScreen: React.FC = () => {
       if (!settings?.notificationsEnabled) {
         Alert.alert(
           'Notifications are off',
-          'Turn on Push Notifications in Settings first.',
+          'Turn on Notifications in Settings first.',
         );
         return;
       }
@@ -342,7 +345,7 @@ export const SettingsScreen: React.FC = () => {
                   <MaterialIcon name="notifications" size={20} color={colors.accent} />
                 </View>
                 <View>
-                  <Text style={[styles.rowTitle, { fontFamily: fontFamilies.semibold }]}>Push Notifications</Text>
+                  <Text style={[styles.rowTitle, { fontFamily: fontFamilies.semibold }]}>Notifications</Text>
                   <Text style={[styles.rowSubtitle, { fontFamily: fontFamilies.medium }]}>Activity and care reminders</Text>
                 </View>
               </View>

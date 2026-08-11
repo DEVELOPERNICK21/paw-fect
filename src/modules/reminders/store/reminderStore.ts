@@ -40,7 +40,7 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
       set({ reminders, loading: false, error: null });
       const granted = await ensureNotificationsReady();
       if (granted) {
-        await remindersComposition.syncAllReminderNotifications(reminders);
+        await remindersComposition.resyncMustFireNotifications();
       }
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -55,14 +55,15 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
   createReminder: async (reminder: Reminder) => {
     set({ loading: true });
     try {
-      const created = await remindersComposition.createReminder.execute(reminder);
-      const scheduled =
-        await remindersComposition.scheduleReminderNotifications(created);
-      if (scheduled === 0) {
+      const granted = await ensureNotificationsReady();
+      if (!granted) {
         throw new Error(
           'Notifications are off or blocked. Turn on alerts in Settings and allow Pawsoul in system settings.',
         );
       }
+      const created = await remindersComposition.createReminder.execute(reminder);
+      await remindersComposition.resyncMustFireNotifications();
+      await remindersComposition.verifyReminderNotificationsScheduled(created);
       const { reminders } = get();
       set({ reminders: [...reminders, created], loading: false });
     } catch (error) {
@@ -100,7 +101,8 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
       set({ reminders: next, loading: false });
       const granted = await ensureNotificationsReady();
       if (granted) {
-        await remindersComposition.scheduleReminderNotifications(updated);
+        await remindersComposition.cancelReminderNotifications(updated.id);
+        await remindersComposition.resyncMustFireNotifications();
       }
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -117,6 +119,7 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
       const { reminders } = get();
       const next = reminders.filter(reminder => reminder.id !== id);
       set({ reminders: next, loading: false });
+      await remindersComposition.resyncMustFireNotifications().catch(() => {});
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('[reminderStore] deleteReminder error', error);

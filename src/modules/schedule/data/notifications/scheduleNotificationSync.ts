@@ -2,6 +2,10 @@ import notifee from '@notifee/react-native';
 
 import { buildCareScheduleNotificationActions } from '../../../../infrastructure/notifications/careNotificationActions';
 import {
+  priorityForDailySchedule,
+  type NotificationCandidate,
+} from '../../../../infrastructure/notifications/notificationCandidate';
+import {
   attentionTierFromScheduleLead,
   toneFromCareCategory,
 } from '../../../../infrastructure/notifications/notificationSoundCatalog';
@@ -71,6 +75,72 @@ export async function cancelScheduleBlockNotification(
   service: NotificationService,
 ): Promise<void> {
   await service.cancelNotification(scheduleNotificationId(petId, blockId));
+}
+
+export function buildScheduleNotificationCandidates(
+  schedule: DailySchedule,
+  blocks: DailyCareBlock[],
+  petSpecies?: PetNotificationSpecies,
+  nowMs: number = Date.now(),
+): NotificationCandidate[] {
+  const candidates: NotificationCandidate[] = [];
+
+  for (const block of blocks) {
+    if (!block.reminderEnabled || block.isCompleted) {
+      continue;
+    }
+
+    const scheduledDate = scheduleDateForBlock(schedule.date, block);
+    if (!scheduledDate || scheduledDate.getTime() <= nowMs + 1500) {
+      continue;
+    }
+
+    const repeat =
+      block.frequency === 'weekly'
+        ? 'weekly'
+        : block.frequency === 'daily'
+          ? 'daily'
+          : undefined;
+    const notificationId = scheduleNotificationId(schedule.petId, block.id);
+    const scheduleData: Record<string, string> = {
+      kind: 'dailySchedule',
+      petId: schedule.petId,
+      blockId: block.id,
+      date: schedule.date,
+      scheduledTime: block.scheduledTime,
+      notificationId,
+    };
+
+    candidates.push({
+      id: notificationId,
+      kind: 'dailySchedule',
+      petId: schedule.petId,
+      fireAt: scheduledDate,
+      priority: priorityForDailySchedule(),
+      payload: {
+        id: notificationId,
+        title: block.notificationTitle,
+        body: block.notificationBody,
+        scheduledDate,
+        repeat,
+        data:
+          petSpecies != null
+            ? withNotificationSound(
+                { ...scheduleData, category: block.category },
+                petSpecies,
+                toneFromCareCategory(block.category),
+                attentionTierFromScheduleLead(block.reminderMinutesBefore),
+              )
+            : scheduleData,
+        actions: buildCareScheduleNotificationActions().map(action => ({
+          title: action.title,
+          pressActionId: action.pressAction.id,
+        })),
+      },
+    });
+  }
+
+  return candidates;
 }
 
 export async function syncScheduleNotifications(

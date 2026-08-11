@@ -83,7 +83,7 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
       }
       set({ schedule, loading: false });
       if (!options?.skipNotificationSync) {
-        await scheduleComposition.syncScheduleNotifications(schedule, schedule.blocks);
+        await scheduleComposition.resyncMustFireNotifications();
       }
       await scheduleComposition.syncGlanceForSchedule(schedule);
     } catch (error) {
@@ -192,6 +192,7 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
       currentTime: block.scheduledTime,
       snoozeMinutes: minutes,
     });
+    await scheduleComposition.cancelScheduleBlockNotification(blockId, schedule.petId);
     await get().loadDaySchedule(schedule.petId, schedule.date);
   },
 

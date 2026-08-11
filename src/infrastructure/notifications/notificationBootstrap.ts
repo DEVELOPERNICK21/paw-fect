@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import { CommonActions } from '@react-navigation/native';
 
 import { navigationRef } from '../../app/navigation/navigationRef';
+import { trackEvent } from '../analytics/analytics';
 
 import {
   CARE_NOTIFICATION_ACTION_DONE,
@@ -12,6 +13,10 @@ import {
 import { emitNotificationFeedEvent } from './notificationFeedEvents';
 import { ensureNotificationChannels, requestNotificationPermission } from './notificationChannels';
 import { handleCareNotificationAction } from './handleCareNotificationAction';
+import {
+  getNotificationNavigationTarget,
+  type NotificationNavigationTarget,
+} from './getNotificationNavigationTarget';
 
 type RootNav = typeof navigationRef;
 
@@ -53,6 +58,82 @@ export async function bootstrapLocalNotifications(): Promise<void> {
   await ensureCareNotificationCategories();
 }
 
+export function trackNotificationTapped(
+  notificationId: string | undefined,
+  data: Record<string, string> | undefined,
+): void {
+  if (data == null) {
+    return;
+  }
+  void trackEvent('notification_tapped', {
+    kind: data.kind ?? 'unknown',
+    notification_id: notificationId ?? '',
+    pet_id: data.petId ?? '',
+  });
+}
+
+function dispatchNotificationNavigationTarget(
+  nav: RootNav,
+  target: NotificationNavigationTarget,
+): void {
+  switch (target.target) {
+    case 'reminderDetail':
+      nav.dispatch(
+        CommonActions.navigate({
+          name: 'NotificationsTab',
+          params: {
+            screen: 'ReminderDetail',
+            params: { reminderId: target.reminderId },
+          },
+        }),
+      );
+      return;
+    case 'healthRecords':
+      nav.dispatch(
+        CommonActions.navigate({
+          name: 'HealthTab',
+          params: {
+            screen: 'HealthRecords',
+            params: {
+              focusRecordId: target.focusRecordId,
+              petId: target.petId,
+            },
+          },
+        }),
+      );
+      return;
+    case 'wellnessHub':
+      nav.dispatch(
+        CommonActions.navigate({
+          name: 'NotificationsTab',
+          params: {
+            screen: 'WellnessHub',
+            params: {
+              petId: target.petId,
+              blockId: target.blockId,
+            },
+          },
+        }),
+      );
+      return;
+    case 'petProfile':
+      nav.dispatch(
+        CommonActions.navigate({
+          name: 'PetsTab',
+          params: { screen: 'PetProfile' },
+        }),
+      );
+      return;
+    case 'home':
+      nav.dispatch(
+        CommonActions.navigate({
+          name: 'HomeTab',
+          params: { screen: 'Home' },
+        }),
+      );
+  }
+}
+
 export async function processNotificationInteraction(
   type: number,
   detail: ForegroundEvent['detail'],
@@ -77,6 +158,7 @@ export async function processNotificationInteraction(
   }
 
   if (type === EventType.PRESS) {
+    trackNotificationTapped(detail.notification?.id, data);
     navigateFromNotificationData(nav, data, canNavigate);
   }
 }
@@ -86,62 +168,14 @@ function navigateFromNotificationData(
   data: Record<string, string> | undefined,
   canNavigate: () => boolean,
 ): void {
-  if (!canNavigate() || !nav.isReady() || data == null) {
+  if (!canNavigate() || !nav.isReady()) {
     return;
   }
-  if (data.reminderId) {
-    nav.dispatch(
-      CommonActions.navigate({
-        name: 'NotificationsTab',
-        params: {
-          screen: 'ReminderDetail',
-          params: { reminderId: data.reminderId },
-        },
-      }),
-    );
+  const target = getNotificationNavigationTarget(data);
+  if (target == null) {
     return;
   }
-  if (data.recordId) {
-    nav.dispatch(
-      CommonActions.navigate({
-        name: 'HealthTab',
-        params: { screen: 'HealthRecords' },
-      }),
-    );
-    return;
-  }
-  if (data.kind === 'dailySchedule' && data.petId) {
-    nav.dispatch(
-      CommonActions.navigate({
-        name: 'NotificationsTab',
-        params: {
-          screen: 'WellnessHub',
-          params: {
-            petId: data.petId,
-            blockId: data.blockId,
-          },
-        },
-      }),
-    );
-    return;
-  }
-  if (data.kind === 'dailyRoutine') {
-    nav.dispatch(
-      CommonActions.navigate({
-        name: 'PetsTab',
-        params: { screen: 'PetProfile' },
-      }),
-    );
-    return;
-  }
-  if (data.kind === 'loginWelcome') {
-    nav.dispatch(
-      CommonActions.navigate({
-        name: 'HomeTab',
-        params: { screen: 'Home' },
-      }),
-    );
-  }
+  dispatchNotificationNavigationTarget(nav, target);
 }
 
 function recordDeliveredToFeed(detail: ForegroundEvent['detail']): void {
@@ -192,9 +226,10 @@ export async function flushInitialNotificationNavigation(
   canNavigate: () => boolean,
 ): Promise<void> {
   const initial = await notifee.getInitialNotification();
-  navigateFromNotificationData(
-    nav,
-    initial?.notification?.data as Record<string, string> | undefined,
-    canNavigate,
-  );
+  const notification = initial?.notification as
+    | { id?: string; data?: Record<string, string> }
+    | undefined;
+  const data = notification?.data as Record<string, string> | undefined;
+  trackNotificationTapped(notification?.id, data);
+  navigateFromNotificationData(nav, data, canNavigate);
 }

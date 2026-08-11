@@ -1,6 +1,11 @@
 import { notificationService } from '../notificationService';
 import { scheduleNotificationSelfTest } from '../notificationDiagnostics';
 
+jest.mock('../../logging/startupLog', () => ({
+  startupLog: jest.fn(),
+  startupError: jest.fn(),
+}));
+
 jest.mock('../notificationChannels', () => ({
   ensureNotificationChannels: jest.fn(async () => undefined),
   requestNotificationPermission: jest.fn(async () => true),
