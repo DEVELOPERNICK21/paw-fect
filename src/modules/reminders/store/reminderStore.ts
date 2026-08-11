@@ -62,9 +62,10 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
         );
       }
       const created = await remindersComposition.createReminder.execute(reminder);
+      await remindersComposition.resyncMustFireNotifications();
+      await remindersComposition.verifyReminderNotificationsScheduled(created);
       const { reminders } = get();
       set({ reminders: [...reminders, created], loading: false });
-      await remindersComposition.resyncMustFireNotifications();
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('[reminderStore] createReminder error', error);
