@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   ActionSheetIOS,
   Alert,
+  InteractionManager,
   Linking,
   Platform,
   Pressable,
@@ -496,8 +497,10 @@ export const AddPetScreen: React.FC = () => {
           : 'Could not open the photo picker.';
       if (message === 'PERMISSION_DENIED') {
         Alert.alert(
-          'Photo access needed',
-          'Allow photo access in Settings to add a pet photo.',
+          source === 'camera' ? 'Camera access needed' : 'Photo access needed',
+          source === 'camera'
+            ? 'Allow camera access in Settings so you can take a pet photo.'
+            : 'Allow photo access in Settings to add a pet photo.',
           [
             { text: 'Cancel', style: 'cancel' },
             {
@@ -512,6 +515,19 @@ export const AddPetScreen: React.FC = () => {
       }
       setError(message);
     }
+  };
+
+  /**
+   * Android crashes / fails if we start Camera / Photo Picker (or a second
+   * permission dialog) in the same tick as Alert/ActionSheet dismissal.
+   * Wait for interactions + a short delay so the host Activity is stable.
+   */
+  const enqueuePhotoPick = (source: 'camera' | 'library'): void => {
+    InteractionManager.runAfterInteractions(() => {
+      setTimeout(() => {
+        handlePick(source).catch(() => undefined);
+      }, Platform.OS === 'android' ? 350 : 0);
+    });
   };
 
   const removePhoto = (): void => {
@@ -535,9 +551,9 @@ export const AddPetScreen: React.FC = () => {
         },
         selectedIndex => {
           if (selectedIndex === 0) {
-            handlePick('camera').catch(() => undefined);
+            enqueuePhotoPick('camera');
           } else if (selectedIndex === 1) {
-            handlePick('library').catch(() => undefined);
+            enqueuePhotoPick('library');
           } else if (photoFilled && selectedIndex === 2) {
             removePhoto();
           }
@@ -554,13 +570,13 @@ export const AddPetScreen: React.FC = () => {
             {
               text: 'Take photo',
               onPress: () => {
-                handlePick('camera').catch(() => undefined);
+                enqueuePhotoPick('camera');
               },
             },
             {
               text: 'Choose from library',
               onPress: () => {
-                handlePick('library').catch(() => undefined);
+                enqueuePhotoPick('library');
               },
             },
             {
@@ -581,13 +597,13 @@ export const AddPetScreen: React.FC = () => {
             {
               text: 'Take photo',
               onPress: () => {
-                handlePick('camera').catch(() => undefined);
+                enqueuePhotoPick('camera');
               },
             },
             {
               text: 'Choose from library',
               onPress: () => {
-                handlePick('library').catch(() => undefined);
+                enqueuePhotoPick('library');
               },
             },
             { text: 'Cancel', style: 'cancel' },

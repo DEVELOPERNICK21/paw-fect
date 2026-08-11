@@ -10,13 +10,6 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import {
-  BackdropBlur,
-  Canvas,
-  Fill,
-  Path as SkiaPath,
-  Skia,
-} from '@shopify/react-native-skia';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -51,6 +44,11 @@ import {
   pillTranslateX,
   sideTabIndex,
 } from './pawTabBarMotion';
+import {
+  SmoothTabIcon,
+  type SmoothTabGlyph,
+} from './SmoothTabIcon';
+import { TabDelightBurst } from './TabDelightBurst';
 
 export { TAB_BAR_VISUAL_HEIGHT as APP_TAB_BAR_HEIGHT } from '../layout';
 
@@ -65,24 +63,7 @@ const HEALTH_SIDE_INDEX = SIDE_TAB_ORDER.indexOf('health');
 const NOTIFICATIONS_SIDE_INDEX = SIDE_TAB_ORDER.indexOf('notifications');
 const SETTINGS_SIDE_INDEX = SIDE_TAB_ORDER.indexOf('settings');
 
-type TabIconName =
-  | 'home_paw'
-  | 'bone_cross'
-  | 'heart_paw'
-  | 'collar_settings';
-
-type TabOutlineIconName =
-  | 'home_paw_outline'
-  | 'bone_cross_outline'
-  | 'heart_paw_outline'
-  | 'collar_settings_outline';
-
-const TAB_OUTLINE: Record<TabIconName, TabOutlineIconName> = {
-  home_paw: 'home_paw_outline',
-  bone_cross: 'bone_cross_outline',
-  heart_paw: 'heart_paw_outline',
-  collar_settings: 'collar_settings_outline',
-};
+type TabIconName = SmoothTabGlyph;
 
 const TAB_ROOT_SCREENS: Record<keyof AppTabParamList, string> = {
   HomeTab: 'Home',
@@ -142,12 +123,28 @@ const itemStyles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 6,
     paddingVertical: 8,
+    overflow: 'visible',
   },
   iconWell: {
     width: 28,
     height: 28,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'visible',
+  },
+  activeGlow: {
+    position: 'absolute',
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+  },
+  delightClip: {
+    position: 'absolute',
+    width: 72,
+    height: 72,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'visible',
   },
 });
 
@@ -171,11 +168,13 @@ const TabSlot = React.memo(function TabSlot({
   const scale = useRef(new Animated.Value(1)).current;
   const activePop = useRef(new Animated.Value(active ? 1 : 0)).current;
   const bounce = useRef(new Animated.Value(1)).current;
+  const iconSpin = useRef(new Animated.Value(0)).current;
   const slotRef = useRef<View>(null);
-  const outlineIcon = TAB_OUTLINE[icon];
+  const wasActive = useRef(active);
+  const [burstToken, setBurstToken] = useState(0);
 
   const pressIn = () => {
-    Animated.spring(scale, { ...springPress, toValue: 0.86 }).start();
+    Animated.spring(scale, { ...springPress, toValue: 0.88 }).start();
   };
   const pressOut = () => {
     Animated.spring(scale, { ...springRelease, toValue: 1 }).start();
@@ -184,19 +183,31 @@ const TabSlot = React.memo(function TabSlot({
   useEffect(() => {
     Animated.timing(activePop, {
       toValue: active ? 1 : 0,
-      duration: 200,
+      duration: 180,
       useNativeDriver: true,
     }).start();
-    if (active) {
+
+    if (active && !wasActive.current) {
+      setBurstToken(token => token + 1);
       bounce.setValue(0.82);
       Animated.spring(bounce, {
         toValue: 1,
-        friction: 4,
-        tension: 260,
+        friction: 4.5,
+        tension: 300,
         useNativeDriver: true,
       }).start();
+
+      if (icon === 'settings' || icon === 'wellness') {
+        iconSpin.setValue(0);
+        Animated.timing(iconSpin, {
+          toValue: 1,
+          duration: icon === 'settings' ? 520 : 360,
+          useNativeDriver: true,
+        }).start();
+      }
     }
-  }, [active, activePop, bounce]);
+    wasActive.current = active;
+  }, [active, activePop, bounce, icon, iconSpin]);
 
   const activeOpacity = activePop;
   const inactiveOpacity = activePop.interpolate({
@@ -206,8 +217,20 @@ const TabSlot = React.memo(function TabSlot({
 
   const iconPopScale = activePop.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 1.12],
+    outputRange: [1, 1.08],
   });
+
+  const spinDeg = iconSpin.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', icon === 'settings' ? '120deg' : '8deg'],
+  });
+
+  const delightColor =
+    icon === 'favorite'
+      ? colors.danger
+      : icon === 'wellness'
+        ? colors.success
+        : colors.accent;
 
   return (
     <Pressable
@@ -235,22 +258,43 @@ const TabSlot = React.memo(function TabSlot({
           },
         ]}
       >
+        <View style={itemStyles.delightClip} pointerEvents="none">
+          <TabDelightBurst
+            glyph={icon}
+            playToken={burstToken}
+            color={delightColor}
+          />
+        </View>
         <Animated.View
           style={{
-            transform: [{ scale: Animated.multiply(iconPopScale, bounce) }],
+            transform: [
+              { scale: Animated.multiply(iconPopScale, bounce) },
+              { rotate: spinDeg },
+            ],
           }}
         >
           <View style={itemStyles.iconWell}>
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                itemStyles.activeGlow,
+                {
+                  backgroundColor: colors.brandTint12,
+                  opacity: activeOpacity,
+                },
+              ]}
+            />
             <Animated.View
               style={{
                 position: 'absolute',
                 opacity: activeOpacity,
               }}
             >
-              <MaterialIcon
+              <SmoothTabIcon
                 name={icon}
+                active
                 size={24}
-                color={colors.text.inverse}
+                color={colors.onAccent}
               />
             </Animated.View>
             <Animated.View
@@ -259,10 +303,11 @@ const TabSlot = React.memo(function TabSlot({
                 opacity: inactiveOpacity,
               }}
             >
-              <MaterialIcon
-                name={outlineIcon}
+              <SmoothTabIcon
+                name={icon}
+                active={false}
                 size={24}
-                color={colors.text.subdued}
+                color={colors.text.secondary}
               />
             </Animated.View>
           </View>
@@ -304,10 +349,6 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
         scoopDepth: DEFAULT_TAB_BAR_SCOOP_DEPTH,
       }),
     [islandWidth],
-  );
-  const skShellPath = useMemo(
-    () => Skia.Path.MakeFromSVGString(shellPath),
-    [shellPath],
   );
   /** Vertical center of the paw FAB on screen (for orbit layout). */
   const fabCenterY =
@@ -450,9 +491,11 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
   const fabScale = useRef(new Animated.Value(1)).current;
   const fabLift = useRef(new Animated.Value(0)).current;
   const prevTabRef = useRef<TabKey>(currentKey);
+  const [pawBurstToken, setPawBurstToken] = useState(0);
 
   useEffect(() => {
     if (currentKey === 'pets' && prevTabRef.current !== 'pets') {
+      setPawBurstToken(token => token + 1);
       Animated.sequence([
         Animated.spring(fabLift, {
           toValue: 1,
@@ -467,9 +510,16 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
           useNativeDriver: true,
         }),
       ]).start();
+      fabScale.setValue(0.86);
+      Animated.spring(fabScale, {
+        toValue: 1,
+        friction: 4,
+        tension: 280,
+        useNativeDriver: true,
+      }).start();
     }
     prevTabRef.current = currentKey;
-  }, [currentKey, fabLift]);
+  }, [currentKey, fabLift, fabScale]);
 
   const animateFabPress = (pressed: boolean) => {
     Animated.spring(fabScale, {
@@ -679,40 +729,24 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
           { height: BAR_HEIGHT, width: islandWidth },
           Platform.OS === 'ios' ? shadows.md : null,
         ]}
+        pointerEvents="box-none"
       >
-        {/* Frosted glass clipped to the scooped island (must be absolute so it
-            overlays the icon row — not stacked above it). */}
-        {skShellPath != null ? (
-          <Canvas
-            style={styles.islandLayer}
-            pointerEvents="none"
-          >
-            <BackdropBlur blur={18} clip={skShellPath}>
-              <Fill color={colors.tabBarGlass} />
-            </BackdropBlur>
-            <SkiaPath
-              path={skShellPath}
-              color={colors.tabBarGlassBorder}
-              style="stroke"
-              strokeWidth={1}
-            />
-          </Canvas>
-        ) : (
-          <Svg
-            width={islandWidth}
-            height={BAR_HEIGHT}
-            style={styles.islandLayer}
-            pointerEvents="none"
-          >
-            <Path d={shellPath} fill={colors.tabBarGlass} />
-            <Path
-              d={shellPath}
-              fill="none"
-              stroke={colors.tabBarGlassBorder}
-              strokeWidth={1}
-            />
-          </Svg>
-        )}
+        {/* Dense frosted island — SVG fill only (no live BackdropBlur; that
+            re-sampled scrolling content every frame and felt laggy). */}
+        <Svg
+          width={islandWidth}
+          height={BAR_HEIGHT}
+          style={styles.islandLayer}
+          pointerEvents="none"
+        >
+          <Path d={shellPath} fill={colors.tabBarGlass} />
+          <Path
+            d={shellPath}
+            fill="none"
+            stroke={colors.tabBarGlassBorder}
+            strokeWidth={1}
+          />
+        </Svg>
 
         <View
           ref={barRowRef}
@@ -727,7 +761,7 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
               width: PILL_SIZE,
               height: PILL_SIZE,
               borderRadius: PILL_SIZE / 2,
-              backgroundColor: colors.accent,
+              backgroundColor: colors.primary,
               opacity: pillOpacity,
               transform: [{ translateX: pillX }, { scale: pillScale }],
             }}
@@ -735,7 +769,7 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
           <View style={styles.side}>
             <TabSlot
               accessibilityLabel="Home"
-              icon="home_paw"
+              icon="home"
               active={currentKey === 'home'}
               onPress={() => jumpToTabRoot('HomeTab')}
               colors={colors}
@@ -743,7 +777,7 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
             />
             <TabSlot
               accessibilityLabel="Health records"
-              icon="bone_cross"
+              icon="favorite"
               active={currentKey === 'health'}
               onPress={() => jumpToTabRoot('HealthTab')}
               colors={colors}
@@ -751,12 +785,12 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
             />
           </View>
 
-          <View style={styles.fabGap} />
+          <View style={styles.fabGap} pointerEvents="none" />
 
           <View style={styles.side}>
             <TabSlot
               accessibilityLabel="Wellness"
-              icon="heart_paw"
+              icon="wellness"
               active={currentKey === 'notifications'}
               onPress={() => jumpToTabRoot('NotificationsTab')}
               colors={colors}
@@ -766,7 +800,7 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
             />
             <TabSlot
               accessibilityLabel="Settings"
-              icon="collar_settings"
+              icon="settings"
               active={currentKey === 'settings'}
               onPress={() => jumpToTabRoot('SettingsTab')}
               colors={colors}
@@ -789,29 +823,37 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
               fabShadow,
             ]}
           >
-            <Pressable
-              style={[
-                styles.fabButton,
-                { backgroundColor: colors.accent },
-                currentKey === 'pets' && styles.fabButtonActive,
-              ]}
-              onPress={() => jumpToTabRoot('PetsTab')}
-              onLongPress={openPetPicker}
-              delayLongPress={380}
-              onPressIn={() => animateFabPress(true)}
-              onPressOut={() => animateFabPress(false)}
-              accessibilityRole="button"
-              accessibilityLabel="Pets"
-              accessibilityHint="Tap to open pet profile. Long press to switch pets."
-              accessibilityState={{ selected: currentKey === 'pets' }}
-              android_ripple={{
-                color: 'rgba(255,255,255,0.35)',
-                borderless: true,
-                radius: FAB_SIZE / 2,
-              }}
-            >
-              <icons.paws width={32} height={32} />
-            </Pressable>
+            <View style={styles.fabBurstWrap} pointerEvents="box-none">
+              <TabDelightBurst
+                glyph="pets"
+                playToken={pawBurstToken}
+                color={colors.onAccent}
+              />
+              <Pressable
+                style={[
+                  styles.fabButton,
+                  { backgroundColor: colors.accent },
+                  currentKey === 'pets' && styles.fabButtonActive,
+                ]}
+                onPress={() => jumpToTabRoot('PetsTab')}
+                onLongPress={openPetPicker}
+                delayLongPress={380}
+                onPressIn={() => animateFabPress(true)}
+                onPressOut={() => animateFabPress(false)}
+                accessibilityRole="button"
+                accessibilityLabel="Pets"
+                accessibilityHint="Tap to open pet profile. Long press to switch pets."
+                accessibilityState={{ selected: currentKey === 'pets' }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                android_ripple={{
+                  color: 'rgba(255,255,255,0.35)',
+                  borderless: true,
+                  radius: FAB_SIZE / 2,
+                }}
+              >
+                <icons.paws width={32} height={32} />
+              </Pressable>
+            </View>
           </Animated.View>
         </Animated.View>
       </View>
@@ -1043,10 +1085,19 @@ const createStyles = () =>
       right: 0,
       bottom: FAB_BOTTOM_OFFSET,
       alignItems: 'center',
+      // Above barRow (zIndex 1) so the scoop gap cannot steal FAB presses.
+      zIndex: 5,
       pointerEvents: 'box-none',
     },
     fabLift: {
       borderRadius: FAB_SIZE / 2,
+    },
+    fabBurstWrap: {
+      width: FAB_SIZE + 56,
+      height: FAB_SIZE + 56,
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'visible',
     },
     fabButton: {
       width: FAB_SIZE,

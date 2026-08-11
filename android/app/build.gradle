@@ -94,7 +94,7 @@ android {
         applicationId "app.pawfect"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 16
+        versionCode 19
         versionName "1.0"
         missingDimensionStrategy "store", "play"
     }
@@ -129,6 +129,10 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+
+    // Backported AndroidX Photo Picker (minSdk < 30). Lets gallery pick work
+    // without READ_MEDIA_IMAGES — required for Play policy compliance.
+    implementation("androidx.activity:activity:1.9.3")
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")

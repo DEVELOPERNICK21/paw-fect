@@ -124,20 +124,30 @@ export const PetProfileHeroCard: React.FC<PetProfileHeroCardProps> = React.memo(
     }, [glow]);
 
     return (
-      <Pressable onPressIn={handlePressIn} onPressOut={handlePressOut}>
-        <View
-          style={[
-            styles.hero,
-            thShadows.sm,
-            {
-              height: heroHeight,
-              borderRadius: radius.xl,
-              overflow: 'hidden',
-              alignSelf: 'center',
-              backgroundColor: colors.surface,
-              borderColor: colors.borderSubtle,
-            },
-          ]}
+      <View
+        style={[
+          styles.hero,
+          thShadows.sm,
+          {
+            height: heroHeight,
+            borderRadius: radius.xl,
+            overflow: 'hidden',
+            alignSelf: 'center',
+            backgroundColor: colors.surface,
+            borderColor: colors.borderSubtle,
+          },
+        ]}
+      >
+        {/*
+         * Pressable covers only the media layer so Edit / Share keep reliable
+         * hit targets (nested buttons inside a full-card Pressable fail on Android).
+         */}
+        <Pressable
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          style={StyleSheet.absoluteFill}
+          accessibilityRole="image"
+          accessibilityLabel={`${pet.name} profile photo`}
         >
           <View style={styles.heroImage} collapsable={false}>
             <Image
@@ -148,10 +158,6 @@ export const PetProfileHeroCard: React.FC<PetProfileHeroCardProps> = React.memo(
               onError={onHeroImageError}
             />
           </View>
-          {/*
-           * Keep scrim only at the bottom so the photo stays sharp; heavy full-card
-           * shadow + dark gradient was reading as “blurry” on Android.
-           */}
           <LinearGradient
             colors={[
               'rgba(0,0,0,0)',
@@ -173,7 +179,34 @@ export const PetProfileHeroCard: React.FC<PetProfileHeroCardProps> = React.memo(
               },
             ]}
           />
+        </Pressable>
 
+        <View
+          style={[
+            styles.topActions,
+            {
+              top: spacing.md,
+              right: spacing.md,
+              gap: spacing.sm,
+            },
+          ]}
+          pointerEvents="box-none"
+        >
+          <Pressable
+            onPress={onPressEdit}
+            accessibilityRole="button"
+            accessibilityLabel="Edit pet"
+            style={[
+              styles.shareFab,
+              thShadows.sm,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.borderSubtle,
+              },
+            ]}
+          >
+            <MaterialIcon name="edit" size={20} color={colors.primary} />
+          </Pressable>
           {onPressShare ? (
             <Pressable
               onPress={onPressShare}
@@ -183,8 +216,6 @@ export const PetProfileHeroCard: React.FC<PetProfileHeroCardProps> = React.memo(
                 styles.shareFab,
                 thShadows.sm,
                 {
-                  top: spacing.md,
-                  right: spacing.md,
                   backgroundColor: colors.surface,
                   borderColor: colors.borderSubtle,
                 },
@@ -193,61 +224,62 @@ export const PetProfileHeroCard: React.FC<PetProfileHeroCardProps> = React.memo(
               <MaterialIcon name="share" size={20} color={colors.primary} />
             </Pressable>
           ) : null}
+        </View>
 
-          <View
-            style={[
-              styles.overlayContent,
-              {
-                paddingHorizontal: spacing.xl * 1.2,
-                paddingVertical: spacing['2xl'],
-              },
-            ]}
-          >
-            <View style={styles.top}>
-              <BreedPill label={breedLabel} theme={theme} />
-            </View>
+        <View
+          style={[
+            styles.overlayContent,
+            {
+              paddingHorizontal: spacing.xl * 1.2,
+              paddingVertical: spacing['2xl'],
+            },
+          ]}
+          pointerEvents="box-none"
+        >
+          <View style={styles.top} pointerEvents="none">
+            <BreedPill label={breedLabel} theme={theme} />
+          </View>
 
-            <View style={styles.bottom}>
-              <AppText
-                style={[
-                  textStyles.display,
-                  {
-                    color: colors.text.inverse,
-                    fontFamily: fontFamilies.extrabold,
-                  },
-                ]}
-                numberOfLines={1}
-              >
-                {pet.name}
-              </AppText>
-              <AppText
-                style={[
-                  textStyles.caption,
-                  {
-                    color: colors.text.inverse,
-                    marginTop: spacing.xs,
-                    fontFamily: fontFamilies.medium,
-                  },
-                ]}
-                numberOfLines={1}
-              >
-                {locationLine ? `${ageLine} • ${locationLine}` : ageLine}
-              </AppText>
-              <Button
-                title="Edit Profile"
-                onPress={onPressEdit}
-                variant="primary"
-                style={styles.editBtn}
-                textStyle={[
-                  textStyles.control,
-                  { fontFamily: fontFamilies.bold },
-                ]}
-                leftAccessory={<icons.editIcon width={18} height={18} />}
-              />
-            </View>
+          <View style={styles.bottom} pointerEvents="box-none">
+            <AppText
+              style={[
+                textStyles.display,
+                {
+                  color: colors.text.inverse,
+                  fontFamily: fontFamilies.extrabold,
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {pet.name}
+            </AppText>
+            <AppText
+              style={[
+                textStyles.caption,
+                {
+                  color: colors.text.inverse,
+                  marginTop: spacing.xs,
+                  fontFamily: fontFamilies.medium,
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {locationLine ? `${ageLine} • ${locationLine}` : ageLine}
+            </AppText>
+            <Button
+              title="Edit Profile"
+              onPress={onPressEdit}
+              variant="primary"
+              style={styles.editBtn}
+              textStyle={[
+                textStyles.control,
+                { fontFamily: fontFamilies.bold },
+              ]}
+              leftAccessory={<icons.editIcon width={18} height={18} />}
+            />
           </View>
         </View>
-      </Pressable>
+      </View>
     );
   },
 );
@@ -328,9 +360,13 @@ const styles = StyleSheet.create({
     bottom: 0,
     height: '28%',
   },
-  shareFab: {
+  topActions: {
     position: 'absolute',
     zIndex: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  shareFab: {
     width: spacingTokens['4xl'],
     height: spacingTokens['4xl'],
     borderRadius: radiusTokens.round,
