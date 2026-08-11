@@ -10,11 +10,15 @@ import {
   View,
 } from 'react-native';
 
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
+import type { RouteProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAppTabBarInset } from '../../../../app/navigation/layout';
-import type { HealthRecordsRootNavigation } from '../../../../app/navigation/types';
+import type {
+  HealthRecordsRootNavigation,
+  HealthStackParamList,
+} from '../../../../app/navigation/types';
 import { AppText } from '../../../../shared/components/AppText';
 import { DatePickerField } from '../../../../shared/components/DatePickerField';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
@@ -51,6 +55,8 @@ const CATEGORIES: CategoryFilter[] = ['Vaccination', 'Deworming'];
 
 export const HealthRecordScreen: React.FC = () => {
   const navigation = useNavigation<HealthRecordsRootNavigation>();
+  const route = useRoute<RouteProp<HealthStackParamList, 'HealthRecords'>>();
+  const focusRecordId = route.params?.focusRecordId;
   const theme = useTheme();
   const tabBarInset = useAppTabBarInset();
   const { colors, space, radius, textStyles, fontFamilies } = theme;
@@ -91,6 +97,7 @@ export const HealthRecordScreen: React.FC = () => {
   const [skipReasonInput, setSkipReasonInput] = useState('');
   const [skipError, setSkipError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [focusUnavailableDismissed, setFocusUnavailableDismissed] = useState(false);
 
   // Must match DatePickerField (which emits local YYYY-MM-DD).
   const todayDate = getTodayIsoDateLocal();
@@ -220,6 +227,28 @@ export const HealthRecordScreen: React.FC = () => {
       }
     }, [activePet?.id]),
   );
+
+  const focusedRecord = useMemo(() => {
+    if (focusRecordId == null) {
+      return null;
+    }
+    return records.find(record => record.id === focusRecordId) ?? null;
+  }, [focusRecordId, records]);
+
+  React.useEffect(() => {
+    if (focusedRecord == null) {
+      return;
+    }
+    setSelectedCategory(
+      focusedRecord.type === 'deworming' ? 'Deworming' : 'Vaccination',
+    );
+  }, [focusedRecord]);
+
+  const showFocusUnavailableBanner =
+    focusRecordId != null &&
+    !loading &&
+    focusedRecord == null &&
+    !focusUnavailableDismissed;
 
   const vaccinationRecords = useMemo(
     () =>
@@ -656,6 +685,43 @@ export const HealthRecordScreen: React.FC = () => {
           })}
         </View>
       </View>
+
+      {showFocusUnavailableBanner ? (
+        <View
+          style={[
+            styles.focusUnavailableBanner,
+            {
+              backgroundColor: colors.surfaceAlt,
+              borderColor: colors.borderSubtle,
+              borderRadius: radius.md,
+              marginHorizontal: space('lg'),
+              marginBottom: space('sm'),
+              padding: space('sm'),
+            },
+          ]}
+        >
+          <AppText
+            style={[
+              textStyles.caption,
+              {
+                color: colors.text.secondary,
+                flex: 1,
+                fontFamily: fontFamilies.medium,
+              },
+            ]}
+          >
+            This health task is no longer available.
+          </AppText>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Dismiss"
+            onPress={() => setFocusUnavailableDismissed(true)}
+            hitSlop={8}
+          >
+            <MaterialIcon name="close" size={18} color={colors.text.subdued} />
+          </Pressable>
+        </View>
+      ) : null}
 
       <SectionList
         sections={listSections}
@@ -1543,6 +1609,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  focusUnavailableBanner: {
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
 });
 

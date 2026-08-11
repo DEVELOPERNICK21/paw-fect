@@ -12,6 +12,7 @@ import type {
   NotificationsStackParamList,
 } from '../../../../app/navigation/types';
 import { notificationService } from '../../../../infrastructure/notifications/notificationService';
+import { getNotificationNavigationTarget } from '../../../../infrastructure/notifications/getNotificationNavigationTarget';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
 import { useTheme, type Theme } from '../../../../shared/hooks/useTheme';
 
@@ -75,47 +76,59 @@ const createStyles = ({ colors, spacing, radius }: Pick<Theme, 'colors' | 'spaci
   });
 
 function hasRelatedAction(data: Record<string, string>): boolean {
-  return (
-    Boolean(data.reminderId) ||
-    Boolean(data.recordId) ||
-    data.kind === 'dailyRoutine' ||
-    data.kind === 'loginWelcome'
-  );
+  return getNotificationNavigationTarget(data) != null;
 }
 
 function openRelated(navigation: DetailNavigation, data: Record<string, string>): void {
-  if (data.reminderId) {
-    navigation.navigate('ReminderDetail', { reminderId: data.reminderId });
+  const target = getNotificationNavigationTarget(data);
+  if (target == null) {
     return;
   }
   const tab = navigation.getParent();
-  if (data.recordId) {
-    tab?.navigate('HealthTab', { screen: 'HealthRecords' });
-    return;
-  }
-  if (data.kind === 'dailyRoutine') {
-    tab?.navigate('PetsTab', { screen: 'PetProfile' });
-    return;
-  }
-  if (data.kind === 'loginWelcome') {
-    tab?.navigate('HomeTab', { screen: 'Home' });
+  switch (target.target) {
+    case 'reminderDetail':
+      navigation.navigate('ReminderDetail', { reminderId: target.reminderId });
+      return;
+    case 'healthRecords':
+      tab?.navigate('HealthTab', {
+        screen: 'HealthRecords',
+        params: { focusRecordId: target.focusRecordId },
+      });
+      return;
+    case 'wellnessHub':
+      tab?.navigate('NotificationsTab', {
+        screen: 'WellnessHub',
+        params: {
+          petId: target.petId,
+          blockId: target.blockId,
+        },
+      });
+      return;
+    case 'petProfile':
+      tab?.navigate('PetsTab', { screen: 'PetProfile' });
+      return;
+    case 'home':
+      tab?.navigate('HomeTab', { screen: 'Home' });
   }
 }
 
 function relatedLabel(data: Record<string, string>): string {
-  if (data.reminderId) {
-    return 'Open reminder';
+  const target = getNotificationNavigationTarget(data);
+  if (target == null) {
+    return 'Open';
   }
-  if (data.recordId) {
-    return 'Open health records';
+  switch (target.target) {
+    case 'reminderDetail':
+      return 'Open reminder';
+    case 'healthRecords':
+      return 'Open health records';
+    case 'wellnessHub':
+      return 'Open wellness hub';
+    case 'petProfile':
+      return 'Open pet profile';
+    case 'home':
+      return 'Go to home';
   }
-  if (data.kind === 'dailyRoutine') {
-    return 'Open pet profile';
-  }
-  if (data.kind === 'loginWelcome') {
-    return 'Go to home';
-  }
-  return 'Open';
 }
 
 export const NotificationDetailScreen: React.FC = () => {
