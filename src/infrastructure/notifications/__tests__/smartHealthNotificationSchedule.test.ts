@@ -15,7 +15,6 @@ function baseRecord(overrides: Partial<SmartHealthRecord> = {}): SmartHealthReco
     dueDate: '2030-06-15',
     status: 'upcoming',
     completedDate: null,
-    family: null,
     recurrenceType: 'yearly',
     userId: 'user-1',
     createdAt: '2030-01-01T00:00:00',

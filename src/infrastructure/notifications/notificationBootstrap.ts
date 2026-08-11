@@ -223,7 +223,10 @@ export async function flushInitialNotificationNavigation(
   canNavigate: () => boolean,
 ): Promise<void> {
   const initial = await notifee.getInitialNotification();
-  const data = initial?.notification?.data as Record<string, string> | undefined;
-  trackNotificationTapped(initial?.notification?.id, data);
+  const notification = initial?.notification as
+    | { id?: string; data?: Record<string, string> }
+    | undefined;
+  const data = notification?.data as Record<string, string> | undefined;
+  trackNotificationTapped(notification?.id, data);
   navigateFromNotificationData(nav, data, canNavigate);
 }

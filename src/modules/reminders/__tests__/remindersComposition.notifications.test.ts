@@ -6,8 +6,7 @@ const mockGetTriggerNotificationIds = jest.fn(async () => [] as string[]);
 
 jest.mock('../../../infrastructure/notifications/notificationService', () => ({
   notificationService: {
-    getTriggerNotificationIds: (...args: unknown[]) =>
-      mockGetTriggerNotificationIds(...args),
+    getTriggerNotificationIds: () => mockGetTriggerNotificationIds(),
   },
 }));
 

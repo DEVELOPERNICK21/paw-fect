@@ -5,9 +5,9 @@ jest.mock('@notifee/react-native', () => ({
   },
 }));
 
-import type { DailyCareBlock } from '../../domain/models/DailyCareBlock';
-import type { DailySchedule } from '../../domain/models/DailySchedule';
-import type { NotificationService } from '../../../../infrastructure/notifications/notificationService';
+import type { DailyCareBlock } from '../../../domain/models/DailyCareBlock';
+import type { DailySchedule } from '../../../domain/models/DailySchedule';
+import type { NotificationService } from '../../../../../infrastructure/notifications/notificationService';
 import {
   buildScheduleNotificationCandidates,
   cancelScheduleBlockNotification,
@@ -37,14 +37,19 @@ function createBlock(overrides: Partial<DailyCareBlock>): DailyCareBlock {
   };
 }
 
+function createMockNotificationService(): NotificationService {
+  return {
+    scheduleNotification: jest.fn(async () => undefined),
+    displayImmediateNotification: jest.fn(async () => undefined),
+    cancelNotification: jest.fn(async () => undefined),
+    cancelAllNotifications: jest.fn(async () => undefined),
+    getTriggerNotificationIds: jest.fn(async () => []),
+  };
+}
+
 describe('scheduleNotificationSync', () => {
   it('[NOT-SCH-01] cancels a block notification when it is marked done', async () => {
-    const service: NotificationService = {
-      scheduleNotification: jest.fn(async () => undefined),
-      displayImmediateNotification: jest.fn(async () => undefined),
-      cancelNotification: jest.fn(async () => undefined),
-      cancelAllNotifications: jest.fn(async () => undefined),
-    };
+    const service = createMockNotificationService();
 
     await cancelScheduleBlockNotification('block-1', 'pet-1', service);
     expect(service.cancelNotification).toHaveBeenCalledWith(
@@ -53,12 +58,7 @@ describe('scheduleNotificationSync', () => {
   });
 
   it('[NOT-SCH-02] skips completed blocks during reconciliation', async () => {
-    const service: NotificationService = {
-      scheduleNotification: jest.fn(async () => undefined),
-      displayImmediateNotification: jest.fn(async () => undefined),
-      cancelNotification: jest.fn(async () => undefined),
-      cancelAllNotifications: jest.fn(async () => undefined),
-    };
+    const service = createMockNotificationService();
     const schedule: DailySchedule = {
       petId: 'pet-1',
       date: '2099-01-01',
@@ -83,12 +83,7 @@ describe('scheduleNotificationSync', () => {
   });
 
   it('[NOT-SCH-03] prioritizes feeding notifications before play when over quota', async () => {
-    const service: NotificationService = {
-      scheduleNotification: jest.fn(async () => undefined),
-      displayImmediateNotification: jest.fn(async () => undefined),
-      cancelNotification: jest.fn(async () => undefined),
-      cancelAllNotifications: jest.fn(async () => undefined),
-    };
+    const service = createMockNotificationService();
     const schedule: DailySchedule = {
       petId: 'pet-1',
       date: '2099-01-01',
@@ -136,7 +131,6 @@ describe('buildScheduleNotificationCandidates', () => {
         id: 'block-1',
         category: 'walk',
         scheduledTime: '18:00',
-        frequency: 'once',
         notificationTitle: 'Walk',
         notificationBody: 'Time',
       }),

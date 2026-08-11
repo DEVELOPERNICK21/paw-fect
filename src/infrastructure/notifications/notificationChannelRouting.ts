@@ -3,7 +3,7 @@ import {
   parseSoundProfile,
   SOUND_PROFILE_DATA_KEY,
 } from './notificationSoundCatalog';
-import { isPetNotificationSpecies, PET_SPECIES_DATA_KEY } from './petNotificationSounds';
+import { PET_SPECIES_DATA_KEY } from './petNotificationSounds';
 
 export const PAWFECT_CHANNEL_GENERAL = 'pawfect-general';
 

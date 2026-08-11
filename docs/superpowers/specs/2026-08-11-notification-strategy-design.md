@@ -1,7 +1,7 @@
 # Notification Strategy Design
 
 **Date:** 2026-08-11  
-**Status:** Approved — Phase 1 plan written  
+**Status:** Approved — Phase 1 complete  
 **Approach:** Central Notification Planner — reliability first for must-fire types, then demote noise  
 **Implementation:** Two plans — Phase 1 (planner + must-fire reliability), then Phase 2 (demotion + settings + full analytics)
 
