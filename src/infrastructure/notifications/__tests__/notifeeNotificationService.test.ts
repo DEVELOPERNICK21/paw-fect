@@ -9,6 +9,10 @@ jest.mock('../../../modules/settings/store/settingsStore', () => ({
   },
 }));
 
+jest.mock('../../logging/startupLog', () => ({
+  startupLog: jest.fn(),
+}));
+
 import { NotifeeNotificationService } from '../notifeeNotificationService';
 
 describe('NotifeeNotificationService', () => {
@@ -64,5 +68,16 @@ describe('NotifeeNotificationService', () => {
     expect(request?.android?.sound).toBe('dog_active_urgent');
     expect(request?.ios?.sound).toBe('dog_active_urgent.wav');
     expect(request?.android?.channelId).toBe('pawfect-dog_active_urgent');
+  });
+
+  it('lists trigger notification ids from notifee', async () => {
+    (notifee.getTriggerNotifications as jest.Mock).mockResolvedValueOnce([
+      { notification: { id: 'reminder-1-due' } },
+    ]);
+
+    const service = new NotifeeNotificationService();
+    const ids = await service.getTriggerNotificationIds();
+
+    expect(ids).toEqual(['reminder-1-due']);
   });
 });

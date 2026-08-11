@@ -33,6 +33,7 @@ export interface NotificationService {
   displayImmediateNotification(payload: ImmediateNotificationPayload): Promise<void>;
   cancelNotification(id: string): Promise<void>;
   cancelAllNotifications(): Promise<void>;
+  getTriggerNotificationIds(): Promise<string[]>;
 }
 
 class NoopNotificationService implements NotificationService {
@@ -73,6 +74,10 @@ class NoopNotificationService implements NotificationService {
         platform: Platform.OS,
       });
     }
+  }
+
+  async getTriggerNotificationIds(): Promise<string[]> {
+    return [];
   }
 }
 

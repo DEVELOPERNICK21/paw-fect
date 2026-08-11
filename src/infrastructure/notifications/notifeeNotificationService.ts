@@ -229,4 +229,22 @@ export class NotifeeNotificationService implements NotificationService {
       }
     }
   }
+
+  async getTriggerNotificationIds(): Promise<string[]> {
+    try {
+      const triggers = await notifee.getTriggerNotifications();
+      return triggers
+        .map(row => row.notification?.id)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0);
+    } catch (error) {
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          '[NotifeeNotificationService] getTriggerNotificationIds failed',
+          error,
+        );
+      }
+      return [];
+    }
+  }
 }
