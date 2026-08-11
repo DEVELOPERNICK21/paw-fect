@@ -1,21 +1,26 @@
 import React, { useMemo } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
+import { AppText } from '../../../../../shared/components/AppText';
+import {
+  PetFieldLabel,
+  PetFilledTextInput,
+  PetPhotoHero,
+  PetSpeciesCards,
+  type PetSpeciesOption,
+} from '../../../../../shared/components/petForm';
+import { ScalePressable } from '../../../../../shared/components/ScalePressable';
 import { useTheme } from '../../../../../shared/hooks/useTheme';
-import { lineHeights } from '../../../../../shared/theme/typography';
 import type { PetDraft } from '../../../domain/onboarding/OnboardingDraft';
 import { AccentHeadline } from '../components/AccentHeadline';
-import { OnboardingBlobBackdrop } from '../components/OnboardingBlobBackdrop';
-import { ScalePressable } from '../components/ScalePressable';
 
-type SpeciesOption = { id: PetDraft['species']; label: string; glyph: string };
-type AgeBandOption = { id: PetDraft['ageBand']; label: string };
-
-const SPECIES_OPTIONS: SpeciesOption[] = [
-  { id: 'dog', label: 'Dog', glyph: '🐶' },
-  { id: 'cat', label: 'Cat', glyph: '🐱' },
-  { id: 'both', label: 'Both', glyph: '🐾' },
+const SPECIES_OPTIONS: PetSpeciesOption[] = [
+  { id: 'dog', label: 'Dog', kind: 'dog' },
+  { id: 'cat', label: 'Cat', kind: 'cat' },
+  { id: 'both', label: 'Both', kind: 'other' },
 ];
+
+type AgeBandOption = { id: PetDraft['ageBand']; label: string };
 
 const AGE_BAND_OPTIONS: AgeBandOption[] = [
   { id: 'puppy_kitten', label: 'Puppy / Kitten' },
@@ -28,192 +33,154 @@ type Props = {
   onChange: (next: PetDraft) => void;
 };
 
-type ThemeParams = {
-  colors: ReturnType<typeof useTheme>['colors'];
-  spacing: ReturnType<typeof useTheme>['spacing'];
-  radius: ReturnType<typeof useTheme>['radius'];
-  fontSizes: ReturnType<typeof useTheme>['fontSizes'];
-};
-
-const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
-  StyleSheet.create({
-    root: {
-      position: 'relative',
-      paddingBottom: spacing.md,
-    },
-    container: {
-      paddingHorizontal: spacing.xl,
-      paddingTop: spacing.xl,
-      alignItems: 'center',
-    },
-    subtitle: {
-      marginTop: spacing.md,
-      fontSize: fontSizes.lead,
-      lineHeight: lineHeights.md,
-      color: colors.text.body,
-      textAlign: 'center',
-    },
-    sectionLabel: {
-      alignSelf: 'flex-start',
-      marginTop: spacing.xl,
-      fontSize: fontSizes.sm,
-      lineHeight: lineHeights.sm,
-      color: colors.text.secondary,
-    },
-    row: {
-      marginTop: spacing.sm,
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: spacing.sm,
-      width: '100%',
-    },
-    chip: {
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.md,
-      borderRadius: radius.pill,
-      borderWidth: 2,
-      flexDirection: 'row',
-      alignItems: 'center',
-      minHeight: 48,
-    },
-    chipSelected: {
-      backgroundColor: colors.accent,
-      borderColor: colors.accent,
-    },
-    chipIdle: {
-      backgroundColor: colors.surface,
-      borderColor: colors.brandTint20,
-    },
-    chipGlyph: {
-      fontSize: fontSizes.md,
-      marginRight: spacing.xs,
-    },
-    chipLabel: {
-      fontSize: fontSizes.lead,
-      lineHeight: lineHeights.md,
-    },
-    textInput: {
-      marginTop: spacing.sm,
-      width: '100%',
-      height: 56,
-      borderRadius: radius.lg,
-      borderWidth: 2,
-      borderColor: colors.borderSubtle,
-      backgroundColor: colors.surface,
-      paddingHorizontal: spacing.lg,
-      fontSize: fontSizes.base,
-      color: colors.text.heading,
-    },
-  });
-
 export const PetBasicsStep: React.FC<Props> = ({ value, onChange }) => {
-  const { colors, fontFamilies, fontSizes, spacing, radius } = useTheme();
+  const theme = useTheme();
+  const { colors, spacing, radius, textStyles, fontFamilies } = theme;
+
+  const trimmedNickname = value.nickname.trim();
+  const photoCaption = trimmedNickname
+    ? `We can't wait to meet ${trimmedNickname}!`
+    : undefined;
+
   const styles = useMemo(
-    () => createStyles({ colors, spacing, radius, fontSizes }),
-    [colors, spacing, radius, fontSizes],
+    () =>
+      StyleSheet.create({
+        container: {
+          paddingHorizontal: spacing.xl,
+          paddingTop: spacing.lg,
+          paddingBottom: spacing.md,
+        },
+        subtitle: {
+          marginTop: spacing.md,
+          color: colors.text.body,
+          textAlign: 'center',
+        },
+        heroSection: {
+          marginTop: spacing.xl,
+          alignItems: 'center',
+        },
+        fieldSection: {
+          marginTop: spacing.xl,
+        },
+        ageRow: {
+          flexDirection: 'row',
+          gap: spacing.sm,
+          width: '100%',
+        },
+        ageCard: {
+          flex: 1,
+          minHeight: 72,
+          borderRadius: radius.lg,
+          borderWidth: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingVertical: spacing.md,
+          paddingHorizontal: spacing.xs,
+        },
+        ageCardSelected: {
+          backgroundColor: colors.accent,
+          borderColor: colors.accent,
+        },
+        ageCardIdle: {
+          backgroundColor: colors.surface,
+          borderColor: colors.borderSubtle,
+        },
+        ageLabel: {
+          fontFamily: fontFamilies.semibold,
+          textAlign: 'center',
+        },
+        ageLabelSelected: {
+          color: colors.text.inverse,
+        },
+        ageLabelIdle: {
+          color: colors.text.heading,
+        },
+      }),
+    [
+      colors.accent,
+      colors.borderSubtle,
+      colors.surface,
+      colors.text.body,
+      colors.text.heading,
+      colors.text.inverse,
+      fontFamilies.semibold,
+      radius.lg,
+      spacing.lg,
+      spacing.md,
+      spacing.sm,
+      spacing.xl,
+      spacing.xs,
+    ],
   );
 
   return (
-    <View style={styles.root}>
-      <OnboardingBlobBackdrop variant="compact" />
-      <View style={styles.container}>
-        <AccentHeadline
-          segments={[
-            { type: 'text', value: 'Tell us about ' },
-            { type: 'accent', value: 'your pet' },
-          ]}
+    <View style={styles.container}>
+      <AccentHeadline
+        segments={[
+          { type: 'text', value: 'Tell us about ' },
+          { type: 'accent', value: 'your pet.' },
+        ]}
+      />
+      <AppText style={[textStyles.marketingLead, styles.subtitle]}>
+        Let&apos;s get the basics down so we can tailor their experience.
+      </AppText>
+
+      <View style={styles.heroSection}>
+        <PetPhotoHero caption={photoCaption} />
+      </View>
+
+      <View style={styles.fieldSection}>
+        <PetFieldLabel>PET NAME</PetFieldLabel>
+        <PetFilledTextInput
+          value={value.nickname}
+          onChangeText={nickname => onChange({ ...value, nickname })}
+          placeholder="e.g. Luna"
+          autoCapitalize="words"
         />
-        <Text style={[styles.subtitle, { fontFamily: fontFamilies.medium }]}>
-          We&apos;ll personalise your plan around them.
-        </Text>
+      </View>
 
-        <Text
-          style={[styles.sectionLabel, { fontFamily: fontFamilies.semibold }]}
-        >
-          SPECIES
-        </Text>
-        <View style={styles.row}>
-          {SPECIES_OPTIONS.map(option => {
-            const isSelected = value.species === option.id;
-            return (
-              <ScalePressable
-                key={option.id}
-                onPress={() => onChange({ ...value, species: option.id })}
-                style={[
-                  styles.chip,
-                  isSelected ? styles.chipSelected : styles.chipIdle,
-                ]}
-                accessibilityRole="radio"
-                accessibilityState={{ checked: isSelected }}
-              >
-                <Text style={styles.chipGlyph}>{option.glyph}</Text>
-                <Text
-                  style={[
-                    styles.chipLabel,
-                    {
-                      fontFamily: fontFamilies.bold,
-                      color: isSelected
-                        ? colors.text.inverse
-                        : colors.text.heading,
-                    },
-                  ]}
-                >
-                  {option.label}
-                </Text>
-              </ScalePressable>
-            );
-          })}
-        </View>
+      <View style={styles.fieldSection}>
+        <PetFieldLabel>SPECIES</PetFieldLabel>
+        <PetSpeciesCards
+          options={SPECIES_OPTIONS}
+          value={value.species}
+          onChange={species =>
+            onChange({ ...value, species: species as PetDraft['species'] })
+          }
+        />
+      </View>
 
-        <Text
-          style={[styles.sectionLabel, { fontFamily: fontFamilies.semibold }]}
-        >
-          AGE
-        </Text>
-        <View style={styles.row}>
+      <View style={styles.fieldSection}>
+        <PetFieldLabel>ESTIMATED AGE</PetFieldLabel>
+        <View style={styles.ageRow}>
           {AGE_BAND_OPTIONS.map(option => {
             const isSelected = value.ageBand === option.id;
+
             return (
               <ScalePressable
                 key={option.id}
                 onPress={() => onChange({ ...value, ageBand: option.id })}
                 style={[
-                  styles.chip,
-                  isSelected ? styles.chipSelected : styles.chipIdle,
+                  styles.ageCard,
+                  isSelected ? styles.ageCardSelected : styles.ageCardIdle,
                 ]}
                 accessibilityRole="radio"
                 accessibilityState={{ checked: isSelected }}
+                accessibilityLabel={option.label}
               >
-                <Text
+                <AppText
                   style={[
-                    styles.chipLabel,
-                    {
-                      fontFamily: fontFamilies.bold,
-                      color: isSelected
-                        ? colors.text.inverse
-                        : colors.text.heading,
-                    },
+                    textStyles.control,
+                    styles.ageLabel,
+                    isSelected ? styles.ageLabelSelected : styles.ageLabelIdle,
                   ]}
                 >
                   {option.label}
-                </Text>
+                </AppText>
               </ScalePressable>
             );
           })}
         </View>
-
-        <Text
-          style={[styles.sectionLabel, { fontFamily: fontFamilies.semibold }]}
-        >
-          NICKNAME
-        </Text>
-        <TextInput
-          value={value.nickname}
-          onChangeText={nickname => onChange({ ...value, nickname })}
-          placeholder="e.g. Luna"
-          placeholderTextColor={colors.input.placeholder}
-          style={[styles.textInput, { fontFamily: fontFamilies.medium }]}
-        />
       </View>
     </View>
   );
