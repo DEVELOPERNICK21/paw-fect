@@ -9,7 +9,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -52,6 +51,7 @@ import {
   PetSpeciesCards,
   type PetSpeciesOption,
 } from '../../../../shared/components/petForm';
+import { ScalePressable } from '../../../../shared/components/ScalePressable';
 import { spacing } from '../../../../shared/theme/spacing';
 import { lineHeights } from '../../../../shared/theme/typography';
 import { inferDefaultPetRegion } from '../../../../shared/utils/inferDefaultPetRegion';
@@ -97,6 +97,144 @@ const BackIcon: React.FC<BackIconProps> = ({ size = 24, color }) => (
     <Path d={ICON_PATH_BACK} fill={color} />
   </Svg>
 );
+
+type SelectionChipOption = {
+  id: string;
+  label: string;
+};
+
+interface PetSelectionChipsProps {
+  options: readonly SelectionChipOption[];
+  selectedId: string;
+  onSelect: (id: string) => void;
+  equalWidth?: boolean;
+}
+
+const PetSelectionChips: React.FC<PetSelectionChipsProps> = ({
+  options,
+  selectedId,
+  onSelect,
+  equalWidth = false,
+}) => {
+  const { colors, spacing, radius, textStyles, fontFamilies } = useTheme();
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        row: {
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: spacing.sm,
+          width: '100%',
+        },
+        chip: {
+          borderRadius: radius.lg,
+          borderWidth: 1,
+          paddingVertical: spacing.md,
+          paddingHorizontal: spacing.lg,
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: 48,
+        },
+        chipEqual: {
+          flex: 1,
+          minWidth: 0,
+        },
+        chipSelected: {
+          backgroundColor: colors.accent,
+          borderColor: colors.accent,
+        },
+        chipIdle: {
+          backgroundColor: colors.surface,
+          borderColor: colors.borderSubtle,
+        },
+        chipLabel: {
+          fontFamily: fontFamilies.semibold,
+          textAlign: 'center',
+        },
+        chipLabelSelected: {
+          color: colors.text.inverse,
+        },
+        chipLabelIdle: {
+          color: colors.text.heading,
+        },
+      }),
+    [
+      colors.accent,
+      colors.borderSubtle,
+      colors.surface,
+      colors.text.heading,
+      colors.text.inverse,
+      fontFamilies.semibold,
+      radius.lg,
+      spacing.lg,
+      spacing.md,
+      spacing.sm,
+    ],
+  );
+
+  return (
+    <View style={styles.row}>
+      {options.map(option => {
+        const isSelected = selectedId === option.id;
+
+        return (
+          <ScalePressable
+            key={option.id}
+            onPress={() => onSelect(option.id)}
+            style={[
+              styles.chip,
+              equalWidth ? styles.chipEqual : undefined,
+              isSelected ? styles.chipSelected : styles.chipIdle,
+            ]}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: isSelected }}
+            accessibilityLabel={option.label}
+          >
+            <AppText
+              style={[
+                textStyles.control,
+                styles.chipLabel,
+                isSelected ? styles.chipLabelSelected : styles.chipLabelIdle,
+              ]}
+            >
+              {option.label}
+            </AppText>
+          </ScalePressable>
+        );
+      })}
+    </View>
+  );
+};
+
+const YES_NO_OPTIONS: readonly SelectionChipOption[] = [
+  { id: 'no', label: 'No' },
+  { id: 'yes', label: 'Yes' },
+];
+
+const GENDER_OPTIONS: readonly SelectionChipOption[] = [
+  { id: 'male', label: 'Male' },
+  { id: 'female', label: 'Female' },
+];
+
+const LIFESTYLE_OPTIONS: readonly SelectionChipOption[] = [
+  { id: 'indoor', label: 'Indoor' },
+  { id: 'mixed', label: 'Mixed' },
+  { id: 'outdoor', label: 'Outdoor' },
+];
+
+const RISK_OPTIONS: readonly SelectionChipOption[] = [
+  { id: 'low', label: 'Low' },
+  { id: 'medium', label: 'Medium' },
+  { id: 'high', label: 'High' },
+];
+
+const REGION_OPTIONS: readonly SelectionChipOption[] = [
+  { id: 'OTHER', label: 'OTHER' },
+  { id: 'IN', label: 'IN' },
+  { id: 'US', label: 'US' },
+  { id: 'EU', label: 'EU' },
+];
 
 export const AddPetScreen: React.FC = () => {
   const navigation =
@@ -906,80 +1044,41 @@ export const AddPetScreen: React.FC = () => {
         </View>
 
         <View style={styles.formSection}>
-          <View>
-            <Text
-              style={[
-                styles.fieldLabelSm,
-                { fontFamily: fontFamilies.semibold },
-              ]}
-            >
-              Gender (optional)
-            </Text>
-            <View style={styles.genderRow}>
-              {(['male', 'female'] as const).map(next => {
-                const selected = gender === next;
-                const label =
-                  next === 'male'
-                    ? 'Male'
-                    : next === 'female'
-                    ? 'Female'
-                    : '';
-                if (!label) {
-                  return null;
-                }
-                return (
-                  <Pressable
-                    key={next}
-                    style={[
-                      styles.genderChip,
-                      selected ? styles.genderChipSelected : undefined,
-                    ]}
-                    onPress={() => setGender(next)}
-                  >
-                    <Text
-                      style={[
-                        styles.genderChipText,
-                        selected ? styles.genderChipTextSelected : undefined,
-                        {
-                          fontFamily: selected
-                            ? fontFamilies.bold
-                            : fontFamilies.medium,
-                        },
-                      ]}
-                    >
-                      {label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-            <Pressable
-              onPress={() => setGender('')}
-              style={styles.genderClear}
-            >
-              <Text
-                style={{
-                  fontFamily: fontFamilies.medium,
-                  color: colors.text.subdued,
-                }}
+          <View style={styles.advancedField}>
+            <PetFieldLabel>GENDER (OPTIONAL)</PetFieldLabel>
+            <PetSelectionChips
+              options={GENDER_OPTIONS}
+              selectedId={gender}
+              onSelect={next => setGender(next as PetGender)}
+              equalWidth
+            />
+            {gender !== '' ? (
+              <ScalePressable
+                onPress={() => setGender('')}
+                style={styles.linkAction}
+                accessibilityRole="button"
+                accessibilityLabel="Clear gender selection"
               >
-                Clear
-              </Text>
-            </Pressable>
+                <AppText
+                  style={[
+                    textStyles.caption,
+                    styles.linkActionText,
+                    { color: colors.text.subdued },
+                  ]}
+                >
+                  Clear
+                </AppText>
+              </ScalePressable>
+            ) : null}
           </View>
 
-          <View>
-            <Text
-              style={[styles.fieldLabel, { fontFamily: fontFamilies.semibold }]}
-            >
-              Breed (Optional)
-            </Text>
-            <TextInput
+          <View style={styles.advancedField}>
+            <PetFieldLabel>BREED (OPTIONAL)</PetFieldLabel>
+            <PetFilledTextInput
               value={breed}
               onChangeText={setBreed}
               placeholder="e.g. Golden Retriever"
-              placeholderTextColor={colors.input.placeholder}
-              style={[styles.textInput, { fontFamily: fontFamilies.regular }]}
+              autoCapitalize="words"
             />
           </View>
 
@@ -1029,90 +1128,35 @@ export const AddPetScreen: React.FC = () => {
 
             {showHealthHistory ? (
               <View style={styles.healthHistoryFields}>
-                <View>
-                  <Text
-                    style={[
-                      styles.fieldLabelSm,
-                      { fontFamily: fontFamilies.semibold },
-                    ]}
-                  >
-                    Has your pet been dewormed before?
-                  </Text>
-                  <Text
+                <View style={styles.advancedField}>
+                  <PetFieldLabel>PREVIOUS DEWORMING?</PetFieldLabel>
+                  <AppText
                     style={[
                       styles.fieldHint,
-                      {
-                        color: colors.text.subdued,
-                        fontFamily: fontFamilies.regular,
-                      },
+                      textStyles.caption,
+                      { color: colors.text.subdued },
                     ]}
                   >
                     Deworming clears intestinal worms that can cause weight loss
                     or diarrhoea. Most pets need it every 1–3 months.
-                  </Text>
-                  <View style={styles.genderRow}>
-                    <Pressable
-                      style={[
-                        styles.genderChip,
-                        !hasPreviousDeworming
-                          ? styles.genderChipSelected
-                          : undefined,
-                      ]}
-                      onPress={() => {
-                        setHasPreviousDeworming(false);
-                        setLastDewormingDate('');
-                        setLastDewormingUnknown(false);
-                      }}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: !hasPreviousDeworming }}
-                    >
-                      <Text
-                        style={[
-                          styles.genderChipText,
-                          !hasPreviousDeworming
-                            ? styles.genderChipTextSelected
-                            : undefined,
-                          {
-                            fontFamily: !hasPreviousDeworming
-                              ? fontFamilies.bold
-                              : fontFamilies.medium,
-                          },
-                        ]}
-                      >
-                        No
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      style={[
-                        styles.genderChip,
-                        hasPreviousDeworming
-                          ? styles.genderChipSelected
-                          : undefined,
-                      ]}
-                      onPress={() => setHasPreviousDeworming(true)}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: hasPreviousDeworming }}
-                    >
-                      <Text
-                        style={[
-                          styles.genderChipText,
-                          hasPreviousDeworming
-                            ? styles.genderChipTextSelected
-                            : undefined,
-                          {
-                            fontFamily: hasPreviousDeworming
-                              ? fontFamilies.bold
-                              : fontFamilies.medium,
-                          },
-                        ]}
-                      >
-                        Yes
-                      </Text>
-                    </Pressable>
-                  </View>
+                  </AppText>
+                  <PetSelectionChips
+                    options={YES_NO_OPTIONS}
+                    selectedId={hasPreviousDeworming ? 'yes' : 'no'}
+                    onSelect={next => {
+                      if (next === 'yes') {
+                        setHasPreviousDeworming(true);
+                        return;
+                      }
+                      setHasPreviousDeworming(false);
+                      setLastDewormingDate('');
+                      setLastDewormingUnknown(false);
+                    }}
+                    equalWidth
+                  />
                   {hasPreviousDeworming ? (
-                    <View style={{ marginTop: 12, gap: 10 }}>
-                      <Pressable
+                    <View style={styles.nestedFieldGroup}>
+                      <ScalePressable
                         onPress={() => {
                           setLastDewormingUnknown(v => {
                             const next = !v;
@@ -1122,130 +1166,72 @@ export const AddPetScreen: React.FC = () => {
                             return next;
                           });
                         }}
-                        style={styles.genderClear}
+                        style={styles.linkAction}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: lastDewormingUnknown }}
+                        accessibilityLabel="I don't know the deworming date"
                       >
-                        <Text
-                          style={{
-                            fontFamily: fontFamilies.medium,
-                            color: lastDewormingUnknown
-                              ? colors.accent
-                              : colors.text.subdued,
-                          }}
+                        <AppText
+                          style={[
+                            textStyles.caption,
+                            styles.linkActionText,
+                            {
+                              color: lastDewormingUnknown
+                                ? colors.accent
+                                : colors.text.subdued,
+                            },
+                          ]}
                         >
                           I don&apos;t know the date
-                        </Text>
-                      </Pressable>
+                        </AppText>
+                      </ScalePressable>
                       {!lastDewormingUnknown ? (
-                        <>
-                          <Text
-                            style={[
-                              styles.fieldLabelSm,
-                              { fontFamily: fontFamilies.semibold },
-                            ]}
-                          >
-                            Last deworming date
-                          </Text>
+                        <View style={styles.advancedField}>
+                          <PetFieldLabel>LAST DEWORMING DATE</PetFieldLabel>
                           <DatePickerField
                             value={lastDewormingDate}
                             onChange={setLastDewormingDate}
                             placeholder="YYYY-MM-DD"
                             maximumDate={today}
                           />
-                        </>
+                        </View>
                       ) : null}
                     </View>
                   ) : null}
                 </View>
 
-                <View>
-                  <Text
-                    style={[
-                      styles.fieldLabelSm,
-                      { fontFamily: fontFamilies.semibold },
-                    ]}
-                  >
-                    Has your pet received vaccinations before?
-                  </Text>
-                  <Text
+                <View style={styles.advancedField}>
+                  <PetFieldLabel>PREVIOUS VACCINATIONS?</PetFieldLabel>
+                  <AppText
                     style={[
                       styles.fieldHint,
-                      {
-                        color: colors.text.subdued,
-                        fontFamily: fontFamilies.regular,
-                      },
+                      textStyles.caption,
+                      { color: colors.text.subdued },
                     ]}
                   >
                     Core vaccines (DHPP for dogs, FVRCP for cats) protect against
                     serious illnesses. Enter the last dose date if you know it.
-                  </Text>
-                  <View style={styles.genderRow}>
-                    <Pressable
-                      style={[
-                        styles.genderChip,
-                        !hasPreviousVaccination
-                          ? styles.genderChipSelected
-                          : undefined,
-                      ]}
-                      onPress={() => {
-                        setHasPreviousVaccination(false);
-                        setLastVaccinationDate('');
-                        setLastVaccinationUnknown(false);
-                        setHasPreviousRabies(false);
-                        setLastRabiesDate('');
-                        setLastRabiesUnknown(false);
-                      }}
-                      accessibilityRole="button"
-                      accessibilityState={{
-                        selected: !hasPreviousVaccination,
-                      }}
-                    >
-                      <Text
-                        style={[
-                          styles.genderChipText,
-                          !hasPreviousVaccination
-                            ? styles.genderChipTextSelected
-                            : undefined,
-                          {
-                            fontFamily: !hasPreviousVaccination
-                              ? fontFamilies.bold
-                              : fontFamilies.medium,
-                          },
-                        ]}
-                      >
-                        No
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      style={[
-                        styles.genderChip,
-                        hasPreviousVaccination
-                          ? styles.genderChipSelected
-                          : undefined,
-                      ]}
-                      onPress={() => setHasPreviousVaccination(true)}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: hasPreviousVaccination }}
-                    >
-                      <Text
-                        style={[
-                          styles.genderChipText,
-                          hasPreviousVaccination
-                            ? styles.genderChipTextSelected
-                            : undefined,
-                          {
-                            fontFamily: hasPreviousVaccination
-                              ? fontFamilies.bold
-                              : fontFamilies.medium,
-                          },
-                        ]}
-                      >
-                        Yes
-                      </Text>
-                    </Pressable>
-                  </View>
+                  </AppText>
+                  <PetSelectionChips
+                    options={YES_NO_OPTIONS}
+                    selectedId={hasPreviousVaccination ? 'yes' : 'no'}
+                    onSelect={next => {
+                      if (next === 'yes') {
+                        setHasPreviousVaccination(true);
+                        return;
+                      }
+                      setHasPreviousVaccination(false);
+                      setLastVaccinationDate('');
+                      setLastVaccinationUnknown(false);
+                      setHasPreviousRabies(false);
+                      setLastRabiesDate('');
+                      setLastRabiesUnknown(false);
+                    }}
+                    equalWidth
+                  />
                   {hasPreviousVaccination ? (
-                    <View style={{ marginTop: 12, gap: 10 }}>
-                      <Pressable
+                    <View style={styles.nestedFieldGroup}>
+                      <ScalePressable
                         onPress={() => {
                           setLastVaccinationUnknown(v => {
                             const next = !v;
@@ -1255,125 +1241,71 @@ export const AddPetScreen: React.FC = () => {
                             return next;
                           });
                         }}
-                        style={styles.genderClear}
+                        style={styles.linkAction}
+                        accessibilityRole="button"
+                        accessibilityState={{
+                          selected: lastVaccinationUnknown,
+                        }}
+                        accessibilityLabel="I don't know the vaccination date"
                       >
-                        <Text
-                          style={{
-                            fontFamily: fontFamilies.medium,
-                            color: lastVaccinationUnknown
-                              ? colors.accent
-                              : colors.text.subdued,
-                          }}
+                        <AppText
+                          style={[
+                            textStyles.caption,
+                            styles.linkActionText,
+                            {
+                              color: lastVaccinationUnknown
+                                ? colors.accent
+                                : colors.text.subdued,
+                            },
+                          ]}
                         >
                           I don&apos;t know the date
-                        </Text>
-                      </Pressable>
+                        </AppText>
+                      </ScalePressable>
                       {!lastVaccinationUnknown ? (
-                        <>
-                          <Text
-                            style={[
-                              styles.fieldLabelSm,
-                              { fontFamily: fontFamilies.semibold },
-                            ]}
-                          >
-                            Last vaccination date
-                          </Text>
+                        <View style={styles.advancedField}>
+                          <PetFieldLabel>LAST VACCINATION DATE</PetFieldLabel>
                           <DatePickerField
                             value={lastVaccinationDate}
                             onChange={setLastVaccinationDate}
                             placeholder="YYYY-MM-DD"
                             maximumDate={today}
                           />
-                        </>
+                        </View>
                       ) : null}
                     </View>
                   ) : null}
                 </View>
 
-                <View>
-                  <Text
-                    style={[
-                      styles.fieldLabelSm,
-                      { fontFamily: fontFamilies.semibold },
-                    ]}
-                  >
-                    Has your pet received rabies vaccine?
-                  </Text>
-                  <Text
+                <View style={styles.advancedField}>
+                  <PetFieldLabel>PREVIOUS RABIES VACCINE?</PetFieldLabel>
+                  <AppText
                     style={[
                       styles.fieldHint,
-                      {
-                        color: colors.text.subdued,
-                        fontFamily: fontFamilies.regular,
-                      },
+                      textStyles.caption,
+                      { color: colors.text.subdued },
                     ]}
                   >
                     Rabies vaccine is required in India. It protects against a
                     fatal disease that can spread to humans.
-                  </Text>
-                  <View style={styles.genderRow}>
-                    <Pressable
-                      style={[
-                        styles.genderChip,
-                        !hasPreviousRabies
-                          ? styles.genderChipSelected
-                          : undefined,
-                      ]}
-                      onPress={() => {
-                        setHasPreviousRabies(false);
-                        setLastRabiesDate('');
-                        setLastRabiesUnknown(false);
-                      }}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: !hasPreviousRabies }}
-                    >
-                      <Text
-                        style={[
-                          styles.genderChipText,
-                          !hasPreviousRabies
-                            ? styles.genderChipTextSelected
-                            : undefined,
-                          {
-                            fontFamily: !hasPreviousRabies
-                              ? fontFamilies.bold
-                              : fontFamilies.medium,
-                          },
-                        ]}
-                      >
-                        No
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      style={[
-                        styles.genderChip,
-                        hasPreviousRabies
-                          ? styles.genderChipSelected
-                          : undefined,
-                      ]}
-                      onPress={() => setHasPreviousRabies(true)}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: hasPreviousRabies }}
-                    >
-                      <Text
-                        style={[
-                          styles.genderChipText,
-                          hasPreviousRabies
-                            ? styles.genderChipTextSelected
-                            : undefined,
-                          {
-                            fontFamily: hasPreviousRabies
-                              ? fontFamilies.bold
-                              : fontFamilies.medium,
-                          },
-                        ]}
-                      >
-                        Yes
-                      </Text>
-                    </Pressable>
-                  </View>
+                  </AppText>
+                  <PetSelectionChips
+                    options={YES_NO_OPTIONS}
+                    selectedId={hasPreviousRabies ? 'yes' : 'no'}
+                    onSelect={next => {
+                      if (next === 'yes') {
+                        setHasPreviousRabies(true);
+                        return;
+                      }
+                      setHasPreviousRabies(false);
+                      setLastRabiesDate('');
+                      setLastRabiesUnknown(false);
+                    }}
+                    equalWidth
+                  />
                   {hasPreviousRabies ? (
-                    <View style={{ marginTop: 12, gap: 10 }}>
-                      <Pressable
+                    <View style={styles.nestedFieldGroup}>
+                      <ScalePressable
                         onPress={() => {
                           setLastRabiesUnknown(v => {
                             const next = !v;
@@ -1383,36 +1315,35 @@ export const AddPetScreen: React.FC = () => {
                             return next;
                           });
                         }}
-                        style={styles.genderClear}
+                        style={styles.linkAction}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: lastRabiesUnknown }}
+                        accessibilityLabel="I don't know the rabies vaccine date"
                       >
-                        <Text
-                          style={{
-                            fontFamily: fontFamilies.medium,
-                            color: lastRabiesUnknown
-                              ? colors.accent
-                              : colors.text.subdued,
-                          }}
+                        <AppText
+                          style={[
+                            textStyles.caption,
+                            styles.linkActionText,
+                            {
+                              color: lastRabiesUnknown
+                                ? colors.accent
+                                : colors.text.subdued,
+                            },
+                          ]}
                         >
                           I don&apos;t know the date
-                        </Text>
-                      </Pressable>
+                        </AppText>
+                      </ScalePressable>
                       {!lastRabiesUnknown ? (
-                        <>
-                          <Text
-                            style={[
-                              styles.fieldLabelSm,
-                              { fontFamily: fontFamilies.semibold },
-                            ]}
-                          >
-                            Last rabies vaccine date
-                          </Text>
+                        <View style={styles.advancedField}>
+                          <PetFieldLabel>LAST RABIES VACCINE DATE</PetFieldLabel>
                           <DatePickerField
                             value={lastRabiesDate}
                             onChange={setLastRabiesDate}
                             placeholder="YYYY-MM-DD"
                             maximumDate={today}
                           />
-                        </>
+                        </View>
                       ) : null}
                     </View>
                   ) : null}
@@ -1421,145 +1352,46 @@ export const AddPetScreen: React.FC = () => {
             ) : null}
           </View>
 
-          <View style={{ gap: 14 }}>
-            <View>
-              <Text
-                style={[styles.sectionLabel, { fontFamily: fontFamilies.bold }]}
-              >
-                Lifestyle & region
-              </Text>
-            </View>
-            <View>
-              <Text
-                style={[
-                  styles.fieldLabelSm,
-                  { fontFamily: fontFamilies.semibold },
-                ]}
-              >
-                Lifestyle
-              </Text>
-              <View style={styles.genderRow}>
-                {(['indoor', 'mixed', 'outdoor'] as const).map(next => {
-                  const selected = lifestyleType === next;
-                  return (
-                    <Pressable
-                      key={next}
-                      style={[
-                        styles.genderChip,
-                        selected ? styles.genderChipSelected : undefined,
-                      ]}
-                      onPress={() => applyLifestyle(next)}
-                    >
-                      <Text
-                        style={[
-                          styles.genderChipText,
-                          selected ? styles.genderChipTextSelected : undefined,
-                          {
-                            fontFamily: selected
-                              ? fontFamilies.bold
-                              : fontFamilies.medium,
-                          },
-                        ]}
-                      >
-                        {next[0].toUpperCase() + next.slice(1)}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+          <View style={styles.lifestyleSection}>
+            <View style={styles.advancedField}>
+              <PetFieldLabel>LIFESTYLE</PetFieldLabel>
+              <PetSelectionChips
+                options={LIFESTYLE_OPTIONS}
+                selectedId={lifestyleType}
+                onSelect={next => applyLifestyle(next as PetLifestyleType)}
+                equalWidth
+              />
               {!riskTouched ? (
-                <Text
-                  style={{
-                    marginTop: spacing.xs,
-                    fontSize: 12,
-                    color: colors.text.subdued,
-                    fontFamily: fontFamilies.medium,
-                  }}
+                <AppText
+                  style={[
+                    textStyles.caption,
+                    styles.fieldHint,
+                    { color: colors.text.subdued, marginBottom: 0 },
+                  ]}
                 >
                   Risk suggested from lifestyle. Change it anytime.
-                </Text>
+                </AppText>
               ) : null}
             </View>
-            <View>
-              <Text
-                style={[
-                  styles.fieldLabelSm,
-                  { fontFamily: fontFamilies.semibold },
-                ]}
-              >
-                Risk level
-              </Text>
-              <View style={styles.genderRow}>
-                {(['low', 'medium', 'high'] as const).map(next => {
-                  const selected = lifestyleRiskLevel === next;
-                  return (
-                    <Pressable
-                      key={next}
-                      style={[
-                        styles.genderChip,
-                        selected ? styles.genderChipSelected : undefined,
-                      ]}
-                      onPress={() => {
-                        setRiskTouched(true);
-                        setLifestyleRiskLevel(next);
-                      }}
-                    >
-                      <Text
-                        style={[
-                          styles.genderChipText,
-                          selected ? styles.genderChipTextSelected : undefined,
-                          {
-                            fontFamily: selected
-                              ? fontFamilies.bold
-                              : fontFamilies.medium,
-                          },
-                        ]}
-                      >
-                        {next[0].toUpperCase() + next.slice(1)}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+            <View style={styles.advancedField}>
+              <PetFieldLabel>RISK LEVEL</PetFieldLabel>
+              <PetSelectionChips
+                options={RISK_OPTIONS}
+                selectedId={lifestyleRiskLevel}
+                onSelect={next => {
+                  setRiskTouched(true);
+                  setLifestyleRiskLevel(next as PetLifestyleRiskLevel);
+                }}
+                equalWidth
+              />
             </View>
-            <View>
-              <Text
-                style={[
-                  styles.fieldLabelSm,
-                  { fontFamily: fontFamilies.semibold },
-                ]}
-              >
-                Region
-              </Text>
-              <View style={styles.genderRow}>
-                {(['OTHER', 'IN', 'US', 'EU'] as const).map(next => {
-                  const selected = region === next;
-                  return (
-                    <Pressable
-                      key={next}
-                      style={[
-                        styles.genderChip,
-                        selected ? styles.genderChipSelected : undefined,
-                      ]}
-                      onPress={() => setRegion(next)}
-                    >
-                      <Text
-                        style={[
-                          styles.genderChipText,
-                          selected ? styles.genderChipTextSelected : undefined,
-                          {
-                            fontFamily: selected
-                              ? fontFamilies.bold
-                              : fontFamilies.medium,
-                          },
-                        ]}
-                      >
-                        {next}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+            <View style={styles.advancedField}>
+              <PetFieldLabel>REGION</PetFieldLabel>
+              <PetSelectionChips
+                options={REGION_OPTIONS}
+                selectedId={region}
+                onSelect={next => setRegion(next as PetRegion)}
+              />
             </View>
           </View>
         </View>
@@ -1654,74 +1486,46 @@ const createStyles = (
     paddingVertical: spacing.md,
     gap: spacing.xl,
   },
-  fieldLabel: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: colors.text.heading,
-    marginBottom: 8,
+  advancedField: {
+    gap: spacing.sm,
   },
-  fieldLabelSm: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: colors.text.heading,
-    marginBottom: 8,
+  nestedFieldGroup: {
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  linkAction: {
+    alignSelf: 'flex-start',
+    paddingVertical: spacing.xs,
+  },
+  linkActionText: {
+    fontFamily: undefined,
   },
   fieldHint: {
-    fontSize: 12,
-    lineHeight: 18,
-    marginBottom: 8,
-    marginTop: -4,
+    marginTop: -spacing.xs,
+    marginBottom: spacing.xs,
   },
   healthHistoryBlock: {
-    gap: 10,
+    gap: spacing.sm,
   },
   healthHistoryToggle: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 4,
+    paddingVertical: spacing.xs,
   },
   healthHistoryToggleText: {
     fontSize: 15,
     lineHeight: 22,
     flex: 1,
-    paddingRight: 8,
+    paddingRight: spacing.sm,
   },
   healthHistoryFields: {
-    gap: 24,
-    paddingTop: 4,
+    gap: spacing.xl,
+    paddingTop: spacing.xs,
   },
-  textInput: {
-    height: 56,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    backgroundColor: colors.surface,
-    paddingHorizontal: 15,
-    fontSize: 16,
-    lineHeight: 24,
-    color: colors.text.heading,
+  lifestyleSection: {
+    gap: spacing.xl,
   },
-  sectionLabel: {
-    fontSize: 18,
-    lineHeight: 24,
-    letterSpacing: -0.27,
-    color: colors.text.heading,
-    marginBottom: 16,
-  },
-  genderRow: { flexDirection: 'row', gap: 10, marginTop: 10, flexWrap: 'wrap' },
-  genderChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    backgroundColor: colors.surface,
-  },
-  genderChipSelected: { backgroundColor: colors.accent, borderColor: colors.accent },
-  genderChipText: { fontSize: 14, lineHeight: 18, color: colors.text.secondary },
-  genderChipTextSelected: { color: colors.text.inverse },
-  genderClear: { paddingTop: 10, alignSelf: 'flex-start' },
   errorText: {
     marginTop: 10,
     color: colors.danger,
