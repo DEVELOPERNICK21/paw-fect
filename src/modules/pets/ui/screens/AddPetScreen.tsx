@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   ActionSheetIOS,
   Alert,
-  Image,
   Linking,
   Platform,
   Pressable,
@@ -43,8 +42,18 @@ import type { PetPhotoEncodeRequest } from '../../domain/ports/PetPhotoEncoder';
 import { isPetPhotoPlaceholderUri } from '../../domain/utils/petPhotoPlaceholder';
 import { prefillFromOnboardingProfile } from '../../domain/utils/prefillFromOnboardingProfile';
 import { icons } from '../../../../shared/assets/icons';
+import { AppText } from '../../../../shared/components/AppText';
 import { DatePickerField } from '../../../../shared/components/DatePickerField';
+import {
+  PetFieldLabel,
+  PetFilledTextInput,
+  PetPhotoHero,
+  PetPrimaryCta,
+  PetSpeciesCards,
+  type PetSpeciesOption,
+} from '../../../../shared/components/petForm';
 import { spacing } from '../../../../shared/theme/spacing';
+import { lineHeights } from '../../../../shared/theme/typography';
 import { inferDefaultPetRegion } from '../../../../shared/utils/inferDefaultPetRegion';
 import { resolvePetAvatarSource } from '../../../../shared/utils/petDisplayPhoto';
 import {
@@ -66,33 +75,26 @@ const planDisplayLabel = (plan: string): string => {
   return 'Free';
 };
 
-type IconKind = 'arrow-back' | 'camera' | 'check' | 'pets';
+const SPECIES_OPTIONS: PetSpeciesOption[] = [
+  { id: 'dog', label: 'Dog', kind: 'dog' },
+  { id: 'cat', label: 'Cat', kind: 'cat' },
+];
 
-const ICON_PATHS: Record<IconKind, string> = {
-  'arrow-back': 'M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z',
-  camera:
-    'M20 5h-3.17L15 3H9L7.17 5H4a2 2 0 00-2 2v11a2 2 0 002 2h16a2 2 0 002-2V7a2 2 0 00-2-2zm0 13H4V7h4.05l1.83-2h4.24l1.83 2H20v11zm-8-2.5A4.5 4.5 0 1012 6a4.5 4.5 0 000 9zm0-1.8a2.7 2.7 0 110-5.4 2.7 2.7 0 010 5.4z',
-  check: 'M9 16.2l-3.5-3.5L4 14.2l5 5 11-11-1.5-1.5z',
-  pets: 'M4.5 9C3.12 9 2 7.88 2 6.5S3.12 4 4.5 4 7 5.12 7 6.5 5.88 9 4.5 9zm15 0c-1.38 0-2.5-1.12-2.5-2.5S18.12 4 19.5 4 22 5.12 22 6.5 20.88 9 19.5 9zM12 4c-1.38 0-2.5-1.12-2.5-2.5S10.62-1 12-1s2.5 1.12 2.5 2.5S13.38 4 12 4zm0 20c-3.31 0-6-2.24-6-5 0-1.77 1.03-3.32 2.56-4.21C9.76 13.96 10.84 13.5 12 13.5s2.24.46 3.44 1.29C16.97 15.68 18 17.23 18 19c0 2.76-2.69 5-6 5z',
-};
+const ICON_PATH_BACK =
+  'M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z';
 
 const PROFILE_PLACEHOLDER = '';
 
 export {};
 
-interface IconProps {
-  kind: IconKind;
+interface BackIconProps {
   size?: number;
   color: string;
 }
 
-const MaterialIcon: React.FC<IconProps> = ({
-  kind,
-  size = 20,
-  color,
-}) => (
+const BackIcon: React.FC<BackIconProps> = ({ size = 24, color }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24">
-    <Path d={ICON_PATHS[kind]} fill={color} />
+    <Path d={ICON_PATH_BACK} fill={color} />
   </Svg>
 );
 
@@ -103,8 +105,11 @@ export const AddPetScreen: React.FC = () => {
   const petId = route.params?.petId;
   const isEditMode = petId != null && petId.length > 0;
 
-  const { colors, fontFamilies } = useTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { colors, fontFamilies, fontSizes, textStyles } = useTheme();
+  const styles = useMemo(
+    () => createStyles(colors, fontSizes),
+    [colors, fontSizes],
+  );
   const createPetProfile = usePetStore(s => s.createPetProfile);
   const updatePet = usePetStore(s => s.updatePet);
   const petsUsed = usePetStore(s => s.pets.length);
@@ -749,14 +754,23 @@ export const AddPetScreen: React.FC = () => {
     }
   };
 
-  const petTypes = useMemo(
-    () =>
-      [
-        { key: 'dog', label: 'Dog' },
-        { key: 'cat', label: 'Cat' },
-      ] as const,
-    [],
-  );
+  const photoCaption = trimmedName
+    ? `We can't wait to meet ${trimmedName}!`
+    : undefined;
+
+  const photoHeroPlaceholder =
+    petType === 'dog' ? (
+      <icons.dogIcon width={80} height={80} />
+    ) : (
+      <icons.catIcon width={80} height={80} />
+    );
+
+  const photoHeroSource = photoFilled
+    ? resolvePetAvatarSource({
+        type: petType,
+        photo: photoUri,
+      })
+    : undefined;
 
   if (initLoading) {
     return (
@@ -787,133 +801,101 @@ export const AddPetScreen: React.FC = () => {
             onPress={() => {
               if (navigation.canGoBack()) {
                 navigation.goBack();
-              } else {
-                // Gate mode: no back route available.
               }
             }}
             accessibilityRole="button"
             accessibilityLabel="Go back"
           >
-            <MaterialIcon
-              kind="arrow-back"
-              size={24}
-              color={colors.text.heading}
-            />
+            <BackIcon size={24} color={colors.text.heading} />
           </Pressable>
-          <Text style={[styles.headerTitle, { fontFamily: fontFamilies.bold }]}>
-            {isEditMode ? 'Edit pet' : 'Add Pet to Pawsoul'}
-          </Text>
-          <View style={styles.headerRightSpacer} />
         </View>
 
-        <PetFormPsychologyChrome
-          isEditMode={isEditMode}
-          petsUsed={petsUsed}
-          maxPets={entitlement.maxPets}
-          planLabel={planDisplayLabel(entitlement.plan)}
-          progress={formProgress}
-          lockedInCount={lockedInCount}
-          petDisplayName={trimmedName}
-        />
-
-        <View style={styles.avatarSection}>
-          <Pressable
+        <View style={styles.foldSection}>
+          <Text
             style={[
-              styles.profileImageWrap,
-              { backgroundColor: colors.brandTint5 },
+              styles.foldTitle,
+              { fontFamily: fontFamilies.extrabold },
             ]}
-            onPress={openPhotoOptions}
-            accessibilityRole="button"
-            accessibilityLabel={photoFilled ? 'Change pet photo' : 'Add pet photo'}
+            accessibilityRole="header"
+            accessibilityLabel={
+              isEditMode ? 'Edit your pet.' : 'Tell us about your pet.'
+            }
           >
-            {photoFilled ? (
-              <Image
-                source={resolvePetAvatarSource({
-                  type: petType,
-                  photo: photoUri,
-                })}
-                style={styles.profileImage}
-                resizeMode="cover"
-                accessibilityLabel="Pet photo preview"
-              />
-            ) : petType === 'dog' ? (
-              <icons.dogIcon width={80} height={80} />
+            {isEditMode ? (
+              <>
+                Edit{' '}
+                <Text
+                  style={[
+                    styles.foldTitleAccent,
+                    { fontFamily: fontFamilies.extrabold },
+                  ]}
+                >
+                  your pet.
+                </Text>
+              </>
             ) : (
-              <icons.catIcon width={80} height={80} />
+              <>
+                Tell us about{' '}
+                <Text
+                  style={[
+                    styles.foldTitleAccent,
+                    { fontFamily: fontFamilies.extrabold },
+                  ]}
+                >
+                  your pet.
+                </Text>
+              </>
             )}
-            <View style={styles.cameraBadge} pointerEvents="none">
-              <MaterialIcon
-                kind="camera"
-                size={18}
-                color={colors.text.inverse}
-              />
-            </View>
-          </Pressable>
-        </View>
+          </Text>
+          <AppText style={[textStyles.marketingLead, styles.foldSubtitle]}>
+            Let&apos;s get the basics down so we can tailor their experience.
+          </AppText>
 
-        <View style={styles.formSection}>
-          <View>
-            <Text
-              style={[styles.fieldLabel, { fontFamily: fontFamilies.semibold }]}
-            >
-              Pet Name
-            </Text>
-            <TextInput
+          <View style={styles.entitlementWrap}>
+            <PetFormPsychologyChrome
+              isEditMode={isEditMode}
+              petsUsed={petsUsed}
+              maxPets={entitlement.maxPets}
+              planLabel={planDisplayLabel(entitlement.plan)}
+              progress={formProgress}
+              lockedInCount={lockedInCount}
+              petDisplayName={trimmedName}
+            />
+          </View>
+
+          <View style={styles.heroSection}>
+            <PetPhotoHero
+              photoSource={photoHeroSource}
+              placeholder={photoHeroPlaceholder}
+              caption={photoCaption}
+              onPressCamera={openPhotoOptions}
+              accessibilityLabel={
+                photoFilled ? 'Change pet photo' : 'Add pet photo'
+              }
+            />
+          </View>
+
+          <View style={styles.foldField}>
+            <PetFieldLabel>PET NAME</PetFieldLabel>
+            <PetFilledTextInput
               value={name}
               onChangeText={setName}
               placeholder="Enter your pet's name"
-              placeholderTextColor={colors.input.placeholder}
-              style={[styles.textInput, { fontFamily: fontFamilies.regular }]}
+              autoCapitalize="words"
             />
           </View>
 
-          <View>
-            <Text
-              style={[styles.sectionLabel, { fontFamily: fontFamilies.bold }]}
-            >
-              Pet Type
-            </Text>
-            <View style={styles.petTypeGrid}>
-              {petTypes.map(type => {
-                const selected = petType === type.key;
-                return (
-                  <Pressable
-                    key={type.key}
-                    style={[
-                      styles.petTypeCard,
-                      selected ? styles.petTypeCardSelected : undefined,
-                    ]}
-                    onPress={() => setPetType(type.key)}
-                  >
-                    <Text
-                      style={[
-                        styles.petTypeLabel,
-                        { fontFamily: fontFamilies.bold },
-                      ]}
-                    >
-                      {type.label}
-                    </Text>
-                    {selected ? (
-                      <View style={styles.checkBadge}>
-                        <MaterialIcon
-                          kind="check"
-                          size={12}
-                          color={colors.text.inverse}
-                        />
-                      </View>
-                    ) : null}
-                  </Pressable>
-                );
-              })}
-            </View>
+          <View style={styles.foldField}>
+            <PetFieldLabel>SPECIES</PetFieldLabel>
+            <PetSpeciesCards
+              options={SPECIES_OPTIONS}
+              value={petType}
+              onChange={next => setPetType(next as PetType)}
+            />
           </View>
 
-          <View>
-            <Text
-              style={[styles.fieldLabelSm, { fontFamily: fontFamilies.semibold }]}
-            >
-              Date of birth {!isEditMode ? '(required)' : '(optional)'}
-            </Text>
+          <View style={styles.foldField}>
+            <PetFieldLabel>DATE OF BIRTH</PetFieldLabel>
             <DatePickerField
               value={dob}
               onChange={setDob}
@@ -921,7 +903,9 @@ export const AddPetScreen: React.FC = () => {
               maximumDate={today}
             />
           </View>
+        </View>
 
+        <View style={styles.formSection}>
           <View>
             <Text
               style={[
@@ -1588,36 +1572,24 @@ export const AddPetScreen: React.FC = () => {
               {error}
             </Text>
           ) : null}
-          <Pressable
-            style={[
-              styles.ctaButton,
-              { backgroundColor: colors.accent },
-              !canSave || isSaving ? styles.ctaButtonDisabled : undefined,
-            ]}
-            onPress={handleSave}
-            disabled={!canSave || isSaving}
-            accessibilityRole="button"
-          >
-            {isSaving ? (
-              <ActivityIndicator color={colors.text.inverse} />
-            ) : (
-              <icons.paws width={18} height={18} />
-            )}
-            <Text style={[styles.ctaText, { fontFamily: fontFamilies.bold }]}>
-              {isSaving
-                ? 'Saving...'
-                : isEditMode
-                ? 'Save changes'
-                : 'Save pet'}
-            </Text>
-          </Pressable>
+          <PetPrimaryCta
+            title={isEditMode ? 'Save Changes' : 'Complete Profile'}
+            onPress={() => {
+              handleSave().catch(() => undefined);
+            }}
+            loading={isSaving}
+            disabled={!canSave}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 };
 
-const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
+const createStyles = (
+  colors: ReturnType<typeof useTheme>['colors'],
+  fontSizes: ReturnType<typeof useTheme>['fontSizes'],
+) =>
   StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -1635,10 +1607,9 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xs,
     backgroundColor: colors.backgroundAlt,
   },
   headerIconButton: {
@@ -1648,77 +1619,40 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 18,
-    lineHeight: 24,
-    letterSpacing: -0.27,
+  foldSection: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    gap: spacing.xl,
+  },
+  foldTitle: {
+    fontSize: fontSizes['2xl'],
+    lineHeight: lineHeights['2xl'],
     color: colors.text.heading,
-    paddingRight: 48,
+    textAlign: 'center',
+    letterSpacing: -0.6,
   },
-  headerRightSpacer: {
-    width: 0,
-  },
-  avatarSection: {
-    alignItems: 'center',
-    marginTop: 8,
-    paddingHorizontal: 24,
-    gap: 24,
-  },
-  profileImageWrap: {
-    width: 128,
-    height: 128,
-    borderRadius: 64,
-    borderWidth: 4,
-    borderColor: colors.brandTint20,
-    overflow: 'visible',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  petTypeDisplayText: {
-    fontSize: 36,
+  foldTitleAccent: {
     color: colors.accent,
   },
-  profileImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    margin: 0,
+  foldSubtitle: {
+    marginTop: -spacing.md,
+    color: colors.text.body,
+    textAlign: 'center',
   },
-  cameraBadge: {
-    position: 'absolute',
-    right: -2,
-    bottom: -2,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  entitlementWrap: {
+    marginTop: -spacing.sm,
+  },
+  heroSection: {
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: colors.backgroundAlt,
-    backgroundColor: colors.accent,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
   },
-  uploadTitle: {
-    fontSize: 22,
-    lineHeight: 28,
-    letterSpacing: -0.33,
-    color: colors.text.heading,
-  },
-  uploadSubtitle: {
-    fontSize: 16,
-    lineHeight: 24,
+  foldField: {
+    gap: spacing.sm,
   },
   formSection: {
-    marginTop: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 24,
+    marginTop: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    gap: spacing.xl,
   },
   fieldLabel: {
     fontSize: 16,
@@ -1788,56 +1722,6 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
   genderChipText: { fontSize: 14, lineHeight: 18, color: colors.text.secondary },
   genderChipTextSelected: { color: colors.text.inverse },
   genderClear: { paddingTop: 10, alignSelf: 'flex-start' },
-  petTypeGrid: {
-    flexDirection: 'row',
-    gap: 12,
-    justifyContent: 'space-between',
-  },
-  petTypeCard: {
-    flex: 1,
-    height: 56,
-    borderRadius: 12,
-    overflow: 'visible',
-    borderWidth: 2,
-    borderColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface,
-  },
-  petTypeCardSelected: {
-    borderColor: colors.accent,
-  },
-  petTypeImage: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    padding: 16,
-  },
-  petTypeImageInner: {
-    borderRadius: 12,
-  },
-  petTypeOverlay: {
-    ...StyleSheet.absoluteFill,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-  },
-  petTypeLabel: {
-    zIndex: 2,
-    fontSize: 14,
-    lineHeight: 20,
-    color: colors.text.heading,
-  },
-  checkBadge: {
-    position: 'absolute',
-    right: 8,
-    top: 8,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 3,
-  },
   errorText: {
     marginTop: 10,
     color: colors.danger,
@@ -1846,31 +1730,10 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
   },
   ctaContainer: {
     marginTop: 'auto',
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 32,
-  },
-  ctaButton: {
-    height: 56,
-    borderRadius: 12,
-    backgroundColor: colors.accent,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    shadowColor: colors.accent,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  ctaButtonDisabled: {
-    opacity: 0.45,
-  },
-  ctaText: {
-    color: colors.text.inverse,
-    fontSize: 16,
-    lineHeight: 24,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing['3xl'],
+    gap: spacing.sm,
   },
 });
 
