@@ -58,6 +58,20 @@ describe('selectCandidates', () => {
     );
     expect(selected.map(c => c.id)).toEqual(['b']);
   });
+
+  it('prefers sooner fireAt within same priority', () => {
+    const sooner = new Date('2030-06-01T12:00:00');
+    const later = new Date('2030-06-01T13:00:00');
+    const selected = selectCandidates(
+      [
+        cand({ id: 'later', priority: 2, fireAt: later }),
+        cand({ id: 'sooner', priority: 2, fireAt: sooner }),
+      ],
+      'p1',
+      1,
+    );
+    expect(selected.map(c => c.id)).toEqual(['sooner']);
+  });
 });
 
 describe('planAndApply', () => {
@@ -80,17 +94,53 @@ describe('planAndApply', () => {
       ],
     };
     const t = new Date('2030-06-01T12:00:00');
+    const winner = cand({ id: 'reminder-new-due', priority: 1, fireAt: t });
     const result = await planAndApply({
-      candidates: [cand({ id: 'reminder-new-due', priority: 1, fireAt: t })],
+      candidates: [winner],
       activePetId: 'p1',
       service,
       budget: 64,
     });
+    expect(result.selected).toEqual([winner]);
     expect(result.scheduledIds).toEqual(['reminder-new-due']);
-    expect(cancelled).toEqual(
-      expect.arrayContaining(['reminder-old-due', 'routine-feed-p1']),
-    );
+    expect(result.cancelledIds).toEqual(['reminder-old-due', 'routine-feed-p1']);
+    expect(result.droppedByKind).toEqual({});
+    expect(cancelled).toEqual(['reminder-old-due', 'routine-feed-p1']);
     expect(cancelled).not.toContain('pawfect-notification-test');
     expect(scheduled).toEqual(['reminder-new-due']);
+  });
+
+  it('counts dropped candidates by kind when over budget', async () => {
+    const service: NotificationService = {
+      scheduleNotification: async () => {},
+      displayImmediateNotification: async () => {},
+      cancelNotification: async () => {},
+      cancelAllNotifications: async () => {},
+      getTriggerNotificationIds: async () => [],
+    };
+    const sooner = new Date('2030-06-01T12:00:00');
+    const later = new Date('2030-06-01T13:00:00');
+    const winner = cand({
+      id: 'reminder-sooner',
+      kind: 'reminder',
+      priority: 1,
+      fireAt: sooner,
+    });
+    const loser = cand({
+      id: 'health-later',
+      kind: 'smartHealth',
+      priority: 1,
+      fireAt: later,
+    });
+    const result = await planAndApply({
+      candidates: [winner, loser],
+      activePetId: 'p1',
+      service,
+      budget: 1,
+    });
+    expect(result.selected).toEqual([winner]);
+    expect(result.scheduledIds).toEqual(['reminder-sooner']);
+    expect(result.cancelledIds).toEqual([]);
+    expect(result.droppedByKind).toEqual({ smartHealth: 1 });
   });
 });
