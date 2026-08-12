@@ -53,6 +53,9 @@ type HealthRecordListSection = {
 
 const CATEGORIES: CategoryFilter[] = ['Vaccination', 'Deworming'];
 
+const categoryTabLabel = (category: CategoryFilter): string =>
+  category === 'Vaccination' ? 'Shots' : 'Worm medicine';
+
 export const HealthRecordScreen: React.FC = () => {
   const navigation = useNavigation<HealthRecordsRootNavigation>();
   const route = useRoute<RouteProp<HealthStackParamList, 'HealthRecords'>>();
@@ -491,8 +494,7 @@ export const HealthRecordScreen: React.FC = () => {
     return () => clearTimeout(timer);
   }, [successMessage]);
 
-  const logPrimaryCtaLabel =
-    selectedCategory === 'Vaccination' ? 'Log Vaccination' : 'Log Deworming';
+  const logPrimaryCtaLabel = 'I did this';
 
   const listSections = useMemo((): HealthRecordListSection[] => {
     const sections: HealthRecordListSection[] = [
@@ -678,7 +680,7 @@ export const HealthRecordScreen: React.FC = () => {
               <Pressable
                 key={category}
                 accessibilityRole="button"
-                accessibilityLabel={`Filter: ${category}`}
+                accessibilityLabel={`Filter: ${categoryTabLabel(category)}`}
                 onPress={handleCategoryPress}
                 style={[
                   styles.tab,
@@ -701,7 +703,7 @@ export const HealthRecordScreen: React.FC = () => {
                     },
                   ]}
                 >
-                  {category}
+                  {categoryTabLabel(category)}
                 </AppText>
               </Pressable>
             );
@@ -1046,6 +1048,22 @@ export const HealthRecordScreen: React.FC = () => {
               </View>
             ) : null}
 
+            <View style={{ marginTop: space('xl') }}>
+              <AppText
+                style={[
+                  textStyles.caption,
+                  {
+                    color: colors.text.subdued,
+                    fontFamily: fontFamilies.medium,
+                    textAlign: 'center',
+                  },
+                ]}
+              >
+                These are reminders to help you remember. Your vet decides what
+                is right for your pet.
+              </AppText>
+            </View>
+
             <View style={{ marginTop: space('2xl') }}>
               <PremiumUpgradeCard />
             </View>
@@ -1195,7 +1213,7 @@ export const HealthRecordScreen: React.FC = () => {
                   { color: colors.text.heading, fontFamily: fontFamilies.bold },
                 ]}
               >
-                Skip dose
+                Skip for now
               </AppText>
               <AppText
                 style={[
@@ -1203,8 +1221,8 @@ export const HealthRecordScreen: React.FC = () => {
                   { color: colors.text.secondary, marginTop: space('xs') },
                 ]}
               >
-                Tell us why so we can adjust the schedule. This is saved to your
-                history.
+                Tell us why in a few words. We will move the next worm medicine
+                day.
               </AppText>
               <TextInput
                 accessibilityLabel="Skip reason"

@@ -31,9 +31,8 @@ describe('SmartHealthScheduleUtils', () => {
     const vaccinations = records.filter(r => r.type === 'vaccination');
     const deworming = records.filter(r => r.type === 'deworming');
 
-    expect(vaccinations.some(r => r.name === 'DHPP (4th/optional puppy dose)')).toBe(
-      true,
-    );
+    expect(vaccinations.some(r => r.name === 'DHPP (3rd)')).toBe(true);
+    expect(vaccinations.some(r => r.key === 'DHPP_4_OPTIONAL')).toBe(false);
     expect(vaccinations.some(r => r.family === 'Leptospirosis')).toBe(true);
     expect(vaccinations.some(r => r.key === 'RABIES_1')).toBe(true);
     expect(deworming.length).toBeGreaterThan(3);
@@ -48,6 +47,7 @@ describe('SmartHealthScheduleUtils', () => {
       petType: 'cat',
       dateOfBirth: '2020-01-01',
       lastVaccinationDate: '2026-01-10',
+      lastRabiesDate: '2026-01-10',
       lastDewormingDate: '2026-01-12',
       region: 'US',
       lifestyleType: 'indoor',
@@ -55,9 +55,34 @@ describe('SmartHealthScheduleUtils', () => {
     });
 
     expect(records.length).toBeGreaterThan(2);
-    expect(records.find(r => r.key === 'RABIES_1_BOoster')).toBeUndefined();
+    expect(records.find(r => r.key === 'RABIES_1')).toBeUndefined();
     expect(records.find(r => r.name === 'Rabies Booster')?.dueDate).toBe('2029-01-10');
-    expect(records.find(r => r.type === 'deworming' && r.recurrenceType === 'quarterly')?.dueDate).toBe('2026-02-11');
+    expect(records.find(r => r.name === 'Rabies Booster')?.recurrenceIntervalMonths).toBe(
+      36,
+    );
+    expect(records.some(r => r.type === 'deworming')).toBe(true);
+  });
+
+  it('uses recurrenceIntervalMonths when creating next yearly vaccine dose', () => {
+    const source: SmartHealthRecord = {
+      id: 'rabies-booster',
+      userId: 'u1',
+      petId: 'p1',
+      type: 'vaccination',
+      key: 'RABIES_1_BOOSTER',
+      family: 'Rabies',
+      name: 'Rabies Booster',
+      dueDate: '2027-03-26',
+      completedDate: null,
+      status: 'upcoming',
+      recurrenceType: 'yearly',
+      recurrenceIntervalMonths: 36,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+    const next = createNextRecurringRecord(source, '2027-03-26');
+    expect(next?.dueDate).toBe('2030-03-26');
+    expect(next?.recurrenceIntervalMonths).toBe(36);
   });
 
   it('does not create a parallel recurring row when completing deworming', () => {

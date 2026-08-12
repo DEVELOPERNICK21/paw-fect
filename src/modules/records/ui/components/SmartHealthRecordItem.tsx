@@ -40,7 +40,7 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = React
     onEditDate,
     onSkipDose,
     variant = 'default',
-    primaryActionLabel = 'Mark as Done',
+    primaryActionLabel = 'I did this',
   }) => {
   const theme = useTheme();
   const { colors, fontFamilies, textStyles } = theme;
@@ -87,16 +87,16 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = React
 
   const statusLabel =
     record.status === 'completed'
-      ? 'COMPLETED'
+      ? 'DONE'
       : record.status === 'missed'
-      ? 'MISSED'
+      ? 'LATE — DO THIS SOON'
       : record.status === 'skipped'
       ? 'SKIPPED'
       : record.status === 'overdue'
-      ? 'OVERDUE'
+      ? 'LATE — DO THIS SOON'
       : record.status === 'locked'
-      ? 'SCHEDULED'
-      : 'DUE SOON';
+      ? 'WAIT — EARLIER SHOT FIRST'
+      : 'COMING UP';
 
   const detailLine = (() => {
     if (record.status === 'completed') {
@@ -219,7 +219,7 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = React
           {onEditDate ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Reschedule ${record.name}`}
+              accessibilityLabel={`Change date for ${record.name}`}
               onPress={handleEditDate}
               style={({ pressed }) => [
                 styles.actionBtn,
@@ -236,14 +236,14 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = React
                   },
                 ]}
               >
-                Reschedule
+                Change date
               </AppText>
             </Pressable>
           ) : null}
           {record.type === 'deworming' && onSkipDose ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Skip ${record.name}`}
+              accessibilityLabel={`Skip for now ${record.name}`}
               onPress={handleSkipDose}
               style={({ pressed }) => [
                 styles.actionBtn,
@@ -260,7 +260,7 @@ export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = React
                   },
                 ]}
               >
-                Skip dose
+                Skip for now
               </AppText>
             </Pressable>
           ) : null}

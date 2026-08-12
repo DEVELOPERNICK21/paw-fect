@@ -102,6 +102,8 @@ export interface SmartHealthRecord {
   status: SmartHealthRecordStatus;
   isOptional?: boolean;
   recurrenceType: SmartHealthRecurrenceType;
+  /** Months until the next dose after completion (for yearly/region-aware series). */
+  recurrenceIntervalMonths?: number;
   cadence?: DewormingCadence; // for deworming: every_14_days, monthly, every_2_months, every_3_months
   riskLevel?: 'low' | 'medium' | 'high';
   lifestyleTriggers?: string[];

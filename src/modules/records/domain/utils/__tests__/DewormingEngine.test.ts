@@ -159,6 +159,30 @@ describe('DewormingEngine', () => {
       ];
       expect(dates).toContain('2026-06-10');
     });
+
+    it('uses outdoor 2-month spacing on first bootstrap ideal adult grid', () => {
+      const result = engine.execute({
+        petType: 'dog',
+        dateOfBirth: '2020-01-01',
+        lifestyle: 'outdoor',
+        todayDate: '2026-07-01',
+      });
+      const adultDates = [
+        ...(result.nextStep ? [result.nextStep.dueDate] : []),
+        ...result.upcoming.map(u => u.dueDate),
+      ].filter(d => d >= '2026-07-01');
+      expect(adultDates.length).toBeGreaterThanOrEqual(2);
+      // Adult start for DOB 2020-01-01 is 2020-07-01; from today horizon, spacing is 2 months.
+      const first = adultDates[0];
+      const second = adultDates[1];
+      expect(first).toBeTruthy();
+      expect(second).toBeTruthy();
+      // 2 calendar months apart (not 3)
+      const [y0, m0] = first!.split('-').map(Number);
+      const [y1, m1] = second!.split('-').map(Number);
+      const monthDelta = (y1 - y0) * 12 + (m1 - m0);
+      expect(monthDelta).toBe(2);
+    });
   });
 
   describe('execute - symptom trigger', () => {

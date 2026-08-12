@@ -188,6 +188,15 @@ export const usePetStore = create<PetState>((set, get) => ({
     if (!result.ok) {
       return { success: false, error: result.errorMessage };
     }
+
+    const dateOfBirth = result.pet.dob?.trim();
+    if (!dateOfBirth) {
+      return {
+        success: false,
+        error: "Add your pet's birthday first",
+      };
+    }
+
     await get().createPet(result.pet);
     await get().setActivePet(result.pet.id);
 
@@ -195,7 +204,7 @@ export const usePetStore = create<PetState>((set, get) => ({
     await getPetCoordinationPorts().bootstrapPetHealthSchedule({
       petId: result.pet.id,
       petType: result.pet.type,
-      dateOfBirth: result.pet.dob ?? new Date().toISOString().slice(0, 10),
+      dateOfBirth,
       region: result.pet.region,
       lifestyleType: result.pet.lifestyle?.type,
       lifestyleRiskLevel: result.pet.lifestyle?.riskLevel,
@@ -228,6 +237,13 @@ export const usePetStore = create<PetState>((set, get) => ({
           'This pet is view-only on your current plan. Upgrade or remove another pet to edit.',
       };
     }
+    const dateOfBirth = pet.dob?.trim();
+    if (!dateOfBirth) {
+      return {
+        success: false,
+        error: "Add your pet's birthday first",
+      };
+    }
     const next: Pet = {
       ...pet,
       updatedAt: new Date().toISOString(),
@@ -243,11 +259,11 @@ export const usePetStore = create<PetState>((set, get) => ({
       });
       void pc.cancelDailyRoutineNotificationsForPet(updated.id).catch(() => {});
 
-      // Re-bootstrap health schedule if DOB changed
+      // Re-bootstrap health schedule when pet profile is saved
       await getPetCoordinationPorts().bootstrapPetHealthSchedule({
         petId: updated.id,
         petType: updated.type,
-        dateOfBirth: updated.dob ?? new Date().toISOString().slice(0, 10),
+        dateOfBirth,
         region: updated.region,
         lifestyleType: updated.lifestyle?.type,
         lifestyleRiskLevel: updated.lifestyle?.riskLevel,

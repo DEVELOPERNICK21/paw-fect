@@ -551,6 +551,7 @@ const buildIdealMilestoneDates = (
   dob: string,
   horizonEnd: string,
   petType: DewormPetType,
+  lifestyle: LifestyleType,
 ): string[] => {
   const rule = getDewormingRule(petType);
   const dates: string[] = [];
@@ -561,7 +562,7 @@ const buildIdealMilestoneDates = (
     dates.push(addMonths(dob, m));
   }
   let adultCursor = adultStartDate(dob, rule);
-  const adultStep = adultIntervalMonthsFromLifestyle(petType, 'indoor');
+  const adultStep = adultIntervalMonthsFromLifestyle(petType, lifestyle);
   const cap = horizonEnd > adultCursor ? horizonEnd : addMonths(dob, 36);
   while (adultCursor <= cap) {
     dates.push(adultCursor);
@@ -709,7 +710,7 @@ const collectActionableItems = (
   completions: Set<string>,
 ): ScheduleItem[] => {
   const horizonEnd = addMonths(today, 36);
-  const ideal = buildIdealMilestoneDates(dob, horizonEnd, petType);
+  const ideal = buildIdealMilestoneDates(dob, horizonEnd, petType, lifestyle);
   const sortedC = [...completions].sort((a, b) => a.localeCompare(b));
   const lastC = sortedC.length ? sortedC[sortedC.length - 1] : null;
 

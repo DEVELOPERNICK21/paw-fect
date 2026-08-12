@@ -79,24 +79,24 @@ export function buildSmartHealthNotificationCandidates(
     {
       id: idD2,
       slot: 'd2',
-      title: `${record.name} due soon`,
-      body: `${record.name} is due in 2 days. Tap to open health records.`,
+      title: `${record.name} coming soon`,
+      body: `${record.name} is in 2 days. Open the app when you are ready.`,
       scheduledDate: twoDaysBefore,
     },
     {
       id: idDue,
       slot: 'due',
-      title: `${record.name} is due today`,
-      body: 'Please complete this health task today.',
+      title: `${record.name} is today`,
+      body: 'Reminder: check this care task when you can. Ask your vet if unsure.',
       scheduledDate: dueDate,
     },
     {
       id: idOverdue,
       slot: 'overdue',
-      title: `${record.name} is overdue`,
+      title: `${record.name} is late`,
       body: isOverdueContext
-        ? 'This dose was missed — open the app to get back on track.'
-        : 'This health task is now overdue.',
+        ? 'This care day passed — open the app to catch up when you can.'
+        : 'This care task is now late. Open the app when you can.',
       scheduledDate: overdueDate,
     },
   ];

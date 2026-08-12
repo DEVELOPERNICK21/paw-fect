@@ -1,50 +1,51 @@
 /**
  * Plain-language labels for vaccine / health plan names shown to pet owners.
  * Storage keys and template `family` values stay technical; UI maps at render time.
+ * Aim: an 8–10 year old pet parent can understand the next action.
  */
 
 const FAMILY_PLAIN: Record<string, string> = {
-  DHPP: 'Core dog vaccine (distemper, hepatitis, parvovirus, parainfluenza)',
-  FVRCP: 'Core cat vaccine (viral rhinotracheitis, calicivirus, panleukopenia)',
-  Rabies: 'Rabies vaccine — required; protects against a fatal disease',
-  Leptospirosis: 'Leptospirosis vaccine — protects against a bacterial infection from water/urine',
-  Bordetella: 'Kennel cough vaccine — helps prevent highly contagious cough',
-  Lyme: 'Lyme disease vaccine — for tick-borne infection (not used in most of India)',
-  FeLV: 'Feline leukemia vaccine — protects outdoor cats from FeLV',
+  DHPP: 'Main body vaccine for dogs',
+  FVRCP: 'Main body vaccine for cats',
+  Rabies: 'Rabies shot — very important. Ask your vet.',
+  Leptospirosis: 'Lepto shot — helps if your dog goes near dirty water',
+  Bordetella: 'Kennel cough shot — helps stop a bad cough',
+  Lyme: 'Lyme shot — for tick bites (rarely needed in India)',
+  FeLV: 'Cat leukemia shot — for outdoor or at-risk cats',
 };
 
 const NAME_HINTS: Array<{ match: RegExp; plain: string }> = [
   {
     match: /^dhpp/i,
-    plain: 'Core dog vaccine (DHPP) — distemper, hepatitis, parvovirus, parainfluenza',
+    plain: 'Main body vaccine for dogs',
   },
   {
     match: /^fvrcp/i,
-    plain: 'Core cat vaccine (FVRCP) — flu-like viruses and panleukopenia',
+    plain: 'Main body vaccine for cats',
   },
   {
     match: /^rabies/i,
-    plain: 'Rabies vaccine — required; protects against a fatal disease',
+    plain: 'Rabies shot — very important. Ask your vet.',
   },
   {
     match: /^lepto/i,
-    plain: 'Leptospirosis vaccine — bacterial infection from dirty water or urine',
+    plain: 'Lepto shot — helps if your dog goes near dirty water',
   },
   {
     match: /^bordetella|kennel cough/i,
-    plain: 'Kennel cough vaccine — helps prevent a contagious cough',
+    plain: 'Kennel cough shot — helps stop a bad cough',
   },
   {
     match: /^lyme/i,
-    plain: 'Lyme vaccine — tick-borne disease (rarely needed in India)',
+    plain: 'Lyme shot — for tick bites (rarely needed in India)',
   },
   {
     match: /^felv|feline leukemia/i,
-    plain: 'Feline leukemia (FeLV) vaccine — for outdoor or high-risk cats',
+    plain: 'Cat leukemia shot — for outdoor or at-risk cats',
   },
   {
     match: /deworm/i,
-    plain: 'Deworming — clears intestinal worms that can make pets sick',
+    plain: 'Worm medicine',
   },
 ];
 
@@ -73,7 +74,23 @@ export function plainVaccineDisplayName(name: string): string {
       /\s*(\((?:1st|2nd|3rd|4th|Start|Booster)\)|\bBooster\b.*)$/i,
     );
     if (suffixMatch) {
-      return `${plain} ${suffixMatch[1].trim()}`;
+      const suffix = suffixMatch[1].trim();
+      const ordinal = suffix.match(/(1st|2nd|3rd|4th)/i)?.[1]?.toLowerCase();
+      if (ordinal) {
+        const n =
+          ordinal === '1st'
+            ? '1'
+            : ordinal === '2nd'
+            ? '2'
+            : ordinal === '3rd'
+            ? '3'
+            : '4';
+        return `${plain} (shot ${n})`;
+      }
+      if (/booster/i.test(suffix)) {
+        return `${plain} — booster`;
+      }
+      return `${plain} ${suffix}`;
     }
     return plain;
   }
@@ -87,28 +104,28 @@ export function plainVaccineDisplayName(name: string): string {
 export function vaccineProtectionHint(nameOrFamily: string): string | undefined {
   const key = nameOrFamily.trim();
   if (/dhpp/i.test(key)) {
-    return 'Protects against distemper, hepatitis, parvovirus, and parainfluenza';
+    return 'Helps protect against common dog illnesses';
   }
   if (/fvrcp/i.test(key)) {
-    return 'Protects against common cat viruses and panleukopenia';
+    return 'Helps protect against common cat illnesses';
   }
   if (/rabies/i.test(key)) {
-    return 'Protects against rabies — a fatal disease; required in India';
+    return 'Ask your vet — this shot is very important';
   }
   if (/lepto/i.test(key)) {
-    return 'Protects against leptospirosis from contaminated water or urine';
+    return 'Helps if your pet is near dirty water or urine';
   }
   if (/bordetella|kennel cough/i.test(key)) {
-    return 'Helps prevent kennel cough (highly contagious)';
+    return 'Helps stop a cough that spreads easily';
   }
   if (/lyme/i.test(key)) {
-    return 'For tick-borne Lyme disease — uncommon in most of India';
+    return 'For tick bites — rarely needed in most of India';
   }
   if (/felv|leukemia/i.test(key)) {
-    return 'Protects against feline leukemia virus';
+    return 'Helps outdoor cats stay safer from leukemia virus';
   }
   if (/deworm/i.test(key)) {
-    return 'Clears worms that can cause weight loss, diarrhoea, or worse';
+    return 'Clears worms that can make your pet sick';
   }
   return undefined;
 }

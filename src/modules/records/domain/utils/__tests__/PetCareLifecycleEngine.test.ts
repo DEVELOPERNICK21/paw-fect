@@ -102,7 +102,60 @@ describe('PetCareLifecycleEngine', () => {
     expect(dedupedFamilies.size).toBe(deduped.length);
   });
 
-  it('creates 6-month core booster and region-based rabies booster interval', () => {
+  it('schedules last required puppy DHPP at 16+ weeks of age', () => {
+    const records = engine.generateInitialPlan({
+      userId: 'u1',
+      petId: 'puppy-dhpp',
+      context: {
+        petType: 'dog',
+        dateOfBirth: '2026-01-01',
+        nowDate: '2026-01-15',
+        region: 'IN',
+        lifestyleType: 'indoor',
+        lifestyleRiskLevel: 'low',
+      },
+    });
+    const requiredDhpp = records
+      .filter(
+        r =>
+          r.family === 'DHPP' &&
+          !r.isOptional &&
+          (r.key === 'DHPP_1' || r.key === 'DHPP_2' || r.key === 'DHPP_3'),
+      )
+      .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+    const lastRequired = requiredDhpp[requiredDhpp.length - 1];
+    expect(lastRequired?.dueDate).toBe('2026-04-23'); // DOB + 16 weeks
+    expect(lastRequired?.isOptional).toBeFalsy();
+    expect(records.some(r => r.key === 'DHPP_4_OPTIONAL')).toBe(false);
+  });
+
+  it('schedules last required kitten FVRCP at 16+ weeks of age', () => {
+    const records = engine.generateInitialPlan({
+      userId: 'u1',
+      petId: 'kitten-fvrcp',
+      context: {
+        petType: 'cat',
+        dateOfBirth: '2026-01-01',
+        nowDate: '2026-01-15',
+        region: 'IN',
+        lifestyleType: 'indoor',
+        lifestyleRiskLevel: 'low',
+      },
+    });
+    const required = records
+      .filter(
+        r =>
+          r.family === 'FVRCP' &&
+          !r.isOptional &&
+          (r.key === 'FVRCP_1' || r.key === 'FVRCP_2' || r.key === 'FVRCP_3'),
+      )
+      .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+    const lastRequired = required[required.length - 1];
+    expect(lastRequired?.dueDate).toBe('2026-04-23'); // DOB + 16 weeks
+    expect(records.some(r => r.key === 'FVRCP_4_OPTIONAL')).toBe(false);
+  });
+
+  it('creates 6-month core booster; first rabies booster uses boosterAfterMonths (12)', () => {
     const records = engine.generateInitialPlan({
       userId: 'u2',
       petId: 'p4',
@@ -114,11 +167,52 @@ describe('PetCareLifecycleEngine', () => {
         lifestyleType: 'indoor',
         lifestyleRiskLevel: 'low',
       },
-      lastVaccinationDate: '2026-03-01',
     });
     expect(records.some(r => r.name.includes('Booster (6-month)'))).toBe(true);
-    const rabies = records.find(r => r.name === 'Rabies Booster');
-    expect(rabies?.dueDate).toBe('2027-03-01');
+    const rabiesFirst = records.find(r => r.key === 'RABIES_1');
+    const rabiesBooster = records.find(r => r.name === 'Rabies Booster');
+    // First dose at 12 weeks (2026-03-26); first booster +12 months.
+    expect(rabiesFirst?.dueDate).toBe('2026-03-26');
+    expect(rabiesBooster?.dueDate).toBe('2027-03-26');
+    expect(rabiesBooster?.recurrenceIntervalMonths).toBe(12);
+  });
+
+  it('schedules US first rabies booster at 12 months, with 36-month recurrence after', () => {
+    const records = engine.generateInitialPlan({
+      userId: 'u2',
+      petId: 'us-puppy',
+      context: {
+        petType: 'dog',
+        dateOfBirth: '2026-01-01',
+        nowDate: '2026-02-01',
+        region: 'US',
+        lifestyleType: 'indoor',
+        lifestyleRiskLevel: 'low',
+      },
+    });
+    const rabiesFirst = records.find(r => r.key === 'RABIES_1');
+    const rabiesBooster = records.find(r => r.name === 'Rabies Booster');
+    expect(rabiesFirst?.dueDate).toBe('2026-03-26');
+    expect(rabiesBooster?.dueDate).toBe('2027-03-26');
+    expect(rabiesBooster?.recurrenceIntervalMonths).toBe(36);
+  });
+
+  it('does not anchor rabies booster to unrelated lastVaccinationDate', () => {
+    const records = engine.generateInitialPlan({
+      userId: 'u2',
+      petId: 'adult-no-rabies',
+      context: {
+        petType: 'dog',
+        dateOfBirth: '2024-01-01',
+        nowDate: '2026-03-01',
+        region: 'IN',
+        lifestyleType: 'indoor',
+        lifestyleRiskLevel: 'low',
+      },
+      lastVaccinationDate: '2026-01-15',
+    });
+    expect(records.find(r => r.key === 'RABIES_1')).toBeUndefined();
+    expect(records.find(r => r.name === 'Rabies Booster')).toBeUndefined();
   });
 
   it('uses booster-only core path for adults with vaccination history', () => {
@@ -134,6 +228,7 @@ describe('PetCareLifecycleEngine', () => {
         lifestyleRiskLevel: 'low',
       },
       lastVaccinationDate: '2026-01-15',
+      lastRabiesDate: '2026-01-15',
     });
 
     const dhppRows = records.filter(r => r.family === 'DHPP');

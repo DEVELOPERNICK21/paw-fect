@@ -110,6 +110,7 @@ const toSmartRecord = (params: {
   category: 'core' | 'non-core';
   recurrenceType: SmartHealthRecord['recurrenceType'];
   cadence?: SmartHealthRecord['cadence'];
+  recurrenceIntervalMonths?: number;
   riskLevel?: SmartHealthRecord['riskLevel'];
   lifestyleTriggers?: string[];
   doseNumber?: number;
@@ -137,6 +138,7 @@ const toSmartRecord = (params: {
     completedDate: null,
     status: isLocked ? 'locked' : status,
     recurrenceType: params.recurrenceType,
+    recurrenceIntervalMonths: params.recurrenceIntervalMonths,
     cadence: params.cadence,
     riskLevel: params.riskLevel,
     lifestyleTriggers: params.lifestyleTriggers,
@@ -345,6 +347,7 @@ export class PetCareLifecycleEngine {
           nowDate: context.nowDate,
           category: 'core',
           recurrenceType: 'yearly',
+          recurrenceIntervalMonths: 12,
           stage: 'adult',
           contextLabel: 'Booster due (history available)',
         }),
@@ -383,6 +386,7 @@ export class PetCareLifecycleEngine {
             nowDate: context.nowDate,
             category: 'core',
             recurrenceType: 'yearly',
+            recurrenceIntervalMonths: 12,
             stage,
           }),
         );
@@ -415,30 +419,37 @@ export class PetCareLifecycleEngine {
       );
     }
 
-    // FIX Bug 3: use lastRabiesDate specifically, not lastVaccinationDate
+    // First booster after primary = boosterAfterMonths (typically 12).
+    // Later repeats use regionOverrides (IN/OTHER 12, US/EU 36).
+    // Never anchor rabies to an unrelated lastVaccinationDate.
     const rabiesRepeatMonths =
       template.rabies.regionOverrides?.[context.region] ??
       template.rabies.repeatIntervalMonthsAfterBooster;
+    const hasCompletedRabiesHistory = Boolean(input.lastRabiesDate);
+    const rabiesBoosterMonths = hasCompletedRabiesHistory
+      ? rabiesRepeatMonths
+      : template.rabies.boosterAfterMonths;
     const rabiesBoosterAnchor =
-      input.lastRabiesDate ??
-      rabiesFirstDue ??
-      input.lastVaccinationDate ??
-      context.nowDate;
+      input.lastRabiesDate ?? rabiesFirstDue ?? null;
 
-    records.push(
-      toSmartRecord({
-        userId,
-        petId,
-        type: 'vaccination',
-        key: `${template.rabies.key}_BOOSTER`,
-        family: template.rabies.family,
-        name: 'Rabies Booster',
-        dueDate: addMonths(rabiesBoosterAnchor, rabiesRepeatMonths),
-        nowDate: context.nowDate,
-        category: 'core',
-        recurrenceType: 'yearly',
-      }),
-    );
+    if (rabiesBoosterAnchor) {
+      records.push(
+        toSmartRecord({
+          userId,
+          petId,
+          type: 'vaccination',
+          key: `${template.rabies.key}_BOOSTER`,
+          family: template.rabies.family,
+          name: 'Rabies Booster',
+          dueDate: addMonths(rabiesBoosterAnchor, rabiesBoosterMonths),
+          nowDate: context.nowDate,
+          category: 'core',
+          recurrenceType: 'yearly',
+          // After this booster is given, subsequent repeats use region interval.
+          recurrenceIntervalMonths: rabiesRepeatMonths,
+        }),
+      );
+    }
 
     // FIX Bug 2: non-core vaccines for adults anchor to nowDate
     const nonCoreAnchor: 'dob' | 'now' = stage === 'adult' ? 'now' : 'dob';

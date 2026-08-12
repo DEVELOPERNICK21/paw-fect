@@ -158,9 +158,11 @@ export function createNextRecurringRecord(
         : completed.cadence === 'every_2_months'
         ? addMonths(completedDate, 2)
         : addMonths(completedDate, 3)
-      : completed.recurrenceType === 'yearly'
-      ? addMonths(completedDate, 12)
-      : addMonths(completedDate, 3);
+      : addMonths(
+          completedDate,
+          completed.recurrenceIntervalMonths ??
+            (completed.recurrenceType === 'yearly' ? 12 : 3),
+        );
   const nowIso = new Date().toISOString();
   return {
     id:
@@ -180,6 +182,7 @@ export function createNextRecurringRecord(
     status: resolveSmartStatus(dueDate, null, nowIso.slice(0, 10)),
     isOptional: completed.isOptional,
     recurrenceType: completed.recurrenceType,
+    recurrenceIntervalMonths: completed.recurrenceIntervalMonths,
     cadence: completed.cadence,
     riskLevel: completed.riskLevel,
     lifestyleTriggers: completed.lifestyleTriggers,
