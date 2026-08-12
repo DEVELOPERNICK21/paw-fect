@@ -97,7 +97,7 @@ export const OnboardingScreen: React.FC = () => {
   const primaryDisabled = step === TOTAL_STEPS - 1 && careInterests.length === 0;
   const progressPercent = ((step + 1) / TOTAL_STEPS) * 100;
   const stepLabel = useMemo(
-    () => `${step + 1} OF ${TOTAL_STEPS}`,
+    () => `Step ${step + 1} of ${TOTAL_STEPS}`,
     [step],
   );
   const primaryLabel =
@@ -122,6 +122,8 @@ export const OnboardingScreen: React.FC = () => {
             onPress={step === 0 ? handleSkip : () => setStep(prev => prev - 1)}
             style={styles.navIconButton}
             hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={step === 0 ? 'Close onboarding' : 'Go back'}
           >
             <Text style={[styles.navIcon, { color: colors.text.heading }]}>
               {step === 0 ? '✕' : '←'}
@@ -144,7 +146,11 @@ export const OnboardingScreen: React.FC = () => {
           alwaysBounceVertical={false}
         >
           {step > 0 ? (
-            <View style={styles.progressSection}>
+            <View
+              style={styles.progressSection}
+              accessibilityRole="summary"
+              accessibilityLabel={stepLabel}
+            >
               <View style={styles.progressHeader}>
                 <Text
                   style={[
@@ -160,7 +166,7 @@ export const OnboardingScreen: React.FC = () => {
                     { fontFamily: fontFamilies.bold },
                   ]}
                 >
-                  {stepLabel}
+                  {stepLabel.toUpperCase()}
                 </Text>
               </View>
               <View style={styles.progressTrack}>
@@ -643,6 +649,9 @@ export const OnboardingScreen: React.FC = () => {
               { backgroundColor: colors.accent },
               primaryDisabled ? styles.primaryButtonDisabled : null,
             ]}
+            accessibilityRole="button"
+            accessibilityLabel={primaryLabel.replace('→', '').trim()}
+            accessibilityState={{ disabled: primaryDisabled }}
           >
             <Text
               style={[
@@ -669,7 +678,12 @@ export const OnboardingScreen: React.FC = () => {
               ))}
             </View>
           ) : (
-            <Pressable onPress={handleSkip} hitSlop={8}>
+            <Pressable
+              onPress={handleSkip}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Skip for now"
+            >
               <Text
                 style={[
                   styles.skipText,
