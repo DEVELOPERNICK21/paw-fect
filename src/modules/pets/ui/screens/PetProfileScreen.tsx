@@ -28,6 +28,7 @@ import { spacing } from '../../../../shared/theme/spacing';
 import { radius as radiusTokens } from '../../../../shared/theme/radius';
 import { icons } from '../../../../shared/assets/icons';
 
+import { useShallow } from 'zustand/react/shallow';
 import { useHomeDashboardStore } from '../../../app/store/homeDashboardStore';
 import { usePetStore } from '../../store/petStore';
 import { useRecordStore } from '../../../records/store/recordStore';
@@ -50,21 +51,26 @@ export const PetProfileScreen: React.FC = () => {
 
   const activePet = usePetStore(s => s.activePet);
   const pets = usePetStore(s => s.pets);
-  const setActivePet = usePetStore(s => s.setActivePet);
-  const loadPets = usePetStore(s => s.loadPets);
   const loading = usePetStore(s => s.loading);
   const loadError = usePetStore(s => s.loadError);
+  const setActivePet = usePetStore.getState().setActivePet;
+  const loadPets = usePetStore.getState().loadPets;
 
-  const requestDashboardRefresh = useHomeDashboardStore(
-    s => s.requestDashboardRefresh,
-  );
+  const requestDashboardRefresh = useHomeDashboardStore.getState().requestDashboardRefresh;
   const dashboardVm = useHomeDashboardStore(s => s.viewModel);
-
-  const records = useRecordStore(s => s.records);
-  const loadRecords = useRecordStore(s => s.loadRecords);
 
   const effectivePet = dashboardVm?.activePet ?? activePet;
   const petId = effectivePet?.id ?? null;
+
+  const recordsForPet = useRecordStore(
+    useShallow(s => {
+      if (!petId) return [];
+      return s.records
+        .filter(r => r.petId === petId)
+        .sort((a, b) => b.date.localeCompare(a.date));
+    })
+  );
+  const loadRecords = useRecordStore.getState().loadRecords;
 
   const [recordsLoading, setRecordsLoading] = useState(false);
 
@@ -136,22 +142,13 @@ export const PetProfileScreen: React.FC = () => {
   const todayCare = dashboardVm?.todayCare ?? [];
   const todayCareLoading = dashboardVm == null;
 
-  const recordsForPet: HealthRecord[] = useMemo(() => {
-    if (!petId) {
-      return [];
-    }
-    return records
-      .filter(r => r.petId === petId)
-      .sort((a, b) => b.date.localeCompare(a.date));
-  }, [records, petId]);
-
   const weightValue = useMemo(() => {
     if (!petId) {
       return '—';
     }
-    const derived = getLatestWeightDisplayForPet(records, petId);
+    const derived = getLatestWeightDisplayForPet(recordsForPet, petId);
     return (dashboardVm?.weightLine ?? derived) || '—';
-  }, [petId, records, dashboardVm?.weightLine]);
+  }, [petId, recordsForPet, dashboardVm?.weightLine]);
 
   const birthdayValue = formatPetBirthdayLabel(effectivePet?.dob);
 
