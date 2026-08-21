@@ -6,7 +6,7 @@ import { AppText } from '../../../../shared/components/AppText';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { isScheduleProUser } from '../../domain/models/ScheduleFeatureGates';
 import { isDayFullyComplete } from '../../domain/utils/wellnessCompletion';
-import { useSubscriptionStore } from '../../../subscription/store/subscriptionStore';
+import { useAppSession } from '../../../../shared/session/useAppSession';
 import { useScheduleStore } from '../../store/scheduleStore';
 import { useWellnessStore } from '../../store/wellnessStore';
 import { ActiveBlockCard } from './ActiveBlockCard';
@@ -34,8 +34,8 @@ export const TodayCareSection: React.FC<TodayCareSectionProps> = ({
   onUpgrade,
 }) => {
   const { colors, spacing, textStyles } = useTheme();
-  const entitlement = useSubscriptionStore(state => state.entitlement);
-  const isPro = isScheduleProUser(entitlement.plan);
+  const { plan } = useAppSession();
+  const isPro = isScheduleProUser(plan);
   const schedule = useScheduleStore(state => state.schedule);
   const loading = useScheduleStore(state => state.loading);
   const error = useScheduleStore(state => state.error);

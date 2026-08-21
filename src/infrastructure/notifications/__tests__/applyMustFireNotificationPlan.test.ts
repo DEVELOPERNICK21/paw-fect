@@ -9,6 +9,7 @@ jest.mock('../../analytics/analytics', () => ({
 import type { DailyCareBlock } from '../../../modules/schedule/domain/models/DailyCareBlock';
 import type { DailySchedule } from '../../../modules/schedule/domain/models/DailySchedule';
 import type { SmartHealthRecord } from '../../../modules/records/domain/models/SmartHealthRecord';
+import { buildScheduleNotificationCandidates } from '../../../modules/schedule/data/notifications/scheduleNotificationSync';
 import { trackEvent } from '../../analytics/analytics';
 import type { NotificationService } from '../notificationService';
 import { applyMustFireNotificationPlan } from '../applyMustFireNotificationPlan';
@@ -96,7 +97,12 @@ describe('applyMustFireNotificationPlan', () => {
     const result = await applyMustFireNotificationPlan({
       reminders: [reminder],
       healthRecords: [baseHealthRecord()],
-      schedules: [{ schedule, blocks: schedule.blocks, petSpecies: 'dog' }],
+      scheduleCandidates: buildScheduleNotificationCandidates(
+        schedule,
+        schedule.blocks,
+        'dog',
+        NOW_MS,
+      ),
       activePetId: 'pet-1',
       service,
       nowMs: NOW_MS,
@@ -144,7 +150,7 @@ describe('applyMustFireNotificationPlan', () => {
     const result = await applyMustFireNotificationPlan({
       reminders,
       healthRecords,
-      schedules: [],
+      scheduleCandidates: [],
       activePetId: 'pet-1',
       service,
       nowMs: NOW_MS,

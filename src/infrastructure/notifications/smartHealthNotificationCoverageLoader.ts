@@ -1,27 +1,8 @@
-import { getAppSessionUserId } from '../../shared/session/appSessionPorts';
-import { recordsComposition } from '../../modules/records/recordsComposition';
-import { usePetStore } from '../../modules/pets/store/petStore';
-import {
-  computeSmartHealthNotificationCoverage,
-  type SmartHealthNotificationCoverage,
-} from './smartHealthNotificationSelection';
+import { getNotificationFeaturePorts } from './notificationFeaturePorts';
+import type { SmartHealthNotificationCoverage } from './smartHealthNotificationSelection';
 
 export async function loadSmartHealthNotificationCoverage(): Promise<SmartHealthNotificationCoverage | null> {
-  const userId = getAppSessionUserId();
-  const pets = usePetStore.getState().pets;
-  if (userId == null || pets.length === 0) {
-    return null;
-  }
-
-  const records = (
-    await Promise.all(
-      pets.map(pet =>
-        recordsComposition.getSmartHealthRecords.execute(userId, pet.id),
-      ),
-    )
-  ).flat();
-
-  return computeSmartHealthNotificationCoverage(records);
+  return getNotificationFeaturePorts().loadSmartHealthCoverage();
 }
 
 export function formatSmartHealthNotificationCoverage(

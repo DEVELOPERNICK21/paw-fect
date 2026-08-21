@@ -28,36 +28,35 @@ export const HomeAttentionBanner: React.FC<HomeAttentionBannerProps> = React.mem
         style={[
           styles.wrap,
           {
-            borderRadius: radius.lg,
+            borderRadius: radius.sm,
             borderWidth: 1,
-            borderColor: colors.danger + '55',
-            backgroundColor: colors.danger + '14',
-            padding: spacing.md,
-            gap: spacing.xs,
+            borderColor: colors.borderSubtle,
+            backgroundColor: colors.dangerSurface,
+            paddingVertical: spacing.sm,
+            paddingHorizontal: spacing.md,
+            minHeight: 44,
           },
         ]}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-          <MaterialIcon name="info" size={22} color={colors.danger} />
-          <View style={{ flex: 1, gap: 2 }}>
+        <View style={[styles.row, { gap: spacing.sm }]}>
+          <View style={[styles.statusDot, { backgroundColor: colors.danger }]} />
+          <View style={styles.copy}>
             <AppText
               style={[
-                textStyles.subtitle,
+                textStyles.caption,
                 { color: colors.text.heading, fontFamily: fontFamilies.bold },
               ]}
             >
               {banner.headline}
             </AppText>
             <AppText
-              style={[
-                textStyles.caption,
-                { color: colors.text.secondary, fontFamily: fontFamilies.medium },
-              ]}
+              style={[textStyles.footer, { color: colors.text.secondary }]}
+              numberOfLines={1}
             >
               {banner.subline}
             </AppText>
           </View>
-          <MaterialIcon name="chevron_right" size={22} color={colors.text.subdued} />
+          <MaterialIcon name="chevron_right" size={18} color={colors.text.subdued} />
         </View>
       </Pressable>
     );
@@ -67,5 +66,21 @@ export const HomeAttentionBanner: React.FC<HomeAttentionBannerProps> = React.mem
 HomeAttentionBanner.displayName = 'HomeAttentionBanner';
 
 const styles = StyleSheet.create({
-  wrap: {},
+  wrap: {
+    justifyContent: 'center',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  copy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
 });

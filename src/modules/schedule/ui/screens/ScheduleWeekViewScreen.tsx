@@ -9,7 +9,7 @@ import { AppText } from '../../../../shared/components/AppText';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { isScheduleProUser } from '../../domain/models/ScheduleFeatureGates';
-import { useSubscriptionStore } from '../../../subscription/store/subscriptionStore';
+import { useAppSession } from '../../../../shared/session/useAppSession';
 import { useScheduleStore } from '../../store/scheduleStore';
 
 type WeekRoute = RouteProp<PetsStackParamList, 'ScheduleWeekView'>;
@@ -18,8 +18,8 @@ export const ScheduleWeekViewScreen: React.FC = () => {
   const navigation = useNavigation<PetProfileRootNavigation>();
   const route = useRoute<WeekRoute>();
   const { colors, spacing, radius, textStyles, fontFamilies } = useTheme();
-  const entitlement = useSubscriptionStore(state => state.entitlement);
-  const isPro = isScheduleProUser(entitlement.plan);
+  const { plan } = useAppSession();
+  const isPro = isScheduleProUser(plan);
   const weekScores = useScheduleStore(state => state.weekScores);
   const loadWeekScores = useScheduleStore(state => state.loadWeekScores);
 

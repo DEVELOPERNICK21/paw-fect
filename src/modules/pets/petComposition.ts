@@ -8,6 +8,7 @@ import {
   cancelDailyRoutineForPet,
   syncDailyRoutineNotificationsForPets,
 } from '../../infrastructure/notifications/dailyCareNotifications';
+import { pickPetPhoto } from './data/photos/pickPetPhoto';
 import { createFirestorePetPhotoEncoder } from './data/photos/FirestorePetPhotoEncoder';
 import { createPetRepository } from './data/repositories/PetRepositoryImpl';
 import type { Pet } from './domain/models/Pet';
@@ -89,6 +90,7 @@ export const petComposition = {
   setActivePet: new SetActivePet(repository),
   createPetProfile: new CreatePetProfile(),
   preparePetPhoto: new PreparePetPhoto(petPhotoEncoder),
+  pickPetPhoto,
   syncDailyRoutineNotifications: async (pets: Pet[]): Promise<void> => {
     const granted = await ensureNotificationsReady();
     if (!granted) {

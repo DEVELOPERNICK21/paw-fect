@@ -14,7 +14,7 @@ export interface HomeHeaderProps {
   theme: Theme;
 }
 
-const SIDE = spacingTokens['2xl'] + spacingTokens.sm;
+const SIDE = spacingTokens['2xl'] + spacingTokens.md;
 
 export const HomeHeader: React.FC<HomeHeaderProps> = React.memo(
   ({ title = 'Pawsoul', onPressMenu, onPressProfile, theme }) => {
@@ -25,9 +25,9 @@ export const HomeHeader: React.FC<HomeHeaderProps> = React.memo(
         style={[
           styles.wrap,
           {
-            borderBottomColor: colors.brandTint12,
+            borderBottomColor: colors.borderSubtle,
             backgroundColor: colors.tabBarBackground,
-            paddingHorizontal: spacing.md * 1.7,
+            paddingHorizontal: spacing.lg,
           },
         ]}
       >
@@ -41,14 +41,16 @@ export const HomeHeader: React.FC<HomeHeaderProps> = React.memo(
                 style={[
                   styles.iconBtn,
                   {
-                    borderRadius: radius.md,
-                    backgroundColor: colors.brandTint12,
+                    borderRadius: radius.sm,
+                    backgroundColor: colors.surface,
+                    borderWidth: 1,
+                    borderColor: colors.borderSubtle,
                     width: SIDE,
                     height: SIDE,
                   },
                 ]}
               >
-                <MaterialIcon name="menu" size={22} color={colors.accent} />
+                <MaterialIcon name="menu" size={22} color={colors.text.secondary} />
               </Pressable>
             ) : (
               <View style={{ width: SIDE, height: SIDE }} />
@@ -75,14 +77,16 @@ export const HomeHeader: React.FC<HomeHeaderProps> = React.memo(
               style={[
                 styles.iconBtn,
                 {
-                  borderRadius: radius.md,
-                  backgroundColor: colors.brandTint12,
+                  borderRadius: radius.sm,
+                  backgroundColor: colors.surface,
+                  borderWidth: 1,
+                  borderColor: colors.borderSubtle,
                   width: SIDE,
                   height: SIDE,
                 },
               ]}
             >
-              <MaterialIcon name="person" size={22} color={colors.accent} />
+              <MaterialIcon name="person" size={22} color={colors.text.secondary} />
             </Pressable>
           </View>
         </View>
@@ -94,7 +98,9 @@ export const HomeHeader: React.FC<HomeHeaderProps> = React.memo(
 HomeHeader.displayName = 'HomeHeader';
 
 const styles = StyleSheet.create({
-  wrap: {},
+  wrap: {
+    borderBottomWidth: 1,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

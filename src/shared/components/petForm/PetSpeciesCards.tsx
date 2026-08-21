@@ -18,7 +18,7 @@ export interface PetSpeciesCardsProps {
   onChange: (id: string) => void;
 }
 
-const SPECIES_ICON_SIZE = 40;
+const SPECIES_ICON_SIZE = 22;
 
 const SpeciesIcon: React.FC<{ kind: PetSpeciesOption['kind'] }> = ({
   kind,
@@ -50,24 +50,25 @@ export const PetSpeciesCards: React.FC<PetSpeciesCardsProps> = ({
         },
         card: {
           flex: 1,
-          minHeight: 96,
-          borderRadius: radius.lg,
+          minHeight: 48,
+          flexDirection: 'row',
+          borderRadius: radius.md,
           borderWidth: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          paddingVertical: spacing.md,
-          paddingHorizontal: spacing.sm,
+          paddingVertical: spacing.sm,
+          paddingHorizontal: spacing.md,
+          columnGap: spacing.sm,
         },
         cardSelected: {
           backgroundColor: colors.accent,
           borderColor: colors.accent,
         },
         cardIdle: {
-          backgroundColor: colors.surface,
+          backgroundColor: colors.background,
           borderColor: colors.borderSubtle,
         },
         label: {
-          marginTop: spacing.sm,
           fontFamily: fontFamilies.semibold,
         },
         labelSelected: {
@@ -79,12 +80,12 @@ export const PetSpeciesCards: React.FC<PetSpeciesCardsProps> = ({
       }),
     [
       colors.accent,
+      colors.background,
       colors.borderSubtle,
       colors.text.inverse,
-      colors.surface,
       colors.text.heading,
       fontFamilies.semibold,
-      radius.lg,
+      radius.md,
       spacing.md,
       spacing.sm,
     ],

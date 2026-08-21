@@ -1,14 +1,17 @@
 import { InteractionManager } from 'react-native';
 import { getCrashlytics, setUserId } from '@react-native-firebase/crashlytics';
 
-import { useAuthStore } from '../../modules/auth/store/authStore';
+import {
+  getAppSessionUserId,
+  subscribeAppSession,
+} from '../../shared/session/appSessionPorts';
 
 let lastSyncedUserId: string | null | undefined;
 let subscribed = false;
 
 function syncCrashlyticsUserId(): void {
   try {
-    const id = useAuthStore.getState().user?.id ?? null;
+    const id = getAppSessionUserId();
     if (id === lastSyncedUserId) {
       return;
     }
@@ -23,7 +26,7 @@ function syncCrashlyticsUserId(): void {
 }
 
 /**
- * Binds Crashlytics user id to auth state. Call once after the app shell mounts —
+ * Binds Crashlytics user id to session. Call once after the app shell mounts —
  * not at module load (native bridge may not be ready during import).
  */
 export function registerCrashlyticsUserSync(): void {
@@ -33,6 +36,6 @@ export function registerCrashlyticsUserSync(): void {
   subscribed = true;
   InteractionManager.runAfterInteractions(() => {
     syncCrashlyticsUserId();
-    useAuthStore.subscribe(syncCrashlyticsUserId);
+    subscribeAppSession(syncCrashlyticsUserId);
   });
 }

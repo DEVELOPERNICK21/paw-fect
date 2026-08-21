@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 
 import { trackEvent } from '../../../infrastructure/analytics/analytics';
-import { createOnboardingDraftDataSource } from '../data/onboarding/OnboardingDraftDataSource';
 import type {
   OnboardingDraft,
   OnboardingPhase,
@@ -12,9 +11,8 @@ import {
   createDefaultOnboardingDraft,
   setPhase as setDraftPhase,
 } from '../domain/onboarding/onboardingDraftReducers';
-import { useSettingsStore } from '../../settings/store/settingsStore';
-
-const dataSource = createOnboardingDraftDataSource();
+import { onboardingComposition } from '../onboardingComposition';
+import { getOnboardingSettingsPort } from './onboardingCoordinationPorts';
 
 export type OnboardingDraftReducer = (draft: OnboardingDraft) => OnboardingDraft;
 
@@ -36,7 +34,7 @@ export interface OnboardingDraftState {
 }
 
 const persistDraft = async (draft: OnboardingDraft): Promise<void> => {
-  await dataSource.saveDraft(draft);
+  await onboardingComposition.saveOnboardingDraft.execute(draft);
 };
 
 export const useOnboardingDraftStore = create<OnboardingDraftState>((set, get) => ({
@@ -44,10 +42,9 @@ export const useOnboardingDraftStore = create<OnboardingDraftState>((set, get) =
 
   hydrate: async () => {
     try {
-      const draft = await dataSource.getDraft();
+      const draft = await onboardingComposition.getOnboardingDraft.execute();
       set({ draft });
     } catch (error) {
-      // eslint-disable-next-line no-console
       console.error('[onboardingDraftStore] hydrate error', error);
     }
   },
@@ -56,7 +53,6 @@ export const useOnboardingDraftStore = create<OnboardingDraftState>((set, get) =
     try {
       await persistDraft(get().draft);
     } catch (error) {
-      // eslint-disable-next-line no-console
       console.error('[onboardingDraftStore] save error', error);
     }
   },
@@ -88,36 +84,14 @@ export const useOnboardingDraftStore = create<OnboardingDraftState>((set, get) =
   completeFunnel: async () => {
     try {
       const draft = get().draft;
-      const { careInterests } = draft;
-
-      const currentSettings = useSettingsStore.getState().settings;
-      if (!currentSettings) {
-        // eslint-disable-next-line no-console
-        console.error(
-          '[onboardingDraftStore] completeFunnel error',
-          'settings not loaded',
-        );
-        return;
-      }
-
       const onboardingProfile = buildOnboardingProfile(draft);
-
-      await useSettingsStore.getState().updateSettings({
-        ...currentSettings,
-        careInterests: [...careInterests],
-        onboardingCompleted: true,
-        onboardingProfile,
-      });
-
-      const updatedSettings = useSettingsStore.getState().settings;
-      if (
-        updatedSettings?.onboardingCompleted !== true ||
-        !updatedSettings.onboardingProfile
-      ) {
-        // updateSettings swallows storage errors internally, so a failed
-        // write leaves onboardingCompleted false without throwing. Keep the
-        // draft intact so the user can retry instead of losing their answers.
-        // eslint-disable-next-line no-console
+      const persisted = await getOnboardingSettingsPort().persistOnboardingCompletion(
+        {
+          careInterests: [...draft.careInterests],
+          onboardingProfile,
+        },
+      );
+      if (!persisted) {
         console.error(
           '[onboardingDraftStore] completeFunnel error',
           'settings update did not persist onboarding profile',
@@ -130,20 +104,18 @@ export const useOnboardingDraftStore = create<OnboardingDraftState>((set, get) =
         paywallOutcome: onboardingProfile.paywallOutcome,
       });
 
-      await dataSource.clearDraft();
+      await onboardingComposition.clearOnboardingDraft.execute();
       set({ draft: createDefaultOnboardingDraft() });
     } catch (error) {
-      // eslint-disable-next-line no-console
       console.error('[onboardingDraftStore] completeFunnel error', error);
     }
   },
 
   clear: async () => {
     try {
-      await dataSource.clearDraft();
+      await onboardingComposition.clearOnboardingDraft.execute();
       set({ draft: createDefaultOnboardingDraft() });
     } catch (error) {
-      // eslint-disable-next-line no-console
       console.error('[onboardingDraftStore] clear error', error);
     }
   },

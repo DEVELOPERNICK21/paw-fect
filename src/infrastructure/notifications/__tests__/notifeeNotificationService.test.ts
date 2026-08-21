@@ -1,14 +1,6 @@
 import notifee from '@notifee/react-native';
 import { Platform } from 'react-native';
 
-jest.mock('../../../modules/settings/store/settingsStore', () => ({
-  useSettingsStore: {
-    getState: () => ({
-      settings: { notificationsEnabled: true },
-    }),
-  },
-}));
-
 jest.mock('../../logging/startupLog', () => ({
   startupLog: jest.fn(),
 }));

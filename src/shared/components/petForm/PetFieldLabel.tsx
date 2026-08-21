@@ -9,19 +9,18 @@ export interface PetFieldLabelProps {
 }
 
 export const PetFieldLabel: React.FC<PetFieldLabelProps> = ({ children }) => {
-  const { colors, spacing, textStyles, fontFamilies } = useTheme();
+  const { colors, textStyles, fontFamilies } = useTheme();
 
   const styles = useMemo(
     () =>
       StyleSheet.create({
         label: {
-          marginBottom: spacing.sm,
           color: colors.text.secondary,
           textTransform: 'uppercase',
           fontFamily: fontFamilies.semibold,
         },
       }),
-    [colors.text.secondary, fontFamilies.semibold, spacing.sm],
+    [colors.text.secondary, fontFamilies.semibold],
   );
 
   return (

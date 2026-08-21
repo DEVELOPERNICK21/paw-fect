@@ -3,8 +3,8 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { trackEvent } from '../../../../infrastructure/analytics/analytics';
 import { PaywallScreen } from '../../../subscription/ui/screens/PaywallScreen';
-import { useSubscriptionStore } from '../../../subscription/store/subscriptionStore';
 import { useTheme } from '../../../../shared/hooks/useTheme';
+import { useAppSession } from '../../../../shared/session/useAppSession';
 import { buildCarePlanSummary } from '../../domain/onboarding/buildCarePlanSummary';
 import { useOnboardingDraftStore } from '../../store/onboardingDraftStore';
 
@@ -24,10 +24,8 @@ export const OnboardingPaywallHost: React.FC = () => {
   const draft = useOnboardingDraftStore(state => state.draft);
   const update = useOnboardingDraftStore(state => state.update);
   const setPhase = useOnboardingDraftStore(state => state.setPhase);
-  const entitlementSource = useSubscriptionStore(
-    state => state.entitlement.source,
-  );
-  const serverSynced = useSubscriptionStore(state => state.serverSynced);
+  const { entitlementSource, entitlementServerSynced: serverSynced } =
+    useAppSession();
   const { colors } = useTheme();
 
   const summary = useMemo(() => buildCarePlanSummary(draft), [draft]);

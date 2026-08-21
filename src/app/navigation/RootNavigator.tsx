@@ -218,6 +218,7 @@ export const RootNavigator: React.FC = () => {
         ) {
           void useSubscriptionStore.getState().refreshBootstrap();
           void loadReminders();
+          void loadPets().catch(() => {});
           void useSmartHealthRecordStore.getState().processPendingSync();
           scheduleDeferredNotificationResync(800);
         }
@@ -232,6 +233,7 @@ export const RootNavigator: React.FC = () => {
       sub.remove();
     };
   }, [
+    loadPets,
     loadReminders,
     processPasswordResetQueue,
     refreshProfile,

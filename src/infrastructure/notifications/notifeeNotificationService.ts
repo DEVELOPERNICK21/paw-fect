@@ -23,7 +23,7 @@ import type {
   NotificationService,
 } from './notificationService';
 import { emitNotificationFeedEvent } from './notificationFeedEvents';
-import { useSettingsStore } from '../../modules/settings/store/settingsStore';
+import { areAppSessionNotificationsEnabled } from '../../shared/session/appSessionPorts';
 import { safeToIsoString } from '../../shared/utils/calendarDate';
 
 function normalizeData(
@@ -47,8 +47,7 @@ const androidBrandedAppearance = {
 
 export class NotifeeNotificationService implements NotificationService {
   async scheduleNotification(payload: NotificationPayload): Promise<void> {
-    const notificationsEnabled =
-      useSettingsStore.getState().settings?.notificationsEnabled ?? true;
+    const notificationsEnabled = areAppSessionNotificationsEnabled();
     if (!notificationsEnabled) {
       return;
     }
@@ -149,8 +148,7 @@ export class NotifeeNotificationService implements NotificationService {
   async displayImmediateNotification(
     payload: ImmediateNotificationPayload,
   ): Promise<void> {
-    const notificationsEnabled =
-      useSettingsStore.getState().settings?.notificationsEnabled ?? true;
+    const notificationsEnabled = areAppSessionNotificationsEnabled();
     if (!notificationsEnabled) {
       return;
     }

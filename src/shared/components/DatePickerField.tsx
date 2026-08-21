@@ -49,6 +49,8 @@ export interface DatePickerFieldProps {
   minimumDate?: Date;
   maximumDate?: Date;
   disabled?: boolean;
+  /** Recessed fill for fields sitting on an elevated card. */
+  inset?: boolean;
   rightIconName?: Parameters<typeof MaterialIcon>[0]['name'];
 }
 
@@ -60,6 +62,7 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = React.memo(
     minimumDate,
     maximumDate,
     disabled = false,
+    inset = false,
     rightIconName = 'calendar_today',
   }) => {
     const { colors, radius, spacing, textStyles, fontFamilies } = useTheme();
@@ -102,7 +105,7 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = React.memo(
           style={[
             styles.field,
             {
-              backgroundColor: colors.surface,
+              backgroundColor: inset ? colors.background : colors.surface,
               borderColor: colors.borderSubtle,
               borderRadius: radius.md,
               opacity: disabled ? 0.6 : 1,

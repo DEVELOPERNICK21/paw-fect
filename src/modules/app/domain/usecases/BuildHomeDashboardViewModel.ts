@@ -8,6 +8,7 @@ import type {
   HomeDashboardNextMilestone,
   HomeDashboardTodayCareItem,
   HomeDashboardWeekCareItem,
+  HomeDashboardActionHealthItem,
   HomeDashboardViewModel,
 } from '../models/HomeDashboardViewModel';
 import {
@@ -102,6 +103,20 @@ function latestRecordDateForPet(
   return sorted[0]?.date;
 }
 
+function lastLoggedDateLineForPet(
+  records: HealthRecord[],
+  petId: string,
+): string {
+  const latestDate = latestRecordDateForPet(records, petId);
+  if (latestDate == null) {
+    return '—';
+  }
+  return parseLocalDay(reminderDateKey(latestDate)).toLocaleDateString(
+    undefined,
+    { month: 'short', day: 'numeric' },
+  );
+}
+
 function lastActivityLineForPet(
   records: HealthRecord[],
   petId: string,
@@ -111,10 +126,7 @@ function lastActivityLineForPet(
     return 'No logs yet';
   }
   const latest = [...petRecords].sort((a, b) => b.date.localeCompare(a.date))[0]!;
-  const short = parseLocalDay(reminderDateKey(latest.date)).toLocaleDateString(
-    undefined,
-    { month: 'short', day: 'numeric' },
-  );
+  const short = lastLoggedDateLineForPet(records, petId);
   return `${latest.title} · ${short}`;
 }
 
@@ -152,6 +164,42 @@ function buildAttentionBanner(
     headline: n === 1 ? '1 item needs attention' : `${n} items need attention`,
     subline: 'Review health records, vaccines, and reminders.',
   };
+}
+
+function buildActionHealthItems(
+  records: SmartHealthRecord[],
+  now: Date,
+): HomeDashboardActionHealthItem[] {
+  return records
+    .filter(
+      r =>
+        (r.type === 'vaccination' || r.type === 'deworming') &&
+        (r.status === 'overdue' ||
+          r.status === 'upcoming' ||
+          r.status === 'missed'),
+    )
+    .slice()
+    .sort((a, b) => {
+      const aOverdue = a.status === 'overdue' || a.status === 'missed';
+      const bOverdue = b.status === 'overdue' || b.status === 'missed';
+      if (aOverdue && !bOverdue) {
+        return -1;
+      }
+      if (bOverdue && !aOverdue) {
+        return 1;
+      }
+      return a.dueDate.localeCompare(b.dueDate);
+    })
+    .slice(0, 4)
+    .map(r => ({
+      id: r.id,
+      title: r.name,
+      kind: r.type,
+      dueDateLabel: formatMilestoneDateLong(r.dueDate),
+      countdownLabel: formatMilestoneCountdownBadge(r.dueDate, now),
+      urgency:
+        r.status === 'overdue' || r.status === 'missed' ? 'overdue' : 'upcoming',
+    }));
 }
 
 function buildWeekCarePreview(
@@ -297,6 +345,10 @@ export class BuildHomeDashboardViewModel {
       activePet != null
         ? lastActivityLineForPet(records, activePet.id)
         : '—';
+    const lastLoggedDateLine =
+      activePet != null
+        ? lastLoggedDateLineForPet(records, activePet.id)
+        : '—';
 
     const attentionBanner = buildAttentionBanner(
       todayKey,
@@ -310,6 +362,7 @@ export class BuildHomeDashboardViewModel {
       petReminders,
       petSmartRecords,
     );
+    const actionHealthItems = buildActionHealthItems(petSmartRecords, now);
 
     const weightLine =
       activePet != null
@@ -326,12 +379,14 @@ export class BuildHomeDashboardViewModel {
       nextCareMilestoneLine,
       nextMilestone,
       lastActivityLine,
+      lastLoggedDateLine,
       weightLine,
       activityLine: '—',
       heartLine: '—',
       attentionBanner,
       todayCare,
       weekCarePreview,
+      actionHealthItems,
       lastError,
       isRefreshing,
     };
@@ -350,12 +405,14 @@ export function createLoggedOutHomeDashboardViewModel(): HomeDashboardViewModel 
     nextCareMilestoneLine: '—',
     nextMilestone: null,
     lastActivityLine: '—',
+    lastLoggedDateLine: '—',
     weightLine: '—',
     activityLine: '—',
     heartLine: '—',
     attentionBanner: { show: false, headline: '', subline: '' },
     todayCare: [],
     weekCarePreview: [],
+    actionHealthItems: [],
     lastError: null,
     isRefreshing: false,
   };

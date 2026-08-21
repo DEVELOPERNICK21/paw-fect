@@ -1,6 +1,9 @@
 export { PetFieldLabel } from './PetFieldLabel';
 export type { PetFieldLabelProps } from './PetFieldLabel';
 
+export { PetFormSection } from './PetFormSection';
+export type { PetFormSectionProps } from './PetFormSection';
+
 export {
   PetFilledRow,
   PetFilledTextInput,

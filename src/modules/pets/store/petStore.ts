@@ -12,6 +12,9 @@ import type { Pet } from '../domain/models/Pet';
 import type { PetType } from '../domain/models/Pet';
 import type { PetHealthMilestones } from '../domain/ports/PetHealthCoordinationPort';
 import type { CreatePetProfileResult as CreatePetProfileUseCaseResult } from '../domain/usecases/CreatePetProfile';
+import type { PetPhotoEncodeRequest } from '../domain/ports/PetPhotoEncoder';
+import type { PreparePetPhotoResult } from '../domain/usecases/PreparePetPhoto';
+import type { PetHealthCardViewModel } from '../domain/models/PetHealthCardViewModel';
 
 const pc = petComposition;
 
@@ -67,6 +70,15 @@ export interface PetState {
    * UI uses this for prefilling edit forms; it never inspects records data shapes.
    */
   getLastHealthMilestones: (petId: string) => Promise<PetHealthMilestones>;
+  pickPetPhoto: (
+    source: 'camera' | 'library',
+  ) => Promise<PetPhotoEncodeRequest | null>;
+  preparePetPhoto: (
+    request: PetPhotoEncodeRequest,
+  ) => Promise<PreparePetPhotoResult>;
+  buildHealthCardViewModel: (
+    petId: string,
+  ) => Promise<PetHealthCardViewModel>;
 }
 
 export const usePetStore = create<PetState>((set, get) => ({
@@ -356,5 +368,21 @@ export const usePetStore = create<PetState>((set, get) => ({
       console.error('[petStore] getLastHealthMilestones error', error);
       return {};
     }
+  },
+
+  pickPetPhoto: async source => {
+    return pc.pickPetPhoto(source);
+  },
+
+  preparePetPhoto: async request => {
+    return pc.preparePetPhoto.execute(request);
+  },
+
+  buildHealthCardViewModel: async petId => {
+    const userId = requireUserId();
+    if (!userId) {
+      throw new Error('Please sign in again.');
+    }
+    return pc.buildPetHealthCard(userId, petId);
   },
 }));

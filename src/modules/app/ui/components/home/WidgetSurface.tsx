@@ -10,7 +10,7 @@ type WidgetSurfaceProps = {
 };
 
 /**
- * Clean white widget shell (inspired by launcher-style cards): rounded, soft border, elevation.
+ * Dense dashboard shell: 1px border over shadow, 8px radius, tight padding.
  */
 export function WidgetSurface({
   theme,
@@ -24,12 +24,12 @@ export function WidgetSurface({
       style={[
         styles.outer,
         {
-          borderRadius: radius['2xl'],
+          borderRadius: radius.sm,
           backgroundColor: colors.surface,
           borderWidth: 1,
           borderColor: colors.borderSubtle,
-          padding: spacing.lg,
-          ...shadows.md,
+          padding: spacing.md,
+          ...shadows.sm,
         },
         style,
       ]}

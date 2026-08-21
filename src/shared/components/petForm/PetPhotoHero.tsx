@@ -75,7 +75,7 @@ export const PetPhotoHero: React.FC<PetPhotoHeroProps> = ({
           ...shadows.sm,
         },
         caption: {
-          marginTop: spacing.md,
+          marginTop: spacing.sm,
           color: colors.text.body,
           fontFamily: fontFamilies.medium,
           fontStyle: 'italic',
@@ -91,7 +91,7 @@ export const PetPhotoHero: React.FC<PetPhotoHeroProps> = ({
       fontFamilies.medium,
       radius.round,
       shadows.sm,
-      spacing.md,
+      spacing.sm,
     ],
   );
 

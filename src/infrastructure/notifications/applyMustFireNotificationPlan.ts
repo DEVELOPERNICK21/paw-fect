@@ -1,6 +1,3 @@
-import { buildScheduleNotificationCandidates } from '../../modules/schedule/data/notifications/scheduleNotificationSync';
-import type { DailyCareBlock } from '../../modules/schedule/domain/models/DailyCareBlock';
-import type { DailySchedule } from '../../modules/schedule/domain/models/DailySchedule';
 import type { SmartHealthRecord } from '../../modules/records/domain/models/SmartHealthRecord';
 import { trackEvent } from '../analytics/analytics';
 import { notificationService } from './notificationService';
@@ -11,16 +8,13 @@ import {
 } from './reminderSchedule';
 import { buildSmartHealthCandidatesForRecords } from './smartHealthNotificationSchedule';
 import type { PetNotificationSpecies } from './petNotificationSounds';
+import type { NotificationCandidate } from './notificationCandidate';
 import type { NotificationService } from './notificationService';
 
 export interface MustFirePlanInput {
   reminders: ReminderScheduleInput[];
   healthRecords: SmartHealthRecord[];
-  schedules: Array<{
-    schedule: DailySchedule;
-    blocks: DailyCareBlock[];
-    petSpecies?: PetNotificationSpecies;
-  }>;
+  scheduleCandidates: NotificationCandidate[];
   petSpeciesByPetId?: ReadonlyMap<string, PetNotificationSpecies>;
   activePetId: string | null;
   service?: NotificationService;
@@ -34,7 +28,7 @@ export async function applyMustFireNotificationPlan(
   const {
     reminders,
     healthRecords,
-    schedules,
+    scheduleCandidates,
     petSpeciesByPetId,
     activePetId,
     service = notificationService,
@@ -50,10 +44,6 @@ export async function applyMustFireNotificationPlan(
     healthRecords,
     petSpeciesByPetId,
     nowMs,
-  );
-
-  const scheduleCandidates = schedules.flatMap(({ schedule, blocks, petSpecies }) =>
-    buildScheduleNotificationCandidates(schedule, blocks, petSpecies, nowMs),
   );
 
   const candidates = [

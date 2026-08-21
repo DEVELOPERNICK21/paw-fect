@@ -32,6 +32,16 @@ export interface HomeDashboardNextMilestone {
   kind: 'vaccination' | 'deworming';
 }
 
+/** Vaccination or deworming that still needs a log (overdue, missed, or upcoming). */
+export interface HomeDashboardActionHealthItem {
+  id: string;
+  title: string;
+  kind: 'vaccination' | 'deworming';
+  dueDateLabel: string;
+  countdownLabel: string;
+  urgency: 'overdue' | 'upcoming';
+}
+
 /**
  * Read model for the home dashboard. Built from repository snapshots via BuildHomeDashboardViewModel / ObserveHomeDashboard.
  */
@@ -48,12 +58,15 @@ export interface HomeDashboardViewModel {
   nextMilestone: HomeDashboardNextMilestone | null;
   /** Latest health record one-liner for trust (“what we logged last”). */
   lastActivityLine: string;
+  /** Short date only for the health featured card (e.g. "2 Apr"). */
+  lastLoggedDateLine: string;
   weightLine: string;
   activityLine: string;
   heartLine: string;
   attentionBanner: HomeDashboardAttentionBanner;
   todayCare: HomeDashboardTodayCareItem[];
   weekCarePreview: HomeDashboardWeekCareItem[];
+  actionHealthItems: HomeDashboardActionHealthItem[];
   lastError: string | null;
   isRefreshing: boolean;
 }

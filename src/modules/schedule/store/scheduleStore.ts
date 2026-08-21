@@ -1,8 +1,7 @@
 import { create } from 'zustand';
 
-import { getAppSessionUserId } from '../../../shared/session/appSessionPorts';
+import { getAppSessionPlan, getAppSessionUserId } from '../../../shared/session/appSessionPorts';
 import { getTodayIsoDateLocal } from '../../../shared/utils/calendarDate';
-import { useSubscriptionStore } from '../../subscription/store/subscriptionStore';
 import type { DailySchedule } from '../domain/models/DailySchedule';
 import type { PetSchedulePreferences } from '../domain/models/PetProfile';
 import { isScheduleProUser } from '../domain/models/ScheduleFeatureGates';
@@ -68,9 +67,7 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
       currentSchedule != null && currentSchedule.petId === petId;
     set({ loading: !hasCachedSchedule, error: null });
     try {
-      const isPro = isScheduleProUser(
-        useSubscriptionStore.getState().entitlement.plan,
-      );
+      const isPro = isScheduleProUser(getAppSessionPlan());
       const schedule = await scheduleComposition.buildDailySchedule.execute({
         userId,
         petId,
@@ -204,9 +201,7 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
       return;
     }
     const today = getTodayIsoDateLocal();
-    const isPro = isScheduleProUser(
-      useSubscriptionStore.getState().entitlement.plan,
-    );
+    const isPro = isScheduleProUser(getAppSessionPlan());
     // Ensure today's score is fresh, then read the week from one storage pass.
     await scheduleComposition.buildDailySchedule.execute({
       userId,

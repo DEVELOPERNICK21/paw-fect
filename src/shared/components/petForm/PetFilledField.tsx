@@ -25,7 +25,7 @@ const createFieldStyles = ({ colors, radius, spacing }: ThemeParams) =>
       borderRadius: radius.lg,
       borderWidth: 1,
       borderColor: colors.borderSubtle,
-      backgroundColor: colors.surface,
+      backgroundColor: colors.background,
       paddingHorizontal: spacing.lg,
     },
     accessory: {

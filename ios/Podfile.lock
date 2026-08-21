@@ -5121,7 +5121,7 @@ SPEC CHECKSUMS:
   React-viewtransitionnativemodule: 01530fbfcfb561a8c40258e11ef320d25f951113
   React-webperformancenativemodule: 03d2d86c1605a0b1ecbfb9fb6fb5b15826f27354
   ReactAppDependencyProvider: 0e13d430eadac8a2ef18515a860d5c59df05b475
-  ReactCodegen: ddc99bbc37e9cffcfb4b7121f80c9e682e77361c
+  ReactCodegen: 3df238732b558dd01320d47ed87e653945dd0fc6
   ReactCommon: 00ae3f3b9351312ee73cc8439d8204148084547a
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
   RNDateTimePicker: ea25d20659754bfe1014e0d5905d21dbc18ff705

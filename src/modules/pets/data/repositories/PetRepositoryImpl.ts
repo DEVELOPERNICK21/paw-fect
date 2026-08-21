@@ -1,6 +1,7 @@
 import type { Pet } from '../../domain/models/Pet';
 import { normalizePet } from '../../domain/models/normalizePet';
 import type { PetRepository } from '../../domain/repositories/PetRepository';
+import { mergeLocalAndRemotePets } from '../../domain/utils/mergeLocalAndRemotePets';
 import type { PetRemoteDataSource } from '../datasources/PetRemoteDataSource';
 import { createPetRemoteDataSource } from '../datasources/PetRemoteDataSource';
 import type { PetLocalDataSource } from '../datasources/PetLocalDataSource';
@@ -10,6 +11,10 @@ import type {
   PetQueueEntry,
 } from '../datasources/PetOutboundQueueDataSource';
 import { createPetOutboundQueueDataSource } from '../datasources/PetOutboundQueueDataSource';
+
+function markPetSynced(pet: Pet): Pet {
+  return { ...pet, syncStatus: 'synced' };
+}
 
 export class PetRepositoryImpl implements PetRepository {
   constructor(
@@ -73,8 +78,9 @@ export class PetRepositoryImpl implements PetRepository {
       const created = await this.remote.createPet(entry.pet);
       const normalized = normalizePet(created, userId);
       if (normalized) {
+        const synced = markPetSynced(normalized);
         const current = await this.local.getPets(userId);
-        const next = [...current.filter(p => p.id !== normalized.id), normalized];
+        const next = [...current.filter(p => p.id !== synced.id), synced];
         await this.local.savePets(userId, next);
       }
       return;
@@ -83,8 +89,9 @@ export class PetRepositoryImpl implements PetRepository {
       const updated = await this.remote.updatePet(entry.pet);
       const normalized = normalizePet(updated, userId);
       if (normalized) {
+        const synced = markPetSynced(normalized);
         const current = await this.local.getPets(userId);
-        const next = [...current.filter(p => p.id !== normalized.id), normalized];
+        const next = [...current.filter(p => p.id !== synced.id), synced];
         await this.local.savePets(userId, next);
       }
       return;
@@ -103,17 +110,7 @@ export class PetRepositoryImpl implements PetRepository {
     await this.processOutboundQueue(userId);
 
     const queueEntries = await this.queue.getAll(userId);
-    /** Remote deletes can lag behind local removal; never resurrect pets awaiting server delete. */
-    const pendingDeletePetIds = new Set(
-      queueEntries
-        .filter(e => e.op === 'delete' && typeof e.petId === 'string')
-        .map(e => e.petId as string),
-    );
-
     const localAfter = await this.local.getPets(userId);
-    const pendingIds = new Set(
-      localAfter.filter(p => (p.syncStatus ?? 'synced') !== 'synced').map(p => p.id),
-    );
     try {
       const remoteList = await this.remote.fetchPets();
       const remoteNormalized = remoteList
@@ -121,35 +118,11 @@ export class PetRepositoryImpl implements PetRepository {
         .filter((p): p is Pet => p !== null)
         .filter(p => p.userId === userId);
 
-      // Merge rule:
-      // - keep local pending/failed pets if the same id exists on the server
-      // - keep remote synced pets
-      // - include local pets that remote doesn't know about yet
-      const mergedMap = new Map<string, Pet>();
-      for (const localPet of localAfter) {
-        const isPending = (localPet.syncStatus ?? 'synced') !== 'synced';
-        if (isPending) {
-          mergedMap.set(localPet.id, localPet);
-        }
-      }
-
-      for (const remotePet of remoteNormalized) {
-        if (pendingIds.has(remotePet.id)) {
-          continue;
-        }
-        if (pendingDeletePetIds.has(remotePet.id)) {
-          continue;
-        }
-        mergedMap.set(remotePet.id, remotePet);
-      }
-
-      for (const localPet of localAfter) {
-        if (!mergedMap.has(localPet.id)) {
-          mergedMap.set(localPet.id, localPet);
-        }
-      }
-
-      const merged = Array.from(mergedMap.values());
+      const merged = mergeLocalAndRemotePets({
+        localPets: localAfter,
+        remotePets: remoteNormalized,
+        queueEntries,
+      });
       await this.local.savePets(userId, merged);
       return merged;
     } catch {
@@ -188,13 +161,11 @@ export class PetRepositoryImpl implements PetRepository {
       if (!normalized) {
         return pet;
       }
+      const synced = markPetSynced(normalized);
       const merged = await this.local.getPets(userId);
-      const next2 = [
-        ...merged.filter(p => p.id !== normalized.id),
-        normalized,
-      ];
+      const next2 = [...merged.filter(p => p.id !== synced.id), synced];
       await this.local.savePets(userId, next2);
-      return normalized;
+      return synced;
     } catch {
       await this.queue.enqueue(userId, { op: 'create', pet });
       return pet;
@@ -214,12 +185,13 @@ export class PetRepositoryImpl implements PetRepository {
     try {
       const updated = await this.remote.updatePet(pet);
       const normalized = normalizePet(updated, userId) ?? pet;
+      const synced = markPetSynced(normalized);
       const current = await this.local.getPets(userId);
-      const next2 = current.some(p => p.id === normalized.id)
-        ? current.map(p => (p.id === normalized.id ? normalized : p))
-        : [...current, normalized];
+      const next2 = current.some(p => p.id === synced.id)
+        ? current.map(p => (p.id === synced.id ? synced : p))
+        : [...current, synced];
       await this.local.savePets(userId, next2);
-      return normalized;
+      return synced;
     } catch {
       await this.queue.enqueue(userId, { op: 'update', pet });
       return pet;

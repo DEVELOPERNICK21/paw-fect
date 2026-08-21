@@ -9,6 +9,8 @@ import type { Theme } from '../../../../../shared/hooks/useTheme';
 import type { Pet } from '../../../../../modules/pets/domain/models/Pet';
 import { resolvePetAvatarSource } from '../../../../../shared/utils/petDisplayPhoto';
 
+const TILE = 80;
+
 export interface HomePetSwitcherBarProps {
   pets: Pet[];
   activePetId: string | null;
@@ -39,7 +41,10 @@ export const HomePetSwitcherBar: React.FC<HomePetSwitcherBarProps> = React.memo(
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            paddingHorizontal: spacing.xxs,
+          },
+          seeAll: {
+            minHeight: 44,
+            justifyContent: 'center',
           },
           scroll: {
             flexGrow: 0,
@@ -48,74 +53,64 @@ export const HomePetSwitcherBar: React.FC<HomePetSwitcherBarProps> = React.memo(
             flexDirection: 'row',
             alignItems: 'flex-start',
             gap: spacing.md,
-            paddingVertical: spacing.xs,
             paddingRight: spacing.sm,
           },
           petItem: {
             alignItems: 'center',
-            width: 72,
+            width: TILE,
             gap: spacing.xs,
           },
-          avatarRing: {
-            borderRadius: radius.round,
-            padding: 2,
-          },
-          avatarRingActive: {
-            borderWidth: 2,
-            borderRadius: radius.round,
-            borderColor: colors.accent,
-          },
           avatar: {
-            borderRadius: radius.round,
+            width: TILE,
+            height: TILE,
             resizeMode: 'cover',
           },
           addTile: {
-            width: 72,
+            width: TILE,
             alignItems: 'center',
             gap: spacing.xs,
           },
-          addCircle: {
-            width: 56,
-            height: 56,
-            borderRadius: 28,
-            borderWidth: 1,
+          addSquare: {
+            width: TILE,
+            height: TILE,
             alignItems: 'center',
             justifyContent: 'center',
+            borderWidth: 1,
           },
         }),
-      [radius.round, spacing],
+      [spacing],
     );
-
-    if (pets.length === 0) {
-      return null;
-    }
 
     return (
       <View style={styles.wrap}>
         <View style={styles.rowTop}>
           <AppText
+            accessibilityRole="header"
             style={[
               textStyles.subtitle,
               { color: colors.text.heading, fontFamily: fontFamilies.bold },
             ]}
           >
-            Your pets
+            My pets
           </AppText>
-          <Pressable
-            onPress={goSeeAll}
-            accessibilityRole="button"
-            accessibilityLabel="Open full pet list"
-            hitSlop={12}
-          >
-            <AppText
-              style={[
-                textStyles.caption,
-                { color: colors.accent, fontFamily: fontFamilies.bold },
-              ]}
+          {pets.length > 1 ? (
+            <Pressable
+              onPress={goSeeAll}
+              accessibilityRole="button"
+              accessibilityLabel="Open full pet list"
+              hitSlop={8}
+              style={styles.seeAll}
             >
-              See all
-            </AppText>
-          </Pressable>
+              <AppText
+                style={[
+                  textStyles.caption,
+                  { color: colors.text.secondary, fontFamily: fontFamilies.medium },
+                ]}
+              >
+                See all
+              </AppText>
+            </Pressable>
+          ) : null}
         </View>
 
         <ScrollView
@@ -126,7 +121,6 @@ export const HomePetSwitcherBar: React.FC<HomePetSwitcherBarProps> = React.memo(
         >
           {pets.map(pet => {
             const isActive = pet.id === activePetId;
-            const avatarSource = resolvePetAvatarSource(pet);
             return (
               <Pressable
                 key={pet.id}
@@ -138,29 +132,20 @@ export const HomePetSwitcherBar: React.FC<HomePetSwitcherBarProps> = React.memo(
                 accessibilityLabel={`Show home for ${pet.name}`}
                 accessibilityState={{ selected: isActive }}
               >
-                <View
+                <Image
+                  source={resolvePetAvatarSource(pet)}
+                  accessible={false}
+                  importantForAccessibility="no"
                   style={[
-                    styles.avatarRing,
-                    isActive && styles.avatarRingActive,
+                    styles.avatar,
                     {
-                      borderColor: isActive ? colors.accent : 'transparent',
+                      borderRadius: radius.xl,
+                      borderWidth: isActive ? 2 : 0,
+                      borderColor: colors.accent,
                     },
                   ]}
-                >
-                  <Image
-                    source={avatarSource}
-                    style={[
-                      styles.avatar,
-                      {
-                        width: 52,
-                        height: 52,
-                        borderWidth: isActive ? 0 : 1,
-                        borderColor: colors.borderSubtle,
-                      },
-                    ]}
-                    accessibilityIgnoresInvertColors
-                  />
-                </View>
+                  accessibilityIgnoresInvertColors
+                />
                 <AppText
                   style={[
                     textStyles.caption,
@@ -190,14 +175,15 @@ export const HomePetSwitcherBar: React.FC<HomePetSwitcherBarProps> = React.memo(
           >
             <View
               style={[
-                styles.addCircle,
+                styles.addSquare,
                 {
+                  borderRadius: radius.xl,
                   borderColor: colors.borderSubtle,
-                  backgroundColor: colors.surfaceAlt,
+                  backgroundColor: colors.surface,
                 },
               ]}
             >
-              <MaterialIcon name="add" size={26} color={colors.accent} />
+              <MaterialIcon name="add" size={28} color={colors.accent} />
             </View>
             <AppText
               style={[
@@ -208,7 +194,6 @@ export const HomePetSwitcherBar: React.FC<HomePetSwitcherBarProps> = React.memo(
                   textAlign: 'center',
                 },
               ]}
-              numberOfLines={1}
             >
               Add
             </AppText>

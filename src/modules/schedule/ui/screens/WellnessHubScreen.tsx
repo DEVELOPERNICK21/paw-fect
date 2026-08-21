@@ -18,7 +18,7 @@ import { HomePetSwitcherBar } from '../../../app/ui/components/home/HomePetSwitc
 import { usePetStore } from '../../../pets/store/petStore';
 import { DEFAULT_PET_SCHEDULE_PREFERENCES } from '../../domain/DailyScheduleEngine';
 import { isScheduleProUser } from '../../domain/models/ScheduleFeatureGates';
-import { useSubscriptionStore } from '../../../subscription/store/subscriptionStore';
+import { useAppSession } from '../../../../shared/session/useAppSession';
 import { useScheduleStore } from '../../store/scheduleStore';
 import { useWellnessStore } from '../../store/wellnessStore';
 import { TodayCareSection } from '../components/TodayCareSection';
@@ -29,8 +29,8 @@ export const WellnessHubScreen: React.FC = () => {
   const tabBarInset = useAppTabBarInset();
   const theme = useTheme();
   const { colors, spacing, radius, textStyles, fontFamilies, shadows } = theme;
-  const entitlement = useSubscriptionStore(state => state.entitlement);
-  const isPro = isScheduleProUser(entitlement.plan);
+  const { plan } = useAppSession();
+  const isPro = isScheduleProUser(plan);
   const pets = usePetStore(state => state.pets);
   const activePet = usePetStore(state => state.activePet);
   const loadPets = usePetStore(state => state.loadPets);
@@ -236,7 +236,7 @@ export const WellnessHubScreen: React.FC = () => {
                 { color: colors.text.heading, fontFamily: fontFamilies.bold },
               ]}
             >
-              Wellness
+              Care
             </AppText>
             {headerActions}
           </View>
@@ -249,7 +249,7 @@ export const WellnessHubScreen: React.FC = () => {
                 { color: colors.text.heading, fontFamily: fontFamilies.bold },
               ]}
             >
-              Wellness starts with a pet profile
+              Care starts with a pet profile
             </AppText>
             <AppText style={[textStyles.body, { color: colors.text.secondary }]}>
               Add a pet to unlock today&apos;s care plan, weekly scores, and streaks.
@@ -274,7 +274,7 @@ export const WellnessHubScreen: React.FC = () => {
               { color: colors.text.heading, fontFamily: fontFamilies.bold },
             ]}
           >
-            Wellness
+            Care
           </AppText>
           {headerActions}
         </View>

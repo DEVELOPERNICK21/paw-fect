@@ -15,6 +15,9 @@ import { ObserveHomeDashboard } from './domain/usecases/ObserveHomeDashboard';
 import { syncDeviceGlanceSurfaces } from '../../infrastructure/widgets/syncDeviceGlanceSurfaces';
 import { getTodayIsoDateLocal } from '../../shared/utils/calendarDate';
 import { scheduleComposition } from '../schedule/scheduleComposition';
+import { useSettingsStore } from '../settings/store/settingsStore';
+import { registerOnboardingSettingsPort } from './store/onboardingCoordinationPorts';
+import { wireNotificationFeaturePorts } from './application/registerNotificationFeaturePorts';
 import {
   registerHomeDashboardRefresh,
   useHomeDashboardStore,
@@ -92,6 +95,30 @@ export const appOrchestrator = new AppOrchestrator(
 
 registerHomeDashboardRefresh(() => {
   appOrchestrator.invalidateHomeDashboard();
+});
+
+registerOnboardingSettingsPort({
+  persistOnboardingCompletion: async input => {
+    const currentSettings = useSettingsStore.getState().settings;
+    if (!currentSettings) {
+      return false;
+    }
+    await useSettingsStore.getState().updateSettings({
+      ...currentSettings,
+      careInterests: [...input.careInterests],
+      onboardingCompleted: true,
+      onboardingProfile: input.onboardingProfile,
+    });
+    const updatedSettings = useSettingsStore.getState().settings;
+    return (
+      updatedSettings?.onboardingCompleted === true &&
+      Boolean(updatedSettings.onboardingProfile)
+    );
+  },
+});
+
+wireNotificationFeaturePorts({
+  invalidateHomeDashboard: () => appOrchestrator.invalidateHomeDashboard(),
 });
 
 export const appComposition = {

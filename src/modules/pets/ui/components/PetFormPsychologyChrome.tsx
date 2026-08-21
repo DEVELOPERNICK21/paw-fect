@@ -12,6 +12,7 @@ type PetFormPsychologyChromeProps = {
   progress: PetFormProgress;
   lockedInCount: number;
   petDisplayName: string;
+  variant?: 'full' | 'compact';
 };
 
 /**
@@ -29,15 +30,20 @@ export const PetFormPsychologyChrome: React.FC<PetFormPsychologyChromeProps> = (
   progress,
   lockedInCount,
   petDisplayName,
+  variant = 'full',
 }) => {
   const { colors, fontFamilies, spacing, radius } = useTheme();
   const styles = useMemo(
     () =>
       StyleSheet.create({
         wrap: { gap: spacing.sm, marginBottom: spacing.md },
+        compactWrap: { alignItems: 'center' },
         anchor: {
           fontSize: 13,
           color: colors.text.subdued,
+        },
+        compactAnchor: {
+          textAlign: 'center',
         },
         gift: {
           backgroundColor: colors.brandTint5,
@@ -89,13 +95,32 @@ export const PetFormPsychologyChrome: React.FC<PetFormPsychologyChromeProps> = (
   );
 
   const giftName = petDisplayName.trim() || 'your pet';
+  const anchorText = isEditMode
+    ? `Editing ${giftName}`
+    : `Pet slot ${Math.min(petsUsed + 1, maxPets)} of ${maxPets} on ${planLabel}`;
+
+  if (variant === 'compact') {
+    return (
+      <View style={styles.compactWrap}>
+        <Text
+          style={[
+            styles.anchor,
+            styles.compactAnchor,
+            { fontFamily: fontFamilies.medium },
+          ]}
+        >
+          {anchorText}
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.wrap}>
       <Text style={[styles.anchor, { fontFamily: fontFamilies.medium }]}>
         {isEditMode
           ? `Editing ${giftName} · ${progress.percent}% profile strength`
-          : `Pet slot ${Math.min(petsUsed + 1, maxPets)} of ${maxPets} on ${planLabel}`}
+          : anchorText}
       </Text>
 
       {!isEditMode ? (

@@ -7,8 +7,10 @@ import {
   serverTimestamp,
   setDoc,
 } from '@react-native-firebase/firestore';
+import { getAuth, updateProfile } from '@react-native-firebase/auth';
 
 import type { User } from '../../domain/models/User';
+import { mergeAuthUserWithFirestoreProfile } from '../../domain/utils/mergeAuthUserWithFirestoreProfile';
 
 /**
  * Firestore profile documents: `users/{uid}`.
@@ -28,6 +30,7 @@ export interface UserProfileRemoteDataSource {
 
 class UserProfileRemoteDataSourceImpl implements UserProfileRemoteDataSource {
   private readonly db = getFirestore(getApp());
+  private readonly auth = getAuth(getApp());
 
   async syncOnSignIn(user: User): Promise<User> {
     const ref = doc(collection(this.db, 'users'), user.id);
@@ -46,15 +49,17 @@ class UserProfileRemoteDataSourceImpl implements UserProfileRemoteDataSource {
       typeof data?.createdAt === 'string' ? data.createdAt : undefined;
 
     const nowIso = new Date().toISOString();
-    const merged: User = {
-      ...user,
-      displayName: user.displayName ?? docDisplayName,
-      photoURL: user.photoURL ?? docPhoto,
-      phoneNumber: user.phoneNumber ?? docPhone,
-      onboardingCompleted: docOnboarding ?? user.onboardingCompleted,
-      createdAt: user.createdAt || docCreated || nowIso,
-      lastLoginAt: nowIso,
-    };
+    const merged = mergeAuthUserWithFirestoreProfile(
+      user,
+      {
+        displayName: docDisplayName,
+        photoURL: docPhoto,
+        phoneNumber: docPhone,
+        onboardingCompleted: docOnboarding,
+        createdAt: docCreated,
+      },
+      nowIso,
+    );
 
     await setDoc(
       ref,
@@ -88,6 +93,18 @@ class UserProfileRemoteDataSourceImpl implements UserProfileRemoteDataSource {
       },
       { merge: true },
     );
+
+    // Keep Firebase Auth displayName aligned so other clients / providers
+    // don't keep serving a stale Google/Auth name after a profile edit.
+    const current = this.auth.currentUser;
+    if (current && current.uid === userId) {
+      try {
+        await updateProfile(current, { displayName: input.displayName });
+      } catch {
+        // Non-fatal: Firestore is the source of truth for app profile fields.
+      }
+    }
+
     const snap = await getDoc(ref);
     const data = snap.data() as Record<string, unknown> | undefined;
     return {

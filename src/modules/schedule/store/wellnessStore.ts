@@ -4,16 +4,6 @@ import { ensureNotificationsReady } from '../../../infrastructure/notifications/
 import { notificationService } from '../../../infrastructure/notifications/notificationService';
 import { getAppSessionUserId } from '../../../shared/session/appSessionPorts';
 import { getTodayIsoDateLocal } from '../../../shared/utils/calendarDate';
-import {
-  getRelaxedMode,
-  getWellnessStreak,
-  getWellnessTasks,
-  saveWellnessStreak,
-  saveWellnessTask,
-  seedTasksFromBlockStates,
-  setRelaxedMode as persistRelaxedMode,
-} from '../data/datasources/WellnessMmkvDataSource';
-import { createScheduleRepository } from '../data/repositories/ScheduleRepositoryImpl';
 import { syncWellnessDigestNotifications } from '../data/notifications/wellnessDigestNotificationSync';
 import type { DailyCareBlock } from '../domain/models/DailyCareBlock';
 import type { DayCompletion } from '../domain/utils/wellnessCompletion';
@@ -46,13 +36,11 @@ function isPastOwnerSleep(ownerSleepTime: string, now: Date): boolean {
 }
 
 function stripEnrichment(block: DailyCareBlock): DailyCareBlock {
-  const {
-    status: _status,
-    isProFeature: _isProFeature,
-    insightTip: _insightTip,
-    isMissed: _isMissed,
-    ...rest
-  } = block;
+  const rest = { ...block };
+  delete rest.status;
+  delete rest.isProFeature;
+  delete rest.insightTip;
+  delete rest.isMissed;
   return rest;
 }
 
@@ -138,17 +126,22 @@ export const useWellnessStore = create<WellnessState>((set, get) => ({
     const userId = getAppSessionUserId();
     const today = getTodayIsoDateLocal();
     const now = new Date();
-    const relaxedMode = userId != null ? getRelaxedMode(userId) : false;
+    const relaxedMode =
+      userId != null ? scheduleComposition.getRelaxedMode(userId) : false;
     const rawBlocks = input.blocks.map(stripEnrichment);
 
-    let taskMap = getWellnessTasks(input.petId, input.date, today);
+    let taskMap = scheduleComposition.getWellnessTasks(
+      input.petId,
+      input.date,
+      today,
+    );
     if (userId != null && Object.keys(taskMap).length === 0) {
-      const blockStates = await createScheduleRepository().getBlockStates(
+      const blockStates = await scheduleComposition.getBlockStates(
         userId,
         input.petId,
         input.date,
       );
-      taskMap = seedTasksFromBlockStates(
+      taskMap = scheduleComposition.seedWellnessTasksFromBlockStates(
         input.petId,
         input.date,
         blockStates,
@@ -166,7 +159,7 @@ export const useWellnessStore = create<WellnessState>((set, get) => ({
     const completion = getDayCompletion(enriched, input.isPro);
     const heroBlockId = resolveHeroBlockId(enriched);
     const upNextBlocks = resolveUpNextBlocks(enriched, heroBlockId);
-    const streak = getWellnessStreak(input.petId);
+    const streak = scheduleComposition.getWellnessStreak(input.petId);
 
     set({
       rawBlocks,
@@ -206,7 +199,7 @@ export const useWellnessStore = create<WellnessState>((set, get) => ({
     const today = getTodayIsoDateLocal();
     const state = get();
 
-    saveWellnessTask(petId, date, blockId, 'done', today);
+    scheduleComposition.saveWellnessTask(petId, date, blockId, 'done', today);
 
     if (userId != null) {
       await scheduleComposition.markCareBlockDone.execute({
@@ -244,7 +237,7 @@ export const useWellnessStore = create<WellnessState>((set, get) => ({
   skipTask: async (petId, blockId, date) => {
     const today = getTodayIsoDateLocal();
     const state = get();
-    saveWellnessTask(petId, date, blockId, 'skipped', today);
+    scheduleComposition.saveWellnessTask(petId, date, blockId, 'skipped', today);
 
     await get().hydrateDay({
       petId,
@@ -264,7 +257,7 @@ export const useWellnessStore = create<WellnessState>((set, get) => ({
 
   checkAndUpdateStreak: (petId, date, ownerSleepTime) => {
     const { completion } = get();
-    const streak = getWellnessStreak(petId);
+    const streak = scheduleComposition.getWellnessStreak(petId);
     const now = new Date();
 
     if (isDayFullyComplete(completion)) {
@@ -276,13 +269,16 @@ export const useWellnessStore = create<WellnessState>((set, get) => ({
       } else if (last === yesterday) {
         nextCount = streak.count + 1;
       }
-      saveWellnessStreak(petId, { count: nextCount, lastCompletedDate: date });
+      scheduleComposition.saveWellnessStreak(petId, {
+        count: nextCount,
+        lastCompletedDate: date,
+      });
       set({ streakDays: nextCount });
       return;
     }
 
     if (isPastOwnerSleep(ownerSleepTime, now)) {
-      saveWellnessStreak(petId, {
+      scheduleComposition.saveWellnessStreak(petId, {
         count: 0,
         lastCompletedDate: streak.lastCompletedDate,
       });
@@ -291,7 +287,7 @@ export const useWellnessStore = create<WellnessState>((set, get) => ({
   },
 
   setRelaxedMode: async (userId, enabled) => {
-    persistRelaxedMode(userId, enabled);
+    scheduleComposition.setRelaxedMode(userId, enabled);
     set({ relaxedMode: enabled });
     const state = get();
     if (state.petId && state.date) {
@@ -308,7 +304,7 @@ export const useWellnessStore = create<WellnessState>((set, get) => ({
   },
 
   loadRelaxedMode: userId => {
-    set({ relaxedMode: getRelaxedMode(userId) });
+    set({ relaxedMode: scheduleComposition.getRelaxedMode(userId) });
   },
 
   setSelectedBlockId: blockId => set({ selectedBlockId: blockId }),

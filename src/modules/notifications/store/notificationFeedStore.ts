@@ -51,6 +51,12 @@ export function selectVisibleFeedItems(
     .sort((a, b) => sortKey(b) - sortKey(a));
 }
 
+export function selectUnreadVisibleCount(
+  itemsById: Record<string, InAppNotificationFeedItem>,
+): number {
+  return selectVisibleFeedItems(itemsById).filter(item => !item.read).length;
+}
+
 interface NotificationFeedState {
   itemsById: Record<string, InAppNotificationFeedItem>;
   applyFeedEvent: (event: NotificationFeedEvent) => void;

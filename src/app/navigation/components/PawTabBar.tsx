@@ -20,12 +20,16 @@ import {
   TAB_BAR_VISUAL_HEIGHT,
 } from '../layout';
 import { useHomeDashboardStore } from '../../../modules/app/store/homeDashboardStore';
-import { usePetStore } from '../../../modules/pets/store/petStore';
+import {
+  selectUnreadVisibleCount,
+  useNotificationFeedStore,
+} from '../../../modules/notifications/store/notificationFeedStore';
 import type { Pet } from '../../../modules/pets/domain/models/Pet';
+import { usePetStore } from '../../../modules/pets/store/petStore';
 import { AppText } from '../../../shared/components/AppText';
 import { MaterialIcon } from '../../../shared/components/MaterialIcon';
-import { useTheme } from '../../../shared/hooks/useTheme';
-import type { Theme } from '../../../shared/hooks/useTheme';
+import { useTheme, type Theme } from '../../../shared/hooks/useTheme';
+import { fontSizes, lineHeights } from '../../../shared/theme/typography';
 import { icons } from '../../../shared/assets/icons';
 import { resolvePetAvatarSource } from '../../../shared/utils/petDisplayPhoto';
 import {
@@ -49,6 +53,11 @@ import {
   type SmoothTabGlyph,
 } from './SmoothTabIcon';
 import { TabDelightBurst } from './TabDelightBurst';
+import {
+  resolvePetsNestedRoute,
+  shouldHidePawTabBar,
+} from './hidePawTabBar';
+import { formatTabBadgeCount } from './tabBarBadge';
 
 export { TAB_BAR_VISUAL_HEIGHT as APP_TAB_BAR_HEIGHT } from '../layout';
 
@@ -56,7 +65,10 @@ type TabKey = 'home' | 'health' | 'notifications' | 'settings' | 'pets';
 
 const ORBIT_AVATAR = 52;
 const ORBIT_ITEM_WIDTH = 76;
-const PILL_SIZE = 42;
+/** Sits on the icon well, not the label. */
+const PILL_SIZE = 36;
+const PILL_TOP = 4;
+const TAB_MIN_HIT = 44;
 
 const HOME_SIDE_INDEX = SIDE_TAB_ORDER.indexOf('home');
 const HEALTH_SIDE_INDEX = SIDE_TAB_ORDER.indexOf('health');
@@ -115,14 +127,17 @@ const springRelease = {
 
 const itemStyles = StyleSheet.create({
   tabHit: {
+    flex: 1,
+    minWidth: TAB_MIN_HIT,
+    minHeight: TAB_MIN_HIT,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   tabChip: {
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 8,
+    justifyContent: 'flex-start',
+    paddingTop: 8,
+    paddingBottom: 4,
     overflow: 'visible',
   },
   iconWell: {
@@ -146,32 +161,62 @@ const itemStyles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'visible',
   },
+  label: {
+    marginTop: 2,
+    fontSize: fontSizes.xxs,
+    lineHeight: lineHeights.xxs,
+    textAlign: 'center',
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -8,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: {
+    fontSize: fontSizes.xxs,
+    lineHeight: lineHeights.xxs,
+    textAlign: 'center',
+  },
 });
 
 interface TabSlotProps {
+  label: string;
   accessibilityLabel: string;
   icon: TabIconName;
   active: boolean;
   onPress: () => void;
   colors: Theme['colors'];
+  fontFamilies: Theme['fontFamilies'];
+  badgeCount?: number;
   onCenterMeasured?: (pageX: number, width: number) => void;
 }
 
 const TabSlot = React.memo(function TabSlot({
+  label,
   accessibilityLabel,
   icon,
   active,
   onPress,
   colors,
+  fontFamilies,
+  badgeCount = 0,
   onCenterMeasured,
 }: TabSlotProps) {
   const scale = useRef(new Animated.Value(1)).current;
   const activePop = useRef(new Animated.Value(active ? 1 : 0)).current;
   const bounce = useRef(new Animated.Value(1)).current;
   const iconSpin = useRef(new Animated.Value(0)).current;
-  const slotRef = useRef<View>(null);
+  const iconWellRef = useRef<View>(null);
   const wasActive = useRef(active);
   const [burstToken, setBurstToken] = useState(0);
+  const badgeText = formatTabBadgeCount(badgeCount);
 
   const pressIn = () => {
     Animated.spring(scale, { ...springPress, toValue: 0.88 }).start();
@@ -234,21 +279,14 @@ const TabSlot = React.memo(function TabSlot({
 
   return (
     <Pressable
-      ref={slotRef}
-      onLayout={() => {
-        slotRef.current?.measureInWindow((x, _y, width) => {
-          onCenterMeasured?.(x, width);
-        });
-      }}
       onPressIn={pressIn}
       onPressOut={pressOut}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ selected: active }}
-      hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
       style={itemStyles.tabHit}
-      testID={`paw-tab-slot-${accessibilityLabel.toLowerCase().replace(/\s+/g, '-')}`}
+      testID={`paw-tab-slot-${label.toLowerCase()}`}
     >
       <Animated.View
         style={[
@@ -273,7 +311,15 @@ const TabSlot = React.memo(function TabSlot({
             ],
           }}
         >
-          <View style={itemStyles.iconWell}>
+          <View
+            ref={iconWellRef}
+            onLayout={() => {
+              iconWellRef.current?.measureInWindow((x, _y, width) => {
+                onCenterMeasured?.(x, width);
+              });
+            }}
+            style={itemStyles.iconWell}
+          >
             <Animated.View
               pointerEvents="none"
               style={[
@@ -310,8 +356,45 @@ const TabSlot = React.memo(function TabSlot({
                 color={colors.text.secondary}
               />
             </Animated.View>
+            {badgeText != null ? (
+              <View
+                style={[
+                  itemStyles.badge,
+                  {
+                    backgroundColor: colors.danger,
+                    borderColor: colors.tabBarGlass,
+                  },
+                ]}
+                accessibilityElementsHidden
+                importantForAccessibility="no"
+              >
+                <AppText
+                  style={[
+                    itemStyles.badgeText,
+                    {
+                      color: colors.onAccent,
+                      fontFamily: fontFamilies.bold,
+                    },
+                  ]}
+                >
+                  {badgeText}
+                </AppText>
+              </View>
+            ) : null}
           </View>
         </Animated.View>
+        <AppText
+          numberOfLines={1}
+          style={[
+            itemStyles.label,
+            {
+              color: active ? colors.text.heading : colors.text.secondary,
+              fontFamily: active ? fontFamilies.bold : fontFamilies.medium,
+            },
+          ]}
+        >
+          {label}
+        </AppText>
       </Animated.View>
     </Pressable>
   );
@@ -328,6 +411,9 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
   const setActivePet = usePetStore(s => s.setActivePet);
   const requestDashboardRefresh = useHomeDashboardStore(
     s => s.requestDashboardRefresh,
+  );
+  const unreadCount = useNotificationFeedStore(s =>
+    selectUnreadVisibleCount(s.itemsById),
   );
 
   const [petPickerOpen, setPetPickerOpen] = useState(false);
@@ -490,8 +576,20 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
 
   const fabScale = useRef(new Animated.Value(1)).current;
   const fabLift = useRef(new Animated.Value(0)).current;
+  const fabActiveBoost = useRef(
+    new Animated.Value(currentKey === 'pets' ? 1 : 0),
+  ).current;
   const prevTabRef = useRef<TabKey>(currentKey);
   const [pawBurstToken, setPawBurstToken] = useState(0);
+
+  useEffect(() => {
+    Animated.spring(fabActiveBoost, {
+      toValue: currentKey === 'pets' ? 1 : 0,
+      friction: 6,
+      tension: 220,
+      useNativeDriver: true,
+    }).start();
+  }, [currentKey, fabActiveBoost]);
 
   useEffect(() => {
     if (currentKey === 'pets' && prevTabRef.current !== 'pets') {
@@ -709,6 +807,20 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
     inputRange: [0, 1],
     outputRange: [0, -6],
   });
+  const fabActiveScale = fabActiveBoost.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.08],
+  });
+  const petsTabActive = currentKey === 'pets';
+  const careA11yLabel =
+    unreadCount > 0 ? `Care, ${unreadCount} unread` : 'Care';
+
+  const nestedPetsRoute = resolvePetsNestedRoute(
+    currentRoute.name === 'PetsTab' ? currentRoute : undefined,
+  );
+  if (shouldHidePawTabBar(nestedPetsRoute)) {
+    return null;
+  }
 
   return (
     <>
@@ -756,7 +868,7 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
             pointerEvents="none"
             style={{
               position: 'absolute',
-              top: (BAR_HEIGHT - PILL_SIZE) / 2,
+              top: PILL_TOP,
               left: 0,
               width: PILL_SIZE,
               height: PILL_SIZE,
@@ -768,19 +880,23 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
           />
           <View style={styles.side}>
             <TabSlot
+              label="Home"
               accessibilityLabel="Home"
               icon="home"
               active={currentKey === 'home'}
               onPress={() => jumpToTabRoot('HomeTab')}
               colors={colors}
+              fontFamilies={fontFamilies}
               onCenterMeasured={(pageX, width) => onTabCenter(HOME_SIDE_INDEX, pageX, width)}
             />
             <TabSlot
+              label="Health"
               accessibilityLabel="Health records"
               icon="favorite"
               active={currentKey === 'health'}
               onPress={() => jumpToTabRoot('HealthTab')}
               colors={colors}
+              fontFamilies={fontFamilies}
               onCenterMeasured={(pageX, width) => onTabCenter(HEALTH_SIDE_INDEX, pageX, width)}
             />
           </View>
@@ -789,21 +905,26 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
 
           <View style={styles.side}>
             <TabSlot
-              accessibilityLabel="Wellness"
+              label="Care"
+              accessibilityLabel={careA11yLabel}
               icon="wellness"
               active={currentKey === 'notifications'}
               onPress={() => jumpToTabRoot('NotificationsTab')}
               colors={colors}
+              fontFamilies={fontFamilies}
+              badgeCount={unreadCount}
               onCenterMeasured={(pageX, width) =>
                 onTabCenter(NOTIFICATIONS_SIDE_INDEX, pageX, width)
               }
             />
             <TabSlot
+              label="Settings"
               accessibilityLabel="Settings"
               icon="settings"
               active={currentKey === 'settings'}
               onPress={() => jumpToTabRoot('SettingsTab')}
               colors={colors}
+              fontFamilies={fontFamilies}
               onCenterMeasured={(pageX, width) => onTabCenter(SETTINGS_SIDE_INDEX, pageX, width)}
             />
           </View>
@@ -819,7 +940,11 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
           <Animated.View
             style={[
               styles.fabLift,
-              { transform: [{ scale: fabScale }] },
+              {
+                transform: [
+                  { scale: Animated.multiply(fabScale, fabActiveScale) },
+                ],
+              },
               fabShadow,
             ]}
           >
@@ -833,7 +958,10 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
                 style={[
                   styles.fabButton,
                   { backgroundColor: colors.accent },
-                  currentKey === 'pets' && styles.fabButtonActive,
+                  petsTabActive && [
+                    styles.fabButtonActive,
+                    { borderColor: colors.onAccent },
+                  ],
                 ]}
                 onPress={() => jumpToTabRoot('PetsTab')}
                 onLongPress={openPetPicker}
@@ -843,7 +971,7 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
                 accessibilityRole="button"
                 accessibilityLabel="Pets"
                 accessibilityHint="Tap to open pet profile. Long press to switch pets."
-                accessibilityState={{ selected: currentKey === 'pets' }}
+                accessibilityState={{ selected: petsTabActive }}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 android_ripple={{
                   color: 'rgba(255,255,255,0.35)',
@@ -1107,7 +1235,6 @@ const createStyles = () =>
       justifyContent: 'center',
     },
     fabButtonActive: {
-      borderWidth: 2,
-      borderColor: 'rgba(255,255,255,0.9)',
+      borderWidth: 3,
     },
   });

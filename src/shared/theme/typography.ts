@@ -143,6 +143,19 @@ export const textStyles = {
     letterSpacing: 2.4,
     textTransform: 'uppercase',
   } as TextStyle,
+  /** Hero / KPI values. No fontVariant — Plus Jakarta can drop tnum glyphs at display size. */
+  metric: {
+    fontFamily: fontFamilies.bold,
+    fontSize: fontSizes['2xl'],
+    lineHeight: lineHeights['2xl'],
+    letterSpacing: -0.4,
+  } as TextStyle,
+  metricCaption: {
+    fontFamily: fontFamilies.semibold,
+    fontSize: fontSizes.xs,
+    lineHeight: lineHeights.xs,
+    fontVariant: ['tabular-nums'],
+  } as TextStyle,
 } as const;
 
 export type TextStyles = typeof textStyles;

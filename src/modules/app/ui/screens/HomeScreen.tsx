@@ -1,31 +1,31 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { ActivityIndicator, Dimensions, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 
 import type { HomeRootNavigation } from '../../../../app/navigation/types';
+import { formatTabBadgeCount } from '../../../../app/navigation/components/tabBarBadge';
 import { useAppTabBarInset } from '../../../../app/navigation/layout';
 import { AppText } from '../../../../shared/components/AppText';
+import { Button } from '../../../../shared/components/Button';
 import { useTheme } from '../../../../shared/hooks/useTheme';
+import { resolvePetAvatarSource } from '../../../../shared/utils/petDisplayPhoto';
 import { useHomeDashboardStore } from '../../store/homeDashboardStore';
-import {
-  rankHomeQuickActions,
-  type HomeQuickActionId,
-  useHomeQuickActionsUsageStore,
-} from '../../store/homeQuickActionsUsageStore';
 import { useScheduleStore } from '../../../schedule/store/scheduleStore';
 import { usePetStore } from '../../../pets/store/petStore';
 import { useSettingsStore } from '../../../settings/store/settingsStore';
+import {
+  selectUnreadVisibleCount,
+  useNotificationFeedStore,
+} from '../../../notifications/store/notificationFeedStore';
 
-import { HomeHeader } from '../../../../shared/components/HomeHeader';
+import { HomeActionHealthCarousel } from '../components/home/HomeActionHealthCarousel';
 import { HomeAttentionBanner } from '../components/home/HomeAttentionBanner';
-import { HomeTodayCarePreviewCard } from '../components/home/HomeTodayCarePreviewCard';
-import { HomeNextMilestoneWidget } from '../components/home/HomeNextMilestoneWidget';
-import { HomePetSummaryCard } from '../components/home/HomePetSummaryCard';
+import { HomeDashboardSkeleton } from '../components/home/HomeDashboardSkeleton';
+import { HomeHealthSummaryCard } from '../components/home/HomeHealthSummaryCard';
+import { HomeHeroBar } from '../components/home/HomeHeroBar';
 import { HomePetSwitcherBar } from '../components/home/HomePetSwitcherBar';
-import { HomeQuickActionsRow } from '../components/home/HomeQuickActionsRow';
-import { HomeUpcomingTasksWidget } from '../components/home/HomeUpcomingTasksWidget';
-import { UpcomingSection } from '../components/home/UpcomingSection';
+import { HomeTodayTaskCarousel } from '../components/home/HomeTodayTaskCarousel';
 
 export const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeRootNavigation>();
@@ -44,12 +44,14 @@ export const HomeScreen: React.FC = () => {
   const onboardingNickname = useSettingsStore(
     s => s.settings?.onboardingProfile?.pet.nickname?.trim() ?? '',
   );
-  const recordQuickActionTap = useHomeQuickActionsUsageStore(s => s.recordTap);
-  const quickActionCounts = useHomeQuickActionsUsageStore(s => s.counts);
 
   const schedule = useScheduleStore(s => s.schedule);
   const scheduleLoading = useScheduleStore(s => s.loading);
   const loadDaySchedule = useScheduleStore(s => s.loadDaySchedule);
+  const markBlockDone = useScheduleStore(s => s.markBlockDone);
+  const unreadCount = useNotificationFeedStore(s =>
+    selectUnreadVisibleCount(s.itemsById),
+  );
 
   const activePetId = storeActivePetId ?? viewModel?.activePet?.id ?? null;
 
@@ -70,16 +72,12 @@ export const HomeScreen: React.FC = () => {
     void loadDaySchedule(activePetId);
   }, [activePetId, loadDaySchedule]);
 
-  const goPetProfile = useCallback(() => {
-    navigation.navigate('PetsTab', { screen: 'PetProfile' });
-  }, [navigation]);
-
   const goUserProfile = useCallback(() => {
     navigation.navigate('SettingsTab', { screen: 'UserProfile' });
   }, [navigation]);
 
-  const goAddReminder = useCallback(() => {
-    navigation.navigate('NotificationsTab', { screen: 'AddReminder' });
+  const goAddPet = useCallback(() => {
+    navigation.navigate('PetsTab', { screen: 'AddPet' });
   }, [navigation]);
 
   const goNotifications = useCallback(() => {
@@ -88,6 +86,10 @@ export const HomeScreen: React.FC = () => {
 
   const goWellness = useCallback(() => {
     navigation.navigate('NotificationsTab', { screen: 'WellnessHub' });
+  }, [navigation]);
+
+  const goPetSwitcher = useCallback(() => {
+    navigation.navigate('PetsTab', { screen: 'PetSwitcher' });
   }, [navigation]);
 
   const goScheduleSetup = useCallback(() => {
@@ -104,113 +106,70 @@ export const HomeScreen: React.FC = () => {
     navigation.navigate('HealthTab', { screen: 'HealthRecords' });
   }, [navigation]);
 
-  const goLogWeight = useCallback(() => {
-    navigation.navigate('HealthTab', { screen: 'HealthRecords' });
-  }, [navigation]);
-
-  const viewportMinHeight = useMemo(
-    () => Math.max(Dimensions.get('window').height, 884),
-    [],
-  );
-
-  const quickActionPool = useMemo((): HomeQuickActionId[] => {
-    const base: HomeQuickActionId[] = [
-      'log_weight',
-      'alerts',
-      'pet_profile',
-      'user_profile',
-    ];
-    if (pets.length > 1) {
-      return [...base, 'pet_switcher'];
-    }
-    return base;
-  }, [pets.length]);
-
-  const orderedQuickActionIds = useMemo(
-    () => rankHomeQuickActions(quickActionPool, quickActionCounts).slice(0, 4),
-    [quickActionPool, quickActionCounts],
-  );
-
-  const handleQuickAction = useCallback(
-    (id: HomeQuickActionId) => {
-      recordQuickActionTap(id);
-      switch (id) {
-        case 'log_weight':
-          goLogWeight();
-          break;
-        case 'alerts':
-          goNotifications();
-          break;
-        case 'pet_profile':
-          goPetProfile();
-          break;
-        case 'user_profile':
-          goUserProfile();
-          break;
-        case 'pet_switcher':
-          navigation.navigate('PetsTab', { screen: 'PetSwitcher' });
-          break;
-        default:
-          break;
-      }
+  const goHealthRecord = useCallback(
+    (recordId: string) => {
+      navigation.navigate('HealthTab', {
+        screen: 'HealthRecords',
+        params: {
+          focusRecordId: recordId,
+          petId: activePetId ?? undefined,
+        },
+      });
     },
-    [
-      recordQuickActionTap,
-      goLogWeight,
-      goNotifications,
-      goPetProfile,
-      goUserProfile,
-      navigation,
-    ],
+    [activePetId, navigation],
   );
 
-  const todayCarePreview = useMemo(() => {
-    const blocks = schedule?.blocks ?? [];
-    const nextBlock = blocks.find(block => !block.isCompleted) ?? null;
-    return {
-      completedCount: blocks.filter(block => block.isCompleted).length,
-      totalCount: blocks.length,
-      completionPercent: schedule?.completionPercent ?? 0,
-      nextBlock: nextBlock
-        ? {
-            id: nextBlock.id,
-            title: nextBlock.title,
-            scheduledTime: nextBlock.scheduledTime,
-            isCompleted: nextBlock.isCompleted,
-          }
-        : null,
-      upcomingBlocks: blocks.map(block => ({
+  const todayTasks = useMemo(
+    () =>
+      (schedule?.blocks ?? []).map(block => ({
         id: block.id,
         title: block.title,
         scheduledTime: block.scheduledTime,
         isCompleted: block.isCompleted,
       })),
-    };
-  }, [schedule]);
+    [schedule],
+  );
+
+  const remainingCount = useMemo(
+    () => todayTasks.filter(task => !task.isCompleted).length,
+    [todayTasks],
+  );
+
+  const handleCompleteTask = useCallback(
+    (taskId: string) => {
+      void markBlockDone(taskId, true).catch(() => {});
+    },
+    [markBlockDone],
+  );
 
   const showPetLoading =
     viewModel != null && viewModel.petsLoading && !viewModel.hasAnyPet;
-
   const showBlockingLoader = viewModel === null;
   const syncError = viewModel?.lastError ?? null;
+  const petPhoto = viewModel?.activePet
+    ? resolvePetAvatarSource(viewModel.activePet)
+    : undefined;
+
+  const showHeroWell = Boolean(viewModel?.activePet) && !showBlockingLoader && !showPetLoading;
 
   return (
     <SafeAreaView
       edges={['top', 'left', 'right']}
-      style={[styles.safeArea, { backgroundColor: colors.backgroundAlt }]}
+      style={[
+        styles.safeArea,
+        {
+          backgroundColor: showHeroWell
+            ? colors.brandTint20
+            : colors.backgroundAlt,
+        },
+      ]}
     >
       <View style={styles.root}>
-        <HomeHeader
-          title="Pawsoul"
-          onPressProfile={goUserProfile}
-          theme={theme}
-        />
-
         {syncError ? (
           <View
             style={[
               styles.banner,
-              { backgroundColor: colors.brandTint10, padding: spacing.md },
+              { backgroundColor: colors.brandTint10, padding: spacing.sm },
             ]}
           >
             <AppText
@@ -225,37 +184,50 @@ export const HomeScreen: React.FC = () => {
         ) : null}
 
         {showBlockingLoader || showPetLoading ? (
-          <View style={[styles.centered, { flex: 1 }]}>
-            <ActivityIndicator color={colors.primary} size="large" />
-            <AppText
-              style={[
-                textStyles.caption,
-                { color: colors.text.secondary, marginTop: spacing.md },
-              ]}
-            >
-              Loading your pets…
-            </AppText>
+          <View
+            style={[
+              styles.skeletonWrap,
+              {
+                paddingHorizontal: spacing.lg,
+                paddingTop: spacing.md,
+              },
+            ]}
+          >
+            <HomeDashboardSkeleton theme={theme} />
           </View>
         ) : (
           <ScrollView
-            style={{ flex: 1 }}
+            style={[styles.scroll, { backgroundColor: colors.backgroundAlt }]}
             contentContainerStyle={[
               styles.scrollContent,
               {
-                flexGrow: 1,
-                minHeight: viewportMinHeight,
-                paddingHorizontal: spacing.lg,
-                paddingTop: spacing.lg,
-                // Content scrolls under the glass tab; padding keeps the last
-                // section clear when scrolled to the end (no empty “back” strip).
-                paddingBottom: tabBarInset + spacing['3xl'],
-                gap: spacing.xl,
+                paddingBottom: tabBarInset + spacing.xl,
               },
             ]}
             showsVerticalScrollIndicator={false}
           >
-            {viewModel?.activePet ? (
+            {viewModel?.activePet && petPhoto ? (
               <>
+                <HomeHeroBar
+                  petName={viewModel.activePet.name}
+                  petPhoto={petPhoto}
+                  unreadBadge={formatTabBadgeCount(unreadCount)}
+                  remainingCount={remainingCount}
+                  onPressPetContext={goPetSwitcher}
+                  onPressAlerts={goNotifications}
+                  onPressProfile={goUserProfile}
+                  onPressJumpToCare={goWellness}
+                  theme={theme}
+                />
+                <View
+                  style={[
+                    styles.body,
+                    {
+                      paddingHorizontal: spacing.lg,
+                      gap: spacing.xl,
+                    },
+                  ]}
+                >
                 <HomePetSwitcherBar
                   pets={pets}
                   activePetId={storeActivePetId ?? viewModel.activePet.id}
@@ -273,87 +245,66 @@ export const HomeScreen: React.FC = () => {
                   onPress={goHealthRecords}
                   theme={theme}
                 />
-                <HomePetSummaryCard
-                  pet={viewModel.activePet}
-                  healthStatusLine={viewModel.healthStatusLine}
-                  nextCareMilestoneLine={viewModel.nextCareMilestoneLine}
-                  lastActivityLine={viewModel.lastActivityLine}
-                  onPressViewProfile={goPetProfile}
-                  theme={theme}
-                />
-                <HomeQuickActionsRow
-                  orderedActionIds={orderedQuickActionIds}
-                  onPressAction={handleQuickAction}
-                  theme={theme}
-                />
-                <HomeTodayCarePreviewCard
+                <HomeTodayTaskCarousel
                   petName={viewModel.activePet.name}
+                  petPhoto={petPhoto}
                   loading={scheduleLoading}
-                  completedCount={todayCarePreview.completedCount}
-                  totalCount={todayCarePreview.totalCount}
-                  completionPercent={todayCarePreview.completionPercent}
-                  nextBlock={todayCarePreview.nextBlock}
-                  upcomingBlocks={todayCarePreview.upcomingBlocks}
-                  onPressViewCare={goWellness}
+                  tasks={todayTasks}
+                  onPressSeeAll={goWellness}
                   onPressSetup={goScheduleSetup}
+                  onPressComplete={handleCompleteTask}
                   theme={theme}
                 />
-                <UpcomingSection
-                  items={viewModel.weekCarePreview}
-                  loading={viewModel.remindersLoading}
-                  onPressOpenHealth={goHealthRecords}
+                <HomeActionHealthCarousel
+                  petName={viewModel.activePet.name}
+                  petPhoto={petPhoto}
+                  items={viewModel.actionHealthItems}
+                  onPressSeeAll={goHealthRecords}
+                  onPressItem={goHealthRecord}
                   theme={theme}
                 />
-                <View
-                  style={{
-                    flexGrow: 1,
-                    minHeight: spacing.md,
-                  }}
-                />
-                <HomeNextMilestoneWidget
-                  pet={viewModel.activePet}
-                  milestone={viewModel.nextMilestone}
-                  onPressOpenHealth={goHealthRecords}
-                  onPressPet={goPetProfile}
+                <HomeHealthSummaryCard
+                  petName={viewModel.activePet.name}
+                  petPhoto={petPhoto}
+                  fallbackPhoto={resolvePetAvatarSource({
+                    type: viewModel.activePet.type,
+                    photo: null,
+                  })}
+                  weightLine={viewModel.weightLine}
+                  healthStatusLine={viewModel.healthStatusLine}
+                  lastLoggedDateLine={viewModel.lastLoggedDateLine}
+                  onPressSeeAll={goHealthRecords}
                   theme={theme}
                 />
-                <HomeUpcomingTasksWidget
-                  items={viewModel.todayCare}
-                  loading={viewModel.remindersLoading}
-                  onPressAddTask={goAddReminder}
-                  onPressRow={goWellness}
-                  onPressViewSchedule={goWellness}
-                  theme={theme}
-                />
+                </View>
               </>
             ) : (
               <View
                 style={[
                   styles.emptyPets,
                   {
-                    borderRadius: radius.lg,
+                    borderRadius: radius.xl,
                     borderColor: colors.borderSubtle,
-                    backgroundColor: colors.surfaceAlt,
+                    backgroundColor: colors.surface,
                     padding: spacing.xl,
+                    marginHorizontal: spacing.lg,
+                    marginTop: spacing.lg,
                     gap: spacing.md,
                   },
                 ]}
               >
                 <AppText
-                  style={[
-                    textStyles.body,
-                    { color: colors.text.secondary, textAlign: 'center' },
-                  ]}
+                  style={[textStyles.body, { color: colors.text.secondary }]}
                 >
                   {onboardingNickname
                     ? `Ready to set up ${onboardingNickname}'s profile?`
-                    : 'Add a pet profile to see care tasks and reminders here.'}
+                    : 'Add a pet to see today’s care and health here.'}
                 </AppText>
+                <Button title="Add pet" onPress={goAddPet} />
               </View>
             )}
           </ScrollView>
         )}
-
       </View>
     </SafeAreaView>
   );
@@ -366,10 +317,15 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
-  scrollContent: {},
-  centered: {
-    alignItems: 'center',
-    justifyContent: 'center',
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  body: {},
+  skeletonWrap: {
+    flex: 1,
   },
   emptyPets: {
     borderWidth: 1,

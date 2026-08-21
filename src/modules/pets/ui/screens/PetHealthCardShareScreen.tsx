@@ -18,8 +18,8 @@ import ViewShot, { type ViewShotRef } from 'react-native-view-shot';
 
 import type { PetsStackParamList } from '../../../../app/navigation/types';
 import { useTheme } from '../../../../shared/hooks/useTheme';
-import { useAuthStore } from '../../../auth/store/authStore';
-import { petComposition } from '../../petComposition';
+import { getAppSessionUserId } from '../../../../shared/session/appSessionPorts';
+import { usePetStore } from '../../store/petStore';
 import type { PetHealthCardViewModel } from '../../domain/models/PetHealthCardViewModel';
 import {
   buildShareSheetOptions,
@@ -40,7 +40,8 @@ export const PetHealthCardShareScreen: React.FC = () => {
   const route =
     useRoute<RouteProp<PetsStackParamList, 'PetHealthCardShare'>>();
   const { colors, fontFamilies, shadows } = useTheme();
-  const userId = useAuthStore(s => s.user?.id);
+  const userId = getAppSessionUserId();
+  const buildHealthCardViewModel = usePetStore(s => s.buildHealthCardViewModel);
 
   const exportCanvasRef = useRef<CanvasRef | null>(null);
   const exportShotRef = useRef<ViewShotRef | null>(null);
@@ -62,7 +63,7 @@ export const PetHealthCardShareScreen: React.FC = () => {
         return;
       }
       try {
-        const vm = await petComposition.buildPetHealthCard(userId, petId);
+        const vm = await buildHealthCardViewModel(petId);
         if (!cancelled) {
           setViewModel(vm);
         }
@@ -75,7 +76,7 @@ export const PetHealthCardShareScreen: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [route.params.petId, userId]);
+  }, [route.params.petId, userId, buildHealthCardViewModel]);
 
   useEffect(() => {
     exportReadyRef.current = false;

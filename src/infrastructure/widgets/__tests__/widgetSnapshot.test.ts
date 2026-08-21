@@ -30,6 +30,7 @@ const baseVm: HomeDashboardViewModel = {
     kind: 'vaccination',
   },
   lastActivityLine: '',
+  lastLoggedDateLine: '',
   weightLine: '',
   activityLine: '',
   heartLine: '',
@@ -51,6 +52,7 @@ const baseVm: HomeDashboardViewModel = {
     },
   ],
   weekCarePreview: [],
+  actionHealthItems: [],
   lastError: null,
   isRefreshing: false,
 };

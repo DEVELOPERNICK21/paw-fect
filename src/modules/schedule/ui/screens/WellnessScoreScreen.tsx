@@ -10,7 +10,7 @@ import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { usePetStore } from '../../../pets/store/petStore';
 import { isScheduleProUser } from '../../domain/models/ScheduleFeatureGates';
-import { useSubscriptionStore } from '../../../subscription/store/subscriptionStore';
+import { useAppSession } from '../../../../shared/session/useAppSession';
 import { useScheduleStore } from '../../store/scheduleStore';
 
 type WellnessRoute = RouteProp<PetsStackParamList, 'WellnessScore'>;
@@ -19,8 +19,8 @@ export const WellnessScoreScreen: React.FC = () => {
   const navigation = useNavigation<PetProfileRootNavigation>();
   const route = useRoute<WellnessRoute>();
   const { colors, spacing, radius, textStyles, fontFamilies } = useTheme();
-  const entitlement = useSubscriptionStore(state => state.entitlement);
-  const isPro = isScheduleProUser(entitlement.plan);
+  const { plan } = useAppSession();
+  const isPro = isScheduleProUser(plan);
   const pet = usePetStore(state => state.pets.find(item => item.id === route.params.petId));
   const schedule = useScheduleStore(state => state.schedule);
   const loadDaySchedule = useScheduleStore(state => state.loadDaySchedule);

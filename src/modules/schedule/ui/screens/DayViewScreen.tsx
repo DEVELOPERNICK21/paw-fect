@@ -9,7 +9,7 @@ import { useAppTabBarInset } from '../../../../app/navigation/layout';
 import { AppText } from '../../../../shared/components/AppText';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
 import { useTheme } from '../../../../shared/hooks/useTheme';
-import { useSubscriptionStore } from '../../../subscription/store/subscriptionStore';
+import { useAppSession } from '../../../../shared/session/useAppSession';
 import { usePetStore } from '../../../pets/store/petStore';
 import { isScheduleProUser } from '../../domain/models/ScheduleFeatureGates';
 import { useScheduleStore } from '../../store/scheduleStore';
@@ -24,10 +24,10 @@ export const DayViewScreen: React.FC = () => {
   const route = useRoute<DayViewRoute>();
   const tabBarInset = useAppTabBarInset();
   const { colors, spacing, radius, textStyles, fontFamilies, shadows } = useTheme();
-  const entitlement = useSubscriptionStore(state => state.entitlement);
-  const isPro = isScheduleProUser(entitlement.plan);
+  const { plan } = useAppSession();
+  const isPro = isScheduleProUser(plan);
   const pets = usePetStore(state => state.pets);
-  const activePetId = usePetStore(state => state.activePetId);
+  const activePet = usePetStore(state => state.activePet);
   const schedule = useScheduleStore(state => state.schedule);
   const loading = useScheduleStore(state => state.loading);
   const error = useScheduleStore(state => state.error);
@@ -38,7 +38,7 @@ export const DayViewScreen: React.FC = () => {
   const setSelectedBlockId = useScheduleStore(state => state.setSelectedBlockId);
   const [expandedBlockId, setExpandedBlockId] = useState<string | null>(null);
 
-  const petId = route.params?.petId ?? activePetId ?? pets[0]?.id;
+  const petId = route.params?.petId ?? activePet?.id ?? pets[0]?.id;
   const pet = pets.find(item => item.id === petId);
 
   useEffect(() => {

@@ -58,7 +58,8 @@ const BreedPill: React.FC<{ label: string; theme: Theme }> = React.memo(
           style={[
             textStyles.overline,
             {
-              color: colors.text.inverse,
+              // Always light on the media pill (dark-mode text.inverse is near-black).
+              color: colors.onAccent,
               fontFamily: fontFamilies.bold,
               marginLeft: spacing.xs,
             },
@@ -158,13 +159,43 @@ export const PetProfileHeroCard: React.FC<PetProfileHeroCardProps> = React.memo(
               onError={onHeroImageError}
             />
           </View>
+          {/* Soft edge vignette — darkens corners so the photo feels deeper / sharper. */}
+          <LinearGradient
+            colors={['rgba(0,0,0,0.22)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.18)']}
+            locations={[0, 0.45, 1]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          />
+          {/* Specular gloss — thin diagonal sheen for a premium “glass photo” look. */}
+          <LinearGradient
+            colors={[
+              'rgba(255,255,255,0.28)',
+              'rgba(255,255,255,0.08)',
+              'rgba(255,255,255,0)',
+              'rgba(255,255,255,0)',
+            ]}
+            locations={[0, 0.18, 0.42, 1]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0.85 }}
+            style={styles.glossSheen}
+            pointerEvents="none"
+          />
+          {/* Hairline top rim highlight */}
+          <LinearGradient
+            colors={['rgba(255,255,255,0.35)', 'rgba(255,255,255,0)']}
+            locations={[0, 1]}
+            style={styles.topRim}
+            pointerEvents="none"
+          />
           <LinearGradient
             colors={[
               'rgba(0,0,0,0)',
-              'rgba(0,0,0,0.08)',
-              'rgba(0,0,0,0.32)',
+              'rgba(0,0,0,0.28)',
+              'rgba(0,0,0,0.62)',
             ]}
-            locations={[0, 0.5, 1]}
+            locations={[0, 0.4, 1]}
             style={styles.bottomGradient}
             pointerEvents="none"
           />
@@ -245,8 +276,12 @@ export const PetProfileHeroCard: React.FC<PetProfileHeroCardProps> = React.memo(
               style={[
                 textStyles.display,
                 {
-                  color: colors.text.inverse,
+                  // Photo overlay: always light. Dark-mode text.inverse is near-black.
+                  color: colors.onAccent,
                   fontFamily: fontFamilies.extrabold,
+                  textShadowColor: 'rgba(0,0,0,0.45)',
+                  textShadowOffset: { width: 0, height: 1 },
+                  textShadowRadius: 6,
                 },
               ]}
               numberOfLines={1}
@@ -257,9 +292,13 @@ export const PetProfileHeroCard: React.FC<PetProfileHeroCardProps> = React.memo(
               style={[
                 textStyles.caption,
                 {
-                  color: colors.text.inverse,
+                  color: colors.onAccent,
                   marginTop: spacing.xs,
                   fontFamily: fontFamilies.medium,
+                  opacity: 0.92,
+                  textShadowColor: 'rgba(0,0,0,0.4)',
+                  textShadowOffset: { width: 0, height: 1 },
+                  textShadowRadius: 4,
                 },
               ]}
               numberOfLines={1}
@@ -300,15 +339,18 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     width: '100%',
     height: '100%',
+    // Tiny overscale hides soft JPEG edges and reads as a sharper crop.
+    transform: [{ scale: 1.03 }],
   },
-  scrim: {
+  glossSheen: {
     ...StyleSheet.absoluteFillObject,
   },
-  bottomBand: {
+  topRim: {
     position: 'absolute',
+    top: 0,
     left: 0,
     right: 0,
-    bottom: 0,
+    height: 28,
   },
   overlayContent: {
     flex: 1,
@@ -358,7 +400,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: '28%',
+    height: '42%',
   },
   topActions: {
     position: 'absolute',

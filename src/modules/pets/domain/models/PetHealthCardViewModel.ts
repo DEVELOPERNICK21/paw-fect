@@ -1,5 +1,3 @@
-import type { ImageSourcePropType } from 'react-native';
-
 export type PetHealthCardItemStatus = 'done' | 'due_in' | 'overdue';
 
 export interface PetHealthCardItem {
@@ -18,12 +16,15 @@ export interface PetHealthCardHighlight {
   detail: string;
 }
 
+/** UI-agnostic image source: remote URI or bundled asset id. */
+export type PetHealthCardPhotoSource = { uri: string } | number;
+
 export interface PetHealthCardViewModel {
   pet: {
     name: string;
     breedLabel: string | null;
     ageLabel: string | null;
-    photoSource: ImageSourcePropType;
+    photoSource: PetHealthCardPhotoSource;
     speciesEmoji: string;
     speciesLabel: string;
     genderLabel: string | null;

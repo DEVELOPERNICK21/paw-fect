@@ -1,18 +1,17 @@
-import type { ImageSourcePropType } from 'react-native';
-
 import { SHARE_INSTALL_URL } from '../../../../shared/constants/releaseBackend';
 import { resolvePetAvatarSource } from '../../../../shared/utils/petDisplayPhoto';
+import { safeToIsoString } from '../../../../shared/utils/calendarDate';
 import type { SmartHealthRecord } from '../../../records/domain/models/SmartHealthRecord';
 import type { Pet } from '../models/Pet';
 import type {
   PetHealthCardHighlight,
   PetHealthCardItem,
   PetHealthCardItemStatus,
+  PetHealthCardPhotoSource,
   PetHealthCardSnapshot,
   PetHealthCardViewModel,
 } from '../models/PetHealthCardViewModel';
 import { formatPetAgeShareLabel } from '../utils/petDobDisplay';
-import { safeToIsoString } from '../../../../shared/utils/calendarDate';
 
 const SHARE_URL_DISPLAY = 'paw-fect.vercel.app';
 const BRAND_LABEL = '🐾 Pawsoul';
@@ -50,10 +49,10 @@ export class BuildPetHealthCardViewModel {
       input.petId,
     );
 
-    const photoSource: ImageSourcePropType = resolvePetAvatarSource({
+    const photoSource = resolvePetAvatarSource({
       type: pet.type,
       photo: pet.photo,
-    });
+    }) as PetHealthCardPhotoSource;
 
     const breedLabel =
       pet.breed && pet.breed.trim().length > 0 ? pet.breed.trim() : null;

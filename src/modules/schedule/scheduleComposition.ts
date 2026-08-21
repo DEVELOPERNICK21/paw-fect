@@ -13,6 +13,11 @@ import { SnoozeCareBlock } from './domain/usecases/SnoozeCareBlock';
 import type { DailyCareBlock } from './domain/models/DailyCareBlock';
 import type { DailySchedule } from './domain/models/DailySchedule';
 import type { PetSchedulePreferences } from './domain/models/PetProfile';
+import type {
+  PersistedWellnessTaskStatus,
+  WellnessStreakRecord,
+} from './domain/models/WellnessTask';
+import type { ScheduleCompletionRecord } from './domain/repositories/ScheduleRepository';
 
 const scheduleRepository = createScheduleRepository();
 const petRepository = createPetRepository();
@@ -29,6 +34,40 @@ export const scheduleComposition = {
     dates: string[],
   ): Promise<Record<string, number | null>> =>
     scheduleRepository.getDailyCompletionPercents(userId, petId, dates),
+  getBlockStates: (
+    userId: string,
+    petId: string,
+    date: string,
+  ): Promise<Record<string, ScheduleCompletionRecord>> =>
+    scheduleRepository.getBlockStates(userId, petId, date),
+  getWellnessTasks: (petId: string, date: string, today: string) =>
+    scheduleRepository.getWellnessTasks(petId, date, today),
+  saveWellnessTask: (
+    petId: string,
+    date: string,
+    blockId: string,
+    status: PersistedWellnessTaskStatus,
+    today: string,
+  ) => scheduleRepository.saveWellnessTask(petId, date, blockId, status, today),
+  seedWellnessTasksFromBlockStates: (
+    petId: string,
+    date: string,
+    blockStates: Record<string, ScheduleCompletionRecord>,
+    today: string,
+  ) =>
+    scheduleRepository.seedWellnessTasksFromBlockStates(
+      petId,
+      date,
+      blockStates,
+      today,
+    ),
+  getWellnessStreak: (petId: string) =>
+    scheduleRepository.getWellnessStreak(petId),
+  saveWellnessStreak: (petId: string, record: WellnessStreakRecord) =>
+    scheduleRepository.saveWellnessStreak(petId, record),
+  getRelaxedMode: (userId: string) => scheduleRepository.getRelaxedMode(userId),
+  setRelaxedMode: (userId: string, enabled: boolean) =>
+    scheduleRepository.setRelaxedMode(userId, enabled),
   resyncMustFireNotifications: async (): Promise<void> => {
     await requestNotificationResync();
   },

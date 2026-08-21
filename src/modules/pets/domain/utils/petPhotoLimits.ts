@@ -1,5 +1,7 @@
-export const PET_PHOTO_MAX_EDGE = 512;
-export const PET_PHOTO_JPEG_QUALITY = 0.7;
+/** Longest edge after pick — large enough for hero cards without blowing Firestore size. */
+export const PET_PHOTO_MAX_EDGE = 768;
+/** JPEG quality at encode time (0–1). Slightly higher than 0.7 for clearer profile heroes. */
+export const PET_PHOTO_JPEG_QUALITY = 0.82;
 export const PET_PHOTO_MAX_DATA_URI_CHARS = 700_000;
 
 export function buildJpegDataUri(base64: string): string {

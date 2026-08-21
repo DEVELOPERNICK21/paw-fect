@@ -12,7 +12,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   useNavigation,
   useRoute,
@@ -21,11 +21,12 @@ import {
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Svg, { Path } from 'react-native-svg';
 
-import { trackEvent } from '../../../../infrastructure/analytics/analytics';
+import { useAppTabBarInset } from '../../../../app/navigation/layout';
 import type { PetsStackParamList } from '../../../../app/navigation/types';
+import { trackEvent } from '../../../../infrastructure/analytics/analytics';
 import { validateLastDewormingDate } from '../../../records/domain/utils/DewormingEngine';
 import { useTheme } from '../../../../shared/hooks/useTheme';
-import { useSubscriptionStore } from '../../../subscription/store/subscriptionStore';
+import { useAppSession } from '../../../../shared/session/useAppSession';
 import { useSettingsStore } from '../../../settings/store/settingsStore';
 import { petComposition } from '../../petComposition';
 import { usePetStore } from '../../store/petStore';
@@ -47,6 +48,7 @@ import { DatePickerField } from '../../../../shared/components/DatePickerField';
 import {
   PetFieldLabel,
   PetFilledTextInput,
+  PetFormSection,
   PetPhotoHero,
   PetPrimaryCta,
   PetSpeciesCards,
@@ -60,6 +62,13 @@ import { resolvePetAvatarSource } from '../../../../shared/utils/petDisplayPhoto
 import {
   computePetFormProgress,
 } from '../../domain/utils/computePetFormProgress';
+import {
+  createPetFormSnapshot,
+  petFormPhotoKey,
+  petFormSnapshotsEqual,
+  snapshotFromPetAndMilestones,
+  type PetFormSnapshot,
+} from '../../domain/utils/petFormSnapshot';
 import { PetFormPsychologyChrome } from '../components/PetFormPsychologyChrome';
 
 const suggestRiskFromLifestyle = (
@@ -146,7 +155,7 @@ const PetSelectionChips: React.FC<PetSelectionChipsProps> = ({
           borderColor: colors.accent,
         },
         chipIdle: {
-          backgroundColor: colors.surface,
+          backgroundColor: colors.background,
           borderColor: colors.borderSubtle,
         },
         chipLabel: {
@@ -162,8 +171,8 @@ const PetSelectionChips: React.FC<PetSelectionChipsProps> = ({
       }),
     [
       colors.accent,
+      colors.background,
       colors.borderSubtle,
-      colors.surface,
       colors.text.heading,
       colors.text.inverse,
       fontFamilies.semibold,
@@ -249,10 +258,15 @@ export const AddPetScreen: React.FC = () => {
     () => createStyles(colors, fontSizes),
     [colors, fontSizes],
   );
+  const tabBarInset = useAppTabBarInset();
+  const safeInsets = useSafeAreaInsets();
+  const scrollBottomPad = isEditMode
+    ? Math.max(safeInsets.bottom, spacing.md) + spacing.xl
+    : tabBarInset + spacing.xl;
   const createPetProfile = usePetStore(s => s.createPetProfile);
   const updatePet = usePetStore(s => s.updatePet);
   const petsUsed = usePetStore(s => s.pets.length);
-  const entitlement = useSubscriptionStore(s => s.entitlement);
+  const { maxPets, plan } = useAppSession();
   const onboardingProfile = useSettingsStore(
     s => s.settings?.onboardingProfile,
   );
@@ -290,6 +304,11 @@ export const AddPetScreen: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [initLoading, setInitLoading] = useState(isEditMode);
   const [editBase, setEditBase] = useState<Pet | null>(null);
+  const [baseline, setBaseline] = useState<PetFormSnapshot | null>(null);
+  const allowLeaveRef = useRef(false);
+  const createBaselineCapturedRef = useRef(false);
+  /** Create: collapsed by default. Edit: opens when gender or breed exists. */
+  const [showAboutSection, setShowAboutSection] = useState(false);
   /** Create: collapsed by default. Edit: opens when milestone data exists. */
   const [showHealthHistory, setShowHealthHistory] = useState(false);
   const [hasPreviousDeworming, setHasPreviousDeworming] = useState(false);
@@ -319,6 +338,7 @@ export const AddPetScreen: React.FC = () => {
     if (!isEditMode || !petId) {
       setInitLoading(false);
       setEditBase(null);
+      setShowAboutSection(false);
       setShowHealthHistory(false);
       return;
     }
@@ -326,66 +346,78 @@ export const AddPetScreen: React.FC = () => {
     let cancelled = false;
     setInitLoading(true);
 
-    void usePetStore
-      .getState()
-      .getPetById(petId)
-      .then(pet => {
-        if (cancelled) {
-          return;
-        }
-        if (!pet) {
-          setError('This pet could not be found.');
-          setInitLoading(false);
-          if (navigation.canGoBack()) {
-            navigation.goBack();
-          } else {
-            // We're likely in the "pet required" gate. RootNavigator will swap screens after save.
-          }
-          return;
-        }
-        setEditBase(pet);
-        setName(pet.name);
-        setPetType(pet.type);
-        setBreed(pet.breed ?? '');
-        setPhotoUri(pet.photo?.trim() ? pet.photo : PROFILE_PLACEHOLDER);
-        setPendingPhoto(null);
-        setPhotoCleared(false);
-        setDob(pet.dob ?? '');
-        setGender((pet.gender as PetGender | undefined) ?? '');
-        setLifestyleType(pet.lifestyle?.type ?? 'indoor');
-        setLifestyleRiskLevel(pet.lifestyle?.riskLevel ?? 'low');
-        setRiskTouched(true);
-        setRegion(pet.region ?? 'OTHER');
-        void usePetStore
-          .getState()
-          .getLastHealthMilestones(pet.id)
-          .then(milestones => {
-            if (cancelled) return;
-            let hasAny = false;
-            if (milestones.lastDewormingDate) {
-              hasAny = true;
-              setHasPreviousDeworming(true);
-              setLastDewormingUnknown(false);
-              setLastDewormingDate(milestones.lastDewormingDate);
-            }
-            if (milestones.lastVaccinationDate) {
-              hasAny = true;
-              setHasPreviousVaccination(true);
-              setLastVaccinationUnknown(false);
-              setLastVaccinationDate(milestones.lastVaccinationDate);
-            }
-            if (milestones.lastRabiesDate) {
-              hasAny = true;
-              setHasPreviousRabies(true);
-              setLastRabiesUnknown(false);
-              setLastRabiesDate(milestones.lastRabiesDate);
-            }
-            if (hasAny) {
-              setShowHealthHistory(true);
-            }
-          });
+    void (async () => {
+      const pet = await usePetStore.getState().getPetById(petId);
+      if (cancelled) {
+        return;
+      }
+      if (!pet) {
+        setError('This pet could not be found.');
         setInitLoading(false);
-      });
+        allowLeaveRef.current = true;
+        if (navigation.canGoBack()) {
+          navigation.goBack();
+        }
+        return;
+      }
+
+      const milestones = await usePetStore
+        .getState()
+        .getLastHealthMilestones(pet.id);
+      if (cancelled) {
+        return;
+      }
+
+      setEditBase(pet);
+      setName(pet.name);
+      setPetType(pet.type);
+      setBreed(pet.breed ?? '');
+      setPhotoUri(pet.photo?.trim() ? pet.photo : PROFILE_PLACEHOLDER);
+      setPendingPhoto(null);
+      setPhotoCleared(false);
+      setDob(pet.dob ?? '');
+      setGender((pet.gender as PetGender | undefined) ?? '');
+      setShowAboutSection(Boolean(pet.gender) || Boolean(pet.breed?.trim()));
+      setLifestyleType(pet.lifestyle?.type ?? 'indoor');
+      setLifestyleRiskLevel(pet.lifestyle?.riskLevel ?? 'low');
+      setRiskTouched(true);
+      setRegion(pet.region ?? 'OTHER');
+
+      let hasAnyHealth = false;
+      if (milestones.lastDewormingDate) {
+        hasAnyHealth = true;
+        setHasPreviousDeworming(true);
+        setLastDewormingUnknown(false);
+        setLastDewormingDate(milestones.lastDewormingDate);
+      } else {
+        setHasPreviousDeworming(false);
+        setLastDewormingUnknown(false);
+        setLastDewormingDate('');
+      }
+      if (milestones.lastVaccinationDate) {
+        hasAnyHealth = true;
+        setHasPreviousVaccination(true);
+        setLastVaccinationUnknown(false);
+        setLastVaccinationDate(milestones.lastVaccinationDate);
+      } else {
+        setHasPreviousVaccination(false);
+        setLastVaccinationUnknown(false);
+        setLastVaccinationDate('');
+      }
+      if (milestones.lastRabiesDate) {
+        hasAnyHealth = true;
+        setHasPreviousRabies(true);
+        setLastRabiesUnknown(false);
+        setLastRabiesDate(milestones.lastRabiesDate);
+      } else {
+        setHasPreviousRabies(false);
+        setLastRabiesUnknown(false);
+        setLastRabiesDate('');
+      }
+      setShowHealthHistory(hasAnyHealth);
+      setBaseline(snapshotFromPetAndMilestones(pet, milestones));
+      setInitLoading(false);
+    })();
 
     return () => {
       cancelled = true;
@@ -414,9 +446,120 @@ export const AddPetScreen: React.FC = () => {
 
   const trimmedName = name.trim();
   const dobCheck = parseAndValidateDob(dob);
-  const canSave =
+
+  const currentSnapshot = useMemo(
+    () =>
+      createPetFormSnapshot({
+        name,
+        petType,
+        breed,
+        dob,
+        gender,
+        lifestyleType,
+        lifestyleRiskLevel,
+        region,
+        photoKey: petFormPhotoKey({
+          pendingLocalUri: pendingPhoto?.localUri ?? null,
+          photoCleared,
+          photoUri,
+        }),
+        hasPreviousDeworming,
+        lastDewormingDate,
+        lastDewormingUnknown,
+        hasPreviousVaccination,
+        lastVaccinationDate,
+        lastVaccinationUnknown,
+        hasPreviousRabies,
+        lastRabiesDate,
+        lastRabiesUnknown,
+      }),
+    [
+      breed,
+      dob,
+      gender,
+      hasPreviousDeworming,
+      hasPreviousRabies,
+      hasPreviousVaccination,
+      lastDewormingDate,
+      lastDewormingUnknown,
+      lastRabiesDate,
+      lastRabiesUnknown,
+      lastVaccinationDate,
+      lastVaccinationUnknown,
+      lifestyleRiskLevel,
+      lifestyleType,
+      name,
+      pendingPhoto?.localUri,
+      petType,
+      photoCleared,
+      photoUri,
+      region,
+    ],
+  );
+
+  const isDirty =
+    baseline !== null && !petFormSnapshotsEqual(currentSnapshot, baseline);
+  const isValid =
     trimmedName.length > 0 &&
     (isEditMode || (dob.trim().length > 0 && dobCheck.ok));
+  const canSave = isValid && (isEditMode ? isDirty : true);
+  const saveDisabledHint = isSaving
+    ? 'Saving'
+    : isEditMode && !isDirty
+      ? 'No changes to save'
+      : !trimmedName
+        ? 'Name is required'
+        : !isEditMode && (!dob.trim() || !dobCheck.ok)
+          ? 'Date of birth is required'
+          : undefined;
+
+  useEffect(() => {
+    if (isEditMode || createBaselineCapturedRef.current) {
+      return;
+    }
+    createBaselineCapturedRef.current = true;
+    setBaseline(currentSnapshot);
+  }, [currentSnapshot, isEditMode]);
+
+  const previousSnapshotRef = useRef(currentSnapshot);
+  useEffect(() => {
+    if (previousSnapshotRef.current !== currentSnapshot && error !== null) {
+      setError(null);
+    }
+    previousSnapshotRef.current = currentSnapshot;
+  }, [currentSnapshot, error]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', e => {
+      if (allowLeaveRef.current) {
+        return;
+      }
+      if (isSaving) {
+        e.preventDefault();
+        return;
+      }
+      if (!isDirty) {
+        return;
+      }
+      e.preventDefault();
+      Alert.alert(
+        'Discard changes?',
+        'Your pet profile is not saved yet.',
+        [
+          { text: 'Keep editing', style: 'cancel' },
+          {
+            text: 'Discard',
+            style: 'destructive',
+            onPress: () => {
+              allowLeaveRef.current = true;
+              navigation.dispatch(e.data.action);
+            },
+          },
+        ],
+      );
+    });
+    return unsubscribe;
+  }, [isDirty, isSaving, navigation]);
 
   const applyLifestyle = (next: PetLifestyleType): void => {
     setLifestyleType(next);
@@ -675,6 +818,7 @@ export const AddPetScreen: React.FC = () => {
     }
     void trackEvent('pet_profile_updated', { pet_type: petType });
     setIsSaving(false);
+    allowLeaveRef.current = true;
     if (navigation.canGoBack()) {
       navigation.goBack();
     }
@@ -683,6 +827,9 @@ export const AddPetScreen: React.FC = () => {
   const handleSave = async () => {
     setError(null);
     if (!canSave) {
+      if (isEditMode && !isDirty) {
+        return;
+      }
       setError('Pet name and date of birth are required.');
       return;
     }
@@ -869,7 +1016,7 @@ export const AddPetScreen: React.FC = () => {
           lossContext: {
             draftPetName: trimmedName || undefined,
             petsUsed,
-            maxPets: entitlement.maxPets,
+            maxPets,
           },
         });
         return;
@@ -903,6 +1050,7 @@ export const AddPetScreen: React.FC = () => {
       });
     }
     setIsSaving(false);
+    allowLeaveRef.current = true;
     if (navigation.canGoBack()) {
       navigation.goBack();
     }
@@ -942,80 +1090,133 @@ export const AddPetScreen: React.FC = () => {
 
   return (
     <SafeAreaView
+      edges={['top']}
       style={[styles.safeArea, { backgroundColor: colors.backgroundAlt }]}
     >
+      <View style={styles.header}>
+        <Pressable
+          style={styles.headerIconButton}
+          onPress={() => {
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            }
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <BackIcon size={24} color={colors.text.heading} />
+        </Pressable>
+        {isEditMode ? (
+          <Pressable
+            style={styles.headerSaveButton}
+            onPress={() => {
+              handleSave().catch(() => undefined);
+            }}
+            disabled={!canSave || isSaving}
+            accessibilityRole="button"
+            accessibilityLabel="Save"
+            accessibilityHint={saveDisabledHint}
+            accessibilityState={{
+              disabled: !canSave || isSaving,
+              busy: isSaving,
+            }}
+          >
+            {isSaving ? (
+              <ActivityIndicator size="small" color={colors.accent} />
+            ) : (
+              <AppText
+                style={[
+                  textStyles.control,
+                  styles.headerSaveText,
+                  {
+                    color: canSave ? colors.accent : colors.text.subdued,
+                    fontFamily: fontFamilies.semibold,
+                  },
+                ]}
+              >
+                Save
+              </AppText>
+            )}
+          </Pressable>
+        ) : (
+          <View style={styles.headerSaveButton} />
+        )}
+      </View>
+
+      {error && isEditMode ? (
+        <Text
+          style={[
+            styles.errorText,
+            styles.errorBanner,
+            { fontFamily: fontFamilies.regular },
+          ]}
+        >
+          {error}
+        </Text>
+      ) : null}
+
       <ScrollView
-        contentContainerStyle={styles.content}
+        style={styles.scroll}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: scrollBottomPad },
+        ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <Pressable
-            style={styles.headerIconButton}
-            onPress={() => {
-              if (navigation.canGoBack()) {
-                navigation.goBack();
-              }
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-          >
-            <BackIcon size={24} color={colors.text.heading} />
-          </Pressable>
-        </View>
-
         <View style={styles.foldSection}>
-          <Text
-            style={[
-              styles.foldTitle,
-              { fontFamily: fontFamilies.extrabold },
-            ]}
-            accessibilityRole="header"
-            accessibilityLabel={
-              isEditMode ? 'Edit your pet.' : 'Tell us about your pet.'
-            }
-          >
-            {isEditMode ? (
-              <>
-                Edit{' '}
-                <Text
-                  style={[
-                    styles.foldTitleAccent,
-                    { fontFamily: fontFamilies.extrabold },
-                  ]}
-                >
-                  your pet.
-                </Text>
-              </>
-            ) : (
-              <>
-                Tell us about{' '}
-                <Text
-                  style={[
-                    styles.foldTitleAccent,
-                    { fontFamily: fontFamilies.extrabold },
-                  ]}
-                >
-                  your pet.
-                </Text>
-              </>
-            )}
-          </Text>
-          <AppText style={[textStyles.marketingLead, styles.foldSubtitle]}>
-            Let&apos;s get the basics down so we can tailor their experience.
-          </AppText>
-
-          <View style={styles.entitlementWrap}>
-            <PetFormPsychologyChrome
-              isEditMode={isEditMode}
-              petsUsed={petsUsed}
-              maxPets={entitlement.maxPets}
-              planLabel={planDisplayLabel(entitlement.plan)}
-              progress={formProgress}
-              lockedInCount={lockedInCount}
-              petDisplayName={trimmedName}
-            />
+          <View style={styles.titleBlock}>
+            <Text
+              style={[
+                styles.foldTitle,
+                { fontFamily: fontFamilies.extrabold },
+              ]}
+              accessibilityRole="header"
+              accessibilityLabel={
+                isEditMode ? 'Edit your pet.' : 'Tell us about your pet.'
+              }
+            >
+              {isEditMode ? (
+                <>
+                  Edit{' '}
+                  <Text
+                    style={[
+                      styles.foldTitleAccent,
+                      { fontFamily: fontFamilies.extrabold },
+                    ]}
+                  >
+                    your pet.
+                  </Text>
+                </>
+              ) : (
+                <>
+                  Tell us about{' '}
+                  <Text
+                    style={[
+                      styles.foldTitleAccent,
+                      { fontFamily: fontFamilies.extrabold },
+                    ]}
+                  >
+                    your pet.
+                  </Text>
+                </>
+              )}
+            </Text>
+            <AppText style={[textStyles.marketingLead, styles.foldSubtitle]}>
+              Let&apos;s get the basics down so we can tailor their experience.
+            </AppText>
           </View>
+
+          <PetFormPsychologyChrome
+            variant="compact"
+            isEditMode={isEditMode}
+            petsUsed={petsUsed}
+            maxPets={maxPets}
+            planLabel={planDisplayLabel(plan)}
+            progress={formProgress}
+            lockedInCount={lockedInCount}
+            petDisplayName={trimmedName}
+          />
 
           <View style={styles.heroSection}>
             <PetPhotoHero
@@ -1028,122 +1229,150 @@ export const AddPetScreen: React.FC = () => {
               }
             />
           </View>
-
-          <View style={styles.foldField}>
-            <PetFieldLabel>PET NAME</PetFieldLabel>
-            <PetFilledTextInput
-              value={name}
-              onChangeText={setName}
-              placeholder="Enter your pet's name"
-              autoCapitalize="words"
-            />
-          </View>
-
-          <View style={styles.foldField}>
-            <PetFieldLabel>SPECIES</PetFieldLabel>
-            <PetSpeciesCards
-              options={SPECIES_OPTIONS}
-              value={petType}
-              onChange={next => setPetType(next as PetType)}
-            />
-          </View>
-
-          <View style={styles.foldField}>
-            <PetFieldLabel>DATE OF BIRTH</PetFieldLabel>
-            <DatePickerField
-              value={dob}
-              onChange={setDob}
-              placeholder="YYYY-MM-DD"
-              maximumDate={today}
-            />
-          </View>
         </View>
 
-        <View style={styles.formSection}>
-          <View style={styles.advancedField}>
-            <PetFieldLabel>GENDER (OPTIONAL)</PetFieldLabel>
-            <PetSelectionChips
-              options={GENDER_OPTIONS}
-              selectedId={gender}
-              onSelect={next => setGender(next as PetGender)}
-              equalWidth
-            />
-            {gender !== '' ? (
-              <ScalePressable
-                onPress={() => setGender('')}
-                style={styles.linkAction}
-                accessibilityRole="button"
-                accessibilityLabel="Clear gender selection"
-              >
+        <View style={styles.formColumn}>
+          <PetFormSection title="Basics">
+            <View style={styles.sectionBody}>
+              <View style={styles.foldField}>
+                <PetFieldLabel>PET NAME</PetFieldLabel>
+                <PetFilledTextInput
+                  value={name}
+                  onChangeText={setName}
+                  placeholder="Enter your pet's name"
+                  autoCapitalize="words"
+                />
+              </View>
+
+              <View style={styles.foldField}>
+                <PetFieldLabel>SPECIES</PetFieldLabel>
+                <PetSpeciesCards
+                  options={SPECIES_OPTIONS}
+                  value={petType}
+                  onChange={next => setPetType(next as PetType)}
+                />
+              </View>
+
+              <View style={styles.foldField}>
+                <PetFieldLabel>DATE OF BIRTH</PetFieldLabel>
+                <DatePickerField
+                  value={dob}
+                  onChange={setDob}
+                  placeholder="YYYY-MM-DD"
+                  maximumDate={today}
+                  inset
+                />
+              </View>
+            </View>
+          </PetFormSection>
+
+          <PetFormSection
+            title="About"
+            optional
+            collapsible
+            expanded={showAboutSection}
+            collapsedSummary="Gender and breed"
+            onToggle={() => setShowAboutSection(v => !v)}
+          >
+            <View style={styles.sectionBody}>
+              <View style={styles.advancedField}>
+                <PetFieldLabel>GENDER</PetFieldLabel>
+                <PetSelectionChips
+                  options={GENDER_OPTIONS}
+                  selectedId={gender}
+                  onSelect={next => setGender(next as PetGender)}
+                  equalWidth
+                />
+                {gender !== '' ? (
+                  <ScalePressable
+                    onPress={() => setGender('')}
+                    style={styles.linkAction}
+                    accessibilityRole="button"
+                    accessibilityLabel="Clear gender selection"
+                  >
+                    <AppText
+                      style={[
+                        textStyles.caption,
+                        styles.linkActionText,
+                        { color: colors.text.subdued },
+                      ]}
+                    >
+                      Clear
+                    </AppText>
+                  </ScalePressable>
+                ) : null}
+              </View>
+
+              <View style={styles.advancedField}>
+                <PetFieldLabel>BREED</PetFieldLabel>
+                <PetFilledTextInput
+                  value={breed}
+                  onChangeText={setBreed}
+                  placeholder="e.g. Golden Retriever"
+                  autoCapitalize="words"
+                />
+              </View>
+            </View>
+          </PetFormSection>
+
+          <PetFormSection title="Lifestyle">
+            <View style={styles.sectionBody}>
+            <View style={styles.advancedField}>
+              <PetFieldLabel>LIFESTYLE</PetFieldLabel>
+              <PetSelectionChips
+                options={LIFESTYLE_OPTIONS}
+                selectedId={lifestyleType}
+                onSelect={next => applyLifestyle(next as PetLifestyleType)}
+                equalWidth
+              />
+              {!riskTouched ? (
                 <AppText
                   style={[
                     textStyles.caption,
-                    styles.linkActionText,
-                    { color: colors.text.subdued },
+                    styles.fieldHint,
+                    { color: colors.text.subdued, marginBottom: 0 },
                   ]}
                 >
-                  Clear
+                  Risk suggested from lifestyle. Change it anytime.
                 </AppText>
-              </ScalePressable>
-            ) : null}
-          </View>
-
-          <View style={styles.advancedField}>
-            <PetFieldLabel>BREED (OPTIONAL)</PetFieldLabel>
-            <PetFilledTextInput
-              value={breed}
-              onChangeText={setBreed}
-              placeholder="e.g. Golden Retriever"
-              autoCapitalize="words"
-            />
-          </View>
-
-          <View style={styles.healthHistoryBlock}>
-            <Pressable
-              onPress={() => setShowHealthHistory(v => !v)}
-              style={styles.healthHistoryToggle}
-              accessibilityRole="button"
-              accessibilityState={{ expanded: showHealthHistory }}
-              accessibilityLabel="Add vaccine and deworming history (optional)"
-            >
-              <Text
-                style={[
-                  styles.healthHistoryToggleText,
-                  { fontFamily: fontFamilies.semibold, color: colors.accent },
-                ]}
-              >
-                {showHealthHistory
-                  ? 'Hide vaccine & deworming history'
-                  : 'Add vaccine & deworming history (optional)'}
-              </Text>
-              <Text
-                style={{
-                  fontFamily: fontFamilies.medium,
-                  color: colors.text.subdued,
-                  fontSize: 12,
+              ) : null}
+            </View>
+            <View style={styles.advancedField}>
+              <PetFieldLabel>RISK LEVEL</PetFieldLabel>
+              <PetSelectionChips
+                options={RISK_OPTIONS}
+                selectedId={lifestyleRiskLevel}
+                onSelect={next => {
+                  setRiskTouched(true);
+                  setLifestyleRiskLevel(next as PetLifestyleRiskLevel);
                 }}
-              >
-                {showHealthHistory ? '▲' : '▼'}
-              </Text>
-            </Pressable>
-            {!showHealthHistory && !isEditMode ? (
-              <Text
-                style={[
-                  styles.fieldHint,
-                  {
-                    color: colors.text.subdued,
-                    fontFamily: fontFamilies.regular,
-                    marginBottom: 0,
-                  },
-                ]}
-              >
-                You can add this later from the pet profile. We&apos;ll still set
-                up a smart care schedule.
-              </Text>
-            ) : null}
+                equalWidth
+              />
+            </View>
+            <View style={styles.advancedField}>
+              <PetFieldLabel>REGION</PetFieldLabel>
+              <PetSelectionChips
+                options={REGION_OPTIONS}
+                selectedId={region}
+                onSelect={next => setRegion(next as PetRegion)}
+              />
+            </View>
+            </View>
+          </PetFormSection>
 
-            {showHealthHistory ? (
-              <View style={styles.healthHistoryFields}>
+          <PetFormSection
+            title="Health"
+            optional
+            collapsible
+            expanded={showHealthHistory}
+            collapsedSummary={
+              isEditMode
+                ? 'Vaccine and deworming dates'
+                : 'Add later. We still set up a smart care schedule.'
+            }
+            onToggle={() => setShowHealthHistory(v => !v)}
+          >
+            <View style={styles.healthHistoryFields}>
                 <View style={styles.advancedField}>
                   <PetFieldLabel>PREVIOUS DEWORMING?</PetFieldLabel>
                   <AppText
@@ -1209,6 +1438,7 @@ export const AddPetScreen: React.FC = () => {
                             onChange={setLastDewormingDate}
                             placeholder="YYYY-MM-DD"
                             maximumDate={today}
+                            inset
                           />
                         </View>
                       ) : null}
@@ -1286,6 +1516,7 @@ export const AddPetScreen: React.FC = () => {
                             onChange={setLastVaccinationDate}
                             placeholder="YYYY-MM-DD"
                             maximumDate={today}
+                            inset
                           />
                         </View>
                       ) : null}
@@ -1358,6 +1589,7 @@ export const AddPetScreen: React.FC = () => {
                             onChange={setLastRabiesDate}
                             placeholder="YYYY-MM-DD"
                             maximumDate={today}
+                            inset
                           />
                         </View>
                       ) : null}
@@ -1365,70 +1597,28 @@ export const AddPetScreen: React.FC = () => {
                   ) : null}
                 </View>
               </View>
+          </PetFormSection>
+        </View>
+
+        {!isEditMode ? (
+          <View style={styles.ctaContainer}>
+            {error ? (
+              <Text
+                style={[styles.errorText, { fontFamily: fontFamilies.regular }]}
+              >
+                {error}
+              </Text>
             ) : null}
+            <PetPrimaryCta
+              title="Complete Profile"
+              onPress={() => {
+                handleSave().catch(() => undefined);
+              }}
+              loading={isSaving}
+              disabled={!canSave}
+            />
           </View>
-
-          <View style={styles.lifestyleSection}>
-            <View style={styles.advancedField}>
-              <PetFieldLabel>LIFESTYLE</PetFieldLabel>
-              <PetSelectionChips
-                options={LIFESTYLE_OPTIONS}
-                selectedId={lifestyleType}
-                onSelect={next => applyLifestyle(next as PetLifestyleType)}
-                equalWidth
-              />
-              {!riskTouched ? (
-                <AppText
-                  style={[
-                    textStyles.caption,
-                    styles.fieldHint,
-                    { color: colors.text.subdued, marginBottom: 0 },
-                  ]}
-                >
-                  Risk suggested from lifestyle. Change it anytime.
-                </AppText>
-              ) : null}
-            </View>
-            <View style={styles.advancedField}>
-              <PetFieldLabel>RISK LEVEL</PetFieldLabel>
-              <PetSelectionChips
-                options={RISK_OPTIONS}
-                selectedId={lifestyleRiskLevel}
-                onSelect={next => {
-                  setRiskTouched(true);
-                  setLifestyleRiskLevel(next as PetLifestyleRiskLevel);
-                }}
-                equalWidth
-              />
-            </View>
-            <View style={styles.advancedField}>
-              <PetFieldLabel>REGION</PetFieldLabel>
-              <PetSelectionChips
-                options={REGION_OPTIONS}
-                selectedId={region}
-                onSelect={next => setRegion(next as PetRegion)}
-              />
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.ctaContainer}>
-          {error ? (
-            <Text
-              style={[styles.errorText, { fontFamily: fontFamilies.regular }]}
-            >
-              {error}
-            </Text>
-          ) : null}
-          <PetPrimaryCta
-            title={isEditMode ? 'Save Changes' : 'Complete Profile'}
-            onPress={() => {
-              handleSave().catch(() => undefined);
-            }}
-            loading={isSaving}
-            disabled={!canSave}
-          />
-        </View>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -1442,21 +1632,23 @@ const createStyles = (
   safeArea: {
     flex: 1,
     backgroundColor: colors.backgroundAlt,
-    marginBottom: spacing['6xl'],
   },
   initCenter: {
     alignItems: 'center',
     justifyContent: 'center',
   },
+  scroll: {
+    flex: 1,
+  },
   content: {
-    minHeight: 884,
-    paddingBottom: 20,
+    paddingBottom: spacing.xl,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.xs,
     backgroundColor: colors.backgroundAlt,
   },
@@ -1467,10 +1659,28 @@ const createStyles = (
     alignItems: 'center',
     justifyContent: 'center',
   },
+  headerSaveButton: {
+    minHeight: 48,
+    minWidth: 64,
+    paddingHorizontal: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerSaveText: {
+    textAlign: 'right',
+  },
+  errorBanner: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
+    marginTop: 0,
+  },
   foldSection: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
-    gap: spacing.xl,
+    gap: spacing.lg,
+  },
+  titleBlock: {
+    gap: spacing.xs,
   },
   foldTitle: {
     fontSize: fontSizes['2xl'],
@@ -1483,12 +1693,8 @@ const createStyles = (
     color: colors.accent,
   },
   foldSubtitle: {
-    marginTop: -spacing.md,
     color: colors.text.body,
     textAlign: 'center',
-  },
-  entitlementWrap: {
-    marginTop: -spacing.sm,
   },
   heroSection: {
     alignItems: 'center',
@@ -1496,11 +1702,13 @@ const createStyles = (
   foldField: {
     gap: spacing.sm,
   },
-  formSection: {
-    marginTop: spacing.xl,
+  formColumn: {
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingTop: spacing.lg,
     gap: spacing.xl,
+  },
+  sectionBody: {
+    gap: spacing.lg,
   },
   advancedField: {
     gap: spacing.sm,
@@ -1520,39 +1728,18 @@ const createStyles = (
     marginTop: -spacing.xs,
     marginBottom: spacing.xs,
   },
-  healthHistoryBlock: {
-    gap: spacing.sm,
-  },
-  healthHistoryToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.xs,
-  },
-  healthHistoryToggleText: {
-    fontSize: 15,
-    lineHeight: 22,
-    flex: 1,
-    paddingRight: spacing.sm,
-  },
   healthHistoryFields: {
-    gap: spacing.xl,
-    paddingTop: spacing.xs,
-  },
-  lifestyleSection: {
-    gap: spacing.xl,
+    gap: spacing.lg,
   },
   errorText: {
-    marginTop: 10,
     color: colors.danger,
     fontSize: 14,
     lineHeight: 18,
   },
   ctaContainer: {
-    marginTop: 'auto',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xs,
-    paddingBottom: spacing['3xl'],
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
     gap: spacing.sm,
   },
 });

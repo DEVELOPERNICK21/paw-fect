@@ -1,16 +1,9 @@
-import firestore from '@react-native-firebase/firestore';
-import { Platform } from 'react-native';
 import { create } from 'zustand';
 
 import { computeEntitlement } from '../../../shared/subscription/entitlementEngine';
 import type { ComputedEntitlement } from '../../../shared/subscription/entitlementEngine';
 import { PLAN_CARE_PLUS, PLAN_FAMILY } from '../../../shared/subscription/planCatalog';
-import { playProductIdFor } from '../../../shared/subscription/playStoreCatalog';
-import { parseFirestoreEntitlement } from '../domain/parseFirestoreEntitlement';
-import {
-  postEntitlementBootstrap,
-  postVerifyGooglePlaySubscription,
-} from '../data/subscriptionApi';
+import { subscriptionComposition } from '../subscriptionComposition';
 
 const defaultEntitlement = (): ComputedEntitlement =>
   computeEntitlement({
@@ -19,8 +12,6 @@ const defaultEntitlement = (): ComputedEntitlement =>
     trialConsumed: true,
     subscription: null,
   });
-
-let firestoreUnsub: (() => void) | null = null;
 
 export interface SubscriptionState {
   entitlement: ComputedEntitlement;
@@ -36,37 +27,21 @@ export interface SubscriptionState {
   ) => Promise<void>;
 }
 
-export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
+export const useSubscriptionStore = create<SubscriptionState>(set => ({
   entitlement: defaultEntitlement(),
   serverSynced: false,
   checkoutLoading: false,
   checkoutError: null,
 
-  startListening: (userId: string) => {
-    firestoreUnsub?.();
-    firestoreUnsub = firestore()
-      .collection('users')
-      .doc(userId)
-      .onSnapshot(
-        snap => {
-          try {
-            const parsed = parseFirestoreEntitlement(snap.data()?.entitlement);
-            if (parsed) {
-              set({ entitlement: parsed, serverSynced: true });
-            }
-          } catch {
-            /* malformed snapshot — keep last entitlement */
-          }
-        },
-        () => {
-          /* keep last known entitlement */
-        },
-      );
+  startListening: userId => {
+    subscriptionComposition.stopObservingEntitlement.execute();
+    subscriptionComposition.observeEntitlement.execute(userId, entitlement => {
+      set({ entitlement, serverSynced: true });
+    });
   },
 
   stopListening: () => {
-    firestoreUnsub?.();
-    firestoreUnsub = null;
+    subscriptionComposition.stopObservingEntitlement.execute();
     set({
       entitlement: defaultEntitlement(),
       serverSynced: false,
@@ -76,7 +51,8 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
 
   refreshBootstrap: async () => {
     try {
-      const entitlement = await postEntitlementBootstrap();
+      const entitlement =
+        await subscriptionComposition.refreshEntitlementBootstrap.execute();
       set({ entitlement, serverSynced: true, checkoutError: null });
     } catch {
       /* offline or misconfiguration — Firestore listener may still update */
@@ -86,69 +62,12 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   startPlayStoreCheckout: async (planKey, billingPeriod) => {
     set({ checkoutLoading: true, checkoutError: null });
     try {
-      if (Platform.OS !== 'android') {
-        throw new Error(
-          'Play Store subscriptions are available on Android only in this build.',
+      const entitlement =
+        await subscriptionComposition.checkoutPlayStoreSubscription.execute(
+          planKey,
+          billingPeriod,
         );
-      }
-      const productId = playProductIdFor(planKey, billingPeriod);
-      if (!productId) {
-        throw new Error('Subscription product is not configured for this plan.');
-      }
-
-      type Purchase = {
-        id?: string;
-        purchaseToken?: string;
-        transactionReceipt?: string;
-      };
-      type IapModule = {
-        initConnection: () => Promise<boolean>;
-        requestSubscription?: (input: {
-          sku: string;
-          subscriptionOffers?: Array<{ sku: string; offerToken: string }>;
-        }) => Promise<Purchase>;
-        requestPurchase?: (input: {
-          request: {
-            android: {
-              skus: string[];
-              subscriptionOffers?: Array<{ sku: string; offerToken: string }>;
-            };
-          };
-          type: 'subs' | 'in-app';
-        }) => Promise<Purchase>;
-        finishTransaction: (params: {
-          purchase: Purchase;
-          isConsumable?: boolean;
-        }) => Promise<void>;
-      };
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const iap = require('react-native-iap') as IapModule;
-
-      await iap.initConnection();
-      const purchase = iap.requestPurchase
-        ? await iap.requestPurchase({
-            request: { android: { skus: [productId] } },
-            type: 'subs',
-          })
-        : iap.requestSubscription
-          ? await iap.requestSubscription({ sku: productId })
-          : (() => {
-              throw new Error(
-                'In-app purchase module is missing purchase functions. Rebuild the app.',
-              );
-            })();
-      const purchaseToken =
-        purchase.purchaseToken ?? purchase.transactionReceipt ?? null;
-      if (!purchaseToken) {
-        throw new Error('Play Store purchase token was not returned.');
-      }
-      const entitlement = await postVerifyGooglePlaySubscription({
-        purchaseToken,
-        productId,
-      });
       set({ entitlement, serverSynced: true });
-
-      await iap.finishTransaction({ purchase, isConsumable: false });
     } catch (e) {
       const message =
         e instanceof Error ? e.message : 'Checkout was cancelled or failed.';

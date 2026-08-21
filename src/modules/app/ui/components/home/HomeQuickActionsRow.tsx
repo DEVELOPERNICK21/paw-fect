@@ -54,60 +54,44 @@ export const HomeQuickActionsRow: React.FC<HomeQuickActionsRowProps> = React.mem
     );
 
     return (
-      <View style={{ gap: spacing.xs }}>
-        <View>
-          <AppText style={[textStyles.title, { color: colors.text.heading }]}>
-            Quick actions
-          </AppText>
-          <AppText
+      <View style={[styles.row, { gap: spacing.sm }]}>
+        {actions.map(a => (
+          <Pressable
+            key={a.id}
+            onPress={() => onPressAction(a.id)}
+            accessibilityRole="button"
+            accessibilityLabel={a.a11y}
             style={[
-              textStyles.caption,
-              { color: colors.text.secondary, marginTop: 2 },
+              styles.chip,
+              {
+                flex: 1,
+                minHeight: 44,
+                borderRadius: radius.sm,
+                borderWidth: 1,
+                borderColor: colors.borderSubtle,
+                backgroundColor: colors.surface,
+                paddingVertical: spacing.sm,
+                paddingHorizontal: spacing.xs,
+                gap: spacing.xs,
+              },
             ]}
           >
-            Order updates based on what you use most
-          </AppText>
-        </View>
-        <View style={[styles.row, { gap: spacing.sm }]}>
-          {actions.map(a => (
-            <Pressable
-              key={a.id}
-              onPress={() => onPressAction(a.id)}
-              accessibilityRole="button"
-              accessibilityLabel={a.a11y}
+            <MaterialIcon name={a.icon} size={20} color={colors.text.secondary} />
+            <AppText
               style={[
-                styles.chip,
+                textStyles.caption,
                 {
-                  flex: 1,
-                  minWidth: 72,
-                  borderRadius: radius.lg,
-                  borderWidth: 1,
-                  borderColor: colors.borderSubtle,
-                  backgroundColor: colors.surface,
-                  paddingVertical: spacing.md,
-                  paddingHorizontal: spacing.xs,
-                  gap: spacing.xs,
-                  alignItems: 'center',
+                  color: colors.text.heading,
+                  fontFamily: fontFamilies.medium,
+                  textAlign: 'center',
                 },
               ]}
+              numberOfLines={1}
             >
-              <MaterialIcon name={a.icon} size={24} color={colors.accent} />
-              <AppText
-                style={[
-                  textStyles.footer,
-                  {
-                    color: colors.text.heading,
-                    fontFamily: fontFamilies.semibold,
-                    textAlign: 'center',
-                  },
-                ]}
-                numberOfLines={1}
-              >
-                {a.label}
-              </AppText>
-            </Pressable>
-          ))}
-        </View>
+              {a.label}
+            </AppText>
+          </Pressable>
+        ))}
       </View>
     );
   },
@@ -118,10 +102,10 @@ HomeQuickActionsRow.displayName = 'HomeQuickActionsRow';
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    alignItems: 'stretch',
   },
   chip: {
+    alignItems: 'center',
     justifyContent: 'center',
   },
 });

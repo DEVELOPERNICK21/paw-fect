@@ -9,7 +9,7 @@ export type PawTabBarShellParams = {
 /** Paw FAB diameter — shared with scoop depth math. */
 export const FAB_SIZE = 56;
 /** Height of the SVG scoop shell (excludes float gap + safe-area pad). */
-export const BAR_HEIGHT = 60;
+export const BAR_HEIGHT = 64;
 /** How much of the FAB visually sits above the bar's top edge, into the scoop. */
 export const FAB_OVERHANG = 26;
 /** Distance from the island bottom to the FAB layer bottom; FAB dips `FAB_SIZE - FAB_OVERHANG` into the scoop. */

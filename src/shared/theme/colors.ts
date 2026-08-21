@@ -36,6 +36,8 @@ export const lightColors = {
   },
   danger: '#EF4444',
   dangerDark: '#B91C1C',
+  /** Soft fill behind danger banners (attention, overdue). */
+  dangerSurface: '#FCE8E6',
   success: '#10B981',
   /** Soft fill behind success icons (e.g. care task done) */
   successSurface: '#D1FAE5',
@@ -46,6 +48,8 @@ export const lightColors = {
 
   shadow: 'rgba(15, 23, 42, 0.15)',
   overlay: 'rgba(15, 23, 42, 0.4)',
+  /** Frosted panel over photos (health featured card). */
+  photoGlass: 'rgba(255, 255, 255, 0.92)',
 
   /** Translucent accent fills (splash, brand glows) */
   brandTint5: 'rgba(238, 140, 43, 0.05)',
@@ -92,6 +96,7 @@ export const darkColors = {
   },
   danger: '#F87171',
   dangerDark: '#DC2626',
+  dangerSurface: 'rgba(248, 113, 113, 0.14)',
   success: '#34D399',
   successSurface: 'rgba(52, 211, 153, 0.16)',
   info: '#60A5FA',
@@ -100,6 +105,7 @@ export const darkColors = {
 
   shadow: 'rgba(2, 6, 23, 0.55)',
   overlay: 'rgba(2, 6, 23, 0.6)',
+  photoGlass: 'rgba(27, 38, 52, 0.9)',
 
   brandTint5: 'rgba(244, 166, 79, 0.08)',
   brandTint10: 'rgba(244, 166, 79, 0.15)',

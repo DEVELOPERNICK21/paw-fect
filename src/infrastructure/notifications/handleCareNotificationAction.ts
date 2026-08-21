@@ -1,10 +1,8 @@
 import notifee from '@notifee/react-native';
 
-import { scheduleComposition } from '../../modules/schedule/scheduleComposition';
 import { requestNotificationResync } from './requestNotificationResync';
 import { getAppSessionUserId } from '../../shared/session/appSessionPorts';
-import { appOrchestrator } from '../../modules/app/appComposition';
-
+import { getNotificationFeaturePorts } from './notificationFeaturePorts';
 import {
   isCareNotificationActionId,
   snoozeMinutesForAction,
@@ -30,21 +28,21 @@ export async function handleCareNotificationAction(
   }
 
   const { petId, blockId, date, scheduledTime } = data;
+  const ports = getNotificationFeaturePorts();
 
   if (actionId === 'care-done') {
-    await scheduleComposition.markCareBlockDone.execute({
+    await ports.markCareBlockDone({
       userId,
       petId,
       date,
       blockId,
-      completed: true,
     });
-    await scheduleComposition.cancelScheduleBlockNotification(blockId, petId);
+    await ports.cancelScheduleBlockNotification(blockId, petId);
     if (data.notificationId != null && data.notificationId.length > 0) {
       await notifee.cancelNotification(data.notificationId);
     }
     await requestNotificationResync();
-    appOrchestrator.invalidateHomeDashboard();
+    ports.invalidateHomeDashboard();
     return true;
   }
 
@@ -58,7 +56,7 @@ export async function handleCareNotificationAction(
       ? scheduledTime
       : '12:00';
 
-  await scheduleComposition.snoozeCareBlock.execute({
+  await ports.snoozeCareBlock({
     userId,
     petId,
     date,
@@ -67,17 +65,9 @@ export async function handleCareNotificationAction(
     snoozeMinutes,
   });
 
-  await scheduleComposition.cancelScheduleBlockNotification(blockId, petId);
+  await ports.cancelScheduleBlockNotification(blockId, petId);
   await requestNotificationResync();
-  const schedule = await scheduleComposition.buildDailySchedule.execute({
-    userId,
-    petId,
-    date,
-  });
-  if (schedule != null) {
-    await scheduleComposition.syncGlanceForSchedule(schedule);
-  }
-
-  appOrchestrator.invalidateHomeDashboard();
+  await ports.syncGlanceForPetDate(userId, petId, date);
+  ports.invalidateHomeDashboard();
   return true;
 }
