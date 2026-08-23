@@ -1,4 +1,4 @@
-import { resolveOnboardingGate } from '../resolveOnboardingGate';
+import { isFirstWinPersisted, resolveOnboardingGate } from '../resolveOnboardingGate';
 
 describe('resolveOnboardingGate', () => {
   const base = {
@@ -126,5 +126,25 @@ describe('resolveOnboardingGate', () => {
         hasPets: false,
       }),
     ).toBe('activate');
+  });
+});
+
+describe('isFirstWinPersisted', () => {
+  it('false when pet not yet created', () => {
+    expect(
+      isFirstWinPersisted({ createdPetId: null, phase: 'persist' }),
+    ).toBe(false);
+  });
+
+  it('false when pet created but still on activate', () => {
+    expect(
+      isFirstWinPersisted({ createdPetId: 'pet-1', phase: 'activate' }),
+    ).toBe(false);
+  });
+
+  it('true when pet created and phase advanced past activation', () => {
+    expect(
+      isFirstWinPersisted({ createdPetId: 'pet-1', phase: 'paywall' }),
+    ).toBe(true);
   });
 });

@@ -31,7 +31,10 @@ import { appOrchestrator } from '../../modules/app/appComposition';
 import { registerNotificationFeedSync } from '../../modules/notifications/bootstrap/registerNotificationFeedSync';
 import { useHomeQuickActionsUsageStore } from '../../modules/app/store/homeQuickActionsUsageStore';
 import { useOnboardingDraftStore } from '../../modules/app/store/onboardingDraftStore';
-import { resolveOnboardingGate } from '../../modules/app/domain/onboarding/resolveOnboardingGate';
+import {
+  isFirstWinPersisted,
+  resolveOnboardingGate,
+} from '../../modules/app/domain/onboarding/resolveOnboardingGate';
 import { useNotificationFeedStore } from '../../modules/notifications/store/notificationFeedStore';
 import SplashScreen from '../../modules/app/ui/screens/SplashScreen';
 import {
@@ -93,7 +96,7 @@ export const RootNavigator: React.FC = () => {
     isAuthenticated,
     hasPets: pets.length > 0,
     activationSubmitted: onboardingDraft.activationSubmitted,
-    firstWinPersisted: onboardingDraft.createdPetId != null,
+    firstWinPersisted: isFirstWinPersisted(onboardingDraft),
   });
   const petGateActive =
     bootstrapped &&

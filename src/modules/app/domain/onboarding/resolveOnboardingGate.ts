@@ -22,6 +22,16 @@ export function isActivationReady(draft: OnboardingDraft): boolean {
   );
 }
 
+export function isFirstWinPersisted(
+  draft: Pick<OnboardingDraft, 'createdPetId' | 'phase'>,
+): boolean {
+  return (
+    draft.createdPetId != null &&
+    draft.phase !== 'activate' &&
+    draft.phase !== 'welcome'
+  );
+}
+
 export function resolveOnboardingGate(input: {
   onboardingCompleted: boolean;
   phase: OnboardingPhase;
