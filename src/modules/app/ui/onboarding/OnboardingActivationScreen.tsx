@@ -147,7 +147,7 @@ export const OnboardingActivationScreen: React.FC = () => {
   const update = useOnboardingDraftStore(state => state.update);
   const goNext = useOnboardingDraftStore(state => state.goNext);
   const goBack = useOnboardingDraftStore(state => state.goBack);
-  const setPhase = useOnboardingDraftStore(state => state.setPhase);
+  const submitActivation = useOnboardingDraftStore(state => state.submitActivation);
 
   const step = draft.step;
   const petDraft = draft.petDraft ?? DEFAULT_PET_DRAFT;
@@ -186,15 +186,24 @@ export const OnboardingActivationScreen: React.FC = () => {
 
   const handleContinue = useCallback(() => {
     if (step === ACTIVATION_STEP.petBasics) {
+      if (!draft.petDraft) {
+        update(current => setPetDraft(current, petDraft));
+      }
       goNext();
       return;
     }
 
     void requestNotificationPermission();
-    if (isAuthenticated) {
-      setPhase('persist');
-    }
-  }, [step, goNext, isAuthenticated, setPhase]);
+    submitActivation(isAuthenticated);
+  }, [
+    step,
+    draft.petDraft,
+    petDraft,
+    update,
+    goNext,
+    isAuthenticated,
+    submitActivation,
+  ]);
 
   const handleBack = useCallback(() => {
     goBack();
@@ -265,6 +274,9 @@ export const OnboardingActivationScreen: React.FC = () => {
           <Pressable
             onPress={handleContinue}
             disabled={!isStepValid}
+            accessibilityRole="button"
+            accessibilityState={{ disabled: !isStepValid }}
+            accessibilityLabel={primaryLabel}
             style={[
               styles.primaryButton,
               !isStepValid ? styles.primaryButtonDisabled : null,

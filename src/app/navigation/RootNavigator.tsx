@@ -31,10 +31,7 @@ import { appOrchestrator } from '../../modules/app/appComposition';
 import { registerNotificationFeedSync } from '../../modules/notifications/bootstrap/registerNotificationFeedSync';
 import { useHomeQuickActionsUsageStore } from '../../modules/app/store/homeQuickActionsUsageStore';
 import { useOnboardingDraftStore } from '../../modules/app/store/onboardingDraftStore';
-import {
-  isActivationReady,
-  resolveOnboardingGate,
-} from '../../modules/app/domain/onboarding/resolveOnboardingGate';
+import { resolveOnboardingGate } from '../../modules/app/domain/onboarding/resolveOnboardingGate';
 import { useNotificationFeedStore } from '../../modules/notifications/store/notificationFeedStore';
 import SplashScreen from '../../modules/app/ui/screens/SplashScreen';
 import {
@@ -95,7 +92,7 @@ export const RootNavigator: React.FC = () => {
     entryIntent: onboardingDraft.entryIntent,
     isAuthenticated,
     hasPets: pets.length > 0,
-    activationReady: isActivationReady(onboardingDraft),
+    activationSubmitted: onboardingDraft.activationSubmitted,
     firstWinPersisted: onboardingDraft.createdPetId != null,
   });
   const petGateActive =

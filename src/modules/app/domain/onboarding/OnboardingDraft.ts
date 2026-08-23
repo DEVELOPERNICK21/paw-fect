@@ -60,6 +60,8 @@ export type OnboardingDraft = {
   phase: OnboardingPhase;
   /** Welcome path: new activation vs returning sign-in. */
   entryIntent: OnboardingEntryIntent;
+  /** True after user taps Save & continue on the reminder step. */
+  activationSubmitted: boolean;
   skippedPaywall: boolean;
   paywallOutcome: PaywallOutcome | null;
   /** Legacy optional — left empty on activation path. */

@@ -5,6 +5,7 @@ import {
   acceptCommitment,
   setPhase,
   setEntryIntent,
+  setActivationSubmitted,
   setReminderDraft,
   setCreatedPetId,
 } from '../onboardingDraftReducers';
@@ -17,6 +18,7 @@ describe('onboardingDraftReducers', () => {
     expect(d.step).toBe(0);
     expect(d.phase).toBe('welcome');
     expect(d.entryIntent).toBeNull();
+    expect(d.activationSubmitted).toBe(false);
     expect(d.commitmentAccepted).toBe(false);
     expect(d.reminderDraft).toBeNull();
     expect(d.createdPetId).toBeNull();
@@ -54,6 +56,13 @@ describe('onboardingDraftReducers', () => {
     expect(setEntryIntent(createDefaultOnboardingDraft(), 'sign_in').entryIntent).toBe(
       'sign_in',
     );
+  });
+
+  it('setActivationSubmitted updates flag', () => {
+    expect(
+      setActivationSubmitted(createDefaultOnboardingDraft(), true)
+        .activationSubmitted,
+    ).toBe(true);
   });
 
   it('setReminderDraft stores reminder immutably', () => {

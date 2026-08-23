@@ -108,6 +108,7 @@ describe('normalizeOnboardingDraft', () => {
     expect(normalized.petDraft?.nickname).toBe('Milo');
     expect(normalized.reminderDraft).toEqual(reminderDraft);
     expect(normalized.createdPetId).toBe('pet-123');
+    expect(normalized.activationSubmitted).toBe(false);
     expect(normalized.problems).toEqual([]);
     expect(normalized.careInterests).toEqual([]);
     expect(normalized.entryIntent).toBeNull();
@@ -128,5 +129,13 @@ describe('normalizeOnboardingDraft', () => {
         entryIntent: 'garbage' as never,
       }).entryIntent,
     ).toBeNull();
+  });
+
+  it('preserves activationSubmitted when present', () => {
+    const normalized = normalizeOnboardingDraft({
+      phase: 'activate',
+      activationSubmitted: true,
+    });
+    expect(normalized.activationSubmitted).toBe(true);
   });
 });

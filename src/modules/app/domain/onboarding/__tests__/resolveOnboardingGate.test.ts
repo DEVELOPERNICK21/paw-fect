@@ -7,7 +7,7 @@ describe('resolveOnboardingGate', () => {
     hasPets: false,
     phase: 'welcome' as const,
     entryIntent: null,
-    activationReady: false,
+    activationSubmitted: false,
     firstWinPersisted: false,
   };
 
@@ -38,23 +38,46 @@ describe('resolveOnboardingGate', () => {
     );
   });
 
-  it('auth when activationReady and not authenticated', () => {
+  it('stays activate when drafts are ready but not yet submitted', () => {
     expect(
       resolveOnboardingGate({
         ...base,
         phase: 'activate',
-        activationReady: true,
+        activationSubmitted: false,
+        isAuthenticated: false,
+      }),
+    ).toBe('activate');
+  });
+
+  it('auth when activationSubmitted and not authenticated', () => {
+    expect(
+      resolveOnboardingGate({
+        ...base,
+        phase: 'activate',
+        activationSubmitted: true,
         isAuthenticated: false,
       }),
     ).toBe('auth');
   });
 
-  it('persist when authenticated, ready, not yet persisted', () => {
+  it('persist when authenticated, submitted, not yet persisted', () => {
     expect(
       resolveOnboardingGate({
         ...base,
         phase: 'persist',
-        activationReady: true,
+        activationSubmitted: true,
+        isAuthenticated: true,
+        firstWinPersisted: false,
+      }),
+    ).toBe('persist');
+  });
+
+  it('persist when authenticated, submitted, phase still activate', () => {
+    expect(
+      resolveOnboardingGate({
+        ...base,
+        phase: 'activate',
+        activationSubmitted: true,
         isAuthenticated: true,
         firstWinPersisted: false,
       }),
@@ -68,7 +91,7 @@ describe('resolveOnboardingGate', () => {
         phase: 'paywall',
         isAuthenticated: true,
         firstWinPersisted: true,
-        activationReady: true,
+        activationSubmitted: true,
       }),
     ).toBe('paywall');
   });

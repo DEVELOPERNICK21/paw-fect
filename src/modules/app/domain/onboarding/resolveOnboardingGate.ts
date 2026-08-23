@@ -28,7 +28,7 @@ export function resolveOnboardingGate(input: {
   entryIntent: OnboardingEntryIntent;
   isAuthenticated: boolean;
   hasPets: boolean;
-  activationReady: boolean;
+  activationSubmitted: boolean;
   firstWinPersisted: boolean;
 }): OnboardingGate {
   if (input.onboardingCompleted || input.phase === 'done') return 'complete';
@@ -50,9 +50,9 @@ export function resolveOnboardingGate(input: {
     if (!input.isAuthenticated) return 'auth';
     return 'persist';
   }
-  if (input.activationReady && !input.isAuthenticated) return 'auth';
+  if (input.activationSubmitted && !input.isAuthenticated) return 'auth';
   if (
-    input.activationReady &&
+    input.activationSubmitted &&
     input.isAuthenticated &&
     !input.firstWinPersisted
   ) {

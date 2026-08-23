@@ -39,6 +39,7 @@ export interface OnboardingDraftState {
   goBack: () => void;
   setPhase: (phase: OnboardingPhase) => void;
   startActivation: () => void;
+  submitActivation: (isAuthenticated: boolean) => void;
   setSignInIntent: () => void;
   clearEntryIntent: () => void;
   persistFirstWin: (userId: string) => Promise<PersistFirstWinResult>;
@@ -97,8 +98,21 @@ export const useOnboardingDraftStore = create<OnboardingDraftState>((set, get) =
 
   startActivation: () => {
     get().update(draft =>
-      setEntryIntent({ ...draft, phase: 'activate', step: 0 }, 'activate'),
+      setEntryIntent(
+        { ...draft, phase: 'activate', step: 0, activationSubmitted: false },
+        'activate',
+      ),
     );
+  },
+
+  submitActivation: isAuthenticated => {
+    get().update(draft => {
+      const submitted = { ...draft, activationSubmitted: true };
+      if (isAuthenticated) {
+        return setDraftPhase(submitted, 'persist');
+      }
+      return submitted;
+    });
   },
 
   setSignInIntent: () => {

@@ -18,6 +18,7 @@ export const createDefaultOnboardingDraft = (): OnboardingDraft => ({
   createdPetId: null,
   phase: 'welcome',
   entryIntent: null,
+  activationSubmitted: false,
   skippedPaywall: false,
   paywallOutcome: null,
   problems: [],
@@ -87,6 +88,14 @@ export const setEntryIntent = (
 ): OnboardingDraft => ({
   ...draft,
   entryIntent,
+});
+
+export const setActivationSubmitted = (
+  draft: OnboardingDraft,
+  activationSubmitted: boolean,
+): OnboardingDraft => ({
+  ...draft,
+  activationSubmitted,
 });
 
 export const setReminderDraft = (

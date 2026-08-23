@@ -104,6 +104,54 @@ describe('onboardingDraftStore', () => {
     expect(useOnboardingDraftStore.getState().draft.phase).toBe('activate');
     expect(useOnboardingDraftStore.getState().draft.step).toBe(0);
     expect(useOnboardingDraftStore.getState().draft.entryIntent).toBe('activate');
+    expect(useOnboardingDraftStore.getState().draft.activationSubmitted).toBe(false);
+  });
+
+  it('startActivation clears activationSubmitted', () => {
+    useOnboardingDraftStore.getState().update(draft => ({
+      ...draft,
+      activationSubmitted: true,
+    }));
+
+    useOnboardingDraftStore.getState().startActivation();
+
+    expect(useOnboardingDraftStore.getState().draft.activationSubmitted).toBe(
+      false,
+    );
+  });
+
+  it('submitActivation sets flag and advances to persist when authenticated', async () => {
+    useOnboardingDraftStore.getState().submitActivation(true);
+    await Promise.resolve();
+
+    expect(useOnboardingDraftStore.getState().draft.activationSubmitted).toBe(
+      true,
+    );
+    expect(useOnboardingDraftStore.getState().draft.phase).toBe('persist');
+    expect(mockSetItem).toHaveBeenCalledWith(
+      'onboarding_draft',
+      expect.objectContaining({
+        activationSubmitted: true,
+        phase: 'persist',
+      }),
+    );
+  });
+
+  it('submitActivation sets flag but keeps activate phase when unauthenticated', async () => {
+    useOnboardingDraftStore.getState().submitActivation(false);
+    await Promise.resolve();
+
+    expect(useOnboardingDraftStore.getState().draft.activationSubmitted).toBe(
+      true,
+    );
+    expect(useOnboardingDraftStore.getState().draft.phase).toBe('welcome');
+    expect(mockSetItem).toHaveBeenCalledWith(
+      'onboarding_draft',
+      expect.objectContaining({
+        activationSubmitted: true,
+        phase: 'welcome',
+      }),
+    );
   });
 
   it('setSignInIntent sets sign_in entryIntent', async () => {
