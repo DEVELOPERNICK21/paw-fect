@@ -195,7 +195,7 @@ export const AddReminderScreen: React.FC = () => {
       type: 'other',
       date,
       time,
-      repeatEnabled: false,
+      repeat: 'once',
       notes: notes.trim() ? notes : undefined,
     });
     if (!result.success) {

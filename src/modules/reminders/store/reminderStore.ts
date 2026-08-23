@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { Reminder } from '../domain/models/Reminder';
-import type { ReminderType } from '../domain/models/Reminder';
+import type { ReminderRepeat, ReminderType } from '../domain/models/Reminder';
 import {
   type CreateReminderEntryResult,
 } from '../domain/usecases/CreateReminderEntry';
@@ -20,7 +20,7 @@ export interface ReminderState {
     type: ReminderType;
     date: string;
     time: string;
-    repeatEnabled: boolean;
+    repeat: ReminderRepeat;
     notes?: string;
   }) => Promise<{ success: boolean; error?: string }>;
   updateReminder: (reminder: Reminder) => Promise<void>;
