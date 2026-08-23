@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import type { OnboardingStackParamList } from './types';
 import { useOnboardingDraftStore } from '../../modules/app/store/onboardingDraftStore';
+import OnboardingActivationScreen from '../../modules/app/ui/onboarding/OnboardingActivationScreen';
 import OnboardingFunnelScreen from '../../modules/app/ui/onboarding/OnboardingFunnelScreen';
 import OnboardingPaywallHost from '../../modules/app/ui/onboarding/OnboardingPaywallHost';
 import OnboardingWelcomeScreen from '../../modules/app/ui/onboarding/OnboardingWelcomeScreen';
@@ -25,6 +26,14 @@ export const OnboardingNavigator = React.memo(function OnboardingNavigator() {
     return (
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Onboarding" component={OnboardingWelcomeScreen} />
+      </Stack.Navigator>
+    );
+  }
+
+  if (phase === 'activate') {
+    return (
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Onboarding" component={OnboardingActivationScreen} />
       </Stack.Navigator>
     );
   }
