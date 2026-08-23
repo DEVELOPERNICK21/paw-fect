@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { trackEvent } from '../../../../infrastructure/analytics/analytics';
 import { useOnboardingDraftStore } from '../../../app/store/onboardingDraftStore';
+import { isActivationReady } from '../../../app/domain/onboarding/resolveOnboardingGate';
 import { useAuthStore } from '../../store/authStore';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import type { Theme } from '../../../../shared/hooks/useTheme';
@@ -43,15 +44,14 @@ export const LoginScreen: React.FC = () => {
     state => state.sendPasswordResetEmail,
   );
   const authNotice = useAuthStore(state => state.authNotice);
-  const onboardingCommitmentAccepted = useOnboardingDraftStore(
-    state => state.draft.commitmentAccepted,
-  );
-  const onboardingNickname = useOnboardingDraftStore(
-    state => state.draft.petDraft?.nickname?.trim() ?? '',
-  );
-  const showPlanContinuityCopy = onboardingCommitmentAccepted;
+  const onboardingDraft = useOnboardingDraftStore(state => state.draft);
+  const entryIntent = onboardingDraft.entryIntent;
+  const activationReady = isActivationReady(onboardingDraft);
+  const onboardingNickname = onboardingDraft.petDraft?.nickname?.trim() ?? '';
+  const showActivationContinuityCopy =
+    activationReady && entryIntent !== 'sign_in';
   const planPetLabel =
-    onboardingNickname.length > 0 ? onboardingNickname : "your pet";
+    onboardingNickname.length > 0 ? onboardingNickname : 'your pet';
   const { colors, space, radius, spacing, textStyles } = useTheme();
   const styles = useMemo(
     () => createStyles({ colors, space, radius, spacing, textStyles }),
@@ -63,6 +63,15 @@ export const LoginScreen: React.FC = () => {
   const [isCreateMode, setIsCreateMode] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const logoScale = useRef(new Animated.Value(LOGO_SCALE_MIN)).current;
+
+  useEffect(() => {
+    if (
+      entryIntent !== 'sign_in' &&
+      (activationReady || onboardingDraft.activationSubmitted)
+    ) {
+      void trackEvent('onboarding_auth_viewed');
+    }
+  }, [activationReady, entryIntent, onboardingDraft.activationSubmitted]);
 
   useEffect(() => {
     const pulse = Animated.loop(
@@ -138,14 +147,16 @@ export const LoginScreen: React.FC = () => {
             </Animated.View>
             <AppText style={styles.brandTitle}>Pawsoul</AppText>
             <AppText style={styles.brandSubtitle}>
-              {showPlanContinuityCopy
-                ? `Save ${planPetLabel}'s plan`
-                : 'Premium care for your beloved companions.'}
+              {showActivationContinuityCopy
+                ? `Save ${planPetLabel}'s reminder`
+                : entryIntent === 'sign_in'
+                  ? 'Welcome back — sign in to continue.'
+                  : 'Premium care for your beloved companions.'}
             </AppText>
-            {showPlanContinuityCopy ? (
+            {showActivationContinuityCopy ? (
               <AppText style={styles.continuitySubhead}>
-                Create an account so your plan for {planPetLabel} doesn&apos;t
-                disappear if you close the app.
+                Create a free account so {planPetLabel}&apos;s first reminder
+                stays saved on this device.
               </AppText>
             ) : null}
           </View>
@@ -256,7 +267,7 @@ export const LoginScreen: React.FC = () => {
                 <icons.google width={space('2xl')} height={space('2xl')} />
               }
             />
-            {showPlanContinuityCopy ? (
+            {showActivationContinuityCopy ? (
               <AppText style={styles.continuityFinePrint}>
                 Takes 10 seconds. No credit card required here.
               </AppText>

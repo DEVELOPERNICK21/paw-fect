@@ -160,7 +160,8 @@ export const useOnboardingDraftStore = create<OnboardingDraftState>((set, get) =
 
   completeFunnel: async () => {
     try {
-      const draft = get().draft;
+      const draft = setDraftPhase(get().draft, 'done');
+      set({ draft });
       const onboardingProfile = buildOnboardingProfile(draft);
       const persisted = await getOnboardingSettingsPort().persistOnboardingCompletion(
         {
@@ -179,6 +180,12 @@ export const useOnboardingDraftStore = create<OnboardingDraftState>((set, get) =
       void trackEvent('onboarding_draft_persisted', {
         hasNickname: Boolean(onboardingProfile.pet.nickname.trim()),
         paywallOutcome: onboardingProfile.paywallOutcome,
+      });
+
+      void trackEvent('onboarding_completed', {
+        skipped_paywall: draft.skippedPaywall,
+        paywall_outcome: onboardingProfile.paywallOutcome,
+        care_interests: draft.careInterests.join(','),
       });
 
       await onboardingComposition.clearOnboardingDraft.execute();

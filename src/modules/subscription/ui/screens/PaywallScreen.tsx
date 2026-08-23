@@ -15,8 +15,8 @@ import type { PaywallRouteParams } from '../../../../app/navigation/types';
 import type { OnboardingDraft } from '../../../app/domain/onboarding/OnboardingDraft';
 import {
   buildOnboardingCtaLabel,
-  buildOnboardingLossLine,
   buildOnboardingSocialProofLine,
+  buildOnboardingValueSubline,
   orderPlanFeaturesForOnboarding,
   petDisplayName,
   PLAN_FEATURE_COPY,
@@ -61,24 +61,9 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
 
   const isOnboarding = source === 'onboarding';
   const nickname = petDisplayName(onboardingDraft?.petDraft);
-  const lossLine = useMemo(() => {
-    if (!isOnboarding) {
-      return null;
-    }
-    return buildOnboardingLossLine(
-      onboardingDraft
-        ? {
-            problems: onboardingDraft.problems,
-            goal: onboardingDraft.goal,
-            pet: onboardingDraft.petDraft ?? {
-              species: 'dog',
-              ageBand: 'adult',
-              nickname: '',
-            },
-          }
-        : null,
-    );
-  }, [isOnboarding, onboardingDraft]);
+  const valueSubline = isOnboarding
+    ? buildOnboardingValueSubline(onboardingDraft?.petDraft)
+    : null;
 
   const socialProofLine = isOnboarding
     ? buildOnboardingSocialProofLine()
@@ -100,10 +85,10 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
     if (isOnboarding) {
       void trackEvent('onboarding_paywall_variant_shown', {
         source: 'onboarding',
-        has_loss_line: Boolean(lossLine),
+        has_loss_line: false,
       });
     }
-  }, [source, isOnboarding, lossLine]);
+  }, [source, isOnboarding]);
 
   const handleDismiss = (): void => {
     if (source === 'onboarding') {
@@ -300,23 +285,21 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
           </View>
         ) : null}
 
-        {isOnboarding && (headlineOverride || lossLine) ? (
+        {isOnboarding && headlineOverride ? (
           <View style={[styles.banner, styles.bannerOnboarding]}>
-            {headlineOverride ? (
-              <Text
-                style={[
-                  styles.bannerHeadline,
-                  { fontFamily: fontFamilies.bold },
-                ]}
-              >
-                {headlineOverride}
-              </Text>
-            ) : null}
-            {lossLine ? (
+            <Text
+              style={[
+                styles.bannerHeadline,
+                { fontFamily: fontFamilies.bold },
+              ]}
+            >
+              {headlineOverride}
+            </Text>
+            {valueSubline ? (
               <Text
                 style={[styles.bannerText, { fontFamily: fontFamilies.medium }]}
               >
-                {lossLine}
+                {valueSubline}
               </Text>
             ) : null}
             {socialProofLine ? (

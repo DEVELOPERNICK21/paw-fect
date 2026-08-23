@@ -32,7 +32,7 @@ export function buildOnboardingProfile(
     pet: draft.petDraft ? { ...draft.petDraft } : { ...DEFAULT_PET },
     goal: draft.goal,
     careInterests: [...draft.careInterests],
-    committedAt: draft.committedAt ?? nowIso,
+    committedAt: nowIso,
     paywallOutcome: resolvePaywallOutcome(draft),
     completedAt: nowIso,
     quizVersion: ONBOARDING_QUIZ_VERSION,

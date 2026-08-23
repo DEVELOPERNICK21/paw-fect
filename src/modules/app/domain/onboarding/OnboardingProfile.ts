@@ -6,7 +6,7 @@ import type {
   PetDraft,
 } from './OnboardingDraft';
 
-export const ONBOARDING_QUIZ_VERSION = 'psychology_v1_2026-07';
+export const ONBOARDING_QUIZ_VERSION = 'activation_v1_2026-08';
 
 export type PaywallOutcome =
   | 'purchased'

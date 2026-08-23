@@ -32,7 +32,7 @@ export const OnboardingNavigator = React.memo(function OnboardingNavigator() {
   }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator key={phase} screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Onboarding" component={ScreenComponent} />
     </Stack.Navigator>
   );

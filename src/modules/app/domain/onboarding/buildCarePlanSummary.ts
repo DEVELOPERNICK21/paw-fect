@@ -5,6 +5,7 @@ import type {
   OnboardingGoal,
   OnboardingProblem,
 } from './OnboardingDraft';
+import { buildOnboardingValueHeadline } from './onboardingPaywallCopy';
 
 export type CarePlanSummary = {
   title: string;
@@ -43,11 +44,6 @@ const CARE_INTEREST_REMINDER_LINES: Record<CareInterest, string> = {
 const DEFAULT_TIP =
   'Small, steady steps beat perfect routines — start with one reminder and build from there.';
 
-const getPetLabel = (draft: OnboardingDraft): string => {
-  const nickname = draft.petDraft?.nickname?.trim();
-  return nickname && nickname.length > 0 ? nickname : 'your pet';
-};
-
 const getPossessiveLabel = (draft: OnboardingDraft): string => {
   const nickname = draft.petDraft?.nickname?.trim();
   return nickname && nickname.length > 0 ? `${nickname}'s` : "your pet's";
@@ -56,7 +52,6 @@ const getPossessiveLabel = (draft: OnboardingDraft): string => {
 export const buildCarePlanSummary = (
   draft: OnboardingDraft,
 ): CarePlanSummary => {
-  const petLabel = getPetLabel(draft);
   const possessiveLabel = getPossessiveLabel(draft);
 
   const bullets: string[] = [];
@@ -83,6 +78,6 @@ export const buildCarePlanSummary = (
     title: `${possessiveLabel} personalised care plan`,
     bullets,
     tip: DEFAULT_TIP,
-    paywallHeadline: `Keep ${petLabel}'s care plan on track`,
+    paywallHeadline: buildOnboardingValueHeadline(draft.petDraft),
   };
 };

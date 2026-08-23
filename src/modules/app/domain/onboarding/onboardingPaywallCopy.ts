@@ -59,6 +59,26 @@ export function petDisplayName(
   return null;
 }
 
+export function buildOnboardingValueHeadline(
+  pet: PetDraft | null | undefined,
+): string {
+  const name = petDisplayName(pet);
+  if (name) {
+    return `Keep ${name}'s care on track`;
+  }
+  return "Keep your pet's care on track";
+}
+
+export function buildOnboardingValueSubline(
+  pet: PetDraft | null | undefined,
+): string {
+  const name = petDisplayName(pet);
+  if (name) {
+    return `Pro reminders and records help you stay consistent for ${name}.`;
+  }
+  return 'Pro reminders and records help you stay consistent.';
+}
+
 export function buildOnboardingLossLine(
   profile: Pick<OnboardingProfile, 'problems' | 'goal' | 'pet'> | null | undefined,
 ): string {
