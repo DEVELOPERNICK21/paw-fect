@@ -37,5 +37,6 @@ export function normalizeOnboardingDraft(
     reminderDraft: raw.reminderDraft ?? null,
     createdPetId: raw.createdPetId ?? null,
     petDraft: raw.petDraft ?? null,
+    entryIntent: raw.entryIntent ?? null,
   };
 }

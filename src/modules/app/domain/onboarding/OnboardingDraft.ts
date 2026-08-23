@@ -41,6 +41,8 @@ export type OnboardingPhase =
   | 'paywall'
   | 'done';
 
+export type OnboardingEntryIntent = 'activate' | 'sign_in' | null;
+
 /** Legacy quiz phases — detected by normalizeOnboardingDraft for reset. */
 export type LegacyOnboardingPhase = 'quiz' | 'tips';
 
@@ -56,6 +58,8 @@ export type OnboardingDraft = {
   reminderDraft: ReminderDraft | null;
   createdPetId: string | null;
   phase: OnboardingPhase;
+  /** Welcome path: new activation vs returning sign-in. */
+  entryIntent: OnboardingEntryIntent;
   skippedPaywall: boolean;
   paywallOutcome: PaywallOutcome | null;
   /** Legacy optional — left empty on activation path. */

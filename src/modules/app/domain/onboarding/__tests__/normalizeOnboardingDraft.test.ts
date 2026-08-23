@@ -110,5 +110,14 @@ describe('normalizeOnboardingDraft', () => {
     expect(normalized.createdPetId).toBe('pet-123');
     expect(normalized.problems).toEqual([]);
     expect(normalized.careInterests).toEqual([]);
+    expect(normalized.entryIntent).toBeNull();
+  });
+
+  it('preserves entryIntent when present', () => {
+    const normalized = normalizeOnboardingDraft({
+      phase: 'welcome',
+      entryIntent: 'sign_in',
+    });
+    expect(normalized.entryIntent).toBe('sign_in');
   });
 });

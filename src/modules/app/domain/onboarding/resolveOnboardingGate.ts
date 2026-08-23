@@ -1,4 +1,8 @@
-import type { OnboardingDraft, OnboardingPhase } from './OnboardingDraft';
+import type {
+  OnboardingDraft,
+  OnboardingEntryIntent,
+  OnboardingPhase,
+} from './OnboardingDraft';
 
 export type OnboardingGate =
   | 'welcome'
@@ -21,6 +25,7 @@ export function isActivationReady(draft: OnboardingDraft): boolean {
 export function resolveOnboardingGate(input: {
   onboardingCompleted: boolean;
   phase: OnboardingPhase;
+  entryIntent: OnboardingEntryIntent;
   isAuthenticated: boolean;
   hasPets: boolean;
   activationReady: boolean;
@@ -29,6 +34,9 @@ export function resolveOnboardingGate(input: {
   if (input.onboardingCompleted || input.phase === 'done') return 'complete';
   if (input.isAuthenticated && input.hasPets && input.phase === 'welcome') {
     return 'complete';
+  }
+  if (input.entryIntent === 'sign_in' && !input.isAuthenticated) {
+    return 'auth';
   }
   if (input.phase === 'paywall') {
     if (!input.isAuthenticated) return 'auth';

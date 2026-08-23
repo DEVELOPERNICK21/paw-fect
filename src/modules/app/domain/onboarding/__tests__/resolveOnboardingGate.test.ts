@@ -6,6 +6,7 @@ describe('resolveOnboardingGate', () => {
     isAuthenticated: false,
     hasPets: false,
     phase: 'welcome' as const,
+    entryIntent: null,
     activationReady: false,
     firstWinPersisted: false,
   };
@@ -70,5 +71,26 @@ describe('resolveOnboardingGate', () => {
         activationReady: true,
       }),
     ).toBe('paywall');
+  });
+
+  it('auth when sign_in intent and not authenticated', () => {
+    expect(
+      resolveOnboardingGate({
+        ...base,
+        entryIntent: 'sign_in',
+        isAuthenticated: false,
+      }),
+    ).toBe('auth');
+  });
+
+  it('welcome when sign_in intent but authenticated with no pets', () => {
+    expect(
+      resolveOnboardingGate({
+        ...base,
+        entryIntent: 'sign_in',
+        isAuthenticated: true,
+        hasPets: false,
+      }),
+    ).toBe('welcome');
   });
 });

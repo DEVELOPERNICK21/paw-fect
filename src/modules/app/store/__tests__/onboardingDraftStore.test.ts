@@ -99,6 +99,23 @@ describe('onboardingDraftStore', () => {
     );
   });
 
+  it('startActivation sets activate phase and entryIntent', () => {
+    useOnboardingDraftStore.getState().startActivation();
+    expect(useOnboardingDraftStore.getState().draft.phase).toBe('activate');
+    expect(useOnboardingDraftStore.getState().draft.step).toBe(0);
+    expect(useOnboardingDraftStore.getState().draft.entryIntent).toBe('activate');
+  });
+
+  it('setSignInIntent sets sign_in entryIntent', async () => {
+    useOnboardingDraftStore.getState().setSignInIntent();
+    await Promise.resolve();
+    expect(useOnboardingDraftStore.getState().draft.entryIntent).toBe('sign_in');
+    expect(mockSetItem).toHaveBeenCalledWith(
+      'onboarding_draft',
+      expect.objectContaining({ entryIntent: 'sign_in' }),
+    );
+  });
+
   it('goNext persists advanced draft', async () => {
     useOnboardingDraftStore.getState().goNext();
     await Promise.resolve();

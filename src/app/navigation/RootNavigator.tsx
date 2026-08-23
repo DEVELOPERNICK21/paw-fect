@@ -92,6 +92,7 @@ export const RootNavigator: React.FC = () => {
   const onboardingGate = resolveOnboardingGate({
     onboardingCompleted: hasCompletedOnboarding,
     phase: onboardingPhase,
+    entryIntent: onboardingDraft.entryIntent,
     isAuthenticated,
     hasPets: pets.length > 0,
     activationReady: isActivationReady(onboardingDraft),
@@ -342,6 +343,29 @@ export const RootNavigator: React.FC = () => {
     resetPets,
     resetReminders,
     resetRecords,
+  ]);
+
+  useEffect(() => {
+    if (!bootstrapped || !isAuthenticated || petsLoading) {
+      return;
+    }
+    if (onboardingDraft.entryIntent !== 'sign_in') {
+      return;
+    }
+    const store = useOnboardingDraftStore.getState();
+    if (hasCompletedOnboarding || pets.length > 0) {
+      store.clearEntryIntent();
+      return;
+    }
+    store.clearEntryIntent();
+    store.startActivation();
+  }, [
+    bootstrapped,
+    isAuthenticated,
+    petsLoading,
+    pets.length,
+    hasCompletedOnboarding,
+    onboardingDraft.entryIntent,
   ]);
 
   const user = useAuthStore(state => state.user);

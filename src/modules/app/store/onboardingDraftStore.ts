@@ -10,6 +10,7 @@ import { normalizeOnboardingDraft } from '../domain/onboarding/normalizeOnboardi
 import {
   advanceStep,
   createDefaultOnboardingDraft,
+  setEntryIntent,
   setPhase as setDraftPhase,
 } from '../domain/onboarding/onboardingDraftReducers';
 import { onboardingComposition } from '../onboardingComposition';
@@ -38,6 +39,8 @@ export interface OnboardingDraftState {
   goBack: () => void;
   setPhase: (phase: OnboardingPhase) => void;
   startActivation: () => void;
+  setSignInIntent: () => void;
+  clearEntryIntent: () => void;
   persistFirstWin: (userId: string) => Promise<PersistFirstWinResult>;
   completeFunnel: () => Promise<void>;
   clear: () => Promise<void>;
@@ -93,7 +96,17 @@ export const useOnboardingDraftStore = create<OnboardingDraftState>((set, get) =
   },
 
   startActivation: () => {
-    get().update(draft => ({ ...draft, phase: 'activate', step: 0 }));
+    get().update(draft =>
+      setEntryIntent({ ...draft, phase: 'activate', step: 0 }, 'activate'),
+    );
+  },
+
+  setSignInIntent: () => {
+    get().update(draft => setEntryIntent(draft, 'sign_in'));
+  },
+
+  clearEntryIntent: () => {
+    get().update(draft => setEntryIntent(draft, null));
   },
 
   persistFirstWin: async (userId: string) => {

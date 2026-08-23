@@ -2,6 +2,7 @@ import type { CareInterest } from '../../../settings/domain/models/Settings';
 
 import type {
   OnboardingDraft,
+  OnboardingEntryIntent,
   OnboardingGoal,
   OnboardingPhase,
   OnboardingProblem,
@@ -16,6 +17,7 @@ export const createDefaultOnboardingDraft = (): OnboardingDraft => ({
   reminderDraft: null,
   createdPetId: null,
   phase: 'welcome',
+  entryIntent: null,
   skippedPaywall: false,
   paywallOutcome: null,
   problems: [],
@@ -77,6 +79,14 @@ export const setPhase = (
 ): OnboardingDraft => ({
   ...draft,
   phase,
+});
+
+export const setEntryIntent = (
+  draft: OnboardingDraft,
+  entryIntent: OnboardingEntryIntent,
+): OnboardingDraft => ({
+  ...draft,
+  entryIntent,
 });
 
 export const setReminderDraft = (

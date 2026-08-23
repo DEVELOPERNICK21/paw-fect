@@ -4,6 +4,7 @@ import {
   setProblems,
   acceptCommitment,
   setPhase,
+  setEntryIntent,
   setReminderDraft,
   setCreatedPetId,
 } from '../onboardingDraftReducers';
@@ -15,6 +16,7 @@ describe('onboardingDraftReducers', () => {
     const d = createDefaultOnboardingDraft();
     expect(d.step).toBe(0);
     expect(d.phase).toBe('welcome');
+    expect(d.entryIntent).toBeNull();
     expect(d.commitmentAccepted).toBe(false);
     expect(d.reminderDraft).toBeNull();
     expect(d.createdPetId).toBeNull();
@@ -45,6 +47,12 @@ describe('onboardingDraftReducers', () => {
   it('setPhase updates phase', () => {
     expect(setPhase(createDefaultOnboardingDraft(), 'paywall').phase).toBe(
       'paywall',
+    );
+  });
+
+  it('setEntryIntent updates entryIntent', () => {
+    expect(setEntryIntent(createDefaultOnboardingDraft(), 'sign_in').entryIntent).toBe(
+      'sign_in',
     );
   });
 
