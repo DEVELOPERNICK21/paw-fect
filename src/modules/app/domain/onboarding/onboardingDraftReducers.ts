@@ -6,25 +6,28 @@ import type {
   OnboardingPhase,
   OnboardingProblem,
   PetDraft,
+  ReminderDraft,
 } from './OnboardingDraft';
-import { QUIZ_STEP_COUNT } from './OnboardingDraft';
+import { ACTIVATION_STEP_COUNT } from './OnboardingDraft';
 
 export const createDefaultOnboardingDraft = (): OnboardingDraft => ({
   step: 0,
-  problems: [],
   petDraft: null,
+  reminderDraft: null,
+  createdPetId: null,
+  phase: 'welcome',
+  skippedPaywall: false,
+  paywallOutcome: null,
+  problems: [],
   goal: null,
   careInterests: [],
   commitmentAccepted: false,
   committedAt: null,
-  phase: 'quiz',
-  skippedPaywall: false,
-  paywallOutcome: null,
 });
 
 export const advanceStep = (draft: OnboardingDraft): OnboardingDraft => ({
   ...draft,
-  step: Math.min(draft.step + 1, QUIZ_STEP_COUNT - 1),
+  step: Math.min(draft.step + 1, ACTIVATION_STEP_COUNT - 1),
 });
 
 export const setProblems = (
@@ -74,4 +77,20 @@ export const setPhase = (
 ): OnboardingDraft => ({
   ...draft,
   phase,
+});
+
+export const setReminderDraft = (
+  draft: OnboardingDraft,
+  reminderDraft: ReminderDraft,
+): OnboardingDraft => ({
+  ...draft,
+  reminderDraft: { ...reminderDraft },
+});
+
+export const setCreatedPetId = (
+  draft: OnboardingDraft,
+  createdPetId: string,
+): OnboardingDraft => ({
+  ...draft,
+  createdPetId,
 });
