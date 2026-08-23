@@ -23,9 +23,6 @@ const CARE_TASK_FOR_PROBLEM: Partial<Record<OnboardingProblem, string>> = {
 const DEFAULT_LOSS_LINE =
   'Most pet parents who skip a plan lose momentum within the first two weeks.';
 
-const SOCIAL_PROOF_QUALITATIVE =
-  'Join pet parents who share your goals — stay consistent together.';
-
 export type PlanFeatureId =
   | 'reminders'
   | 'records'
@@ -117,7 +114,7 @@ export function buildOnboardingLossLine(
 }
 
 export function buildOnboardingSocialProofLine(): string {
-  return SOCIAL_PROOF_QUALITATIVE;
+  return '';
 }
 
 export function orderPlanFeaturesForOnboarding(input: {

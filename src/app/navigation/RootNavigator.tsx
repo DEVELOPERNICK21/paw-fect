@@ -95,6 +95,7 @@ export const RootNavigator: React.FC = () => {
     entryIntent: onboardingDraft.entryIntent,
     isAuthenticated,
     hasPets: pets.length > 0,
+    petsLoading,
     activationSubmitted: onboardingDraft.activationSubmitted,
     firstWinPersisted: isFirstWinPersisted(onboardingDraft),
   });
@@ -368,6 +369,18 @@ export const RootNavigator: React.FC = () => {
     onboardingDraft.entryIntent,
   ]);
 
+  // Gate can resolve to persist while draft.phase still reads activate after auth
+  // (submitActivation while unauthenticated). Keep navigator phase aligned with gate.
+  useEffect(() => {
+    if (!bootstrapped || onboardingGate !== 'persist') {
+      return;
+    }
+    if (onboardingPhase === 'persist') {
+      return;
+    }
+    useOnboardingDraftStore.getState().setPhase('persist');
+  }, [bootstrapped, onboardingGate, onboardingPhase]);
+
   const user = useAuthStore(state => state.user);
 
   useEffect(() => {
@@ -382,6 +395,16 @@ export const RootNavigator: React.FC = () => {
   }, [user, userId]);
 
   if (!bootstrapped) {
+    return <SplashScreen />;
+  }
+
+  const signInPetsPending =
+    isAuthenticated &&
+    petsLoading &&
+    onboardingDraft.entryIntent === 'sign_in' &&
+    !hasCompletedOnboarding;
+
+  if (signInPetsPending) {
     return <SplashScreen />;
   }
 

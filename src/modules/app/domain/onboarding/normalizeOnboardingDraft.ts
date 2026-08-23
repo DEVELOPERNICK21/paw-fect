@@ -2,12 +2,30 @@ import type {
   OnboardingDraft,
   OnboardingDraftInput,
   OnboardingEntryIntent,
+  OnboardingPhase,
+  LegacyOnboardingPhase,
 } from './OnboardingDraft';
 import { createDefaultOnboardingDraft } from './onboardingDraftReducers';
 
 function normalizeEntryIntent(raw: unknown): OnboardingEntryIntent {
   if (raw === 'activate' || raw === 'sign_in') return raw;
   return null;
+}
+
+function normalizePhase(
+  raw: OnboardingPhase | LegacyOnboardingPhase | undefined,
+  fallback: OnboardingPhase,
+): OnboardingPhase {
+  if (
+    raw === 'welcome' ||
+    raw === 'activate' ||
+    raw === 'persist' ||
+    raw === 'paywall' ||
+    raw === 'done'
+  ) {
+    return raw;
+  }
+  return fallback;
 }
 
 export function isLegacyQuizDraft(draft: OnboardingDraftInput): boolean {
@@ -41,6 +59,7 @@ export function normalizeOnboardingDraft(
   return {
     ...base,
     ...raw,
+    phase: normalizePhase(raw.phase, base.phase),
     problems: raw.problems ?? [],
     careInterests: raw.careInterests ?? [],
     reminderDraft: raw.reminderDraft ?? null,

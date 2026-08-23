@@ -5,6 +5,7 @@ import type {
   OnboardingDraft,
   OnboardingPhase,
 } from '../domain/onboarding/OnboardingDraft';
+import { clampReminderDraftToFuture } from '../domain/onboarding/clampReminderDraftToFuture';
 import { buildOnboardingProfile } from '../domain/onboarding/buildOnboardingProfile';
 import { normalizeOnboardingDraft } from '../domain/onboarding/normalizeOnboardingDraft';
 import {
@@ -124,38 +125,57 @@ export const useOnboardingDraftStore = create<OnboardingDraftState>((set, get) =
   },
 
   persistFirstWin: async (userId: string) => {
-    const draft = get().draft;
-    if (!draft.petDraft || !draft.reminderDraft) {
-      return { ok: false, errorMessage: 'Add your pet and a reminder first.' };
-    }
-    const port = getOnboardingActivationPort();
-    let petId = draft.createdPetId;
-    if (!petId) {
-      const petResult = await port.createPetFromDraft({
-        userId,
-        pet: draft.petDraft,
-      });
-      if (!petResult.ok) {
-        void trackEvent('onboarding_persist_failed', { stage: 'pet' });
-        return petResult;
+    try {
+      const draft = get().draft;
+      if (!draft.petDraft || !draft.reminderDraft) {
+        return { ok: false, errorMessage: 'Add your pet and a reminder first.' };
       }
-      petId = petResult.petId;
-      get().update(d => ({ ...d, createdPetId: petId }));
+
+      const clampedReminder = clampReminderDraftToFuture(draft.reminderDraft);
+      if (clampedReminder !== draft.reminderDraft) {
+        get().update(current => ({ ...current, reminderDraft: clampedReminder }));
+      }
+
+      const port = getOnboardingActivationPort();
+      let petId = draft.createdPetId;
+      if (!petId) {
+        const petResult = await port.createPetFromDraft({
+          userId,
+          pet: draft.petDraft,
+        });
+        if (!petResult.ok) {
+          void trackEvent('onboarding_persist_failed', { stage: 'pet' });
+          return petResult;
+        }
+        petId = petResult.petId;
+        get().update(d => ({ ...d, createdPetId: petId }));
+      }
+
+      const rem = await port.createReminderFromDraft({
+        petId,
+        reminder: clampedReminder,
+      });
+      if (!rem.ok) {
+        void trackEvent('onboarding_persist_failed', { stage: 'reminder' });
+        return rem;
+      }
+
+      void trackEvent('onboarding_first_win_created', {
+        reminder_kind: clampedReminder.kind,
+        species: draft.petDraft.species,
+      });
+      get().setPhase('paywall');
+      return { ok: true };
+    } catch (error) {
+      if (__DEV__) {
+        console.error('[onboardingDraftStore] persistFirstWin error', error);
+      }
+      void trackEvent('onboarding_persist_failed', { stage: 'unexpected' });
+      return {
+        ok: false,
+        errorMessage: 'Could not save your reminder. Please try again.',
+      };
     }
-    const rem = await port.createReminderFromDraft({
-      petId,
-      reminder: draft.reminderDraft,
-    });
-    if (!rem.ok) {
-      void trackEvent('onboarding_persist_failed', { stage: 'reminder' });
-      return rem;
-    }
-    void trackEvent('onboarding_first_win_created', {
-      reminder_kind: draft.reminderDraft.kind,
-      species: draft.petDraft.species,
-    });
-    get().setPhase('paywall');
-    return { ok: true };
   },
 
   completeFunnel: async () => {

@@ -322,6 +322,62 @@ describe('onboardingDraftStore', () => {
     });
   });
 
+  it('persistFirstWin clamps past-dated reminder before create', async () => {
+    const createPetFromDraft = jest
+      .fn()
+      .mockResolvedValue({ ok: true, petId: 'pet-123' });
+    const createReminderFromDraft = jest.fn().mockResolvedValue({ ok: true });
+    registerOnboardingActivationPort({
+      createPetFromDraft,
+      createReminderFromDraft,
+    });
+
+    const pastReminder: ReminderDraft = {
+      ...testReminderDraft,
+      date: '2020-01-01',
+      time: '08:00',
+    };
+
+    useOnboardingDraftStore.getState().update(draft =>
+      setPetDraft(setReminderDraft(draft, pastReminder), testPetDraft),
+    );
+
+    const result = await useOnboardingDraftStore
+      .getState()
+      .persistFirstWin('user-1');
+
+    expect(result).toEqual({ ok: true });
+    const savedReminder = createReminderFromDraft.mock.calls[0][0].reminder;
+    expect(savedReminder.date).not.toBe('2020-01-01');
+    expect(useOnboardingDraftStore.getState().draft.reminderDraft?.date).toBe(
+      savedReminder.date,
+    );
+  });
+
+  it('persistFirstWin returns failed result when port throws', async () => {
+    const createPetFromDraft = jest.fn().mockRejectedValue(new Error('network'));
+    registerOnboardingActivationPort({
+      createPetFromDraft,
+      createReminderFromDraft: async () => ({ ok: true }),
+    });
+
+    useOnboardingDraftStore.getState().update(draft =>
+      setPetDraft(setReminderDraft(draft, testReminderDraft), testPetDraft),
+    );
+
+    const result = await useOnboardingDraftStore
+      .getState()
+      .persistFirstWin('user-1');
+
+    expect(result).toEqual({
+      ok: false,
+      errorMessage: 'Could not save your reminder. Please try again.',
+    });
+    expect(mockTrackEvent).toHaveBeenCalledWith('onboarding_persist_failed', {
+      stage: 'unexpected',
+    });
+  });
+
   it('completeFunnel does not clear draft when updateSettings swallows a storage failure', async () => {
     const persistOnboardingCompletion = jest.fn().mockResolvedValue(false);
     registerOnboardingSettingsPort({ persistOnboardingCompletion });

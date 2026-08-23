@@ -73,6 +73,6 @@ export type OnboardingDraft = {
   committedAt: string | null;
 };
 
-export type OnboardingDraftInput = Partial<OnboardingDraft> & {
+export type OnboardingDraftInput = Omit<Partial<OnboardingDraft>, 'phase'> & {
   phase?: OnboardingPhase | LegacyOnboardingPhase;
 };

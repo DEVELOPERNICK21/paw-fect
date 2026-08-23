@@ -38,6 +38,7 @@ export function resolveOnboardingGate(input: {
   entryIntent: OnboardingEntryIntent;
   isAuthenticated: boolean;
   hasPets: boolean;
+  petsLoading?: boolean;
   activationSubmitted: boolean;
   firstWinPersisted: boolean;
 }): OnboardingGate {
@@ -49,6 +50,7 @@ export function resolveOnboardingGate(input: {
     return 'auth';
   }
   if (input.entryIntent === 'sign_in' && input.isAuthenticated) {
+    if (input.petsLoading) return 'welcome';
     if (input.onboardingCompleted || input.hasPets) return 'complete';
     return 'activate';
   }

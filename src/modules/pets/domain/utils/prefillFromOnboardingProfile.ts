@@ -10,7 +10,11 @@ export type AddPetOnboardingPrefill = {
 /** Maps durable onboarding pet draft into editable AddPet defaults. */
 export function prefillFromOnboardingProfile(
   profile: OnboardingProfile | undefined,
+  options?: { skipWhenPetAlreadyCreated?: boolean },
 ): AddPetOnboardingPrefill | null {
+  if (options?.skipWhenPetAlreadyCreated) {
+    return null;
+  }
   if (!profile?.pet) {
     return null;
   }

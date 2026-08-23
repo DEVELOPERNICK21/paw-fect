@@ -75,10 +75,6 @@ const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    backButtonPlaceholder: {
-      width: 44,
-      height: 44,
-    },
     backGlyph: {
       fontSize: fontSizes.lg,
       color: colors.text.heading,
@@ -132,6 +128,17 @@ const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
       lineHeight: lineHeights.base,
       color: colors.text.inverse,
     },
+    secondaryButton: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: spacing.lg,
+      marginTop: spacing.sm,
+    },
+    secondaryLabel: {
+      fontSize: fontSizes.base,
+      lineHeight: lineHeights.base,
+      color: colors.text.body,
+    },
   });
 
 export const OnboardingActivationScreen: React.FC = () => {
@@ -148,6 +155,8 @@ export const OnboardingActivationScreen: React.FC = () => {
   const goNext = useOnboardingDraftStore(state => state.goNext);
   const goBack = useOnboardingDraftStore(state => state.goBack);
   const submitActivation = useOnboardingDraftStore(state => state.submitActivation);
+  const setSignInIntent = useOnboardingDraftStore(state => state.setSignInIntent);
+  const setPhase = useOnboardingDraftStore(state => state.setPhase);
 
   const step = draft.step;
   const petDraft = draft.petDraft ?? DEFAULT_PET_DRAFT;
@@ -209,6 +218,15 @@ export const OnboardingActivationScreen: React.FC = () => {
     goBack();
   }, [goBack]);
 
+  const handleSignIn = useCallback(() => {
+    void trackEvent('onboarding_sign_in_tapped', { source: 'activation' });
+    setSignInIntent();
+  }, [setSignInIntent]);
+
+  const handleBackToWelcome = useCallback(() => {
+    setPhase('welcome');
+  }, [setPhase]);
+
   const primaryLabel =
     step === ACTIVATION_STEP.firstReminder ? 'Save & continue' : 'Continue';
 
@@ -233,7 +251,15 @@ export const OnboardingActivationScreen: React.FC = () => {
               <Text style={styles.backGlyph}>‹</Text>
             </Pressable>
           ) : (
-            <View style={styles.backButtonPlaceholder} />
+            <Pressable
+              onPress={handleBackToWelcome}
+              style={styles.backButton}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Back to welcome"
+            >
+              <Text style={styles.backGlyph}>‹</Text>
+            </Pressable>
           )}
         </View>
 
@@ -291,6 +317,23 @@ export const OnboardingActivationScreen: React.FC = () => {
               {primaryLabel}
             </Text>
           </Pressable>
+          {step === ACTIVATION_STEP.petBasics ? (
+            <Pressable
+              onPress={handleSignIn}
+              accessibilityRole="button"
+              accessibilityLabel="I already have an account"
+              style={styles.secondaryButton}
+            >
+              <Text
+                style={[
+                  styles.secondaryLabel,
+                  { fontFamily: fontFamilies.medium },
+                ]}
+              >
+                I already have an account
+              </Text>
+            </Pressable>
+          ) : null}
         </View>
       </View>
     </SafeAreaView>

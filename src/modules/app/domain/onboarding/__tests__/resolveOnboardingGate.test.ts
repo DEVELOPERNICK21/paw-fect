@@ -127,6 +127,18 @@ describe('resolveOnboardingGate', () => {
       }),
     ).toBe('activate');
   });
+
+  it('welcome when sign_in intent, authenticated, pets still loading', () => {
+    expect(
+      resolveOnboardingGate({
+        ...base,
+        entryIntent: 'sign_in',
+        isAuthenticated: true,
+        hasPets: false,
+        petsLoading: true,
+      }),
+    ).toBe('welcome');
+  });
 });
 
 describe('isFirstWinPersisted', () => {

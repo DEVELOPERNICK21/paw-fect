@@ -11,10 +11,10 @@ import { AppText } from '../../../../shared/components/AppText';
 import { Button } from '../../../../shared/components/Button';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { useAuthStore } from '../../../auth/store/authStore';
-import { usePetStore } from '../../../pets/store/petStore';
-import { useReminderStore } from '../../../reminders/store/reminderStore';
 import { useOnboardingDraftStore } from '../../store/onboardingDraftStore';
-import { refreshPostPersistData } from './refreshPostPersistData';
+import {
+  refreshPostPersistDataFromStores,
+} from './refreshPostPersistData';
 
 type PersistUiState = 'loading' | 'error';
 
@@ -63,8 +63,6 @@ export const OnboardingPersistScreen: React.FC = () => {
     state => state.draft.petDraft?.nickname.trim() || 'your pet',
   );
   const persistFirstWin = useOnboardingDraftStore(state => state.persistFirstWin);
-  const loadPets = usePetStore(state => state.loadPets);
-  const loadReminders = useReminderStore(state => state.loadReminders);
 
   const [uiState, setUiState] = useState<PersistUiState>('loading');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -79,15 +77,20 @@ export const OnboardingPersistScreen: React.FC = () => {
     setUiState('loading');
     setErrorMessage(null);
 
-    const result = await persistFirstWin(userId);
-    if (result.ok) {
-      await refreshPostPersistData(loadPets, loadReminders).catch(() => {});
-      return;
-    }
+    try {
+      const result = await persistFirstWin(userId);
+      if (result.ok) {
+        await refreshPostPersistDataFromStores().catch(() => {});
+        return;
+      }
 
-    setUiState('error');
-    setErrorMessage(result.errorMessage);
-  }, [userId, persistFirstWin, loadPets, loadReminders]);
+      setUiState('error');
+      setErrorMessage(result.errorMessage);
+    } catch {
+      setUiState('error');
+      setErrorMessage('Could not save your reminder. Please try again.');
+    }
+  }, [userId, persistFirstWin]);
 
   useEffect(() => {
     void runPersist();
