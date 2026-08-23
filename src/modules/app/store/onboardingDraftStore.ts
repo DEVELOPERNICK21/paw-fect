@@ -6,13 +6,17 @@ import type {
   OnboardingPhase,
 } from '../domain/onboarding/OnboardingDraft';
 import { buildOnboardingProfile } from '../domain/onboarding/buildOnboardingProfile';
+import { normalizeOnboardingDraft } from '../domain/onboarding/normalizeOnboardingDraft';
 import {
   advanceStep,
   createDefaultOnboardingDraft,
   setPhase as setDraftPhase,
 } from '../domain/onboarding/onboardingDraftReducers';
 import { onboardingComposition } from '../onboardingComposition';
-import { getOnboardingSettingsPort } from './onboardingCoordinationPorts';
+import {
+  getOnboardingActivationPort,
+  getOnboardingSettingsPort,
+} from './onboardingCoordinationPorts';
 
 export type OnboardingDraftReducer = (draft: OnboardingDraft) => OnboardingDraft;
 
@@ -20,6 +24,10 @@ const retreatStep = (draft: OnboardingDraft): OnboardingDraft => ({
   ...draft,
   step: Math.max(draft.step - 1, 0),
 });
+
+export type PersistFirstWinResult =
+  | { ok: true }
+  | { ok: false; errorMessage: string };
 
 export interface OnboardingDraftState {
   draft: OnboardingDraft;
@@ -29,6 +37,8 @@ export interface OnboardingDraftState {
   goNext: () => void;
   goBack: () => void;
   setPhase: (phase: OnboardingPhase) => void;
+  startActivation: () => void;
+  persistFirstWin: (userId: string) => Promise<PersistFirstWinResult>;
   completeFunnel: () => Promise<void>;
   clear: () => Promise<void>;
 }
@@ -42,7 +52,8 @@ export const useOnboardingDraftStore = create<OnboardingDraftState>((set, get) =
 
   hydrate: async () => {
     try {
-      const draft = await onboardingComposition.getOnboardingDraft.execute();
+      const raw = await onboardingComposition.getOnboardingDraft.execute();
+      const draft = normalizeOnboardingDraft(raw);
       set({ draft });
     } catch (error) {
       console.error('[onboardingDraftStore] hydrate error', error);
@@ -79,6 +90,45 @@ export const useOnboardingDraftStore = create<OnboardingDraftState>((set, get) =
     const next = setDraftPhase(get().draft, phase);
     set({ draft: next });
     void persistDraft(next);
+  },
+
+  startActivation: () => {
+    get().update(draft => ({ ...draft, phase: 'activate', step: 0 }));
+  },
+
+  persistFirstWin: async (userId: string) => {
+    const draft = get().draft;
+    if (!draft.petDraft || !draft.reminderDraft) {
+      return { ok: false, errorMessage: 'Add your pet and a reminder first.' };
+    }
+    const port = getOnboardingActivationPort();
+    let petId = draft.createdPetId;
+    if (!petId) {
+      const petResult = await port.createPetFromDraft({
+        userId,
+        pet: draft.petDraft,
+      });
+      if (!petResult.ok) {
+        void trackEvent('onboarding_persist_failed', { stage: 'pet' });
+        return petResult;
+      }
+      petId = petResult.petId;
+      get().update(d => ({ ...d, createdPetId: petId }));
+    }
+    const rem = await port.createReminderFromDraft({
+      petId,
+      reminder: draft.reminderDraft,
+    });
+    if (!rem.ok) {
+      void trackEvent('onboarding_persist_failed', { stage: 'reminder' });
+      return rem;
+    }
+    void trackEvent('onboarding_first_win_created', {
+      reminder_kind: draft.reminderDraft.kind,
+      species: draft.petDraft.species,
+    });
+    get().setPhase('paywall');
+    return { ok: true };
   },
 
   completeFunnel: async () => {

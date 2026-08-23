@@ -1,5 +1,5 @@
 import type { OnboardingDraft } from '../../domain/onboarding/OnboardingDraft';
-import { createDefaultOnboardingDraft } from '../../domain/onboarding/onboardingDraftReducers';
+import { normalizeOnboardingDraft } from '../../domain/onboarding/normalizeOnboardingDraft';
 import { storageService } from '../../../../infrastructure/storage/storageService';
 
 const ONBOARDING_DRAFT_STORAGE_KEY = 'onboarding_draft';
@@ -15,18 +15,7 @@ class OnboardingDraftDataSourceImpl implements OnboardingDraftDataSource {
     const stored = await storageService.getItem<Partial<OnboardingDraft> | null>(
       ONBOARDING_DRAFT_STORAGE_KEY,
     );
-    if (!stored) {
-      return createDefaultOnboardingDraft();
-    }
-
-    return {
-      ...createDefaultOnboardingDraft(),
-      ...stored,
-      problems: stored.problems ?? [],
-      careInterests: stored.careInterests ?? [],
-      committedAt: stored.committedAt ?? null,
-      paywallOutcome: stored.paywallOutcome ?? null,
-    };
+    return normalizeOnboardingDraft(stored);
   }
 
   async saveDraft(draft: OnboardingDraft): Promise<void> {
