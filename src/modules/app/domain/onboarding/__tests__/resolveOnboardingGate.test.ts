@@ -1,102 +1,74 @@
 import { resolveOnboardingGate } from '../resolveOnboardingGate';
 
 describe('resolveOnboardingGate', () => {
-  it('returns complete when onboardingCompleted is true', () => {
+  const base = {
+    onboardingCompleted: false,
+    isAuthenticated: false,
+    hasPets: false,
+    phase: 'welcome' as const,
+    activationReady: false,
+    firstWinPersisted: false,
+  };
+
+  it('complete when onboardingCompleted', () => {
+    expect(resolveOnboardingGate({ ...base, onboardingCompleted: true })).toBe(
+      'complete',
+    );
+  });
+
+  it('complete when authenticated returning with pets', () => {
     expect(
       resolveOnboardingGate({
-        onboardingCompleted: true,
-        phase: 'quiz',
-        commitmentAccepted: false,
-        isAuthenticated: false,
+        ...base,
+        isAuthenticated: true,
+        hasPets: true,
+        phase: 'welcome',
       }),
     ).toBe('complete');
   });
 
-  it('returns complete when phase is done', () => {
-    expect(
-      resolveOnboardingGate({
-        onboardingCompleted: false,
-        phase: 'done',
-        commitmentAccepted: true,
-        isAuthenticated: true,
-      }),
-    ).toBe('complete');
+  it('welcome when fresh', () => {
+    expect(resolveOnboardingGate(base)).toBe('welcome');
   });
 
-  it('returns tips when phase is tips', () => {
-    expect(
-      resolveOnboardingGate({
-        onboardingCompleted: false,
-        phase: 'tips',
-        commitmentAccepted: true,
-        isAuthenticated: true,
-      }),
-    ).toBe('tips');
+  it('activate when phase activate', () => {
+    expect(resolveOnboardingGate({ ...base, phase: 'activate' })).toBe(
+      'activate',
+    );
   });
 
-  it('returns paywall when phase is paywall and authenticated', () => {
+  it('auth when activationReady and not authenticated', () => {
     expect(
       resolveOnboardingGate({
-        onboardingCompleted: false,
-        phase: 'paywall',
-        commitmentAccepted: true,
-        isAuthenticated: true,
-      }),
-    ).toBe('paywall');
-  });
-
-  it('returns auth when phase is paywall and unauthenticated', () => {
-    expect(
-      resolveOnboardingGate({
-        onboardingCompleted: false,
-        phase: 'paywall',
-        commitmentAccepted: true,
+        ...base,
+        phase: 'activate',
+        activationReady: true,
         isAuthenticated: false,
       }),
     ).toBe('auth');
   });
 
-  it('returns auth when quiz phase, commitment accepted, unauthenticated', () => {
+  it('persist when authenticated, ready, not yet persisted', () => {
     expect(
       resolveOnboardingGate({
-        onboardingCompleted: false,
-        phase: 'quiz',
-        commitmentAccepted: true,
-        isAuthenticated: false,
+        ...base,
+        phase: 'persist',
+        activationReady: true,
+        isAuthenticated: true,
+        firstWinPersisted: false,
       }),
-    ).toBe('auth');
+    ).toBe('persist');
   });
 
-  it('returns paywall when quiz phase, commitment accepted, authenticated', () => {
+  it('paywall when first win persisted', () => {
     expect(
       resolveOnboardingGate({
-        onboardingCompleted: false,
-        phase: 'quiz',
-        commitmentAccepted: true,
+        ...base,
+        phase: 'paywall',
         isAuthenticated: true,
+        firstWinPersisted: true,
+        activationReady: true,
       }),
     ).toBe('paywall');
-  });
-
-  it('returns quiz by default when commitment not accepted', () => {
-    expect(
-      resolveOnboardingGate({
-        onboardingCompleted: false,
-        phase: 'quiz',
-        commitmentAccepted: false,
-        isAuthenticated: false,
-      }),
-    ).toBe('quiz');
-  });
-
-  it('returns quiz when commitment not accepted even if authenticated', () => {
-    expect(
-      resolveOnboardingGate({
-        onboardingCompleted: false,
-        phase: 'quiz',
-        commitmentAccepted: false,
-        isAuthenticated: true,
-      }),
-    ).toBe('quiz');
   });
 });

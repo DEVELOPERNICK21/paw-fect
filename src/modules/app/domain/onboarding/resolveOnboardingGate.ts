@@ -1,21 +1,52 @@
-import type { OnboardingPhase } from './OnboardingDraft';
+import type { OnboardingDraft, OnboardingPhase } from './OnboardingDraft';
 
-export type OnboardingGate = 'quiz' | 'auth' | 'paywall' | 'tips' | 'complete';
+export type OnboardingGate =
+  | 'welcome'
+  | 'activate'
+  | 'auth'
+  | 'persist'
+  | 'paywall'
+  | 'complete';
+
+export function isActivationReady(draft: OnboardingDraft): boolean {
+  return Boolean(
+    draft.petDraft?.nickname.trim() &&
+      (draft.petDraft.species === 'dog' || draft.petDraft.species === 'cat') &&
+      draft.reminderDraft?.title.trim() &&
+      draft.reminderDraft.date &&
+      draft.reminderDraft.time,
+  );
+}
 
 export function resolveOnboardingGate(input: {
   onboardingCompleted: boolean;
   phase: OnboardingPhase;
-  commitmentAccepted: boolean;
   isAuthenticated: boolean;
+  hasPets: boolean;
+  activationReady: boolean;
+  firstWinPersisted: boolean;
 }): OnboardingGate {
   if (input.onboardingCompleted || input.phase === 'done') return 'complete';
-  if (input.phase === 'tips') return 'tips';
+  if (input.isAuthenticated && input.hasPets && input.phase === 'welcome') {
+    return 'complete';
+  }
   if (input.phase === 'paywall') {
     if (!input.isAuthenticated) return 'auth';
     return 'paywall';
   }
-  // quiz phase
-  if (input.commitmentAccepted && !input.isAuthenticated) return 'auth';
-  if (input.commitmentAccepted && input.isAuthenticated) return 'paywall';
-  return 'quiz';
+  if (input.phase === 'persist') {
+    if (!input.isAuthenticated) return 'auth';
+    return 'persist';
+  }
+  if (input.activationReady && !input.isAuthenticated) return 'auth';
+  if (
+    input.activationReady &&
+    input.isAuthenticated &&
+    !input.firstWinPersisted
+  ) {
+    return 'persist';
+  }
+  if (input.phase === 'activate') return 'activate';
+  if (input.phase === 'welcome') return 'welcome';
+  return 'welcome';
 }
