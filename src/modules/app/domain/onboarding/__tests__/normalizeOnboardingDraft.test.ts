@@ -120,4 +120,13 @@ describe('normalizeOnboardingDraft', () => {
     });
     expect(normalized.entryIntent).toBe('sign_in');
   });
+
+  it('rejects invalid entryIntent values', () => {
+    expect(
+      normalizeOnboardingDraft({
+        phase: 'welcome',
+        entryIntent: 'garbage' as never,
+      }).entryIntent,
+    ).toBeNull();
+  });
 });

@@ -30,6 +30,10 @@ const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
       flex: 1,
       backgroundColor: colors.backgroundAlt,
     },
+    container: {
+      flex: 1,
+      position: 'relative',
+    },
     scroll: {
       flex: 1,
     },
@@ -37,9 +41,6 @@ const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
       flexGrow: 1,
       paddingHorizontal: spacing.xl,
       paddingBottom: spacing['2xl'],
-    },
-    backdropWrap: {
-      opacity: 0.35,
     },
     brandRow: {
       flexDirection: 'row',
@@ -171,14 +172,13 @@ export const OnboardingWelcomeScreen: React.FC = () => {
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
         backgroundColor={colors.backgroundAlt}
       />
-      <View style={styles.backdropWrap}>
+      <View style={styles.container}>
         <OnboardingBlobBackdrop />
-      </View>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
         <View style={styles.brandRow}>
           <Image
             source={images.appIcon}
@@ -244,7 +244,8 @@ export const OnboardingWelcomeScreen: React.FC = () => {
             </Text>
           </ScalePressable>
         </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 };

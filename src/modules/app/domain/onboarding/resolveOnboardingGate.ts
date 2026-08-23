@@ -38,6 +38,10 @@ export function resolveOnboardingGate(input: {
   if (input.entryIntent === 'sign_in' && !input.isAuthenticated) {
     return 'auth';
   }
+  if (input.entryIntent === 'sign_in' && input.isAuthenticated) {
+    if (input.onboardingCompleted || input.hasPets) return 'complete';
+    return 'activate';
+  }
   if (input.phase === 'paywall') {
     if (!input.isAuthenticated) return 'auth';
     return 'paywall';

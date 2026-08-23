@@ -1,5 +1,14 @@
-import type { OnboardingDraft, OnboardingDraftInput } from './OnboardingDraft';
+import type {
+  OnboardingDraft,
+  OnboardingDraftInput,
+  OnboardingEntryIntent,
+} from './OnboardingDraft';
 import { createDefaultOnboardingDraft } from './onboardingDraftReducers';
+
+function normalizeEntryIntent(raw: unknown): OnboardingEntryIntent {
+  if (raw === 'activate' || raw === 'sign_in') return raw;
+  return null;
+}
 
 export function isLegacyQuizDraft(draft: OnboardingDraftInput): boolean {
   if (draft.phase === 'quiz' || draft.phase === 'tips') {
@@ -37,6 +46,6 @@ export function normalizeOnboardingDraft(
     reminderDraft: raw.reminderDraft ?? null,
     createdPetId: raw.createdPetId ?? null,
     petDraft: raw.petDraft ?? null,
-    entryIntent: raw.entryIntent ?? null,
+    entryIntent: normalizeEntryIntent(raw.entryIntent),
   };
 }

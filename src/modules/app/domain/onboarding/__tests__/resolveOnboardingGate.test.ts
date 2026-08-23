@@ -83,7 +83,18 @@ describe('resolveOnboardingGate', () => {
     ).toBe('auth');
   });
 
-  it('welcome when sign_in intent but authenticated with no pets', () => {
+  it('complete when sign_in intent and authenticated with pets', () => {
+    expect(
+      resolveOnboardingGate({
+        ...base,
+        entryIntent: 'sign_in',
+        isAuthenticated: true,
+        hasPets: true,
+      }),
+    ).toBe('complete');
+  });
+
+  it('activate when sign_in intent and authenticated with empty account', () => {
     expect(
       resolveOnboardingGate({
         ...base,
@@ -91,6 +102,6 @@ describe('resolveOnboardingGate', () => {
         isAuthenticated: true,
         hasPets: false,
       }),
-    ).toBe('welcome');
+    ).toBe('activate');
   });
 });
