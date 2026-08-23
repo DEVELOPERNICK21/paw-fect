@@ -5,8 +5,11 @@ import { trackEvent } from '../../../../infrastructure/analytics/analytics';
 import { PaywallScreen } from '../../../subscription/ui/screens/PaywallScreen';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { useAppSession } from '../../../../shared/session/useAppSession';
+import { usePetStore } from '../../../pets/store/petStore';
+import { useReminderStore } from '../../../reminders/store/reminderStore';
 import { buildOnboardingValueHeadline } from '../../domain/onboarding/onboardingPaywallCopy';
 import { useOnboardingDraftStore } from '../../store/onboardingDraftStore';
+import { refreshPostPersistData } from './refreshPostPersistData';
 
 const SYNC_TIMEOUT_MS = 6000;
 
@@ -25,6 +28,8 @@ export const OnboardingPaywallHost: React.FC = () => {
   const update = useOnboardingDraftStore(state => state.update);
   const setPhase = useOnboardingDraftStore(state => state.setPhase);
   const completeFunnel = useOnboardingDraftStore(state => state.completeFunnel);
+  const loadPets = usePetStore(state => state.loadPets);
+  const loadReminders = useReminderStore(state => state.loadReminders);
   const { entitlementSource, entitlementServerSynced: serverSynced } =
     useAppSession();
   const { colors } = useTheme();
@@ -41,9 +46,10 @@ export const OnboardingPaywallHost: React.FC = () => {
   const [syncTimedOut, setSyncTimedOut] = useState(false);
 
   const finishOnboarding = useCallback((): void => {
+    void refreshPostPersistData(loadPets, loadReminders).catch(() => {});
     setPhase('done');
     void completeFunnel();
-  }, [completeFunnel, setPhase]);
+  }, [completeFunnel, loadPets, loadReminders, setPhase]);
 
   useEffect(() => {
     if (serverSynced) {

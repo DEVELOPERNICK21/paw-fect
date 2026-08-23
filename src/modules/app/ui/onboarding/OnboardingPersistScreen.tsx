@@ -12,7 +12,9 @@ import { Button } from '../../../../shared/components/Button';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { useAuthStore } from '../../../auth/store/authStore';
 import { usePetStore } from '../../../pets/store/petStore';
+import { useReminderStore } from '../../../reminders/store/reminderStore';
 import { useOnboardingDraftStore } from '../../store/onboardingDraftStore';
+import { refreshPostPersistData } from './refreshPostPersistData';
 
 type PersistUiState = 'loading' | 'error';
 
@@ -62,6 +64,7 @@ export const OnboardingPersistScreen: React.FC = () => {
   );
   const persistFirstWin = useOnboardingDraftStore(state => state.persistFirstWin);
   const loadPets = usePetStore(state => state.loadPets);
+  const loadReminders = useReminderStore(state => state.loadReminders);
 
   const [uiState, setUiState] = useState<PersistUiState>('loading');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -78,13 +81,13 @@ export const OnboardingPersistScreen: React.FC = () => {
 
     const result = await persistFirstWin(userId);
     if (result.ok) {
-      void loadPets().catch(() => {});
+      await refreshPostPersistData(loadPets, loadReminders).catch(() => {});
       return;
     }
 
     setUiState('error');
     setErrorMessage(result.errorMessage);
-  }, [userId, persistFirstWin, loadPets]);
+  }, [userId, persistFirstWin, loadPets, loadReminders]);
 
   useEffect(() => {
     void runPersist();
