@@ -273,7 +273,11 @@ export const AddPetScreen: React.FC = () => {
 
   const initialPrefill = useMemo(
     () =>
-      !isEditMode ? prefillFromOnboardingProfile(onboardingProfile) : null,
+      !isEditMode
+        ? prefillFromOnboardingProfile(onboardingProfile, {
+            skipWhenPetAlreadyCreated: petsUsed > 0,
+          })
+        : null,
     // Only seed once from the profile present at first mount of create mode.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional one-shot defaults
     [isEditMode],

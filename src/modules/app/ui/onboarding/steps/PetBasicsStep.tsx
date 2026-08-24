@@ -17,7 +17,6 @@ import { AccentHeadline } from '../components/AccentHeadline';
 const SPECIES_OPTIONS: PetSpeciesOption[] = [
   { id: 'dog', label: 'Dog', kind: 'dog' },
   { id: 'cat', label: 'Cat', kind: 'cat' },
-  { id: 'both', label: 'Both', kind: 'other' },
 ];
 
 type AgeBandOption = { id: PetDraft['ageBand']; label: string };

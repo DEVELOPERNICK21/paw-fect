@@ -31,7 +31,10 @@ import { appOrchestrator } from '../../modules/app/appComposition';
 import { registerNotificationFeedSync } from '../../modules/notifications/bootstrap/registerNotificationFeedSync';
 import { useHomeQuickActionsUsageStore } from '../../modules/app/store/homeQuickActionsUsageStore';
 import { useOnboardingDraftStore } from '../../modules/app/store/onboardingDraftStore';
-import { resolveOnboardingGate } from '../../modules/app/domain/onboarding/resolveOnboardingGate';
+import {
+  isFirstWinPersisted,
+  resolveOnboardingGate,
+} from '../../modules/app/domain/onboarding/resolveOnboardingGate';
 import { useNotificationFeedStore } from '../../modules/notifications/store/notificationFeedStore';
 import SplashScreen from '../../modules/app/ui/screens/SplashScreen';
 import {
@@ -66,11 +69,8 @@ export const RootNavigator: React.FC = () => {
   const userId = useAuthStore(state => state.user?.id);
   const settings = useSettingsStore(state => state.settings);
   const loadSettings = useSettingsStore(state => state.loadSettings);
-  const onboardingPhase = useOnboardingDraftStore(state => state.draft.phase);
-  const onboardingCommitmentAccepted = useOnboardingDraftStore(
-    state => state.draft.commitmentAccepted,
-  );
-  const setOnboardingPhase = useOnboardingDraftStore(state => state.setPhase);
+  const onboardingDraft = useOnboardingDraftStore(state => state.draft);
+  const onboardingPhase = onboardingDraft.phase;
   const loadPets = usePetStore(state => state.loadPets);
   const pets = usePetStore(state => state.pets);
   const petsLoading = usePetStore(state => state.loading);
@@ -92,8 +92,12 @@ export const RootNavigator: React.FC = () => {
   const onboardingGate = resolveOnboardingGate({
     onboardingCompleted: hasCompletedOnboarding,
     phase: onboardingPhase,
-    commitmentAccepted: onboardingCommitmentAccepted,
+    entryIntent: onboardingDraft.entryIntent,
     isAuthenticated,
+    hasPets: pets.length > 0,
+    petsLoading,
+    activationSubmitted: onboardingDraft.activationSubmitted,
+    firstWinPersisted: isFirstWinPersisted(onboardingDraft),
   });
   const petGateActive =
     bootstrapped &&
@@ -152,16 +156,6 @@ export const RootNavigator: React.FC = () => {
 
     bootstrap();
   }, [loadCurrentUser, loadSettings, loadPets]);
-
-  useEffect(() => {
-    if (!bootstrapped || !isAuthenticated) {
-      return;
-    }
-    const { phase, commitmentAccepted } = useOnboardingDraftStore.getState().draft;
-    if (commitmentAccepted && phase === 'quiz') {
-      setOnboardingPhase('paywall');
-    }
-  }, [bootstrapped, isAuthenticated, setOnboardingPhase]);
 
   useEffect(() => {
     if (!bootstrapped) {
@@ -352,6 +346,41 @@ export const RootNavigator: React.FC = () => {
     resetRecords,
   ]);
 
+  useEffect(() => {
+    if (!bootstrapped || !isAuthenticated || petsLoading) {
+      return;
+    }
+    if (onboardingDraft.entryIntent !== 'sign_in') {
+      return;
+    }
+    const store = useOnboardingDraftStore.getState();
+    if (hasCompletedOnboarding || pets.length > 0) {
+      store.clearEntryIntent();
+      return;
+    }
+    store.clearEntryIntent();
+    store.startActivation();
+  }, [
+    bootstrapped,
+    isAuthenticated,
+    petsLoading,
+    pets.length,
+    hasCompletedOnboarding,
+    onboardingDraft.entryIntent,
+  ]);
+
+  // Gate can resolve to persist while draft.phase still reads activate after auth
+  // (submitActivation while unauthenticated). Keep navigator phase aligned with gate.
+  useEffect(() => {
+    if (!bootstrapped || onboardingGate !== 'persist') {
+      return;
+    }
+    if (onboardingPhase === 'persist') {
+      return;
+    }
+    useOnboardingDraftStore.getState().setPhase('persist');
+  }, [bootstrapped, onboardingGate, onboardingPhase]);
+
   const user = useAuthStore(state => state.user);
 
   useEffect(() => {
@@ -369,8 +398,23 @@ export const RootNavigator: React.FC = () => {
     return <SplashScreen />;
   }
 
+  const signInPetsPending =
+    isAuthenticated &&
+    petsLoading &&
+    onboardingDraft.entryIntent === 'sign_in' &&
+    !hasCompletedOnboarding;
+
+  if (signInPetsPending) {
+    return <SplashScreen />;
+  }
+
   let content: React.ReactElement = <AuthNavigator />;
-  if (onboardingGate === 'quiz' || onboardingGate === 'paywall' || onboardingGate === 'tips') {
+  if (
+    onboardingGate === 'welcome' ||
+    onboardingGate === 'activate' ||
+    onboardingGate === 'persist' ||
+    onboardingGate === 'paywall'
+  ) {
     content = <OnboardingNavigator />;
   } else if (onboardingGate === 'auth') {
     content = <AuthNavigator />;

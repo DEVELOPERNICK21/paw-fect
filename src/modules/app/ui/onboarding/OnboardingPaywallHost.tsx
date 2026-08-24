@@ -1,12 +1,15 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { trackEvent } from '../../../../infrastructure/analytics/analytics';
 import { PaywallScreen } from '../../../subscription/ui/screens/PaywallScreen';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { useAppSession } from '../../../../shared/session/useAppSession';
-import { buildCarePlanSummary } from '../../domain/onboarding/buildCarePlanSummary';
+import { usePetStore } from '../../../pets/store/petStore';
+import { useReminderStore } from '../../../reminders/store/reminderStore';
+import { buildOnboardingValueHeadline } from '../../domain/onboarding/onboardingPaywallCopy';
 import { useOnboardingDraftStore } from '../../store/onboardingDraftStore';
+import { refreshPostPersistData } from './refreshPostPersistData';
 
 const SYNC_TIMEOUT_MS = 6000;
 
@@ -24,17 +27,29 @@ export const OnboardingPaywallHost: React.FC = () => {
   const draft = useOnboardingDraftStore(state => state.draft);
   const update = useOnboardingDraftStore(state => state.update);
   const setPhase = useOnboardingDraftStore(state => state.setPhase);
+  const completeFunnel = useOnboardingDraftStore(state => state.completeFunnel);
+  const loadPets = usePetStore(state => state.loadPets);
+  const loadReminders = useReminderStore(state => state.loadReminders);
   const { entitlementSource, entitlementServerSynced: serverSynced } =
     useAppSession();
   const { colors } = useTheme();
 
-  const summary = useMemo(() => buildCarePlanSummary(draft), [draft]);
+  const headline = useMemo(
+    () => buildOnboardingValueHeadline(draft.petDraft),
+    [draft.petDraft],
+  );
 
   /** null until first serverSynced; then whether user was free at that moment. */
   const wasFreeAtSyncRef = useRef<boolean | null>(null);
   /** Set when sync wait times out so late serverSynced can still skip entitled users. */
   const armedByTimeoutRef = useRef(false);
   const [syncTimedOut, setSyncTimedOut] = useState(false);
+
+  const finishOnboarding = useCallback((): void => {
+    void refreshPostPersistData(loadPets, loadReminders).catch(() => {});
+    setPhase('done');
+    void completeFunnel();
+  }, [completeFunnel, loadPets, loadReminders, setPhase]);
 
   useEffect(() => {
     if (serverSynced) {
@@ -58,6 +73,11 @@ export const OnboardingPaywallHost: React.FC = () => {
   }, [syncTimedOut, serverSynced]);
 
   useEffect(() => {
+    if (!draft.createdPetId) {
+      setPhase('persist');
+      return;
+    }
+
     if (!serverSynced) {
       if (
         syncTimedOut &&
@@ -66,7 +86,12 @@ export const OnboardingPaywallHost: React.FC = () => {
       ) {
         wasFreeAtSyncRef.current = false;
         armedByTimeoutRef.current = false;
-        setPhase('tips');
+        update(current => ({
+          ...current,
+          paywallOutcome: 'entitled_auto_skip',
+        }));
+        void trackEvent('paywall_skipped_entitled', { source: 'onboarding' });
+        finishOnboarding();
       }
       return;
     }
@@ -79,7 +104,7 @@ export const OnboardingPaywallHost: React.FC = () => {
           paywallOutcome: 'entitled_auto_skip',
         }));
         void trackEvent('paywall_skipped_entitled', { source: 'onboarding' });
-        setPhase('tips');
+        finishOnboarding();
       } else {
         wasFreeAtSyncRef.current = true;
       }
@@ -94,7 +119,7 @@ export const OnboardingPaywallHost: React.FC = () => {
         paywallOutcome: 'entitled_auto_skip',
       }));
       void trackEvent('paywall_skipped_entitled', { source: 'onboarding' });
-      setPhase('tips');
+      finishOnboarding();
       return;
     }
 
@@ -107,9 +132,17 @@ export const OnboardingPaywallHost: React.FC = () => {
         ...current,
         paywallOutcome: 'purchased',
       }));
-      setPhase('tips');
+      finishOnboarding();
     }
-  }, [serverSynced, syncTimedOut, entitlementSource, setPhase, update]);
+  }, [
+    draft.createdPetId,
+    serverSynced,
+    syncTimedOut,
+    entitlementSource,
+    setPhase,
+    update,
+    finishOnboarding,
+  ]);
 
   const handleDismiss = (): void => {
     update(current => ({
@@ -117,7 +150,7 @@ export const OnboardingPaywallHost: React.FC = () => {
       skippedPaywall: true,
       paywallOutcome: 'skipped',
     }));
-    setPhase('tips');
+    finishOnboarding();
   };
 
   const loadingStyles = useMemo(
@@ -133,6 +166,14 @@ export const OnboardingPaywallHost: React.FC = () => {
     [colors.background],
   );
 
+  if (!draft.createdPetId) {
+    return (
+      <View style={loadingStyles.container}>
+        <ActivityIndicator color={colors.primary} />
+      </View>
+    );
+  }
+
   const waitingForSync = !serverSynced && !syncTimedOut;
 
   if (waitingForSync || (serverSynced && isPaidOrTrial(entitlementSource))) {
@@ -146,7 +187,7 @@ export const OnboardingPaywallHost: React.FC = () => {
   return (
     <PaywallScreen
       sourceOverride="onboarding"
-      headlineOverride={summary.paywallHeadline}
+      headlineOverride={headline}
       onboardingDraft={draft}
       onDismiss={handleDismiss}
     />

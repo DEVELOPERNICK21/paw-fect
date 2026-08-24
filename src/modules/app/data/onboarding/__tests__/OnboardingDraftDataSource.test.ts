@@ -1,4 +1,3 @@
-import type { OnboardingProblem } from '../../../domain/onboarding/OnboardingDraft';
 import { createOnboardingDraftDataSource } from '../OnboardingDraftDataSource';
 import { createDefaultOnboardingDraft } from '../../../domain/onboarding/onboardingDraftReducers';
 import { storageService } from '../../../../../infrastructure/storage/storageService';
@@ -30,8 +29,21 @@ describe('OnboardingDraftDataSource', () => {
   it('saveDraft round-trips stored draft', async () => {
     const draft = {
       ...createDefaultOnboardingDraft(),
+      phase: 'activate' as const,
       step: 3,
-      problems: ['missed_vaccines'] as OnboardingProblem[],
+      petDraft: {
+        species: 'dog' as const,
+        ageBand: 'adult' as const,
+        nickname: 'Milo',
+      },
+      reminderDraft: {
+        kind: 'walk' as const,
+        title: "Milo's walk",
+        date: '2026-08-24',
+        time: '08:00',
+        repeat: 'daily' as const,
+        reminderType: 'other' as const,
+      },
     };
     mockGetItem.mockResolvedValueOnce(draft);
     const ds = createOnboardingDraftDataSource();
@@ -39,7 +51,18 @@ describe('OnboardingDraftDataSource', () => {
     expect(mockSetItem).toHaveBeenCalledWith('onboarding_draft', draft);
     const loaded = await ds.getDraft();
     expect(loaded.step).toBe(3);
-    expect(loaded.problems).toEqual(['missed_vaccines']);
+    expect(loaded.petDraft?.nickname).toBe('Milo');
+  });
+
+  it('getDraft resets legacy quiz storage to welcome default', async () => {
+    mockGetItem.mockResolvedValueOnce({
+      phase: 'quiz',
+      step: 5,
+      problems: ['missed_vaccines'],
+    });
+    const ds = createOnboardingDraftDataSource();
+    const draft = await ds.getDraft();
+    expect(draft).toEqual(createDefaultOnboardingDraft());
   });
 
   it('clearDraft removes storage key', async () => {

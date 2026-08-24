@@ -1,9 +1,16 @@
+import type { ReminderDraft } from '../../domain/onboarding/OnboardingDraft';
 import {
   createDefaultOnboardingDraft,
   setCareInterests,
+  setPetDraft,
+  setReminderDraft,
 } from '../../domain/onboarding/onboardingDraftReducers';
+import { trackEvent } from '../../../../infrastructure/analytics/analytics';
 import { storageService } from '../../../../infrastructure/storage/storageService';
-import { registerOnboardingSettingsPort } from '../onboardingCoordinationPorts';
+import {
+  registerOnboardingActivationPort,
+  registerOnboardingSettingsPort,
+} from '../onboardingCoordinationPorts';
 import { useOnboardingDraftStore } from '../onboardingDraftStore';
 
 jest.mock('../../../../infrastructure/storage/storageService', () => ({
@@ -21,6 +28,22 @@ jest.mock('../../../../infrastructure/analytics/analytics', () => ({
 const mockGetItem = storageService.getItem as jest.Mock;
 const mockSetItem = storageService.setItem as jest.Mock;
 const mockRemoveItem = storageService.removeItem as jest.Mock;
+const mockTrackEvent = trackEvent as jest.Mock;
+
+const testPetDraft = {
+  species: 'dog' as const,
+  ageBand: 'adult' as const,
+  nickname: 'Milo',
+};
+
+const testReminderDraft: ReminderDraft = {
+  kind: 'walk',
+  title: "Milo's walk",
+  date: '2026-08-24',
+  time: '08:00',
+  repeat: 'daily',
+  reminderType: 'other',
+};
 
 describe('onboardingDraftStore', () => {
   beforeEach(() => {
@@ -31,6 +54,16 @@ describe('onboardingDraftStore', () => {
     registerOnboardingSettingsPort({
       persistOnboardingCompletion: async () => false,
     });
+    registerOnboardingActivationPort({
+      createPetFromDraft: async () => ({
+        ok: false,
+        errorMessage: 'Onboarding activation is not configured.',
+      }),
+      createReminderFromDraft: async () => ({
+        ok: false,
+        errorMessage: 'Onboarding activation is not configured.',
+      }),
+    });
     useOnboardingDraftStore.setState({
       draft: createDefaultOnboardingDraft(),
     });
@@ -39,11 +72,96 @@ describe('onboardingDraftStore', () => {
   it('hydrate loads draft from data source', async () => {
     mockGetItem.mockResolvedValueOnce({
       step: 2,
+      phase: 'activate',
+      petDraft: testPetDraft,
+      reminderDraft: testReminderDraft,
     });
 
     await useOnboardingDraftStore.getState().hydrate();
 
     expect(useOnboardingDraftStore.getState().draft.step).toBe(2);
+    expect(useOnboardingDraftStore.getState().draft.phase).toBe('activate');
+  });
+
+  it('hydrate resets legacy quiz draft to welcome default', async () => {
+    mockGetItem.mockResolvedValueOnce({
+      phase: 'quiz',
+      step: 5,
+      problems: ['missed_vaccines'],
+      commitmentAccepted: true,
+      petDraft: testPetDraft,
+    });
+
+    await useOnboardingDraftStore.getState().hydrate();
+
+    expect(useOnboardingDraftStore.getState().draft).toEqual(
+      createDefaultOnboardingDraft(),
+    );
+  });
+
+  it('startActivation sets activate phase and entryIntent', () => {
+    useOnboardingDraftStore.getState().startActivation();
+    expect(useOnboardingDraftStore.getState().draft.phase).toBe('activate');
+    expect(useOnboardingDraftStore.getState().draft.step).toBe(0);
+    expect(useOnboardingDraftStore.getState().draft.entryIntent).toBe('activate');
+    expect(useOnboardingDraftStore.getState().draft.activationSubmitted).toBe(false);
+  });
+
+  it('startActivation clears activationSubmitted', () => {
+    useOnboardingDraftStore.getState().update(draft => ({
+      ...draft,
+      activationSubmitted: true,
+    }));
+
+    useOnboardingDraftStore.getState().startActivation();
+
+    expect(useOnboardingDraftStore.getState().draft.activationSubmitted).toBe(
+      false,
+    );
+  });
+
+  it('submitActivation sets flag and advances to persist when authenticated', async () => {
+    useOnboardingDraftStore.getState().submitActivation(true);
+    await Promise.resolve();
+
+    expect(useOnboardingDraftStore.getState().draft.activationSubmitted).toBe(
+      true,
+    );
+    expect(useOnboardingDraftStore.getState().draft.phase).toBe('persist');
+    expect(mockSetItem).toHaveBeenCalledWith(
+      'onboarding_draft',
+      expect.objectContaining({
+        activationSubmitted: true,
+        phase: 'persist',
+      }),
+    );
+  });
+
+  it('submitActivation sets flag but keeps activate phase when unauthenticated', async () => {
+    useOnboardingDraftStore.getState().submitActivation(false);
+    await Promise.resolve();
+
+    expect(useOnboardingDraftStore.getState().draft.activationSubmitted).toBe(
+      true,
+    );
+    expect(useOnboardingDraftStore.getState().draft.phase).toBe('welcome');
+    expect(mockSetItem).toHaveBeenCalledWith(
+      'onboarding_draft',
+      expect.objectContaining({
+        activationSubmitted: true,
+        phase: 'welcome',
+      }),
+    );
+  });
+
+  it('setSignInIntent sets sign_in entryIntent', async () => {
+    useOnboardingDraftStore.getState().setSignInIntent();
+    await Promise.resolve();
+    expect(useOnboardingDraftStore.getState().draft.entryIntent).toBe('sign_in');
+    expect(mockSetItem).toHaveBeenCalledWith(
+      'onboarding_draft',
+      expect.objectContaining({ entryIntent: 'sign_in' }),
+    );
   });
 
   it('goNext persists advanced draft', async () => {
@@ -102,6 +220,162 @@ describe('onboardingDraftStore', () => {
       'walks',
     ]);
     expect(mockSetItem).not.toHaveBeenCalled();
+  });
+
+  it('persistFirstWin creates pet then reminder and advances to paywall', async () => {
+    const createPetFromDraft = jest
+      .fn()
+      .mockResolvedValue({ ok: true, petId: 'pet-123' });
+    const createReminderFromDraft = jest.fn().mockResolvedValue({ ok: true });
+    registerOnboardingActivationPort({
+      createPetFromDraft,
+      createReminderFromDraft,
+    });
+
+    useOnboardingDraftStore.getState().update(draft =>
+      setPetDraft(setReminderDraft(draft, testReminderDraft), testPetDraft),
+    );
+    mockSetItem.mockClear();
+
+    const result = await useOnboardingDraftStore
+      .getState()
+      .persistFirstWin('user-1');
+
+    expect(result).toEqual({ ok: true });
+    expect(createPetFromDraft).toHaveBeenCalledWith({
+      userId: 'user-1',
+      pet: testPetDraft,
+    });
+    expect(createReminderFromDraft).toHaveBeenCalledWith({
+      petId: 'pet-123',
+      reminder: testReminderDraft,
+    });
+    expect(useOnboardingDraftStore.getState().draft.createdPetId).toBe(
+      'pet-123',
+    );
+    expect(useOnboardingDraftStore.getState().draft.phase).toBe('paywall');
+    expect(mockTrackEvent).toHaveBeenCalledWith(
+      'onboarding_first_win_created',
+      {
+        reminder_kind: 'walk',
+        species: 'dog',
+      },
+    );
+  });
+
+  it('persistFirstWin keeps createdPetId when reminder fails', async () => {
+    const createPetFromDraft = jest
+      .fn()
+      .mockResolvedValue({ ok: true, petId: 'pet-456' });
+    const createReminderFromDraft = jest.fn().mockResolvedValue({
+      ok: false,
+      errorMessage: 'Reminder save failed',
+    });
+    registerOnboardingActivationPort({
+      createPetFromDraft,
+      createReminderFromDraft,
+    });
+
+    useOnboardingDraftStore.getState().update(draft =>
+      setPetDraft(setReminderDraft(draft, testReminderDraft), testPetDraft),
+    );
+
+    const result = await useOnboardingDraftStore
+      .getState()
+      .persistFirstWin('user-1');
+
+    expect(result).toEqual({
+      ok: false,
+      errorMessage: 'Reminder save failed',
+    });
+    expect(useOnboardingDraftStore.getState().draft.createdPetId).toBe(
+      'pet-456',
+    );
+    expect(useOnboardingDraftStore.getState().draft.phase).not.toBe('paywall');
+    expect(mockTrackEvent).toHaveBeenCalledWith('onboarding_persist_failed', {
+      stage: 'reminder',
+    });
+  });
+
+  it('persistFirstWin skips pet create when createdPetId already set', async () => {
+    const createPetFromDraft = jest.fn();
+    const createReminderFromDraft = jest.fn().mockResolvedValue({ ok: true });
+    registerOnboardingActivationPort({
+      createPetFromDraft,
+      createReminderFromDraft,
+    });
+
+    useOnboardingDraftStore.getState().update(draft => ({
+      ...setPetDraft(setReminderDraft(draft, testReminderDraft), testPetDraft),
+      createdPetId: 'pet-existing',
+    }));
+
+    const result = await useOnboardingDraftStore
+      .getState()
+      .persistFirstWin('user-1');
+
+    expect(result).toEqual({ ok: true });
+    expect(createPetFromDraft).not.toHaveBeenCalled();
+    expect(createReminderFromDraft).toHaveBeenCalledWith({
+      petId: 'pet-existing',
+      reminder: testReminderDraft,
+    });
+  });
+
+  it('persistFirstWin clamps past-dated reminder before create', async () => {
+    const createPetFromDraft = jest
+      .fn()
+      .mockResolvedValue({ ok: true, petId: 'pet-123' });
+    const createReminderFromDraft = jest.fn().mockResolvedValue({ ok: true });
+    registerOnboardingActivationPort({
+      createPetFromDraft,
+      createReminderFromDraft,
+    });
+
+    const pastReminder: ReminderDraft = {
+      ...testReminderDraft,
+      date: '2020-01-01',
+      time: '08:00',
+    };
+
+    useOnboardingDraftStore.getState().update(draft =>
+      setPetDraft(setReminderDraft(draft, pastReminder), testPetDraft),
+    );
+
+    const result = await useOnboardingDraftStore
+      .getState()
+      .persistFirstWin('user-1');
+
+    expect(result).toEqual({ ok: true });
+    const savedReminder = createReminderFromDraft.mock.calls[0][0].reminder;
+    expect(savedReminder.date).not.toBe('2020-01-01');
+    expect(useOnboardingDraftStore.getState().draft.reminderDraft?.date).toBe(
+      savedReminder.date,
+    );
+  });
+
+  it('persistFirstWin returns failed result when port throws', async () => {
+    const createPetFromDraft = jest.fn().mockRejectedValue(new Error('network'));
+    registerOnboardingActivationPort({
+      createPetFromDraft,
+      createReminderFromDraft: async () => ({ ok: true }),
+    });
+
+    useOnboardingDraftStore.getState().update(draft =>
+      setPetDraft(setReminderDraft(draft, testReminderDraft), testPetDraft),
+    );
+
+    const result = await useOnboardingDraftStore
+      .getState()
+      .persistFirstWin('user-1');
+
+    expect(result).toEqual({
+      ok: false,
+      errorMessage: 'Could not save your reminder. Please try again.',
+    });
+    expect(mockTrackEvent).toHaveBeenCalledWith('onboarding_persist_failed', {
+      stage: 'unexpected',
+    });
   });
 
   it('completeFunnel does not clear draft when updateSettings swallows a storage failure', async () => {

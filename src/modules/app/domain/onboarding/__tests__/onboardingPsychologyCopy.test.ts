@@ -2,7 +2,11 @@ import {
   validationCopyForCareInterests,
   validationCopyForProblems,
 } from '../onboardingValidationCopy';
-import { buildOnboardingLossLine } from '../onboardingPaywallCopy';
+import {
+  buildOnboardingLossLine,
+  buildOnboardingValueHeadline,
+  buildOnboardingValueSubline,
+} from '../onboardingPaywallCopy';
 import { buildProcessingLines } from '../buildProcessingLines';
 
 describe('onboardingValidationCopy', () => {
@@ -31,6 +35,23 @@ describe('onboardingPaywallCopy', () => {
       pet: { species: 'dog', ageBand: 'adult', nickname: 'Milo' },
     });
     expect(line).toMatch(/vaccine/i);
+  });
+
+  it('builds value headline with nickname', () => {
+    expect(
+      buildOnboardingValueHeadline({
+        species: 'dog',
+        ageBand: 'adult',
+        nickname: 'Luna',
+      }),
+    ).toBe("Keep Luna's care on track");
+    expect(
+      buildOnboardingValueSubline({
+        species: 'dog',
+        ageBand: 'adult',
+        nickname: 'Luna',
+      }),
+    ).toMatch(/Luna/);
   });
 });
 

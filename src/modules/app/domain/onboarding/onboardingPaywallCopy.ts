@@ -23,9 +23,6 @@ const CARE_TASK_FOR_PROBLEM: Partial<Record<OnboardingProblem, string>> = {
 const DEFAULT_LOSS_LINE =
   'Most pet parents who skip a plan lose momentum within the first two weeks.';
 
-const SOCIAL_PROOF_QUALITATIVE =
-  'Join pet parents who share your goals — stay consistent together.';
-
 export type PlanFeatureId =
   | 'reminders'
   | 'records'
@@ -57,6 +54,26 @@ export function petDisplayName(
     return nickname;
   }
   return null;
+}
+
+export function buildOnboardingValueHeadline(
+  pet: PetDraft | null | undefined,
+): string {
+  const name = petDisplayName(pet);
+  if (name) {
+    return `Keep ${name}'s care on track`;
+  }
+  return "Keep your pet's care on track";
+}
+
+export function buildOnboardingValueSubline(
+  pet: PetDraft | null | undefined,
+): string {
+  const name = petDisplayName(pet);
+  if (name) {
+    return `Pro reminders and records help you stay consistent for ${name}.`;
+  }
+  return 'Pro reminders and records help you stay consistent.';
 }
 
 export function buildOnboardingLossLine(
@@ -97,7 +114,7 @@ export function buildOnboardingLossLine(
 }
 
 export function buildOnboardingSocialProofLine(): string {
-  return SOCIAL_PROOF_QUALITATIVE;
+  return '';
 }
 
 export function orderPlanFeaturesForOnboarding(input: {

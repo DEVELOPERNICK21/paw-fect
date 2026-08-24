@@ -16,7 +16,12 @@ import { syncDeviceGlanceSurfaces } from '../../infrastructure/widgets/syncDevic
 import { getTodayIsoDateLocal } from '../../shared/utils/calendarDate';
 import { scheduleComposition } from '../schedule/scheduleComposition';
 import { useSettingsStore } from '../settings/store/settingsStore';
-import { registerOnboardingSettingsPort } from './store/onboardingCoordinationPorts';
+import { petComposition } from '../pets/petComposition';
+import { remindersComposition } from '../reminders/remindersComposition';
+import {
+  registerOnboardingActivationPort,
+  registerOnboardingSettingsPort,
+} from './store/onboardingCoordinationPorts';
 import { wireNotificationFeaturePorts } from './application/registerNotificationFeaturePorts';
 import {
   registerHomeDashboardRefresh,
@@ -114,6 +119,47 @@ registerOnboardingSettingsPort({
       updatedSettings?.onboardingCompleted === true &&
       Boolean(updatedSettings.onboardingProfile)
     );
+  },
+});
+
+registerOnboardingActivationPort({
+  createPetFromDraft: async ({ userId, pet }) => {
+    if (pet.species === 'both') {
+      return {
+        ok: false,
+        errorMessage: 'Please choose dog or cat to continue.',
+      };
+    }
+
+    const profile = petComposition.createPetProfile.execute({
+      userId,
+      name: pet.nickname.trim(),
+      type: pet.species === 'cat' ? 'cat' : 'dog',
+    });
+    if (!profile.ok) {
+      return { ok: false, errorMessage: profile.errorMessage };
+    }
+
+    await petComposition.createPet.execute(userId, profile.pet);
+    appOrchestrator.invalidateHomeDashboard();
+    return { ok: true, petId: profile.pet.id };
+  },
+  createReminderFromDraft: async ({ petId, reminder }) => {
+    const entry = remindersComposition.createReminderEntry.execute({
+      petId,
+      title: reminder.title,
+      type: reminder.reminderType,
+      date: reminder.date,
+      time: reminder.time,
+      repeat: reminder.repeat,
+    });
+    if (!entry.ok) {
+      return { ok: false, errorMessage: entry.errorMessage };
+    }
+
+    await remindersComposition.createReminder.execute(entry.reminder);
+    appOrchestrator.invalidateHomeDashboard();
+    return { ok: true };
   },
 });
 
