@@ -28,6 +28,8 @@ import { spacing } from '../../../../shared/theme/spacing';
 import { radius as radiusTokens } from '../../../../shared/theme/radius';
 import { icons } from '../../../../shared/assets/icons';
 
+import { useShallow } from 'zustand/react/shallow';
+
 import { useHomeDashboardStore } from '../../../app/store/homeDashboardStore';
 import { usePetStore } from '../../store/petStore';
 import { useRecordStore } from '../../../records/store/recordStore';
@@ -48,12 +50,17 @@ export const PetProfileScreen: React.FC = () => {
   const theme = useTheme();
   const { colors, spacing: spacingTokens, textStyles, fontFamilies } = theme;
 
-  const activePet = usePetStore(s => s.activePet);
-  const pets = usePetStore(s => s.pets);
-  const setActivePet = usePetStore(s => s.setActivePet);
-  const loadPets = usePetStore(s => s.loadPets);
-  const loading = usePetStore(s => s.loading);
-  const loadError = usePetStore(s => s.loadError);
+  const { activePet, pets, setActivePet, loadPets, loading, loadError } =
+    usePetStore(
+      useShallow(s => ({
+        activePet: s.activePet,
+        pets: s.pets,
+        setActivePet: s.setActivePet,
+        loadPets: s.loadPets,
+        loading: s.loading,
+        loadError: s.loadError,
+      })),
+    );
 
   const requestDashboardRefresh = useHomeDashboardStore(
     s => s.requestDashboardRefresh,
@@ -156,9 +163,13 @@ export const PetProfileScreen: React.FC = () => {
   const locationLine = 'San Francisco, CA';
 
   const breedLabel = (effectivePet?.breed?.trim() || 'Not set').toUpperCase();
-  const tip = effectivePet
-    ? getPawsitiveTip(effectivePet)
-    : { title: 'Pawsitive Tip', body: '' };
+  const tip = useMemo(
+    () =>
+      effectivePet
+        ? getPawsitiveTip(effectivePet)
+        : { title: 'Pawsitive Tip', body: '' },
+    [effectivePet],
+  );
 
   const genderValue = useMemo(() => {
     const g = effectivePet?.gender;
