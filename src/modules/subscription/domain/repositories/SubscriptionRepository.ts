@@ -13,8 +13,9 @@ export interface SubscriptionRepository {
   ): () => void;
   stopObserving(): void;
   refreshBootstrap(): Promise<ComputedEntitlement>;
-  checkoutPlayStore(
+  checkoutStore(
     planKey: PlayStorePlanKey,
     billingPeriod: 'monthly' | 'annual',
   ): Promise<ComputedEntitlement>;
+  restorePurchases(): Promise<ComputedEntitlement>;
 }

@@ -26,11 +26,15 @@ export class SubscriptionRepositoryImpl implements SubscriptionRepository {
     return this.remote.refreshBootstrap();
   }
 
-  checkoutPlayStore(
+  checkoutStore(
     planKey: PlayStorePlanKey,
     billingPeriod: 'monthly' | 'annual',
   ): Promise<ComputedEntitlement> {
-    return this.remote.checkoutPlayStore(planKey, billingPeriod);
+    return this.remote.checkoutStore(planKey, billingPeriod);
+  }
+
+  restorePurchases(): Promise<ComputedEntitlement> {
+    return this.remote.restorePurchases();
   }
 }
 
