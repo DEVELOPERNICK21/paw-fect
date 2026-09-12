@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -55,9 +56,10 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
   const entitlement = useSubscriptionStore(s => s.entitlement);
   const checkoutLoading = useSubscriptionStore(s => s.checkoutLoading);
   const checkoutError = useSubscriptionStore(s => s.checkoutError);
-  const startPlayStoreCheckout = useSubscriptionStore(
-    s => s.startPlayStoreCheckout,
-  );
+  const startStoreCheckout = useSubscriptionStore(s => s.startStoreCheckout);
+  const restorePurchases = useSubscriptionStore(s => s.restorePurchases);
+
+  const storeCheckoutEnabled = Platform.OS === 'android';
 
   const isOnboarding = source === 'onboarding';
   const nickname = petDisplayName(onboardingDraft?.petDraft);
@@ -189,12 +191,26 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
           alignItems: 'center',
         },
         ctaText: { color: colors.surface, fontSize: 15 },
+        ctaDisabled: { opacity: 0.6 },
         error: { color: colors.danger, marginTop: spacing.md, fontSize: 14 },
         current: {
           fontSize: 13,
           color: colors.accent,
           marginBottom: spacing.md,
         },
+        storeCaption: {
+          fontSize: 13,
+          color: colors.text.subdued,
+          marginBottom: spacing.md,
+          lineHeight: 18,
+        },
+        restoreButton: {
+          alignSelf: 'center',
+          paddingVertical: spacing.sm,
+          paddingHorizontal: spacing.md,
+          marginTop: spacing.md,
+        },
+        restoreText: { fontSize: fontSizes.sm, color: colors.primary },
       }),
     [colors, radius, spacing, fontSizes],
   );
@@ -319,6 +335,15 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
           {entitlement.graceActive ? ' · grace period' : ''}
         </Text>
 
+        {!storeCheckoutEnabled ? (
+          <Text
+            style={[styles.storeCaption, { fontFamily: fontFamilies.medium }]}
+          >
+            App Store billing is coming soon. You can still continue on Free /
+            trial.
+          </Text>
+        ) : null}
+
         <View style={[styles.card, styles.cardPopular]}>
           <Text style={[styles.planName, { fontFamily: fontFamilies.bold }]}>
             Care+
@@ -345,15 +370,15 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
             Annual billing = 10× monthly (2 months free).
           </Text>
           <Pressable
-            style={styles.cta}
-            disabled={checkoutLoading}
+            style={[styles.cta, !storeCheckoutEnabled ? styles.ctaDisabled : null]}
+            disabled={checkoutLoading || !storeCheckoutEnabled}
             onPress={() => {
               void trackEvent('subscription_checkout_started', {
                 plan: PLAN_CARE_PLUS,
                 billing: 'monthly',
                 source,
               });
-              void startPlayStoreCheckout(PLAN_CARE_PLUS, 'monthly');
+              void startStoreCheckout(PLAN_CARE_PLUS, 'monthly');
             }}
           >
             {checkoutLoading ? (
@@ -373,15 +398,16 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
                 backgroundColor: colors.text.heading,
                 marginTop: spacing.sm,
               },
+              !storeCheckoutEnabled ? styles.ctaDisabled : null,
             ]}
-            disabled={checkoutLoading}
+            disabled={checkoutLoading || !storeCheckoutEnabled}
             onPress={() => {
               void trackEvent('subscription_checkout_started', {
                 plan: PLAN_CARE_PLUS,
                 billing: 'annual',
                 source,
               });
-              void startPlayStoreCheckout(PLAN_CARE_PLUS, 'annual');
+              void startStoreCheckout(PLAN_CARE_PLUS, 'annual');
             }}
           >
             <Text style={[styles.ctaText, { fontFamily: fontFamilies.bold }]}>
@@ -403,15 +429,15 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
             Up to {family.maxPets} pets · everything in Care+ · priority support
           </Text>
           <Pressable
-            style={styles.cta}
-            disabled={checkoutLoading}
+            style={[styles.cta, !storeCheckoutEnabled ? styles.ctaDisabled : null]}
+            disabled={checkoutLoading || !storeCheckoutEnabled}
             onPress={() => {
               void trackEvent('subscription_checkout_started', {
                 plan: PLAN_FAMILY,
                 billing: 'monthly',
                 source,
               });
-              void startPlayStoreCheckout(PLAN_FAMILY, 'monthly');
+              void startStoreCheckout(PLAN_FAMILY, 'monthly');
             }}
           >
             <Text style={[styles.ctaText, { fontFamily: fontFamilies.bold }]}>
@@ -427,15 +453,16 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
                 backgroundColor: colors.text.heading,
                 marginTop: spacing.sm,
               },
+              !storeCheckoutEnabled ? styles.ctaDisabled : null,
             ]}
-            disabled={checkoutLoading}
+            disabled={checkoutLoading || !storeCheckoutEnabled}
             onPress={() => {
               void trackEvent('subscription_checkout_started', {
                 plan: PLAN_FAMILY,
                 billing: 'annual',
                 source,
               });
-              void startPlayStoreCheckout(PLAN_FAMILY, 'annual');
+              void startStoreCheckout(PLAN_FAMILY, 'annual');
             }}
           >
             <Text style={[styles.ctaText, { fontFamily: fontFamilies.bold }]}>
@@ -452,14 +479,28 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
           </Text>
         ) : null}
 
+        <Pressable
+          style={styles.restoreButton}
+          disabled={checkoutLoading}
+          accessibilityRole="button"
+          onPress={() => {
+            void trackEvent('subscription_restore_started', { source });
+            void restorePurchases();
+          }}
+        >
+          <Text style={[styles.restoreText, { fontFamily: fontFamilies.medium }]}>
+            Restore purchases
+          </Text>
+        </Pressable>
+
         <Text
           style={[
             styles.meta,
             { fontFamily: fontFamilies.regular, marginTop: spacing.lg },
           ]}
         >
-          On Android, payments are processed securely through Google Play
-          Billing. Your plan updates as soon as purchase verification completes.
+          Subscriptions are billed by Google Play. Your plan updates after
+          purchase confirmation.
         </Text>
       </ScrollView>
     </SafeAreaView>
