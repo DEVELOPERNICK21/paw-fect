@@ -6640,11 +6640,6 @@ react-native-config@^1.6.1:
   resolved "https://registry.npmjs.org/react-native-config/-/react-native-config-1.6.1.tgz"
   integrity sha512-HvKtxr6/Tq3iMdFx5REYZsjCtPi0RxQOMCs15+DqrUPTNFtWHuEuh+zw7fJp+dmuO79YMfdtlsPWIGTHtaXwjg==
 
-react-native-iap@^15.0.0:
-  version "15.0.0"
-  resolved "https://registry.npmjs.org/react-native-iap/-/react-native-iap-15.0.0.tgz"
-  integrity sha512-bKBZcIPTL+RVRVewwhooBbyx0XIizAz4EjaH934NweZcxS2lK0dmjqr4upexmCHdP6bqoEkjEqKWIPkqj2l70g==
-
 react-native-image-picker@^8.2.1:
   version "8.2.1"
   resolved "https://registry.yarnpkg.com/react-native-image-picker/-/react-native-image-picker-8.2.1.tgz#1ac7826563cbaa5d5298d9f2acc53c69805e5393"
