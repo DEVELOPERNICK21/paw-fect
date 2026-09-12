@@ -26,6 +26,11 @@ import {
   trackScreen,
 } from '../../infrastructure/analytics/analytics';
 import { registerCrashlyticsUserSync } from '../../infrastructure/crashlytics/registerCrashlyticsUserSync';
+import {
+  configureRevenueCat,
+  loginRevenueCatUser,
+  logoutRevenueCatUser,
+} from '../../infrastructure/purchases/revenueCatClient';
 import '../../modules/app/application/registerAppSessionPortSync';
 import { appOrchestrator } from '../../modules/app/appComposition';
 import { registerNotificationFeedSync } from '../../modules/notifications/bootstrap/registerNotificationFeedSync';
@@ -163,6 +168,7 @@ export const RootNavigator: React.FC = () => {
     }
     registerCrashlyticsUserSync();
     void initAnalytics();
+    configureRevenueCat();
     startupLog('post_bootstrap.notifications.begin');
     void bootstrapLocalNotifications()
       .then(() => startupLog('post_bootstrap.notifications.done'))
@@ -243,11 +249,13 @@ export const RootNavigator: React.FC = () => {
     if (!isAuthenticated || !userId) {
       lastSyncedUserIdRef.current = null;
       subscriptionApi.stopListening();
+      void logoutRevenueCatUser().catch(() => {});
       return undefined;
     }
 
     subscriptionApi.startListening(userId);
     void subscriptionApi.refreshBootstrap();
+    void loginRevenueCatUser(userId).catch(() => {});
 
     return () => {
       subscriptionApi.stopListening();
