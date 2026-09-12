@@ -57,7 +57,7 @@ function resolveStatus(
   eventType: string,
   expirationAtMs: number | null | undefined,
   eventTimestampMs: number | undefined,
-): Pick<StoredSubscriptionState, "status" | "gracePeriodEndsAt"> {
+): Pick<StoredSubscriptionState, "status" | "gracePeriodEndsAt"> | null {
   if (ACTIVE_EVENT_TYPES.has(eventType)) {
     return { status: "active", gracePeriodEndsAt: null };
   }
@@ -83,7 +83,7 @@ function resolveStatus(
     return { status: "cancelled", gracePeriodEndsAt: null };
   }
 
-  return { status: "cancelled", gracePeriodEndsAt: null };
+  return null;
 }
 
 export function isRevenueCatWebhookAuthorized(
@@ -108,11 +108,16 @@ export function mapRevenueCatEventToSubscription(
     return null;
   }
 
-  const { status, gracePeriodEndsAt } = resolveStatus(
+  const statusResult = resolveStatus(
     event.type,
     event.expiration_at_ms,
     event.event_timestamp_ms,
   );
+  if (!statusResult) {
+    return null;
+  }
+
+  const { status, gracePeriodEndsAt } = statusResult;
 
   return {
     provider: "revenuecat",

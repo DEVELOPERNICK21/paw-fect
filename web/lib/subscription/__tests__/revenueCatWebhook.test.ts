@@ -52,6 +52,20 @@ describe('revenueCatWebhook', () => {
       event_timestamp_ms: Date.parse('2026-09-13T00:00:00.000Z'),
     });
     expect(sub?.status).toBe('past_due');
-    expect(sub?.gracePeriodEndsAt).toBeTruthy();
+    expect(sub?.gracePeriodEndsAt).toBe('2026-09-20T00:00:00.000Z');
   });
+
+  it.each(['TRANSFER', 'TEST'])(
+    'returns null for unrecognized event type %s',
+    (eventType) => {
+      const sub = mapRevenueCatEventToSubscription({
+        type: eventType,
+        app_user_id: 'firebase-uid-1',
+        product_id: 'care_plus_monthly',
+        expiration_at_ms: Date.parse('2026-10-13T00:00:00.000Z'),
+        entitlement_ids: ['care_plus'],
+      });
+      expect(sub).toBeNull();
+    },
+  );
 });
