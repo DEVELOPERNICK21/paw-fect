@@ -50,10 +50,8 @@ export async function POST(request: Request): Promise<NextResponse> {
   const db = getAdminDb();
   const userRef = db.collection("users").doc(uid);
   const userSnap = await userRef.get();
-  if (!userSnap.exists) {
-    return NextResponse.json({ error: "Unknown user" }, { status: 404 });
-  }
-
+  // Merge-write even if the user doc is not bootstrapped yet (same as Razorpay).
+  // 404 would drop a paid event because RC typically does not retry 404s.
   const userData = userSnap.data() as Record<string, unknown> | undefined;
   const paidLike =
     subscription.status === "active" ||

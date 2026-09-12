@@ -1,3 +1,4 @@
+import { getAuth } from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import { Platform } from 'react-native';
 
@@ -24,6 +25,14 @@ export interface SubscriptionRemoteDataSource {
   ): Promise<ComputedEntitlement>;
   restorePurchases(): Promise<ComputedEntitlement>;
 }
+
+const requireSignedInUid = (): string => {
+  const uid = getAuth().currentUser?.uid?.trim();
+  if (!uid) {
+    throw new Error('Sign in before purchasing or restoring a subscription.');
+  }
+  return uid;
+};
 
 class SubscriptionRemoteDataSourceImpl implements SubscriptionRemoteDataSource {
   private firestoreUnsub: (() => void) | null = null;
@@ -75,16 +84,40 @@ class SubscriptionRemoteDataSourceImpl implements SubscriptionRemoteDataSource {
         'App Store subscriptions are not available in this build yet.',
       );
     }
-    await purchaseStorePackage(planKey, billingPeriod);
-    await waitForEntitlementSync(() => this.refreshBootstrap());
-    const entitlement = await this.refreshBootstrap();
-    return entitlement;
+    if (Platform.OS !== 'android') {
+      throw new Error('Store subscriptions are only available on Android.');
+    }
+    const uid = requireSignedInUid();
+    await purchaseStorePackage(uid, planKey, billingPeriod);
+    const synced = await waitForEntitlementSync(() => this.refreshBootstrap());
+    if (synced) {
+      return synced;
+    }
+    try {
+      return await this.refreshBootstrap();
+    } catch {
+      // Purchase already completed with the store; entitlement may arrive via
+      // webhook + Firestore listener shortly.
+      throw new Error(
+        'Purchase completed. Your plan will update in a moment — pull to refresh if needed.',
+      );
+    }
   }
 
   async restorePurchases(): Promise<ComputedEntitlement> {
-    await restoreRevenueCatPurchases();
-    await waitForEntitlementSync(() => this.refreshBootstrap());
-    return this.refreshBootstrap();
+    const uid = requireSignedInUid();
+    await restoreRevenueCatPurchases(uid);
+    const synced = await waitForEntitlementSync(() => this.refreshBootstrap());
+    if (synced) {
+      return synced;
+    }
+    try {
+      return await this.refreshBootstrap();
+    } catch {
+      throw new Error(
+        'Restore finished. Your plan will update in a moment if a subscription was found.',
+      );
+    }
   }
 }
 
