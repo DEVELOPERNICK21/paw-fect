@@ -18,7 +18,11 @@ export function parseStoredSubscription(
     return null;
   }
   const provider = raw.provider;
-  if (provider !== "razorpay" && provider !== "google_play") {
+  if (
+    provider !== "razorpay" &&
+    provider !== "google_play" &&
+    provider !== "revenuecat"
+  ) {
     return null;
   }
   const planKey = raw.planKey;
@@ -53,12 +57,17 @@ export function parseStoredSubscription(
       : null;
   const googleProductId =
     typeof raw.googleProductId === "string" ? raw.googleProductId : null;
+  const revenueCatProductId =
+    typeof raw.revenueCatProductId === "string"
+      ? raw.revenueCatProductId
+      : null;
 
   return {
     provider,
     razorpaySubscriptionId,
     googlePurchaseToken,
     googleProductId,
+    revenueCatProductId,
     planKey,
     billingPeriod,
     status: status as StoredSubscriptionStatus,

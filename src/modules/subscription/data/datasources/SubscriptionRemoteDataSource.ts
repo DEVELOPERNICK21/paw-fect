@@ -1,14 +1,16 @@
+import { getAuth } from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import { Platform } from 'react-native';
 
+import {
+  purchaseStorePackage,
+  restoreRevenueCatPurchases,
+  waitForEntitlementSync,
+} from '../../../../infrastructure/purchases/revenueCatClient';
 import type { ComputedEntitlement } from '../../../../shared/subscription/entitlementEngine';
-import { playProductIdFor } from '../../../../shared/subscription/playStoreCatalog';
 import { parseFirestoreEntitlement } from '../../domain/parseFirestoreEntitlement';
 import type { PlayStorePlanKey } from '../../domain/repositories/SubscriptionRepository';
-import {
-  postEntitlementBootstrap,
-  postVerifyGooglePlaySubscription,
-} from '../subscriptionApi';
+import { postEntitlementBootstrap } from '../subscriptionApi';
 
 export interface SubscriptionRemoteDataSource {
   observeEntitlement(
@@ -17,11 +19,20 @@ export interface SubscriptionRemoteDataSource {
   ): () => void;
   stopObserving(): void;
   refreshBootstrap(): Promise<ComputedEntitlement>;
-  checkoutPlayStore(
+  checkoutStore(
     planKey: PlayStorePlanKey,
     billingPeriod: 'monthly' | 'annual',
   ): Promise<ComputedEntitlement>;
+  restorePurchases(): Promise<ComputedEntitlement>;
 }
+
+const requireSignedInUid = (): string => {
+  const uid = getAuth().currentUser?.uid?.trim();
+  if (!uid) {
+    throw new Error('Sign in before purchasing or restoring a subscription.');
+  }
+  return uid;
+};
 
 class SubscriptionRemoteDataSourceImpl implements SubscriptionRemoteDataSource {
   private firestoreUnsub: (() => void) | null = null;
@@ -64,72 +75,49 @@ class SubscriptionRemoteDataSourceImpl implements SubscriptionRemoteDataSource {
     return postEntitlementBootstrap();
   }
 
-  async checkoutPlayStore(
+  async checkoutStore(
     planKey: PlayStorePlanKey,
     billingPeriod: 'monthly' | 'annual',
   ): Promise<ComputedEntitlement> {
-    if (Platform.OS !== 'android') {
+    if (Platform.OS === 'ios') {
       throw new Error(
-        'Play Store subscriptions are available on Android only in this build.',
+        'App Store subscriptions are not available in this build yet.',
       );
     }
-    const productId = playProductIdFor(planKey, billingPeriod);
-    if (!productId) {
-      throw new Error('Subscription product is not configured for this plan.');
+    if (Platform.OS !== 'android') {
+      throw new Error('Store subscriptions are only available on Android.');
     }
-
-    type Purchase = {
-      id?: string;
-      purchaseToken?: string;
-      transactionReceipt?: string;
-    };
-    type IapModule = {
-      initConnection: () => Promise<boolean>;
-      requestSubscription?: (input: {
-        sku: string;
-        subscriptionOffers?: Array<{ sku: string; offerToken: string }>;
-      }) => Promise<Purchase>;
-      requestPurchase?: (input: {
-        request: {
-          android: {
-            skus: string[];
-            subscriptionOffers?: Array<{ sku: string; offerToken: string }>;
-          };
-        };
-        type: 'subs' | 'in-app';
-      }) => Promise<Purchase>;
-      finishTransaction: (params: {
-        purchase: Purchase;
-        isConsumable?: boolean;
-      }) => Promise<void>;
-    };
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const iap = require('react-native-iap') as IapModule;
-
-    await iap.initConnection();
-    const purchase = iap.requestPurchase
-      ? await iap.requestPurchase({
-          request: { android: { skus: [productId] } },
-          type: 'subs',
-        })
-      : iap.requestSubscription
-        ? await iap.requestSubscription({ sku: productId })
-        : (() => {
-            throw new Error(
-              'In-app purchase module is missing purchase functions. Rebuild the app.',
-            );
-          })();
-    const purchaseToken =
-      purchase.purchaseToken ?? purchase.transactionReceipt ?? null;
-    if (!purchaseToken) {
-      throw new Error('Play Store purchase token was not returned.');
+    const uid = requireSignedInUid();
+    await purchaseStorePackage(uid, planKey, billingPeriod);
+    const synced = await waitForEntitlementSync(() => this.refreshBootstrap());
+    if (synced) {
+      return synced;
     }
-    const entitlement = await postVerifyGooglePlaySubscription({
-      purchaseToken,
-      productId,
-    });
-    await iap.finishTransaction({ purchase, isConsumable: false });
-    return entitlement;
+    try {
+      return await this.refreshBootstrap();
+    } catch {
+      // Purchase already completed with the store; entitlement may arrive via
+      // webhook + Firestore listener shortly.
+      throw new Error(
+        'Purchase completed. Your plan will update in a moment — pull to refresh if needed.',
+      );
+    }
+  }
+
+  async restorePurchases(): Promise<ComputedEntitlement> {
+    const uid = requireSignedInUid();
+    await restoreRevenueCatPurchases(uid);
+    const synced = await waitForEntitlementSync(() => this.refreshBootstrap());
+    if (synced) {
+      return synced;
+    }
+    try {
+      return await this.refreshBootstrap();
+    } catch {
+      throw new Error(
+        'Restore finished. Your plan will update in a moment if a subscription was found.',
+      );
+    }
   }
 }
 

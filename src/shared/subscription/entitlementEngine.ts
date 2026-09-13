@@ -20,10 +20,11 @@ export type StoredSubscriptionStatus =
   | 'halted';
 
 export interface StoredSubscriptionState {
-  readonly provider: 'razorpay' | 'google_play';
+  readonly provider: 'razorpay' | 'google_play' | 'revenuecat';
   readonly razorpaySubscriptionId?: string | null;
   readonly googlePurchaseToken?: string | null;
   readonly googleProductId?: string | null;
+  readonly revenueCatProductId?: string | null;
   readonly planKey: typeof PLAN_CARE_PLUS | typeof PLAN_FAMILY;
   readonly billingPeriod: SubscriptionBillingPeriod;
   readonly status: StoredSubscriptionStatus;

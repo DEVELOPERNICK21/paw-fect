@@ -21,13 +21,19 @@ export interface SubscriptionState {
   startListening: (userId: string) => void;
   stopListening: () => void;
   refreshBootstrap: () => Promise<void>;
+  startStoreCheckout: (
+    planKey: typeof PLAN_CARE_PLUS | typeof PLAN_FAMILY,
+    billingPeriod: 'monthly' | 'annual',
+  ) => Promise<void>;
+  /** @deprecated Use startStoreCheckout — kept for Paywall until Task 7 */
   startPlayStoreCheckout: (
     planKey: typeof PLAN_CARE_PLUS | typeof PLAN_FAMILY,
     billingPeriod: 'monthly' | 'annual',
   ) => Promise<void>;
+  restorePurchases: () => Promise<void>;
 }
 
-export const useSubscriptionStore = create<SubscriptionState>(set => ({
+export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   entitlement: defaultEntitlement(),
   serverSynced: false,
   checkoutLoading: false,
@@ -59,11 +65,11 @@ export const useSubscriptionStore = create<SubscriptionState>(set => ({
     }
   },
 
-  startPlayStoreCheckout: async (planKey, billingPeriod) => {
+  startStoreCheckout: async (planKey, billingPeriod) => {
     set({ checkoutLoading: true, checkoutError: null });
     try {
       const entitlement =
-        await subscriptionComposition.checkoutPlayStoreSubscription.execute(
+        await subscriptionComposition.checkoutStoreSubscription.execute(
           planKey,
           billingPeriod,
         );
@@ -71,6 +77,25 @@ export const useSubscriptionStore = create<SubscriptionState>(set => ({
     } catch (e) {
       const message =
         e instanceof Error ? e.message : 'Checkout was cancelled or failed.';
+      set({ checkoutError: message });
+    } finally {
+      set({ checkoutLoading: false });
+    }
+  },
+
+  startPlayStoreCheckout: async (planKey, billingPeriod) => {
+    await get().startStoreCheckout(planKey, billingPeriod);
+  },
+
+  restorePurchases: async () => {
+    set({ checkoutLoading: true, checkoutError: null });
+    try {
+      const entitlement =
+        await subscriptionComposition.restoreStorePurchases.execute();
+      set({ entitlement, serverSynced: true });
+    } catch (e) {
+      const message =
+        e instanceof Error ? e.message : 'Restore was cancelled or failed.';
       set({ checkoutError: message });
     } finally {
       set({ checkoutLoading: false });
