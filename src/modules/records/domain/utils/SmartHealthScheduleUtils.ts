@@ -23,23 +23,39 @@ function toIsoDateOnly(input: string): string {
   return input;
 }
 
+const safeToIsoDate = (d: Date, fallback: string): string => {
+  if (isNaN(d.getTime())) {
+    return toIsoDateOnly(fallback);
+  }
+  return d.toISOString().slice(0, 10);
+};
+
 function addMonths(dateOnly: string, months: number): string {
   const [year, month, day] = dateOnly.split('-').map(Number);
   const d = new Date(Date.UTC(year, (month ?? 1) - 1, day ?? 1));
+  if (isNaN(d.getTime())) {
+    return toIsoDateOnly(dateOnly);
+  }
   d.setUTCMonth(d.getUTCMonth() + months);
-  return d.toISOString().slice(0, 10);
+  return safeToIsoDate(d, dateOnly);
 }
 
 function addDays(dateOnly: string, days: number): string {
   const [year, month, day] = dateOnly.split('-').map(Number);
   const d = new Date(Date.UTC(year, (month ?? 1) - 1, day ?? 1));
+  if (isNaN(d.getTime())) {
+    return toIsoDateOnly(dateOnly);
+  }
   d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
+  return safeToIsoDate(d, dateOnly);
 }
 
 function daysBetween(fromDate: string, toDate: string): number {
   const from = new Date(`${fromDate}T00:00:00`).getTime();
   const to = new Date(`${toDate}T00:00:00`).getTime();
+  if (isNaN(from) || isNaN(to)) {
+    return 0;
+  }
   return Math.floor((to - from) / (24 * 60 * 60 * 1000));
 }
 

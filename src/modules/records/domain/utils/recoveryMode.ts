@@ -7,16 +7,35 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 const toDateOnly = (date: string): string => date.slice(0, 10);
 
+const safeToIsoDate = (d: Date, fallback: string): string => {
+  if (isNaN(d.getTime())) {
+    return toDateOnly(fallback);
+  }
+  return d.toISOString().slice(0, 10);
+};
+
 const daysBetween = (from: string, to: string): number => {
   const fromDate = new Date(`${from}T00:00:00`).getTime();
   const toDate = new Date(`${to}T00:00:00`).getTime();
+  if (isNaN(fromDate) || isNaN(toDate)) {
+    return 0;
+  }
   return Math.floor((toDate - fromDate) / DAY_MS);
 };
 
 const addDays = (date: string, days: number): string => {
   const d = new Date(`${date}T00:00:00`);
+  if (isNaN(d.getTime())) {
+    const [year, month, day] = date.split('-').map(Number);
+    const dUtc = new Date(Date.UTC(year, (month ?? 1) - 1, day ?? 1));
+    if (isNaN(dUtc.getTime())) {
+      return toDateOnly(date);
+    }
+    dUtc.setUTCDate(dUtc.getUTCDate() + days);
+    return safeToIsoDate(dUtc, date);
+  }
   d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  return safeToIsoDate(d, date);
 };
 
 export interface RecoveryAction {
