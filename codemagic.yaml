@@ -1,0 +1,79 @@
+# Codemagic CI/CD for Pawsoul (React Native)
+# Docs: https://docs.codemagic.io/yaml-quick-start/building-a-react-native-app/
+#
+# Before first signed build:
+# 1. Team settings → codemagic.yaml settings → Code signing identities
+#    Upload pawfect-upload-key.keystore and set Reference name to: pawfect_upload
+# 2. App settings → Environment variables → create group `pawfect_env`
+#    Add REVENUECAT_GOOGLE_API_KEY (and any other .env keys you need at build time)
+# 3. Optional Play publish: add group `google_play` with GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+
+workflows:
+  android-debug:
+    name: Android Debug (unsigned)
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    environment:
+      node: v22.14.0
+      # After creating the group in Codemagic → Environment variables:
+      # groups:
+      #   - pawfect_env
+    scripts:
+      - name: Install dependencies
+        script: |
+          yarn install --frozen-lockfile
+      - name: Write .env for react-native-config
+        script: |
+          {
+            echo "REVENUECAT_GOOGLE_API_KEY=${REVENUECAT_GOOGLE_API_KEY:-}"
+            echo "REVENUECAT_APPLE_API_KEY=${REVENUECAT_APPLE_API_KEY:-}"
+          } > "$CM_BUILD_DIR/.env"
+      - name: Set Android SDK location
+        script: |
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
+      - name: Build debug APK
+        script: |
+          cd android
+          ./gradlew assembleDebug
+    artifacts:
+      - android/app/build/outputs/**/*.apk
+
+  android-release:
+    name: Android Release (signed AAB)
+    max_build_duration: 120
+    instance_type: mac_mini_m2
+    environment:
+      node: v22.14.0
+      android_signing:
+        - pawfect_upload
+      # After creating groups in Codemagic → Environment variables:
+      # groups:
+      #   - pawfect_env
+      #   - google_play
+      vars:
+        PACKAGE_NAME: "app.pawfect"
+    scripts:
+      - name: Install dependencies
+        script: |
+          yarn install --frozen-lockfile
+      - name: Write .env for react-native-config
+        script: |
+          {
+            echo "REVENUECAT_GOOGLE_API_KEY=${REVENUECAT_GOOGLE_API_KEY:-}"
+            echo "REVENUECAT_APPLE_API_KEY=${REVENUECAT_APPLE_API_KEY:-}"
+          } > "$CM_BUILD_DIR/.env"
+      - name: Set Android SDK location
+        script: |
+          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
+      - name: Build signed release bundle
+        script: |
+          cd android
+          ./gradlew bundleRelease
+    artifacts:
+      - android/app/build/outputs/**/*.aab
+      - android/app/build/outputs/**/*.apk
+    # publishing:
+    #   google_play:
+    #     credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+    #     track: internal
+    #     submit_as_draft: true

@@ -94,7 +94,7 @@ android {
         applicationId "app.pawfect"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 22
+        versionCode 26
         versionName "1.0"
         missingDimensionStrategy "store", "play"
     }
@@ -106,7 +106,13 @@ android {
             keyPassword 'android'
         }
         release {
-            if (project.hasProperty('PAWFECT_UPLOAD_STORE_FILE')) {
+            // Codemagic sets CI=true and injects CM_KEYSTORE_* from android_signing
+            if (System.getenv()["CI"]) {
+                storeFile file(System.getenv()["CM_KEYSTORE_PATH"])
+                storePassword System.getenv()["CM_KEYSTORE_PASSWORD"]
+                keyAlias System.getenv()["CM_KEY_ALIAS"]
+                keyPassword System.getenv()["CM_KEY_PASSWORD"]
+            } else if (project.hasProperty('PAWFECT_UPLOAD_STORE_FILE')) {
                 storeFile file(PAWFECT_UPLOAD_STORE_FILE)
                 storePassword PAWFECT_UPLOAD_STORE_PASSWORD
                 keyAlias PAWFECT_UPLOAD_KEY_ALIAS
