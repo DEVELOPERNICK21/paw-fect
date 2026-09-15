@@ -69,4 +69,19 @@ describe('mergeLocalAndRemotePets', () => {
 
     expect(merged).toHaveLength(0);
   });
+
+  it('does not keep a locally deleted pet when remote still has it and no queue', () => {
+    // Without a delete queue entry, remote wins — documents why delete must
+    // reach Firestore (or stay queued). Local-only removal is not enough.
+    const remote = basePet({ id: 'pet-1', name: 'Ghost' });
+
+    const merged = mergeLocalAndRemotePets({
+      localPets: [],
+      remotePets: [remote],
+      queueEntries: [],
+    });
+
+    expect(merged).toHaveLength(1);
+    expect(merged[0]?.name).toBe('Ghost');
+  });
 });

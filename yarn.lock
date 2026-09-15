@@ -6660,6 +6660,13 @@ react-native-nitro-modules@^0.35.0:
   resolved "https://registry.npmjs.org/react-native-nitro-modules/-/react-native-nitro-modules-0.35.4.tgz"
   integrity sha512-4qZa+1kgR/sPRNZv+UShxyArEPpovWxw76Dfd/DtCVtkQ92wOOxGIzdYvndprabd+t+r8zNYgYEPYE74gzkuVQ==
 
+react-native-purchases-ui@^10.9.1:
+  version "10.9.1"
+  resolved "https://registry.yarnpkg.com/react-native-purchases-ui/-/react-native-purchases-ui-10.9.1.tgz#ec7000a242252676d405efe4fa1336fba3c40568"
+  integrity sha512-2QNvEKhYXybk1U7WGw67Wvk75YI7BWH4c9AIZ9QaW3ez/4pdOw3MytqUdUjlsHr4MLt7X7msUcRvcvpalndnjQ==
+  dependencies:
+    "@revenuecat/purchases-typescript-internal" "18.37.0"
+
 react-native-purchases@^10.9.1:
   version "10.9.1"
   resolved "https://registry.yarnpkg.com/react-native-purchases/-/react-native-purchases-10.9.1.tgz#2cff5f47a5230e2932d1a281a89ef531b733f3f1"

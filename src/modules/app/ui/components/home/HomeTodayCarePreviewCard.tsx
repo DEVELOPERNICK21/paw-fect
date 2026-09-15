@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../../../../../shared/components/AppText';
 import { Button } from '../../../../../shared/components/Button';
+import { Skeleton } from '../../../../../shared/components/Skeleton';
 import type { Theme } from '../../../../../shared/hooks/useTheme';
 import { formatScheduleTimeLabel } from '../../../../schedule/ui/utils/scheduleDisplay';
 import { WidgetSurface } from './WidgetSurface';
@@ -115,16 +116,11 @@ export const HomeTodayCarePreviewCard: React.FC<HomeTodayCarePreviewCardProps> =
             {loading ? (
               <View style={{ gap: spacing.xs }}>
                 {[0, 1, 2].map(i => (
-                  <View
+                  <Skeleton
                     key={i}
-                    style={[
-                      styles.skeletonRow,
-                      {
-                        backgroundColor: colors.surfaceAlt,
-                        borderRadius: radius.sm,
-                        height: 44,
-                      },
-                    ]}
+                    height={44}
+                    borderRadius={radius.sm}
+                    delayMs={i * 100}
                   />
                 ))}
               </View>
@@ -265,7 +261,6 @@ const styles = StyleSheet.create({
   progressFill: {
     height: '100%',
   },
-  skeletonRow: {},
   row: {
     flexDirection: 'row',
     alignItems: 'center',

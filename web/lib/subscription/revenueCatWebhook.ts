@@ -50,6 +50,10 @@ function resolvePlan(
   if (ids.includes(PLAN_CARE_PLUS)) {
     return { planKey: PLAN_CARE_PLUS, billingPeriod: "monthly" };
   }
+  // Dashboard wizard entitlement — plan still comes from product_id when possible.
+  if (ids.includes("pawsoul_pro") || ids.includes("Pawsoul Pro")) {
+    return { planKey: PLAN_CARE_PLUS, billingPeriod: "monthly" };
+  }
   return null;
 }
 

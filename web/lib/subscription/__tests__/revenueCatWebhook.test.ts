@@ -68,4 +68,20 @@ describe('revenueCatWebhook', () => {
       expect(sub).toBeNull();
     },
   );
+
+  it('falls back to care_plus when only pawsoul_pro entitlement is present', () => {
+    const sub = mapRevenueCatEventToSubscription({
+      type: 'INITIAL_PURCHASE',
+      app_user_id: 'firebase-uid-1',
+      product_id: 'unknown_product',
+      expiration_at_ms: Date.parse('2026-10-13T00:00:00.000Z'),
+      entitlement_ids: ['pawsoul_pro'],
+    });
+    expect(sub).toMatchObject({
+      provider: 'revenuecat',
+      planKey: 'care_plus',
+      billingPeriod: 'monthly',
+      status: 'active',
+    });
+  });
 });

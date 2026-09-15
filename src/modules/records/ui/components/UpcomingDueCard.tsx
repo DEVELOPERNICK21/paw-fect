@@ -2,7 +2,11 @@ import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../../../../shared/components/AppText';
-import { MaterialIcon, type IconName } from '../../../../shared/components/MaterialIcon';
+import {
+  MaterialIcon,
+  type IconName,
+} from '../../../../shared/components/MaterialIcon';
+import { WidgetSurface } from '../../../../shared/components/WidgetSurface';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 
 export interface UpcomingDueCardProps {
@@ -19,98 +23,94 @@ export const UpcomingDueCard: React.FC<UpcomingDueCardProps> = ({
   onPressUpdate,
 }) => {
   const theme = useTheme();
-  const { colors, radius, space, textStyles, fontFamilies, shadows, isDarkMode } =
+  const { colors, radius, spacing, textStyles, fontFamilies, isDarkMode } =
     theme;
 
-  // The design uses dark text on the accent button and dark surface card.
   const updateTextColor = isDarkMode ? colors.text.inverse : colors.text.heading;
 
   return (
-    <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.surface,
-          borderColor: colors.brandTint10,
-          borderWidth: 1,
-          borderRadius: radius.lg,
-          padding: space('lg'),
-        },
-        shadows.sm,
-      ]}
-    >
-      <View style={styles.row}>
-        <View
-          style={[
-            styles.iconShell,
-            { backgroundColor: colors.brandTint12, borderRadius: radius.round },
-          ]}
-        >
-          <MaterialIcon
-            name={iconName}
-            size={28}
-            color={colors.accent}
-          />
+    <WidgetSurface theme={theme}>
+      <View style={styles.card}>
+        <View style={styles.row}>
+          <View
+            style={[
+              styles.iconTile,
+              {
+                backgroundColor: colors.brandTint12,
+                borderRadius: radius.sm,
+                width: spacing['2xl'],
+                height: spacing['2xl'],
+              },
+            ]}
+          >
+            <MaterialIcon name={iconName} size={20} color={colors.accent} />
+          </View>
+
+          <View style={styles.textCol}>
+            <AppText
+              style={[
+                textStyles.overline,
+                { color: colors.accent, fontFamily: fontFamilies.bold },
+              ]}
+              numberOfLines={1}
+            >
+              Next due
+            </AppText>
+            <AppText
+              style={[
+                textStyles.subtitle,
+                {
+                  color: colors.text.heading,
+                  fontFamily: fontFamilies.bold,
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {title}
+            </AppText>
+            <AppText
+              style={[
+                textStyles.caption,
+                {
+                  color: colors.text.secondary,
+                  fontFamily: fontFamilies.medium,
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {dueLabel}
+            </AppText>
+          </View>
         </View>
 
-        <View style={styles.textCol}>
-          <AppText
-            style={[
-              textStyles.overline,
-              { color: colors.accent, fontFamily: fontFamilies.bold },
-            ]}
-            numberOfLines={1}
-          >
-            Next Due
-          </AppText>
-          <AppText
-            style={[
-              textStyles.title,
-              { color: colors.text.heading, fontFamily: fontFamilies.extrabold },
-            ]}
-            numberOfLines={1}
-          >
-            {title}
-          </AppText>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Update next due task"
+          onPress={onPressUpdate}
+          style={({ pressed }) => [
+            styles.updateBtn,
+            {
+              backgroundColor: colors.accent,
+              borderRadius: radius.sm,
+              opacity: pressed ? 0.92 : 1,
+            },
+          ]}
+        >
           <AppText
             style={[
               textStyles.caption,
-              { color: colors.text.secondary, fontFamily: fontFamilies.medium },
+              {
+                color: updateTextColor,
+                fontFamily: fontFamilies.bold,
+              },
             ]}
             numberOfLines={1}
           >
-            {dueLabel}
+            Update
           </AppText>
-        </View>
+        </Pressable>
       </View>
-
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Update next due task"
-        onPress={onPressUpdate}
-        style={({ pressed }) => [
-          styles.updateBtn,
-          {
-            backgroundColor: colors.accent,
-            borderRadius: radius.round,
-            opacity: pressed ? 0.92 : 1,
-          },
-        ]}
-      >
-        <AppText
-          style={[
-            textStyles.subtitle,
-            {
-              color: updateTextColor,
-              fontFamily: fontFamilies.bold,
-            },
-          ]}
-          numberOfLines={1}
-        >
-          Update
-        </AppText>
-      </Pressable>
-    </View>
+    </WidgetSurface>
   );
 };
 
@@ -127,9 +127,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  iconShell: {
-    width: 56,
-    height: 56,
+  iconTile: {
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -139,10 +137,9 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   updateBtn: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
 });
-

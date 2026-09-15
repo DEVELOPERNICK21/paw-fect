@@ -5,6 +5,7 @@ import {
   getAppSessionUserId,
 } from '../../../shared/session/appSessionPorts';
 import { getPetAccess } from '../../../shared/subscription/petAccess';
+import { withTimeout } from '../../../shared/utils/withTimeout';
 import { getPetCoordinationPorts } from './petCoordinationPorts';
 import { requestNotificationResync } from '../../../infrastructure/notifications/requestNotificationResync';
 import { petComposition } from '../petComposition';
@@ -17,6 +18,8 @@ import type { PreparePetPhotoResult } from '../domain/usecases/PreparePetPhoto';
 import type { PetHealthCardViewModel } from '../domain/models/PetHealthCardViewModel';
 
 const pc = petComposition;
+/** Hard cap so Splash / home never wait forever on Firestore. */
+const LOAD_PETS_TIMEOUT_MS = 15_000;
 
 function requireUserId(): string | null {
   return getAppSessionUserId();
@@ -131,8 +134,16 @@ export const usePetStore = create<PetState>((set, get) => ({
 
     set({ loading: get().pets.length === 0, loadError: null });
     try {
-      const pets = await pc.getPets.execute(userId);
-      let activePetId = await pc.getActivePetId.execute(userId);
+      const pets = await withTimeout(
+        pc.getPets.execute(userId),
+        LOAD_PETS_TIMEOUT_MS,
+        'Loading pets timed out.',
+      );
+      let activePetId = await withTimeout(
+        pc.getActivePetId.execute(userId),
+        3_000,
+        'Active pet lookup timed out.',
+      ).catch(() => null);
 
       let activePet: Pet | null =
         activePetId != null
@@ -142,11 +153,11 @@ export const usePetStore = create<PetState>((set, get) => ({
       if (activePet == null && pets.length > 0) {
         activePet = pets[0] ?? null;
         activePetId = activePet?.id ?? null;
-        await pc.setActivePet.execute(userId, activePetId);
+        await pc.setActivePet.execute(userId, activePetId).catch(() => {});
       }
 
       if (pets.length === 0) {
-        await pc.setActivePet.execute(userId, null);
+        await pc.setActivePet.execute(userId, null).catch(() => {});
         activePet = null;
       }
 

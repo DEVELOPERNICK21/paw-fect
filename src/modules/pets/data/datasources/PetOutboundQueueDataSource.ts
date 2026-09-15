@@ -24,6 +24,8 @@ export interface PetOutboundQueueDataSource {
   getAll(userId: string): Promise<PetQueueEntry[]>;
   setAll(userId: string, entries: PetQueueEntry[]): Promise<void>;
   enqueue(userId: string, entry: Omit<PetQueueEntry, 'id'>): Promise<void>;
+  /** Drops create/update/delete entries that target this pet. */
+  removeEntriesForPet(userId: string, petId: string): Promise<void>;
 }
 
 class PetOutboundQueueDataSourceImpl implements PetOutboundQueueDataSource {
@@ -85,6 +87,17 @@ class PetOutboundQueueDataSourceImpl implements PetOutboundQueueDataSource {
       nextAttemptAt: Date.now(),
     });
     await this.setAll(userId, all);
+  }
+
+  async removeEntriesForPet(userId: string, petId: string): Promise<void> {
+    const all = await this.getAll(userId);
+    const next = all.filter(entry => {
+      const entryPetId = entry.petId ?? entry.pet?.id;
+      return entryPetId !== petId;
+    });
+    if (next.length !== all.length) {
+      await this.setAll(userId, next);
+    }
   }
 }
 

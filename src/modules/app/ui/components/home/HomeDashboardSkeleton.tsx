@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { Skeleton } from '../../../../../shared/components/Skeleton';
 import type { Theme } from '../../../../../shared/hooks/useTheme';
 
 type HomeDashboardSkeletonProps = {
@@ -9,7 +10,7 @@ type HomeDashboardSkeletonProps = {
 
 export const HomeDashboardSkeleton: React.FC<HomeDashboardSkeletonProps> =
   React.memo(({ theme }) => {
-    const { colors, radius, spacing } = theme;
+    const { radius, spacing } = theme;
 
     return (
       <View
@@ -18,53 +19,27 @@ export const HomeDashboardSkeleton: React.FC<HomeDashboardSkeletonProps> =
         accessibilityState={{ busy: true }}
         accessibilityLabel="Loading home"
       >
-        <View
-          style={[
-            styles.title,
-            { backgroundColor: colors.brandTint20, borderRadius: radius.sm },
-          ]}
+        <Skeleton
+          width="55%"
+          height={28}
+          borderRadius={radius.sm}
+          style={{ backgroundColor: theme.colors.brandTint20 }}
+          delayMs={0}
         />
-        <View
-          style={[
-            styles.jump,
-            {
-              backgroundColor: colors.surfaceAlt,
-              borderRadius: radius.pill,
-            },
-          ]}
-        />
+        <Skeleton height={56} borderRadius={radius.pill} delayMs={80} />
         <View style={[styles.pets, { gap: spacing.md }]}>
           {[0, 1, 2].map(i => (
-            <View
+            <Skeleton
               key={i}
-              style={[
-                styles.petTile,
-                {
-                  backgroundColor: colors.surfaceAlt,
-                  borderRadius: radius.xl,
-                },
-              ]}
+              width={80}
+              height={80}
+              borderRadius={radius.xl}
+              delayMs={120 + i * 90}
             />
           ))}
         </View>
-        <View
-          style={[
-            styles.task,
-            {
-              backgroundColor: colors.surfaceAlt,
-              borderRadius: radius.xl,
-            },
-          ]}
-        />
-        <View
-          style={[
-            styles.health,
-            {
-              backgroundColor: colors.surfaceAlt,
-              borderRadius: radius.xl,
-            },
-          ]}
-        />
+        <Skeleton height={148} borderRadius={radius.xl} delayMs={360} />
+        <Skeleton height={220} borderRadius={radius.xl} delayMs={440} />
       </View>
     );
   });
@@ -73,24 +48,7 @@ HomeDashboardSkeleton.displayName = 'HomeDashboardSkeleton';
 
 const styles = StyleSheet.create({
   wrap: {},
-  title: {
-    width: '55%',
-    height: 28,
-  },
-  jump: {
-    height: 56,
-  },
   pets: {
     flexDirection: 'row',
-  },
-  petTile: {
-    width: 80,
-    height: 80,
-  },
-  task: {
-    height: 148,
-  },
-  health: {
-    height: 220,
   },
 });

@@ -28,6 +28,45 @@ describe('resolveOnboardingGate', () => {
     ).toBe('complete');
   });
 
+  it('complete when pets appear after mistaken activate phase (sign-in race)', () => {
+    expect(
+      resolveOnboardingGate({
+        ...base,
+        isAuthenticated: true,
+        hasPets: true,
+        phase: 'activate',
+        entryIntent: 'activate',
+        activationSubmitted: false,
+      }),
+    ).toBe('complete');
+  });
+
+  it('stays persist when pets exist after first-win submit', () => {
+    expect(
+      resolveOnboardingGate({
+        ...base,
+        isAuthenticated: true,
+        hasPets: true,
+        phase: 'persist',
+        activationSubmitted: true,
+        firstWinPersisted: false,
+      }),
+    ).toBe('persist');
+  });
+
+  it('stays paywall when pets exist after first win', () => {
+    expect(
+      resolveOnboardingGate({
+        ...base,
+        isAuthenticated: true,
+        hasPets: true,
+        phase: 'paywall',
+        activationSubmitted: true,
+        firstWinPersisted: true,
+      }),
+    ).toBe('paywall');
+  });
+
   it('welcome when fresh', () => {
     expect(resolveOnboardingGate(base)).toBe('welcome');
   });

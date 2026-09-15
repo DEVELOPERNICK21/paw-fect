@@ -2,6 +2,7 @@ import type { Pet } from '../../domain/models/Pet';
 import { normalizePet } from '../../domain/models/normalizePet';
 import type { PetRepository } from '../../domain/repositories/PetRepository';
 import { mergeLocalAndRemotePets } from '../../domain/utils/mergeLocalAndRemotePets';
+import { withTimeout } from '../../../../shared/utils/withTimeout';
 import type { PetRemoteDataSource } from '../datasources/PetRemoteDataSource';
 import { createPetRemoteDataSource } from '../datasources/PetRemoteDataSource';
 import type { PetLocalDataSource } from '../datasources/PetLocalDataSource';
@@ -11,6 +12,9 @@ import type {
   PetQueueEntry,
 } from '../datasources/PetOutboundQueueDataSource';
 import { createPetOutboundQueueDataSource } from '../datasources/PetOutboundQueueDataSource';
+
+const OUTBOUND_QUEUE_TIMEOUT_MS = 5_000;
+const REMOTE_FETCH_TIMEOUT_MS = 8_000;
 
 function markPetSynced(pet: Pet): Pet {
   return { ...pet, syncStatus: 'synced' };
@@ -75,6 +79,11 @@ export class PetRepositoryImpl implements PetRepository {
 
   private async applyQueueEntry(userId: string, entry: PetQueueEntry): Promise<void> {
     if (entry.op === 'create' && entry.pet) {
+      const localPets = await this.local.getPets(userId);
+      // Pet deleted while create was still queued — do not push it to remote.
+      if (!localPets.some(p => p.id === entry.pet!.id)) {
+        return;
+      }
       const created = await this.remote.createPet(entry.pet);
       const normalized = normalizePet(created, userId);
       if (normalized) {
@@ -86,12 +95,17 @@ export class PetRepositoryImpl implements PetRepository {
       return;
     }
     if (entry.op === 'update' && entry.pet) {
+      const localPets = await this.local.getPets(userId);
+      // setDoc(merge) would recreate a deleted pet document — skip.
+      if (!localPets.some(p => p.id === entry.pet!.id)) {
+        return;
+      }
       const updated = await this.remote.updatePet(entry.pet);
       const normalized = normalizePet(updated, userId);
       if (normalized) {
         const synced = markPetSynced(normalized);
         const current = await this.local.getPets(userId);
-        const next = [...current.filter(p => p.id !== synced.id), synced];
+        const next = current.map(p => (p.id === synced.id ? synced : p));
         await this.local.savePets(userId, next);
       }
       return;
@@ -106,13 +120,25 @@ export class PetRepositoryImpl implements PetRepository {
   }
 
   async getPets(userId: string): Promise<Pet[]> {
-    // Load local first so we can protect pending local edits from being overwritten by remote snapshots.
-    await this.processOutboundQueue(userId);
+    // Flush pending writes, but never block cold start forever on a hung network call.
+    try {
+      await withTimeout(
+        this.processOutboundQueue(userId),
+        OUTBOUND_QUEUE_TIMEOUT_MS,
+        'Pet outbound queue timed out.',
+      );
+    } catch {
+      // Continue with whatever is already local / still queued.
+    }
 
     const queueEntries = await this.queue.getAll(userId);
     const localAfter = await this.local.getPets(userId);
     try {
-      const remoteList = await this.remote.fetchPets();
+      const remoteList = await withTimeout(
+        this.remote.fetchPets(),
+        REMOTE_FETCH_TIMEOUT_MS,
+        'Pet remote fetch timed out.',
+      );
       const remoteNormalized = remoteList
         .map(r => normalizePet(r, userId))
         .filter((p): p is Pet => p !== null)
@@ -126,7 +152,7 @@ export class PetRepositoryImpl implements PetRepository {
       await this.local.savePets(userId, merged);
       return merged;
     } catch {
-      return this.local.getPets(userId);
+      return localAfter;
     }
   }
 
@@ -204,6 +230,11 @@ export class PetRepositoryImpl implements PetRepository {
       userId,
       pets.filter(pet => pet.id !== id),
     );
+
+    // Pending create/update uses setDoc(merge) and would resurrect this pet after
+    // a successful remote delete if left in the outbound queue.
+    await this.queue.removeEntriesForPet(userId, id);
+
     try {
       await this.remote.deletePet(id);
     } catch {

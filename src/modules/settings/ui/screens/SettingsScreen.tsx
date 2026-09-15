@@ -35,6 +35,7 @@ import {
 } from '../../../../infrastructure/notifications/smartHealthNotificationCoverageLoader';
 import { useSmartHealthRecordStore } from '../../../records/store/smartHealthRecordStore';
 import { useTheme } from '../../../../shared/hooks/useTheme';
+import { formatSubscriptionStatusLine } from '../../../../shared/subscription/formatPlanLabel';
 import { spacing } from '../../../../shared/theme/spacing';
 import { radius } from '../../../../shared/theme/radius';
 import { fontSizes, lineHeights } from '../../../../shared/theme/typography';
@@ -46,6 +47,7 @@ import type { Pet } from '../../../pets/domain/models/Pet';
 import { usePetStore } from '../../../pets/store/petStore';
 import { useReminderStore } from '../../../reminders/store/reminderStore';
 import { useWellnessStore } from '../../../schedule/store/wellnessStore';
+import { useSubscriptionStore } from '../../../subscription/store/subscriptionStore';
 import { useSettingsStore } from '../../store/settingsStore';
 
 export const SettingsScreen: React.FC = () => {
@@ -57,6 +59,9 @@ export const SettingsScreen: React.FC = () => {
   const loadSettings = useSettingsStore(s => s.loadSettings);
   const updateSettings = useSettingsStore(s => s.updateSettings);
   const setThemeMode = useSettingsStore(s => s.setThemeMode);
+  const openCustomerCenter = useSubscriptionStore(s => s.openCustomerCenter);
+  const presentRcPaywall = useSubscriptionStore(s => s.presentRcPaywall);
+  const entitlement = useSubscriptionStore(s => s.entitlement);
   const relaxedMode = useWellnessStore(s => s.relaxedMode);
   const loadRelaxedMode = useWellnessStore(s => s.loadRelaxedMode);
   const setRelaxedMode = useWellnessStore(s => s.setRelaxedMode);
@@ -535,7 +540,12 @@ export const SettingsScreen: React.FC = () => {
           <View style={styles.groupCard}>
             <Pressable
               style={styles.actionRow}
-              onPress={() => navigation.navigate('Paywall', { source: 'settings' })}
+              onPress={() => {
+                void trackEvent('subscription_rc_paywall_opened', {
+                  source: 'settings',
+                });
+                void presentRcPaywall();
+              }}
             >
               <View style={styles.rowLeft}>
                 <View style={styles.rowIcon}>
@@ -548,7 +558,32 @@ export const SettingsScreen: React.FC = () => {
                 <View>
                   <Text style={[styles.rowTitle, { fontFamily: fontFamilies.semibold }]}>PawCare plans</Text>
                   <Text style={[styles.rowSubtitle, { fontFamily: fontFamilies.medium }]}>
-                    Upgrade or manage your subscription
+                    {formatSubscriptionStatusLine(entitlement)}
+                  </Text>
+                </View>
+              </View>
+              <MaterialIcon name="chevron_right" size={20} color={colors.text.subdued} />
+            </Pressable>
+
+            <Pressable
+              style={styles.actionRow}
+              onPress={() => {
+                void trackEvent('subscription_customer_center_opened', {
+                  source: 'settings',
+                });
+                void openCustomerCenter();
+              }}
+            >
+              <View style={styles.rowLeft}>
+                <View style={styles.rowIconNeutral}>
+                  <MaterialIcon name="manage_accounts" size={20} color={colors.text.body} />
+                </View>
+                <View>
+                  <Text style={[styles.rowTitle, { fontFamily: fontFamilies.semibold }]}>
+                    Manage subscription
+                  </Text>
+                  <Text style={[styles.rowSubtitle, { fontFamily: fontFamilies.medium }]}>
+                    Restore, cancel, or change plan (Customer Center)
                   </Text>
                 </View>
               </View>

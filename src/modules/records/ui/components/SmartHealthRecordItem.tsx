@@ -2,6 +2,7 @@ import React, { useCallback, useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../../../../shared/components/AppText';
+import { WidgetSurface } from '../../../../shared/components/WidgetSurface';
 import { icons } from '../../../../shared/assets/icons';
 import type { AppColors } from '../../../../shared/theme/colors';
 import { useTheme } from '../../../../shared/hooks/useTheme';
@@ -15,17 +16,24 @@ import {
 export interface SmartHealthRecordItemProps {
   record: SmartHealthRecord;
   onMarkDone?: (record: SmartHealthRecord) => void;
-  /** Reschedule / correct the planned date */
   onEditDate?: (record: SmartHealthRecord) => void;
-  /** Deworming: log skip with reason (handled by parent modal) */
   onSkipDose?: (record: SmartHealthRecord) => void;
   variant?: 'default' | 'hero';
   primaryActionLabel?: string;
 }
 
-function formatDate(isoDate: string): string {
+function startOfLocalDay(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function parseIsoDate(isoDate: string): Date | null {
   const date = new Date(`${isoDate}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return isoDate;
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatShortDate(isoDate: string): string {
+  const date = parseIsoDate(isoDate);
+  if (!date) return isoDate;
   return date.toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',
@@ -33,266 +41,341 @@ function formatDate(isoDate: string): string {
   });
 }
 
-export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> = React.memo(
-  ({
-    record,
-    onMarkDone,
-    onEditDate,
-    onSkipDose,
-    variant = 'default',
-    primaryActionLabel = 'I did this',
-  }) => {
-  const theme = useTheme();
-  const { colors, fontFamilies, textStyles } = theme;
+/** Instant-scan timing line — relative when close, absolute otherwise. */
+function formatWhenLine(
+  isoDate: string,
+  status: SmartHealthRecord['status'],
+): string {
+  if (status === 'completed') {
+    return `Given ${formatShortDate(isoDate)}`;
+  }
+  if (status === 'skipped') {
+    return `Skipped · was ${formatShortDate(isoDate)}`;
+  }
+  if (status === 'locked') {
+    return `After earlier dose · ${formatShortDate(isoDate)}`;
+  }
 
-  const styles = useMemo(
-    () =>
-      createStyles({
-        colors,
-        radius: theme.radius,
-        spacing: theme.spacing,
-        space: theme.space,
-        variant,
-        status: record.status,
-      }),
-    [colors, theme.radius, theme.spacing, theme.space, variant, record.status],
+  const due = parseIsoDate(isoDate);
+  if (!due) return `Due ${isoDate}`;
+
+  const today = startOfLocalDay(new Date());
+  const dueDay = startOfLocalDay(due);
+  const diffDays = Math.round(
+    (dueDay.getTime() - today.getTime()) / (24 * 60 * 60 * 1000),
   );
 
-  const handleMarkDone = useCallback(() => {
-    onMarkDone?.(record);
-  }, [onMarkDone, record]);
+  if (status === 'overdue' || status === 'missed' || diffDays < 0) {
+    const late = Math.abs(diffDays);
+    if (late === 0) return 'Due today';
+    if (late === 1) return '1 day overdue';
+    return `${late} days overdue`;
+  }
+  if (diffDays === 0) return 'Due today';
+  if (diffDays === 1) return 'Due tomorrow';
+  if (diffDays <= 7) return `Due in ${diffDays} days`;
+  return `Due ${formatShortDate(isoDate)}`;
+}
 
-  const handleEditDate = useCallback(() => {
-    onEditDate?.(record);
-  }, [onEditDate, record]);
+type StatusTone = {
+  label: string;
+  fg: string;
+  bg: string;
+  bar: string;
+  whenFg: string;
+};
 
-  const handleSkipDose = useCallback(() => {
-    onSkipDose?.(record);
-  }, [onSkipDose, record]);
+function statusTone(
+  status: SmartHealthRecord['status'],
+  colors: AppColors,
+  isHero: boolean,
+): StatusTone {
+  switch (status) {
+    case 'completed':
+      return {
+        label: 'Done',
+        fg: colors.success,
+        bg: colors.successSurface,
+        bar: colors.success,
+        whenFg: colors.text.secondary,
+      };
+    case 'overdue':
+    case 'missed':
+      return {
+        label: 'Needs action',
+        fg: colors.danger,
+        bg: colors.dangerSurface,
+        bar: colors.danger,
+        whenFg: colors.danger,
+      };
+    case 'skipped':
+      return {
+        label: 'Skipped',
+        fg: colors.text.subdued,
+        bg: colors.surfaceAlt,
+        bar: colors.borderSubtle,
+        whenFg: colors.text.secondary,
+      };
+    case 'locked':
+      return {
+        label: 'Not yet',
+        fg: colors.info,
+        bg: colors.infoSurface,
+        bar: colors.info,
+        whenFg: colors.text.secondary,
+      };
+    default:
+      return {
+        label: isHero ? 'Do next' : 'Upcoming',
+        fg: colors.accent,
+        bg: colors.brandTint12,
+        bar: isHero ? colors.accent : colors.borderSubtle,
+        whenFg: isHero ? colors.accent : colors.text.heading,
+      };
+  }
+}
 
-  const isVaccination = record.type === 'vaccination';
+export const SmartHealthRecordItem: React.FC<SmartHealthRecordItemProps> =
+  React.memo(
+    ({
+      record,
+      onMarkDone,
+      onEditDate,
+      onSkipDose,
+      variant = 'default',
+      primaryActionLabel = 'Mark as done',
+    }) => {
+      const theme = useTheme();
+      const { colors, fontFamilies, textStyles, radius, spacing, space } =
+        theme;
+      const isHero = variant === 'hero';
+      const tone = statusTone(record.status, colors, isHero);
+      const isVaccination = record.type === 'vaccination';
+      const title = plainVaccineDisplayName(record.name);
+      const whenIso =
+        record.status === 'completed'
+          ? (record.completedDate ?? record.dueDate)
+          : record.dueDate;
+      const whenLine = formatWhenLine(whenIso, record.status);
+      const hint = vaccineProtectionHint(record.family ?? record.name);
+      const cadence =
+        record.type === 'deworming' &&
+        record.cadence &&
+        record.status !== 'completed' &&
+        record.status !== 'skipped'
+          ? cadenceDisplayLabel(record.cadence)
+          : null;
 
-  const badgeText =
-    record.status === 'completed'
-      ? colors.success
-      : record.status === 'missed'
-      ? colors.text.subdued
-      : record.status === 'skipped'
-      ? colors.text.subdued
-      : record.status === 'overdue'
-      ? colors.danger
-      : record.status === 'locked'
-      ? colors.info
-      : colors.warning;
+      const showPrimary =
+        !record.syncPending &&
+        Boolean(onMarkDone) &&
+        (record.status === 'overdue' ||
+          record.status === 'upcoming' ||
+          record.status === 'missed');
 
-  const statusLabel =
-    record.status === 'completed'
-      ? 'DONE'
-      : record.status === 'missed'
-      ? 'LATE — DO THIS SOON'
-      : record.status === 'skipped'
-      ? 'SKIPPED'
-      : record.status === 'overdue'
-      ? 'LATE — DO THIS SOON'
-      : record.status === 'locked'
-      ? 'WAIT — EARLIER SHOT FIRST'
-      : 'COMING UP';
+      const showSecondary =
+        !record.syncPending &&
+        ((showPrimary && (onEditDate || onSkipDose)) ||
+          (record.status === 'completed' && onEditDate));
 
-  const detailLine = (() => {
-    if (record.status === 'completed') {
-      const when = record.completedDate ?? record.dueDate;
-      return `Administered ${formatDate(when)}`;
-    }
-    if (record.status === 'overdue') {
-      return `Overdue since ${formatDate(record.dueDate)}`;
-    }
-    if (record.status === 'missed') {
-      return `Missed on ${formatDate(record.dueDate)}`;
-    }
-    if (record.status === 'skipped') {
-      const note = record.skipReason?.trim();
-      return note
-        ? `Skipped (planned ${formatDate(record.dueDate)}) — ${note}`
-        : `Skipped (planned ${formatDate(record.dueDate)})`;
-    }
-    if (record.status === 'locked') {
-      return `Scheduled for ${formatDate(record.dueDate)}`;
-    }
-    return `Due on ${formatDate(record.dueDate)}`;
-  })();
+      const styles = useMemo(
+        () => createStyles({ colors, radius, spacing, space, isHero }),
+        [colors, radius, spacing, space, isHero],
+      );
 
-  const dewormingCadenceHint =
-    record.type === 'deworming' &&
-    record.cadence &&
-    record.status !== 'completed' &&
-    record.status !== 'skipped'
-      ? ` · ${cadenceDisplayLabel(record.cadence)}`
-      : '';
+      const handleMarkDone = useCallback(() => {
+        onMarkDone?.(record);
+      }, [onMarkDone, record]);
 
-  const showActionRow =
-    !record.syncPending &&
-    (record.status === 'overdue' ||
-    record.status === 'upcoming' ||
-    record.status === 'missed');
-  const showCompletedActions =
-    !record.syncPending && record.status === 'completed' && onEditDate;
+      const handleEditDate = useCallback(() => {
+        onEditDate?.(record);
+      }, [onEditDate, record]);
 
-  return (
-    <View style={styles.card}>
-      <View style={styles.row}>
-        <View style={styles.iconCircle}>
-          {isVaccination ? (
-            <icons.vaccineIcon width={19} height={21} />
-          ) : (
-            <icons.dewormIcon width={20} height={20} />
-          )}
-        </View>
+      const handleSkipDose = useCallback(() => {
+        onSkipDose?.(record);
+      }, [onSkipDose, record]);
 
-        <View style={styles.infoCol}>
-          <View style={styles.badge}>
-            <AppText
-              style={[
-                textStyles.overline,
-                { color: badgeText, fontFamily: fontFamilies.bold },
-              ]}
-            >
-              {statusLabel}
-            </AppText>
+      return (
+        <WidgetSurface
+          theme={theme}
+          style={{
+            borderLeftWidth: 3,
+            borderLeftColor: tone.bar,
+            paddingVertical: spacing.lg,
+            backgroundColor: isHero ? colors.surface : colors.surface,
+          }}
+        >
+          {/* Meta row: status + type */}
+          <View style={styles.metaRow}>
+            <View style={[styles.pill, { backgroundColor: tone.bg }]}>
+              <AppText
+                style={[
+                  textStyles.overline,
+                  { color: tone.fg, fontFamily: fontFamilies.bold },
+                ]}
+              >
+                {tone.label}
+              </AppText>
+            </View>
+            <View style={styles.typeRow}>
+              {isVaccination ? (
+                <icons.vaccineIcon width={14} height={15} />
+              ) : (
+                <icons.dewormIcon width={14} height={14} />
+              )}
+              <AppText
+                style={[
+                  textStyles.caption,
+                  {
+                    color: colors.text.subdued,
+                    fontFamily: fontFamilies.medium,
+                  },
+                ]}
+              >
+                {isVaccination ? 'Shot' : 'Worm medicine'}
+              </AppText>
+            </View>
           </View>
+
+          {/* Primary hierarchy: name → when */}
+          <AppText
+            style={[
+              textStyles.title,
+              {
+                color: colors.text.heading,
+                fontFamily: fontFamilies.extrabold,
+                marginTop: spacing.sm,
+              },
+            ]}
+            numberOfLines={2}
+          >
+            {title}
+          </AppText>
+
           <AppText
             style={[
               textStyles.subtitle,
-              { color: colors.text.heading, fontFamily: fontFamilies.bold },
+              {
+                color: tone.whenFg,
+                fontFamily: fontFamilies.bold,
+                marginTop: spacing.xs,
+              },
             ]}
-            numberOfLines={2}
+            numberOfLines={1}
           >
-            {plainVaccineDisplayName(record.name)}
+            {whenLine}
+            {record.syncPending ? ' · Syncing…' : ''}
           </AppText>
-          {vaccineProtectionHint(record.family ?? record.name) ? (
+
+          {/* Supporting only — never compete with when/action */}
+          {hint || cadence || record.skipReason ? (
             <AppText
               style={[
                 textStyles.caption,
-                { color: colors.text.secondary, fontFamily: fontFamilies.regular },
+                {
+                  color: colors.text.secondary,
+                  fontFamily: fontFamilies.regular,
+                  marginTop: spacing.xs,
+                },
               ]}
               numberOfLines={2}
             >
-              {vaccineProtectionHint(record.family ?? record.name)}
+              {[hint, cadence, record.skipReason?.trim()]
+                .filter(Boolean)
+                .join(' · ')}
             </AppText>
           ) : null}
-          <AppText
-            style={[
-              textStyles.caption,
-              { color: colors.text.secondary, fontFamily: fontFamilies.medium },
-            ]}
-            numberOfLines={2}
-          >
-            {detailLine}
-            {dewormingCadenceHint}
-            {record.syncPending ? ' · Pending sync' : ''}
-          </AppText>
-        </View>
-      </View>
 
-      {showActionRow ? (
-        <View style={styles.actionRow}>
-          {onMarkDone ? (
+          {/* One primary action — full width */}
+          {showPrimary ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Mark ${record.name} as done`}
+              accessibilityLabel={`${primaryActionLabel}: ${title}`}
               onPress={handleMarkDone}
               style={({ pressed }) => [
-                styles.actionBtn,
-                styles.actionBtnPrimary,
+                styles.primaryCta,
                 { opacity: pressed ? 0.9 : 1 },
               ]}
             >
               <AppText
                 style={[
-                  textStyles.caption,
-                  { color: colors.text.inverse, fontFamily: fontFamilies.bold },
+                  textStyles.control,
+                  {
+                    color: colors.text.inverse,
+                    fontFamily: fontFamilies.bold,
+                  },
                 ]}
               >
                 {primaryActionLabel}
               </AppText>
             </Pressable>
           ) : null}
-          {onEditDate ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Change date for ${record.name}`}
-              onPress={handleEditDate}
-              style={({ pressed }) => [
-                styles.actionBtn,
-                styles.actionBtnOutline,
-                { opacity: pressed ? 0.9 : 1 },
-              ]}
-            >
-              <AppText
-                style={[
-                  textStyles.caption,
-                  {
-                    color: colors.text.secondary,
-                    fontFamily: fontFamilies.bold,
-                  },
-                ]}
-              >
-                Change date
-              </AppText>
-            </Pressable>
-          ) : null}
-          {record.type === 'deworming' && onSkipDose ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Skip for now ${record.name}`}
-              onPress={handleSkipDose}
-              style={({ pressed }) => [
-                styles.actionBtn,
-                styles.actionBtnOutline,
-                { opacity: pressed ? 0.9 : 1 },
-              ]}
-            >
-              <AppText
-                style={[
-                  textStyles.caption,
-                  {
-                    color: colors.text.secondary,
-                    fontFamily: fontFamilies.bold,
-                  },
-                ]}
-              >
-                Skip for now
-              </AppText>
-            </Pressable>
-          ) : null}
-        </View>
-      ) : null}
 
-      {showCompletedActions ? (
-        <View style={styles.completedActionRow}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Edit date for ${record.name}`}
-            onPress={handleEditDate}
-            style={({ pressed }) => [
-              styles.actionBtn,
-              styles.actionBtnOutline,
-              { opacity: pressed ? 0.9 : 1 },
-            ]}
-          >
-            <AppText
-              style={[
-                textStyles.caption,
-                { color: colors.text.body, fontFamily: fontFamilies.bold },
-              ]}
-            >
-              Edit date
-            </AppText>
-          </Pressable>
-        </View>
-      ) : null}
-    </View>
+          {/* Low-weight secondary links */}
+          {showSecondary ? (
+            <View style={styles.secondaryRow}>
+              {onEditDate ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Change date for ${title}`}
+                  onPress={handleEditDate}
+                  hitSlop={8}
+                  style={styles.secondaryLink}
+                >
+                  <AppText
+                    style={[
+                      textStyles.caption,
+                      {
+                        color: colors.text.secondary,
+                        fontFamily: fontFamilies.semibold,
+                      },
+                    ]}
+                  >
+                    {record.status === 'completed'
+                      ? 'Edit date'
+                      : 'Change date'}
+                  </AppText>
+                </Pressable>
+              ) : null}
+              {showPrimary &&
+              record.type === 'deworming' &&
+              onSkipDose ? (
+                <>
+                  <AppText
+                    style={[
+                      textStyles.caption,
+                      { color: colors.text.muted },
+                    ]}
+                  >
+                    ·
+                  </AppText>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Skip for now ${title}`}
+                    onPress={handleSkipDose}
+                    hitSlop={8}
+                    style={styles.secondaryLink}
+                  >
+                    <AppText
+                      style={[
+                        textStyles.caption,
+                        {
+                          color: colors.text.secondary,
+                          fontFamily: fontFamilies.semibold,
+                        },
+                      ]}
+                    >
+                      Skip for now
+                    </AppText>
+                  </Pressable>
+                </>
+              ) : null}
+            </View>
+          ) : null}
+        </WidgetSurface>
+      );
+    },
   );
-});
 
 SmartHealthRecordItem.displayName = 'SmartHealthRecordItem';
 
@@ -301,92 +384,45 @@ interface StyleParams {
   radius: ReturnType<typeof useTheme>['radius'];
   spacing: ReturnType<typeof useTheme>['spacing'];
   space: ReturnType<typeof useTheme>['space'];
-  variant: 'default' | 'hero';
-  status: SmartHealthRecord['status'];
+  isHero: boolean;
 }
 
-const createStyles = ({
-  colors,
-  radius,
-  spacing,
-  space,
-  variant,
-  status,
-}: StyleParams) => {
-  const badgeBg =
-    status === 'completed'
-      ? colors.successSurface
-      : status === 'missed'
-      ? colors.brandTint10
-      : status === 'skipped'
-      ? colors.surfaceAlt
-      : status === 'overdue'
-      ? colors.brandTint20
-      : status === 'locked'
-      ? colors.infoSurface
-      : colors.brandTint12;
-
-  return StyleSheet.create({
-    card: {
-      borderWidth: 1,
-      borderRadius: radius.lg,
-      backgroundColor: variant === 'hero' ? colors.surface : colors.surfaceAlt,
-      borderColor: variant === 'hero' ? colors.brandTint10 : colors.borderSubtle,
-      padding: space('md'),
-    },
-    row: {
+const createStyles = ({ colors, radius, spacing, space, isHero }: StyleParams) =>
+  StyleSheet.create({
+    metaRow: {
       flexDirection: 'row',
+      alignItems: 'center',
       justifyContent: 'space-between',
-      alignItems: 'center',
-      gap: space('md'),
-    },
-    iconCircle: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: radius.round,
-      backgroundColor: colors.surface,
-      width: spacing['4xl'],
-      height: spacing['4xl'],
-    },
-    infoCol: {
-      flex: 1,
-      minWidth: 0,
-      gap: space('xs'),
-    },
-    badge: {
-      alignSelf: 'flex-start',
-      borderRadius: radius.round,
-      backgroundColor: badgeBg,
-      paddingHorizontal: space('sm'),
-      paddingVertical: space('xs'),
-    },
-    actionRow: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      alignItems: 'center',
-      justifyContent: 'flex-end',
-      marginTop: space('md'),
       gap: space('sm'),
     },
-    actionBtn: {
+    pill: {
+      borderRadius: radius.xs,
+      paddingHorizontal: space('sm'),
+      paddingVertical: space('xxs'),
+    },
+    typeRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space('xs'),
+    },
+    primaryCta: {
+      marginTop: spacing.md,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: 14,
-      paddingVertical: 8,
-      minHeight: 36,
-      borderRadius: radius.round,
-    },
-    actionBtnPrimary: {
+      minHeight: 48,
+      borderRadius: radius.sm,
       backgroundColor: colors.accent,
+      paddingHorizontal: spacing.lg,
     },
-    actionBtnOutline: {
-      borderWidth: 1,
-      borderColor: colors.borderSubtle,
-      backgroundColor: colors.surface,
+    secondaryRow: {
+      marginTop: spacing.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: isHero ? 'center' : 'flex-start',
+      flexWrap: 'wrap',
+      gap: space('xs'),
     },
-    completedActionRow: {
-      marginTop: space('md'),
-      alignItems: 'flex-end',
+    secondaryLink: {
+      paddingVertical: space('xs'),
     },
   });
-};

@@ -439,7 +439,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   loadCurrentUser: async () => {
     set({ loading: true, authError: null, sessionStatus: 'restoring' });
     try {
-      const user = await ac.getCurrentUser.execute();
+      const user = await withTimeout(
+        ac.getCurrentUser.execute(),
+        AUTH_ACTION_TIMEOUT_MS,
+        'Auth request timed out.',
+      );
       set({
         user,
         isAuthenticated: Boolean(user),

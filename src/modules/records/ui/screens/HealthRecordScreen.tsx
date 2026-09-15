@@ -494,7 +494,7 @@ export const HealthRecordScreen: React.FC = () => {
     return () => clearTimeout(timer);
   }, [successMessage]);
 
-  const logPrimaryCtaLabel = 'I did this';
+  const logPrimaryCtaLabel = 'Mark as done';
 
   const listSections = useMemo((): HealthRecordListSection[] => {
     const sections: HealthRecordListSection[] = [

@@ -168,25 +168,22 @@ class PetRemoteDataSourceImpl implements PetRemoteDataSource {
 
   async deletePet(id: string): Promise<void> {
     const userId = this.currentUserId();
-    if (userId) {
+    if (!userId) {
+      throw new Error('deletePet requires an authenticated user');
+    }
+
+    // Best-effort child cleanup — never block deleting the pet document itself.
+    // Unknown collections (or missing rules) must not abort the pet delete.
+    for (const childCollection of this.cascadeCollections) {
       try {
-        for (const childCollection of this.cascadeCollections) {
-          await this.deleteCollectionDocs(userId, id, childCollection);
-        }
-        const ref = doc(this.db, 'users', userId, 'pets', id);
-        await deleteDoc(ref);
-        return;
+        await this.deleteCollectionDocs(userId, id, childCollection);
       } catch {
-        // Fall back to API below.
+        // Continue; orphaned child docs are preferable to a resurrected pet.
       }
     }
-    const response = await apiClient.request<void>({
-      path: `/pets/${id}`,
-      method: 'DELETE',
-    });
-    if (!response.ok) {
-      throw new Error(`deletePet failed: ${response.status}`);
-    }
+
+    const ref = doc(this.db, 'users', userId, 'pets', id);
+    await deleteDoc(ref);
   }
 }
 

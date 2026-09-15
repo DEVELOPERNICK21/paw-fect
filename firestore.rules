@@ -79,6 +79,14 @@ service cloud.firestore {
         match /healthRecordHistory/{historyId} {
           allow read, write: if isOwner(userId);
         }
+
+        match /vaccinations/{recordId} {
+          allow read, write: if isOwner(userId);
+        }
+
+        match /deworming/{recordId} {
+          allow read, write: if isOwner(userId);
+        }
       }
     }
   }

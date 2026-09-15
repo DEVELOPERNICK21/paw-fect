@@ -5,6 +5,7 @@ import type { HealthRecord } from '../../../../records/domain/models/HealthRecor
 import { AppText } from '../../../../../shared/components/AppText';
 import { MaterialIcon } from '../../../../../shared/components/MaterialIcon';
 import type { IconName } from '../../../../../shared/components/MaterialIcon';
+import { WidgetSurface } from '../../../../../shared/components/WidgetSurface';
 import { healthRecordIconName } from './healthRecordVisuals';
 import { useTheme } from '../../../../../shared/hooks/useTheme';
 import type { Theme } from '../../../../../shared/hooks/useTheme';
@@ -50,10 +51,10 @@ export const PetProfileHealthRecordCard: React.FC<PetProfileHealthRecordCardProp
     );
 
     return (
-      <View style={styles.card}>
+      <WidgetSurface theme={theme} style={{ borderLeftWidth: 2, borderLeftColor: colors.success }}>
         <View style={styles.topRow}>
           <View style={styles.iconTile}>
-            <MaterialIcon name={iconName} size={20} color={iconShell.fg} />
+            <MaterialIcon name={iconName} size={18} color={iconShell.fg} />
           </View>
 
           <View style={styles.infoCol}>
@@ -73,18 +74,18 @@ export const PetProfileHealthRecordCard: React.FC<PetProfileHealthRecordCardProp
               {record.category} • {formatShortRecordDate(record.date)}
             </AppText>
           </View>
-        </View>
 
-        <View style={styles.tag}>
-          <MaterialIcon name="check" size={14} color={colors.success} />
-          <AppText
-            style={[
-              textStyles.footer,
-              { color: colors.success, fontFamily: fontFamilies.bold },
-            ]}
-          >
-            COMPLETED
-          </AppText>
+          <View style={styles.tag}>
+            <MaterialIcon name="check" size={12} color={colors.success} />
+            <AppText
+              style={[
+                textStyles.footer,
+                { color: colors.success, fontFamily: fontFamilies.bold },
+              ]}
+            >
+              DONE
+            </AppText>
+          </View>
         </View>
 
         <Pressable
@@ -96,14 +97,14 @@ export const PetProfileHealthRecordCard: React.FC<PetProfileHealthRecordCardProp
         >
           <AppText
             style={[
-              textStyles.subtitle,
+              textStyles.caption,
               { color: colors.text.secondary, fontFamily: fontFamilies.bold },
             ]}
           >
             Details
           </AppText>
         </Pressable>
-      </View>
+      </WidgetSurface>
     );
   });
 
@@ -128,23 +129,15 @@ interface StyleParams {
 
 const createStyles = ({ colors, radius, spacing, iconShell }: StyleParams) =>
   StyleSheet.create({
-    card: {
-      borderWidth: 1,
-      borderRadius: radius.lg,
-      borderColor: colors.borderSubtle,
-      backgroundColor: colors.surface,
-      padding: spacing.lg,
-      gap: spacing.md,
-    },
     topRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.md,
+      gap: spacing.sm,
     },
     iconTile: {
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: radius.md,
+      borderRadius: radius.sm,
       backgroundColor: iconShell.bg,
       width: spacing['2xl'],
       height: spacing['2xl'],
@@ -161,15 +154,13 @@ const createStyles = ({ colors, radius, spacing, iconShell }: StyleParams) =>
       backgroundColor: colors.successSurface,
       paddingHorizontal: spacing.sm,
       paddingVertical: spacing.xxs,
-      alignSelf: 'flex-start',
       gap: spacing.xs,
     },
     detailsBtn: {
-      alignSelf: 'center',
-      backgroundColor: colors.surface,
-      padding: spacing.xs,
-      borderRadius: radius.md,
-      width: '100%',
+      marginTop: spacing.sm,
+      alignSelf: 'stretch',
+      backgroundColor: colors.surfaceAlt,
+      borderRadius: radius.sm,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,

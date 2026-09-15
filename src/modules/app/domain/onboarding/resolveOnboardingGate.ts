@@ -43,7 +43,14 @@ export function resolveOnboardingGate(input: {
   firstWinPersisted: boolean;
 }): OnboardingGate {
   if (input.onboardingCompleted || input.phase === 'done') return 'complete';
-  if (input.isAuthenticated && input.hasPets && input.phase === 'welcome') {
+  // Returning users (or late pet sync after sign-in) must not stay trapped in
+  // welcome/activate once pets exist. Do not apply during persist/paywall.
+  if (
+    input.isAuthenticated &&
+    input.hasPets &&
+    !input.activationSubmitted &&
+    (input.phase === 'welcome' || input.phase === 'activate')
+  ) {
     return 'complete';
   }
   if (input.entryIntent === 'sign_in' && !input.isAuthenticated) {

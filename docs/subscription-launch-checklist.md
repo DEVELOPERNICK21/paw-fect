@@ -32,13 +32,14 @@ Mobile checkout uses **RevenueCat** (`react-native-purchases`) — not direct Pl
 
 1. **Fix Play Console payments profile** — required before real or test charges succeed.
 2. Create a **RevenueCat project**; connect the Google Play app (service account / app link).
-3. Create entitlements **`care_plus`** and **`family`** in the RC dashboard.
-4. Attach the four Play subscription products; IDs must match **`src/shared/subscription/playStoreCatalog.ts`** (`PLAY_STORE_PLANS`) and **`web/.env.example`** (`PLAY_SUB_*`):
-   - `care_plus_monthly`, `care_plus_annual`, `family_monthly`, `family_annual`
-5. Publish the **`default`** offering with packages for all four products.
-6. Set **`REVENUECAT_GOOGLE_API_KEY`** in the RN app env (`.env` / release build config).
-7. Configure RevenueCat webhook URL → **`https://<site>/api/subscription/revenuecat`** (production Vercel URL).
-8. Add license testers and run an **internal testing track** purchase end-to-end.
+3. Create entitlement **`pawsoul_pro`** (identifier must match exactly) and attach all four products to it. Optionally keep plan-specific entitlements for analytics; the app unlocks Pro via `pawsoul_pro`, while Firestore plan (`care_plus` / `family`) is mapped from **product_id**.
+4. Attach the four Play subscription products; IDs must match **`src/shared/subscription/playStoreCatalog.ts`** / **`revenueCatCatalog.ts`**:
+   - `care_plus_monthly` (RC package `monthly`), `care_plus_annual` (`yearly`)
+   - `family_monthly` (`monthly_2`), `family_annual` (`yearly_2`)
+5. Publish the **`default`** offering with packages for all four products, then attach a **Paywall** and enable **Customer Center** in the RC dashboard.
+6. Set **`REVENUECAT_GOOGLE_API_KEY`** (and later Apple) in the RN app `.env` / release build. Install **`react-native-purchases`** + **`react-native-purchases-ui`**.
+7. Configure RevenueCat webhook URL → **`https://<site>/api/subscription/revenuecat`** (production Vercel URL) with **`REVENUECAT_WEBHOOK_SECRET`**.
+8. Add license testers and run an **internal testing track** purchase end-to-end (Paywall CTA + Settings → Manage subscription).
 9. Confirm Firestore: `subscription.provider === 'revenuecat'` and `entitlement.source === 'paid'` after purchase.
 
 ---

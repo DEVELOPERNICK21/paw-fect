@@ -62,6 +62,14 @@ import { navigationRef } from './navigationRef';
 import { PetRequiredNavigator } from './PetRequiredNavigator';
 import { runBootNotificationResyncIfNeeded } from '../../infrastructure/notifications/notificationBoot';
 import { startupError, startupLog } from '../../infrastructure/logging/startupLog';
+import { withTimeout } from '../../shared/utils/withTimeout';
+
+/** Leave splash even if pets/settings are still catching up. */
+const BOOTSTRAP_PETS_WAIT_MS = 6_000;
+const BOOTSTRAP_SETTINGS_WAIT_MS = 8_000;
+/** Never keep the sign-in pets splash longer than this. */
+const SIGN_IN_PETS_SPLASH_MAX_MS = 8_000;
+const AUTH_DATA_SYNC_TIMEOUT_MS = 15_000;
 
 export const RootNavigator: React.FC = () => {
   const isAuthenticated = useAuthStore(state => state.isAuthenticated);
@@ -86,6 +94,8 @@ export const RootNavigator: React.FC = () => {
   const resetRecords = useRecordStore(state => state.reset);
   const { colors, isDarkMode } = useTheme();
   const [bootstrapped, setBootstrapped] = useState(false);
+  const [signInPetsSplashTimedOut, setSignInPetsSplashTimedOut] =
+    useState(false);
   const lastSyncedUserIdRef = useRef<string | null>(null);
   const routeNameRef = useRef<string | undefined>(undefined);
   const authDataSyncGenerationRef = useRef(0);
@@ -138,28 +148,64 @@ export const RootNavigator: React.FC = () => {
   };
 
   useEffect(() => {
+    let cancelled = false;
+
     const bootstrap = async () => {
       startupLog('bootstrap.begin');
       try {
-        // Load current user first so pet storage keys are correctly namespaced.
-        await loadCurrentUser();
-        startupLog('bootstrap.auth_loaded');
+        // Restore session first so pet storage keys are correctly namespaced.
+        try {
+          await loadCurrentUser();
+          startupLog('bootstrap.auth_loaded');
+        } catch (error) {
+          startupError('bootstrap.auth', error);
+        }
+
         await Promise.all([
-          loadSettings(),
-          loadPets(),
+          withTimeout(
+            loadSettings(),
+            BOOTSTRAP_SETTINGS_WAIT_MS,
+            'Settings load timed out.',
+          ).catch(error => {
+            startupError('bootstrap.settings', error);
+          }),
           useOnboardingDraftStore.getState().hydrate(),
+          // Cap pet wait so a hung Firestore read cannot pin Splash forever.
+          withTimeout(
+            loadPets(),
+            BOOTSTRAP_PETS_WAIT_MS,
+            'Bootstrap pets timed out.',
+          ).catch(error => {
+            startupLog(
+              'bootstrap.pets_deferred',
+              error instanceof Error ? error.message : 'pets deferred',
+            );
+            // Underlying loadPets may still finish; ensure loading cannot stick.
+            if (usePetStore.getState().loading) {
+              // Keep loading true only briefly — store timeout will clear it.
+              // If no user yet, clear immediately.
+              if (!useAuthStore.getState().user?.id) {
+                usePetStore.setState({ loading: false });
+              }
+            }
+          }),
         ]);
         startupLog('bootstrap.settings_pets_loaded');
-        ensureAuthSessionListenerAttached();
-        setBootstrapped(true);
-        startupLog('bootstrap.done');
       } catch (error) {
         startupError('bootstrap', error);
-        throw error;
+      } finally {
+        if (!cancelled) {
+          ensureAuthSessionListenerAttached();
+          setBootstrapped(true);
+          startupLog('bootstrap.done');
+        }
       }
     };
 
-    bootstrap();
+    void bootstrap();
+    return () => {
+      cancelled = true;
+    };
   }, [loadCurrentUser, loadSettings, loadPets]);
 
   useEffect(() => {
@@ -293,35 +339,50 @@ export const RootNavigator: React.FC = () => {
     lastSyncedUserIdRef.current = activeUserId;
 
     const petState = usePetStore.getState();
+    // Only skip a full pet reload when this user already has pets in memory.
+    // Do NOT treat `loading` as skip-worthy: logout/reset leave loading=true with
+    // an empty list, and a re-entry would otherwise never call loadPets (splash stuck).
     const skipCacheReset =
-      !userChanged &&
-      bootstrapped &&
-      (petState.pets.length > 0 || petState.loading);
+      !userChanged && bootstrapped && petState.pets.length > 0;
 
     const syncGeneration = authDataSyncGenerationRef.current + 1;
     authDataSyncGenerationRef.current = syncGeneration;
+
+    // Mark pets loading synchronously before the async sync so sign-in
+    // does not treat a pre-auth empty cache as "account has no pets".
+    if (!skipCacheReset) {
+      resetPets();
+    }
 
     void (async () => {
       startupLog('auth_data_sync.begin', `user=${activeUserId}`);
       try {
         if (skipCacheReset) {
           appOrchestrator.refreshHomeDashboardObservation();
-          await Promise.all([loadReminders(), loadRecords()]);
+          await withTimeout(
+            Promise.all([loadReminders(), loadRecords()]),
+            AUTH_DATA_SYNC_TIMEOUT_MS,
+            'Auth data refresh timed out.',
+          );
           if (authDataSyncGenerationRef.current !== syncGeneration) {
             startupLog('auth_data_sync.aborted', 'stale_generation_refresh');
             return;
           }
         } else {
-          await appOrchestrator.syncAuthenticatedDataStores(
-            {
-              resetPets,
-              resetReminders,
-              resetRecords,
-              loadPets,
-              loadReminders,
-              loadRecords,
-            },
-            { resetCaches: true },
+          await withTimeout(
+            appOrchestrator.syncAuthenticatedDataStores(
+              {
+                resetPets,
+                resetReminders,
+                resetRecords,
+                loadPets,
+                loadReminders,
+                loadRecords,
+              },
+              { resetCaches: true },
+            ),
+            AUTH_DATA_SYNC_TIMEOUT_MS,
+            'Auth data sync timed out.',
           );
           if (authDataSyncGenerationRef.current !== syncGeneration) {
             startupLog('auth_data_sync.aborted', 'stale_generation_sync');
@@ -332,7 +393,10 @@ export const RootNavigator: React.FC = () => {
         scheduleDeferredNotificationResync();
       } catch (error) {
         startupError('auth_data_sync', error);
-        /* Avoid crashing the shell if a loader throws; stores keep last good state. */
+        // Never leave the shell blocked on Splash (pets.loading === true).
+        if (usePetStore.getState().loading) {
+          usePetStore.setState({ loading: false });
+        }
       }
     })();
 
@@ -364,6 +428,10 @@ export const RootNavigator: React.FC = () => {
     const store = useOnboardingDraftStore.getState();
     if (hasCompletedOnboarding || pets.length > 0) {
       store.clearEntryIntent();
+      if (pets.length > 0 && !hasCompletedOnboarding) {
+        // Existing account with pets: drop any leftover onboarding draft.
+        void store.clear();
+      }
       return;
     }
     store.clearEntryIntent();
@@ -377,6 +445,21 @@ export const RootNavigator: React.FC = () => {
     onboardingDraft.entryIntent,
   ]);
 
+  // Recover if activation was started from sign-in before pets finished syncing.
+  useEffect(() => {
+    if (!bootstrapped || !isAuthenticated || petsLoading || pets.length === 0) {
+      return;
+    }
+    const { draft, clear } = useOnboardingDraftStore.getState();
+    if (draft.activationSubmitted) {
+      return;
+    }
+    if (draft.phase !== 'activate' && draft.entryIntent !== 'sign_in') {
+      return;
+    }
+    void clear();
+  }, [bootstrapped, isAuthenticated, petsLoading, pets.length]);
+
   // Gate can resolve to persist while draft.phase still reads activate after auth
   // (submitActivation while unauthenticated). Keep navigator phase aligned with gate.
   useEffect(() => {
@@ -388,6 +471,36 @@ export const RootNavigator: React.FC = () => {
     }
     useOnboardingDraftStore.getState().setPhase('persist');
   }, [bootstrapped, onboardingGate, onboardingPhase]);
+
+  // Cap "Fetching your pet's world" after sign-in so a hung load cannot trap the user.
+  useEffect(() => {
+    const pending =
+      bootstrapped &&
+      isAuthenticated &&
+      petsLoading &&
+      onboardingDraft.entryIntent === 'sign_in' &&
+      !hasCompletedOnboarding;
+    if (!pending) {
+      setSignInPetsSplashTimedOut(false);
+      return undefined;
+    }
+    const timeoutId = setTimeout(() => {
+      setSignInPetsSplashTimedOut(true);
+      if (usePetStore.getState().loading) {
+        usePetStore.setState({ loading: false });
+      }
+      startupLog('sign_in_pets_splash.timeout');
+    }, SIGN_IN_PETS_SPLASH_MAX_MS);
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [
+    bootstrapped,
+    isAuthenticated,
+    petsLoading,
+    onboardingDraft.entryIntent,
+    hasCompletedOnboarding,
+  ]);
 
   const user = useAuthStore(state => state.user);
 
@@ -410,7 +523,8 @@ export const RootNavigator: React.FC = () => {
     isAuthenticated &&
     petsLoading &&
     onboardingDraft.entryIntent === 'sign_in' &&
-    !hasCompletedOnboarding;
+    !hasCompletedOnboarding &&
+    !signInPetsSplashTimedOut;
 
   if (signInPetsPending) {
     return <SplashScreen />;
