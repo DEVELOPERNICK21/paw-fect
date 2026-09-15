@@ -95,9 +95,10 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // Codemagic / CI can pass -PversionCode=N to bump Play uploads.
+        // Floor must stay above any code already on Play (prod 26 as of Sep 2026).
         versionCode project.hasProperty('versionCode')
             ? project.property('versionCode').toInteger()
-            : 26
+            : 27
         versionName "1.0"
         missingDimensionStrategy "store", "play"
     }

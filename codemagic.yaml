@@ -93,13 +93,19 @@ workflows:
       - name: Build signed release bundle
         script: |
           set -e
-          LATEST_GOOGLE_PLAY_BUILD_NUMBER=$(google-play get-latest-build-number --package-name "$PACKAGE_NAME" --tracks=internal || true)
+          # Publishing uses GCLOUD_*; CLI tools expect GOOGLE_PLAY_*
+          export GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS="${GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS:-$GCLOUD_SERVICE_ACCOUNT_CREDENTIALS}"
+
+          # Highest versionCode across ALL tracks (production is 25/26; internal-only
+          # bump produced 16 and Play rejected it as already used).
+          LATEST_GOOGLE_PLAY_BUILD_NUMBER=$(google-play get-latest-build-number --package-name "$PACKAGE_NAME" || true)
           if [ -z "$LATEST_GOOGLE_PLAY_BUILD_NUMBER" ]; then
-            UPDATED_BUILD_NUMBER=${BUILD_NUMBER:-$(($(grep -E 'versionCode[[:space:]]+[0-9]+' android/app/build.gradle | head -1 | grep -oE '[0-9]+') + 1))}
+            echo "WARN: could not read Play versionCode; falling back to local floor 27"
+            UPDATED_BUILD_NUMBER=27
           else
             UPDATED_BUILD_NUMBER=$((LATEST_GOOGLE_PLAY_BUILD_NUMBER + 1))
           fi
-          echo "Using versionCode=$UPDATED_BUILD_NUMBER"
+          echo "Using versionCode=$UPDATED_BUILD_NUMBER (latest on Play was ${LATEST_GOOGLE_PLAY_BUILD_NUMBER:-unknown})"
           cd android
           ./gradlew bundleRelease -PversionCode="$UPDATED_BUILD_NUMBER"
     artifacts:
