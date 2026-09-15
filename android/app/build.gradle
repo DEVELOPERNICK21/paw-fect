@@ -94,7 +94,10 @@ android {
         applicationId "app.pawfect"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 26
+        // Codemagic / CI can pass -PversionCode=N to bump Play uploads.
+        versionCode project.hasProperty('versionCode')
+            ? project.property('versionCode').toInteger()
+            : 26
         versionName "1.0"
         missingDimensionStrategy "store", "play"
     }

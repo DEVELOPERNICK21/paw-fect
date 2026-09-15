@@ -1,39 +1,34 @@
 # Codemagic CI/CD for Pawsoul (React Native)
 # Docs: https://docs.codemagic.io/yaml-quick-start/building-a-react-native-app/
+# Play publish: https://docs.codemagic.io/yaml-publishing/google-play/
 #
-# Automation (required once):
-# 1. GitHub → repo Settings → Webhooks → Add webhook
-#    Payload URL: https://api.codemagic.io/hooks/6aa90d1f34522856ffcddd09
-#    Content type: application/json
-#    Events: Just the push event + Pull requests (or "Pushes" + "Pull requests")
-# 2. Push this codemagic.yaml so `triggering:` is on main
-#
-# Before first signed release:
-# 1. Team/Account → Code signing identities → upload keystore as: pawfect_upload
-# 2. Optional env group `pawfect_env` (RevenueCat keys)
-# 3. Optional Play publish group `google_play` (service account JSON)
+# Automation:
+# 1. GitHub webhook → https://api.codemagic.io/hooks/6aa90d1f34522856ffcddd09
+# 2. Codemagic → Environment variables → group `google_play`
+#      Secret: GCLOUD_SERVICE_ACCOUNT_CREDENTIALS = full Play service-account JSON
+# 3. Codemagic → Code signing identities → upload keystore, reference: pawfect_upload
+# 4. Optional group `pawfect_env` with REVENUECAT_* keys
+# 5. Play Console: link the service account (Release → Setup → API access) with
+#    permission to create/edit releases on the Internal testing track.
+# 6. First AAB for a brand-new Play listing may need a manual upload once;
+#    later Codemagic uploads need a higher versionCode (auto-bumped below).
 
 workflows:
   android-debug:
     name: Android Debug (unsigned)
     max_build_duration: 120
     instance_type: mac_mini_m2
-    # Auto-build on push to main and on PRs targeting main (requires GitHub webhook).
+    # PRs into main → smoke-test APK only (not published to Play).
     triggering:
       events:
-        - push
         - pull_request
       branch_patterns:
         - pattern: main
           include: true
-          source: true   # push to main
-        - pattern: main
-          include: true
-          source: false  # PRs into main
+          source: false
       cancel_previous_builds: true
     environment:
       node: v22.14.0
-      # After creating the group in Codemagic → Environment variables:
       # groups:
       #   - pawfect_env
     scripts:
@@ -57,13 +52,18 @@ workflows:
       - android/app/build/outputs/**/*.apk
 
   android-release:
-    name: Android Release (signed AAB)
+    name: Android Release → Play Internal
     max_build_duration: 120
     instance_type: mac_mini_m2
-    # Release only on version tags like v1.0.0 (manual Start build still works anytime).
+    # Push to main or version tags → signed AAB + publish to Internal testing.
     triggering:
       events:
+        - push
         - tag
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
       tag_patterns:
         - pattern: 'v*'
           include: true
@@ -72,10 +72,9 @@ workflows:
       node: v22.14.0
       android_signing:
         - pawfect_upload
-      # After creating groups in Codemagic → Environment variables:
-      # groups:
-      #   - pawfect_env
-      #   - google_play
+      groups:
+        - google_play
+        # - pawfect_env
       vars:
         PACKAGE_NAME: "app.pawfect"
     scripts:
@@ -93,13 +92,21 @@ workflows:
           echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/android/local.properties"
       - name: Build signed release bundle
         script: |
+          set -e
+          LATEST_GOOGLE_PLAY_BUILD_NUMBER=$(google-play get-latest-build-number --package-name "$PACKAGE_NAME" --tracks=internal || true)
+          if [ -z "$LATEST_GOOGLE_PLAY_BUILD_NUMBER" ]; then
+            UPDATED_BUILD_NUMBER=${BUILD_NUMBER:-$(($(grep -E 'versionCode[[:space:]]+[0-9]+' android/app/build.gradle | head -1 | grep -oE '[0-9]+') + 1))}
+          else
+            UPDATED_BUILD_NUMBER=$((LATEST_GOOGLE_PLAY_BUILD_NUMBER + 1))
+          fi
+          echo "Using versionCode=$UPDATED_BUILD_NUMBER"
           cd android
-          ./gradlew bundleRelease
+          ./gradlew bundleRelease -PversionCode="$UPDATED_BUILD_NUMBER"
     artifacts:
       - android/app/build/outputs/**/*.aab
-      - android/app/build/outputs/**/*.apk
-    # publishing:
-    #   google_play:
-    #     credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
-    #     track: internal
-    #     submit_as_draft: true
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        # Keep true until the Play listing / internal track is fully set up and live.
+        submit_as_draft: true
