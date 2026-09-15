@@ -1,18 +1,36 @@
 # Codemagic CI/CD for Pawsoul (React Native)
 # Docs: https://docs.codemagic.io/yaml-quick-start/building-a-react-native-app/
 #
-# Before first signed build:
-# 1. Team settings → codemagic.yaml settings → Code signing identities
-#    Upload pawfect-upload-key.keystore and set Reference name to: pawfect_upload
-# 2. App settings → Environment variables → create group `pawfect_env`
-#    Add REVENUECAT_GOOGLE_API_KEY (and any other .env keys you need at build time)
-# 3. Optional Play publish: add group `google_play` with GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+# Automation (required once):
+# 1. GitHub → repo Settings → Webhooks → Add webhook
+#    Payload URL: https://api.codemagic.io/hooks/6aa90d1f34522856ffcddd09
+#    Content type: application/json
+#    Events: Just the push event + Pull requests (or "Pushes" + "Pull requests")
+# 2. Push this codemagic.yaml so `triggering:` is on main
+#
+# Before first signed release:
+# 1. Team/Account → Code signing identities → upload keystore as: pawfect_upload
+# 2. Optional env group `pawfect_env` (RevenueCat keys)
+# 3. Optional Play publish group `google_play` (service account JSON)
 
 workflows:
   android-debug:
     name: Android Debug (unsigned)
     max_build_duration: 120
     instance_type: mac_mini_m2
+    # Auto-build on push to main and on PRs targeting main (requires GitHub webhook).
+    triggering:
+      events:
+        - push
+        - pull_request
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true   # push to main
+        - pattern: main
+          include: true
+          source: false  # PRs into main
+      cancel_previous_builds: true
     environment:
       node: v22.14.0
       # After creating the group in Codemagic → Environment variables:
@@ -42,6 +60,14 @@ workflows:
     name: Android Release (signed AAB)
     max_build_duration: 120
     instance_type: mac_mini_m2
+    # Release only on version tags like v1.0.0 (manual Start build still works anytime).
+    triggering:
+      events:
+        - tag
+      tag_patterns:
+        - pattern: 'v*'
+          include: true
+      cancel_previous_builds: true
     environment:
       node: v22.14.0
       android_signing:
