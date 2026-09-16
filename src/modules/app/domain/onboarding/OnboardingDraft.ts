@@ -17,6 +17,8 @@ export type PetDraft = {
   species: 'dog' | 'cat' | 'both';
   ageBand: 'puppy_kitten' | 'adult' | 'senior';
   nickname: string;
+  /** Optional breed from AI photo suggest + Confirm (or manual later). */
+  breed?: string;
 };
 
 export type ActivationReminderKind =

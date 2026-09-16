@@ -10,6 +10,7 @@ import {
 } from '../../infrastructure/notifications/dailyCareNotifications';
 import { pickPetPhoto } from './data/photos/pickPetPhoto';
 import { createFirestorePetPhotoEncoder } from './data/photos/FirestorePetPhotoEncoder';
+import { createMlKitPetPhotoAnalyzer } from './data/photos/MlKitPetPhotoAnalyzer';
 import { createPetRepository } from './data/repositories/PetRepositoryImpl';
 import type { Pet } from './domain/models/Pet';
 import { GetPets } from './domain/usecases/GetPets';
@@ -21,12 +22,14 @@ import { DeletePet } from './domain/usecases/DeletePet';
 import { SetActivePet } from './domain/usecases/SetActivePet';
 import { CreatePetProfile } from './domain/usecases/CreatePetProfile';
 import { BuildPetHealthCardViewModel } from './domain/usecases/BuildPetHealthCardViewModel';
+import { AnalyzePetPhoto } from './domain/usecases/AnalyzePetPhoto';
 import { PreparePetPhoto } from './domain/usecases/PreparePetPhoto';
 import type { PetHealthCardViewModel } from './domain/models/PetHealthCardViewModel';
 import { registerPetCoordinationPorts } from './store/petCoordinationPorts';
 
 const repository = createPetRepository();
 const petPhotoEncoder = createFirestorePetPhotoEncoder();
+const petPhotoAnalyzer = createMlKitPetPhotoAnalyzer();
 
 registerPetCoordinationPorts({
   bootstrapPetHealthSchedule: async input => {
@@ -90,6 +93,7 @@ export const petComposition = {
   setActivePet: new SetActivePet(repository),
   createPetProfile: new CreatePetProfile(),
   preparePetPhoto: new PreparePetPhoto(petPhotoEncoder),
+  analyzePetPhoto: new AnalyzePetPhoto(petPhotoAnalyzer),
   pickPetPhoto,
   syncDailyRoutineNotifications: async (pets: Pet[]): Promise<void> => {
     const granted = await ensureNotificationsReady();

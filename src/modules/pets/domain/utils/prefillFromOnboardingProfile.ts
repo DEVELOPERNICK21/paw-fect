@@ -4,6 +4,7 @@ import type { PetType } from '../../domain/models/Pet';
 export type AddPetOnboardingPrefill = {
   name: string;
   petType: PetType;
+  breed?: string;
   fieldsPrefilled: string[];
 };
 
@@ -39,9 +40,19 @@ export function prefillFromOnboardingProfile(
     fieldsPrefilled.push('petType');
   }
 
+  const breed = profile.pet.breed?.trim();
+  if (breed) {
+    fieldsPrefilled.push('breed');
+  }
+
   if (fieldsPrefilled.length === 0) {
     return null;
   }
 
-  return { name, petType, fieldsPrefilled };
+  return {
+    name,
+    petType,
+    breed: breed || undefined,
+    fieldsPrefilled,
+  };
 }

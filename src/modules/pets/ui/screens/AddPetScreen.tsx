@@ -70,6 +70,11 @@ import {
   type PetFormSnapshot,
 } from '../../domain/utils/petFormSnapshot';
 import { PetFormPsychologyChrome } from '../components/PetFormPsychologyChrome';
+import {
+  PetPhotoAnalysisCard,
+  type PetPhotoAnalysisConfirmSelection,
+} from '../components/PetPhotoAnalysisCard';
+import type { PetPhotoAnalysis } from '../../domain/ports/PetPhotoAnalyzer';
 
 const suggestRiskFromLifestyle = (
   type: PetLifestyleType,
@@ -288,13 +293,25 @@ export const AddPetScreen: React.FC = () => {
   const [petType, setPetType] = useState<PetType>(
     initialPrefill?.petType ?? 'dog',
   );
-  const [breed, setBreed] = useState('');
+  const [breed, setBreed] = useState(initialPrefill?.breed ?? '');
   const [photoUri, setPhotoUri] = useState<string>(PROFILE_PLACEHOLDER);
   /** Pending compressed pick; encode on save. Null = no new pick this session. */
   const [pendingPhoto, setPendingPhoto] =
     useState<PetPhotoEncodeRequest | null>(null);
   /** True when the user removes a photo, including an existing edit photo. */
   const [photoCleared, setPhotoCleared] = useState(false);
+  type PhotoAnalysisUiState =
+    | { visible: false }
+    | { visible: true; status: 'analyzing'; photoUri: string }
+    | {
+        visible: true;
+        status: 'ready' | 'failed';
+        photoUri: string;
+        analysis?: PetPhotoAnalysis;
+      };
+  const [photoAnalysis, setPhotoAnalysis] = useState<PhotoAnalysisUiState>({
+    visible: false,
+  });
   const [dob, setDob] = useState<string>('');
   const [gender, setGender] = useState<PetGender | ''>('');
   const [lifestyleType, setLifestyleType] =
@@ -311,8 +328,10 @@ export const AddPetScreen: React.FC = () => {
   const [baseline, setBaseline] = useState<PetFormSnapshot | null>(null);
   const allowLeaveRef = useRef(false);
   const createBaselineCapturedRef = useRef(false);
-  /** Create: collapsed by default. Edit: opens when gender or breed exists. */
-  const [showAboutSection, setShowAboutSection] = useState(false);
+  /** Create: collapsed by default. Edit: opens when gender or breed exists. Prefill breed opens it. */
+  const [showAboutSection, setShowAboutSection] = useState(
+    () => Boolean(initialPrefill?.breed?.trim()),
+  );
   /** Create: collapsed by default. Edit: opens when milestone data exists. */
   const [showHealthHistory, setShowHealthHistory] = useState(false);
   const [hasPreviousDeworming, setHasPreviousDeworming] = useState(false);
@@ -637,6 +656,34 @@ export const AddPetScreen: React.FC = () => {
       setPhotoUri(picked.localUri);
       setPhotoCleared(false);
       setError(null);
+      setPhotoAnalysis({
+        visible: true,
+        status: 'analyzing',
+        photoUri: picked.localUri,
+      });
+      void trackEvent('pet_photo_analysis_started', { surface: 'add_pet' });
+      try {
+        const analysis = await petComposition.analyzePetPhoto.execute(
+          picked.localUri,
+        );
+        setPhotoAnalysis({
+          visible: true,
+          status: 'ready',
+          photoUri: picked.localUri,
+          analysis,
+        });
+        void trackEvent('pet_photo_analysis_completed', {
+          species: analysis.species,
+          low_confidence: analysis.lowConfidence,
+          quality: analysis.quality,
+        });
+      } catch {
+        setPhotoAnalysis({
+          visible: true,
+          status: 'failed',
+          photoUri: picked.localUri,
+        });
+      }
     } catch (pickError) {
       const message =
         pickError instanceof Error
@@ -681,7 +728,31 @@ export const AddPetScreen: React.FC = () => {
     setPhotoUri(PROFILE_PLACEHOLDER);
     setPendingPhoto(null);
     setPhotoCleared(true);
+    setPhotoAnalysis({ visible: false });
     setError(null);
+  };
+
+  const handleConfirmPhotoAnalysis = (
+    selection: PetPhotoAnalysisConfirmSelection,
+  ): void => {
+    setPetType(selection.species);
+    if (selection.breed != null && selection.breed.trim().length > 0) {
+      setBreed(selection.breed.trim());
+      setShowAboutSection(true);
+    } else {
+      setBreed('');
+    }
+    setPhotoAnalysis({ visible: false });
+    void trackEvent('pet_photo_analysis_confirmed', {
+      species: selection.species,
+      breed_selected: selection.breed ?? '',
+      was_suggestion: selection.breed != null,
+    });
+  };
+
+  const handleSkipPhotoAnalysis = (): void => {
+    setPhotoAnalysis({ visible: false });
+    void trackEvent('pet_photo_analysis_skipped', { surface: 'add_pet' });
   };
 
   const openPhotoOptions = (): void => {
@@ -1232,6 +1303,19 @@ export const AddPetScreen: React.FC = () => {
                 photoFilled ? 'Change pet photo' : 'Add pet photo'
               }
             />
+            {photoAnalysis.visible ? (
+              <PetPhotoAnalysisCard
+                photoUri={photoAnalysis.photoUri}
+                status={photoAnalysis.status}
+                analysis={
+                  photoAnalysis.status === 'analyzing'
+                    ? undefined
+                    : photoAnalysis.analysis
+                }
+                onConfirm={handleConfirmPhotoAnalysis}
+                onSkip={handleSkipPhotoAnalysis}
+              />
+            ) : null}
           </View>
         </View>
 

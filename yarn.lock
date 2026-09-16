@@ -2079,6 +2079,11 @@
   resolved "https://registry.npmjs.org/@react-native-google-signin/google-signin/-/google-signin-16.1.2.tgz"
   integrity sha512-1hf4pRmpnS5t0dHtqU72Q1FmWzsCZR2Sm3uVQbbfMKeNPl5TKjpAsP6F8QTZ9L+Q6Cnn9tL9BXpDCb1nyutdCQ==
 
+"@react-native-ml-kit/image-labeling@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@react-native-ml-kit/image-labeling/-/image-labeling-2.0.0.tgz#08e143e00ae9ce0cb92bc8c7fd88dc3ffedada07"
+  integrity sha512-z7lozFOTc13dYpyKem6Dnbz63aj4JEs5NdwW59ytm0YyHPlYzcTTQbZ0exSLRiOQAlQPMfR59gX/9XMpafUXqQ==
+
 "@react-native/assets-registry@0.86.2":
   version "0.86.2"
   resolved "https://registry.yarnpkg.com/@react-native/assets-registry/-/assets-registry-0.86.2.tgz#5cd139857b5d8285f90e217c27bfa48d8158e538"
