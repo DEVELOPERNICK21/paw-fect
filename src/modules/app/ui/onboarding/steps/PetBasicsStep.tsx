@@ -250,13 +250,10 @@ export const PetBasicsStep: React.FC<Props> = ({ value, onChange }) => {
     onChange({
       ...value,
       species: selection.species,
-      breed: selection.breed,
     });
     setPhotoAnalysis({ visible: false });
     void trackEvent('pet_photo_analysis_confirmed', {
       species: selection.species,
-      breed_selected: selection.breed ?? '',
-      was_suggestion: selection.breed != null,
     });
   };
 

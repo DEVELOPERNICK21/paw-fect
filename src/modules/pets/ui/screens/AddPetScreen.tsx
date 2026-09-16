@@ -736,17 +736,9 @@ export const AddPetScreen: React.FC = () => {
     selection: PetPhotoAnalysisConfirmSelection,
   ): void => {
     setPetType(selection.species);
-    if (selection.breed != null && selection.breed.trim().length > 0) {
-      setBreed(selection.breed.trim());
-      setShowAboutSection(true);
-    } else {
-      setBreed('');
-    }
     setPhotoAnalysis({ visible: false });
     void trackEvent('pet_photo_analysis_confirmed', {
       species: selection.species,
-      breed_selected: selection.breed ?? '',
-      was_suggestion: selection.breed != null,
     });
   };
 

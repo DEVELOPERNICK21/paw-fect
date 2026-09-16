@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -14,7 +14,6 @@ import type { PetPhotoAnalysis } from '../../domain/ports/PetPhotoAnalyzer';
 
 export type PetPhotoAnalysisConfirmSelection = {
   species: 'dog' | 'cat';
-  breed?: string;
 };
 
 export type PetPhotoAnalysisCardProps = {
@@ -24,8 +23,6 @@ export type PetPhotoAnalysisCardProps = {
   onConfirm: (selection: PetPhotoAnalysisConfirmSelection) => void;
   onSkip: () => void;
 };
-
-const SOMETHING_ELSE = '__something_else__';
 
 function speciesLine(analysis: PetPhotoAnalysis): string {
   if (analysis.species === 'dog') {
@@ -45,7 +42,6 @@ export const PetPhotoAnalysisCard: React.FC<PetPhotoAnalysisCardProps> = ({
   onSkip,
 }) => {
   const { colors, spacing, radius, textStyles, fontFamilies } = useTheme();
-  const [selectedBreedKey, setSelectedBreedKey] = useState<string | null>(null);
 
   const styles = useMemo(
     () =>
@@ -73,38 +69,9 @@ export const PetPhotoAnalysisCard: React.FC<PetPhotoAnalysisCardProps> = ({
         section: {
           marginTop: spacing.md,
         },
-        emptyBreedHint: {
-          marginTop: spacing.sm,
-          color: colors.text.body,
-        },
         warning: {
           marginTop: spacing.sm,
           color: colors.warning,
-        },
-        chipRow: {
-          flexDirection: 'row',
-          flexWrap: 'wrap',
-          gap: spacing.sm,
-          marginTop: spacing.sm,
-        },
-        chip: {
-          paddingHorizontal: spacing.md,
-          paddingVertical: spacing.sm,
-          borderRadius: radius.pill,
-          borderWidth: 1,
-          borderColor: colors.borderSubtle,
-          backgroundColor: colors.backgroundAlt,
-        },
-        chipSelected: {
-          backgroundColor: colors.accent,
-          borderColor: colors.accent,
-        },
-        chipLabel: {
-          fontFamily: fontFamilies.medium,
-          color: colors.text.heading,
-        },
-        chipLabelSelected: {
-          color: colors.text.inverse,
         },
         actions: {
           marginTop: spacing.lg,
@@ -141,12 +108,10 @@ export const PetPhotoAnalysisCard: React.FC<PetPhotoAnalysisCardProps> = ({
       }),
     [
       colors.accent,
-      colors.backgroundAlt,
       colors.borderSubtle,
       colors.brandTint5,
       colors.surface,
       colors.text.body,
-      colors.text.heading,
       colors.text.inverse,
       colors.text.secondary,
       colors.warning,
@@ -154,7 +119,6 @@ export const PetPhotoAnalysisCard: React.FC<PetPhotoAnalysisCardProps> = ({
       fontFamilies.semibold,
       radius.lg,
       radius.md,
-      radius.pill,
       spacing.lg,
       spacing.md,
       spacing.sm,
@@ -162,10 +126,6 @@ export const PetPhotoAnalysisCard: React.FC<PetPhotoAnalysisCardProps> = ({
   );
 
   const photoSource: ImageSourcePropType = { uri: photoUri };
-  const breeds = analysis?.breedSuggestions ?? [];
-  const effectiveBreedKey =
-    selectedBreedKey ??
-    (breeds[0] != null ? breeds[0].label : SOMETHING_ELSE);
 
   const canConfirm =
     status === 'ready' &&
@@ -179,12 +139,7 @@ export const PetPhotoAnalysisCard: React.FC<PetPhotoAnalysisCardProps> = ({
     if (analysis.species !== 'dog' && analysis.species !== 'cat') {
       return;
     }
-    const breed =
-      effectiveBreedKey === SOMETHING_ELSE ? undefined : effectiveBreedKey;
-    onConfirm({
-      species: analysis.species,
-      breed,
-    });
+    onConfirm({ species: analysis.species });
   };
 
   return (
@@ -200,8 +155,7 @@ export const PetPhotoAnalysisCard: React.FC<PetPhotoAnalysisCardProps> = ({
 
       {status === 'failed' ? (
         <AppText style={[textStyles.body, styles.failed]}>
-          Couldn&apos;t analyze this photo. You can fill species and breed
-          manually.
+          Couldn&apos;t analyze this photo. You can choose dog or cat manually.
         </AppText>
       ) : null}
 
@@ -217,69 +171,9 @@ export const PetPhotoAnalysisCard: React.FC<PetPhotoAnalysisCardProps> = ({
           </View>
 
           <View style={styles.section}>
-            <AppText style={textStyles.caption}>Possible breed</AppText>
-            {breeds.length === 0 ? (
-              <AppText style={[textStyles.body, styles.emptyBreedHint]}>
-                No breed matched this photo — choose Something else or type it
-                later.
-              </AppText>
-            ) : null}
-            <View style={styles.chipRow}>
-              {breeds.map(breed => {
-                const selected = effectiveBreedKey === breed.label;
-                return (
-                  <ScalePressable
-                    key={breed.label}
-                    onPress={() => setSelectedBreedKey(breed.label)}
-                    style={[styles.chip, selected ? styles.chipSelected : null]}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
-                    accessibilityLabel={breed.label}
-                  >
-                    <AppText
-                      style={[
-                        textStyles.control,
-                        styles.chipLabel,
-                        selected ? styles.chipLabelSelected : null,
-                      ]}
-                    >
-                      {breed.label}
-                    </AppText>
-                  </ScalePressable>
-                );
-              })}
-              <ScalePressable
-                onPress={() => setSelectedBreedKey(SOMETHING_ELSE)}
-                style={[
-                  styles.chip,
-                  effectiveBreedKey === SOMETHING_ELSE
-                    ? styles.chipSelected
-                    : null,
-                ]}
-                accessibilityRole="button"
-                accessibilityState={{
-                  selected: effectiveBreedKey === SOMETHING_ELSE,
-                }}
-                accessibilityLabel="Something else"
-              >
-                <AppText
-                  style={[
-                    textStyles.control,
-                    styles.chipLabel,
-                    effectiveBreedKey === SOMETHING_ELSE
-                      ? styles.chipLabelSelected
-                      : null,
-                  ]}
-                >
-                  Something else
-                </AppText>
-              </ScalePressable>
-            </View>
-          </View>
-
-          <View style={styles.section}>
             <AppText style={textStyles.body}>
-              Photo quality: {analysis.quality === 'good'
+              Photo quality:{' '}
+              {analysis.quality === 'good'
                 ? 'Good'
                 : analysis.quality === 'fair'
                   ? 'Fair'
@@ -297,11 +191,11 @@ export const PetPhotoAnalysisCard: React.FC<PetPhotoAnalysisCardProps> = ({
             disabled={!canConfirm}
             style={[styles.primary, !canConfirm ? styles.primaryDisabled : null]}
             accessibilityRole="button"
-            accessibilityLabel="Confirm suggestions"
+            accessibilityLabel="Confirm species"
             accessibilityState={{ disabled: !canConfirm }}
           >
             <AppText style={[textStyles.control, styles.primaryLabel]}>
-              Confirm suggestions
+              Confirm species
             </AppText>
           </ScalePressable>
         ) : null}

@@ -7,10 +7,7 @@ import { PetPhotoAnalysisCard } from '../PetPhotoAnalysisCard';
 const analysis: PetPhotoAnalysis = {
   species: 'dog',
   speciesConfidence: 0.9,
-  breedSuggestions: [
-    { label: 'Golden Retriever', confidence: 0.8 },
-    { label: 'Labrador Retriever', confidence: 0.2 },
-  ],
+  breedSuggestions: [],
   quality: 'good',
   qualityHint: 'Good for profile photo',
   lowConfidence: false,
@@ -35,7 +32,7 @@ describe('PetPhotoAnalysisCard', () => {
     expect(texts.some(t => t.includes('Analyzing'))).toBe(true);
   });
 
-  it('calls onConfirm with selected breed', () => {
+  it('calls onConfirm with species only', () => {
     const onConfirm = jest.fn();
     let tree: renderer.ReactTestRenderer;
     act(() => {
@@ -50,15 +47,12 @@ describe('PetPhotoAnalysisCard', () => {
       );
     });
     const confirm = tree!.root.findByProps({
-      accessibilityLabel: 'Confirm suggestions',
+      accessibilityLabel: 'Confirm species',
     });
     act(() => {
       confirm.props.onPress();
     });
-    expect(onConfirm).toHaveBeenCalledWith({
-      species: 'dog',
-      breed: 'Golden Retriever',
-    });
+    expect(onConfirm).toHaveBeenCalledWith({ species: 'dog' });
   });
 
   it('calls onSkip', () => {

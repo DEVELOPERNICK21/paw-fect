@@ -1,6 +1,5 @@
 import type {
   PetPhotoAnalysis,
-  PetPhotoBreedSuggestion,
   PetPhotoQuality,
   PetPhotoSpecies,
   RawImageLabel,
@@ -8,7 +7,6 @@ import type {
 
 export const SPECIES_LOW_CONFIDENCE_THRESHOLD = 0.55;
 export const SPECIES_TIE_DELTA = 0.15;
-export const MAX_BREED_SUGGESTIONS = 3;
 
 const DOG_LABELS = new Set([
   'dog',
@@ -151,42 +149,6 @@ export function scoreSpecies(labels: RawImageLabel[]): SpeciesScores {
   return { dog, cat };
 }
 
-/**
- * Only allowlisted breed labels become suggestions.
- * Generic ML Kit labels (fur, pet, mammal, animal, …) are never breeds.
- */
-export function pickBreedSuggestions(
-  labels: RawImageLabel[],
-  species: PetPhotoSpecies,
-): PetPhotoBreedSuggestion[] {
-  if (species !== 'dog' && species !== 'cat') {
-    return [];
-  }
-
-  const byBreed = new Map<string, number>();
-
-  for (const entry of labels) {
-    const key = normalizeLabel(entry.label);
-    const confidence = clampConfidence(entry.confidence);
-    const mapped = BREED_LABEL_MAP[key];
-    if (mapped == null || mapped.species !== species) {
-      continue;
-    }
-    byBreed.set(
-      mapped.display,
-      Math.max(byBreed.get(mapped.display) ?? 0, confidence),
-    );
-  }
-
-  return [...byBreed.entries()]
-    .map(([label, confidence]) => ({ label, confidence }))
-    .sort(
-      (a, b) =>
-        b.confidence - a.confidence || a.label.localeCompare(b.label),
-    )
-    .slice(0, MAX_BREED_SUGGESTIONS);
-}
-
 function clampConfidence(value: number): number {
   if (Number.isNaN(value)) {
     return 0;
@@ -244,14 +206,14 @@ export function mapLabelsToPetPhotoAnalysis(
     speciesConfidence < SPECIES_LOW_CONFIDENCE_THRESHOLD ||
     Math.abs(scores.dog - scores.cat) <= SPECIES_TIE_DELTA;
 
-  const breedSuggestions = pickBreedSuggestions(labels, species);
-
   const { quality, qualityHint } = deriveQuality(species, speciesConfidence);
 
   return {
     species,
     speciesConfidence,
-    breedSuggestions,
+    // ML Kit base labeling is not a breed classifier — keep empty until a
+    // dedicated breed model ships. Breed map above still helps species scoring.
+    breedSuggestions: [],
     quality,
     qualityHint,
     lowConfidence,
