@@ -66,8 +66,20 @@ export const PetPhotoAnalysisCard: React.FC<PetPhotoAnalysisCardProps> = ({
           alignItems: 'center',
           gap: spacing.sm,
         },
+        analyzingText: {
+          color: colors.text.body,
+        },
         section: {
           marginTop: spacing.md,
+        },
+        speciesTitle: {
+          color: colors.text.heading,
+        },
+        bodyText: {
+          color: colors.text.body,
+        },
+        captionText: {
+          color: colors.text.secondary,
         },
         warning: {
           marginTop: spacing.sm,
@@ -112,6 +124,7 @@ export const PetPhotoAnalysisCard: React.FC<PetPhotoAnalysisCardProps> = ({
       colors.brandTint5,
       colors.surface,
       colors.text.body,
+      colors.text.heading,
       colors.text.inverse,
       colors.text.secondary,
       colors.warning,
@@ -149,7 +162,9 @@ export const PetPhotoAnalysisCard: React.FC<PetPhotoAnalysisCardProps> = ({
       {status === 'analyzing' ? (
         <View style={styles.analyzingRow}>
           <ActivityIndicator color={colors.accent} />
-          <AppText style={textStyles.body}>Analyzing photo…</AppText>
+          <AppText style={[textStyles.body, styles.analyzingText]}>
+            Analyzing photo…
+          </AppText>
         </View>
       ) : null}
 
@@ -162,7 +177,9 @@ export const PetPhotoAnalysisCard: React.FC<PetPhotoAnalysisCardProps> = ({
       {status === 'ready' && analysis != null ? (
         <>
           <View style={styles.section}>
-            <AppText style={textStyles.title}>{speciesLine(analysis)}</AppText>
+            <AppText style={[textStyles.title, styles.speciesTitle]}>
+              {speciesLine(analysis)}
+            </AppText>
             {analysis.lowConfidence ? (
               <AppText style={[textStyles.caption, styles.warning]}>
                 Not sure — please check
@@ -171,7 +188,7 @@ export const PetPhotoAnalysisCard: React.FC<PetPhotoAnalysisCardProps> = ({
           </View>
 
           <View style={styles.section}>
-            <AppText style={textStyles.body}>
+            <AppText style={[textStyles.body, styles.bodyText]}>
               Photo quality:{' '}
               {analysis.quality === 'good'
                 ? 'Good'
@@ -179,7 +196,9 @@ export const PetPhotoAnalysisCard: React.FC<PetPhotoAnalysisCardProps> = ({
                   ? 'Fair'
                   : 'Poor'}
             </AppText>
-            <AppText style={textStyles.caption}>{analysis.qualityHint}</AppText>
+            <AppText style={[textStyles.caption, styles.captionText]}>
+              {analysis.qualityHint}
+            </AppText>
           </View>
         </>
       ) : null}
