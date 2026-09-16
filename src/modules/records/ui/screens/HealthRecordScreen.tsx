@@ -1,16 +1,20 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Modal,
   Pressable,
-  SectionList,
+  ScrollView,
   StyleSheet,
   TextInput,
   View,
 } from 'react-native';
 
-import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -24,9 +28,12 @@ import { DatePickerField } from '../../../../shared/components/DatePickerField';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { getTodayIsoDateLocal } from '../../../../shared/utils/calendarDate';
+import { resolvePetAvatarSource } from '../../../../shared/utils/petDisplayPhoto';
 import { icons } from '../../../../shared/assets/icons';
+import { formatPetAgeLabel } from '../../../pets/domain/utils/petDobDisplay';
 import { usePetStore } from '../../../pets/store/petStore';
 import { useSmartHealthRecordStore } from '../../store/smartHealthRecordStore';
+import { smartHealthSelectors } from '../../store/smartHealthSelectors';
 import { type SmartHealthRecord } from '../../domain/models/SmartHealthRecord';
 import {
   getMinimumLogDate,
@@ -37,24 +44,77 @@ import {
   validateVaccinationLogDate,
 } from '../../domain/utils/vaccinationLogValidation';
 import { getLastCompletedDewormingIsoDate } from '../../domain/utils/smartHealthDewormingInference';
-import { nextDateFromCadence } from '../../domain/utils/PetCareLifecycleEngine';
+import { healthStatusHeadline } from '../../domain/utils/careOwnerCopy';
+import { HealthFullPlanSection } from '../components/HealthFullPlanSection';
+import { HealthHeroBar } from '../components/HealthHeroBar';
+import { NeedsNextCareCard } from '../components/NeedsNextCareCard';
 import { PremiumUpgradeCard } from '../components/PremiumUpgradeCard';
-import { SmartHealthRecordItem } from '../components/SmartHealthRecordItem';
-import { weeksBetweenDobAndToday } from '../utils/healthRecordScreenPartition';
+import { WhySeeingThisSection } from '../components/WhySeeingThisSection';
 import { projectDewormingFromSmartRecords } from '../utils/projectDewormingFromSmartRecords';
 
-type CategoryFilter = 'Vaccination' | 'Deworming';
+function startOfLocalDay(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
 
-type HealthRecordListSection = {
-  key: 'upcoming' | 'history';
-  title: string;
-  data: SmartHealthRecord[];
-};
+function formatWhenLine(isoDate: string, status: SmartHealthRecord['status']): string {
+  if (status === 'completed') {
+    return 'Done';
+  }
+  const due = new Date(`${isoDate}T00:00:00`);
+  if (Number.isNaN(due.getTime())) return isoDate;
+  const today = startOfLocalDay(new Date());
+  const dueDay = startOfLocalDay(due);
+  const diffDays = Math.round(
+    (dueDay.getTime() - today.getTime()) / (24 * 60 * 60 * 1000),
+  );
+  if (status === 'overdue' || status === 'missed' || diffDays < 0) {
+    const late = Math.abs(diffDays);
+    if (late === 0) return 'Due today';
+    if (late === 1) return '1 day overdue';
+    return `${late} days overdue`;
+  }
+  if (diffDays === 0) return 'Due today';
+  if (diffDays === 1) return 'Due tomorrow';
+  if (diffDays <= 14) return `In ${diffDays} days`;
+  return 'Upcoming';
+}
 
-const CATEGORIES: CategoryFilter[] = ['Vaccination', 'Deworming'];
+function statusChipLabel(status: SmartHealthRecord['status']): string {
+  if (status === 'overdue' || status === 'missed') return 'Needs attention';
+  return 'Upcoming';
+}
 
-const categoryTabLabel = (category: CategoryFilter): string =>
-  category === 'Vaccination' ? 'Shots' : 'Worm medicine';
+function canMarkRecord(
+  record: SmartHealthRecord,
+  todayDate: string,
+): boolean {
+  if (record.status === 'overdue' || record.status === 'missed') {
+    return true;
+  }
+  if (record.type === 'deworming') {
+    const due = new Date(`${record.dueDate}T00:00:00`);
+    const todayd = new Date(`${todayDate}T00:00:00`);
+    const diffDays = Math.floor(
+      (todayd.getTime() - due.getTime()) / (1000 * 60 * 60 * 24),
+    );
+    return diffDays >= -3;
+  }
+  return todayDate >= record.dueDate;
+}
+
+function canAdjustDeworm(
+  record: SmartHealthRecord,
+  todayDate: string,
+): boolean {
+  if (record.type !== 'deworming') return false;
+  if (record.status === 'overdue' || record.status === 'missed') return true;
+  const due = new Date(`${record.dueDate}T00:00:00`);
+  const todayd = new Date(`${todayDate}T00:00:00`);
+  const diffDays = Math.floor(
+    (todayd.getTime() - due.getTime()) / (1000 * 60 * 60 * 24),
+  );
+  return diffDays >= -3;
+}
 
 export const HealthRecordScreen: React.FC = () => {
   const navigation = useNavigation<HealthRecordsRootNavigation>();
@@ -63,7 +123,7 @@ export const HealthRecordScreen: React.FC = () => {
   const focusPetId = route.params?.petId;
   const theme = useTheme();
   const tabBarInset = useAppTabBarInset();
-  const { colors, space, radius, textStyles, fontFamilies } = theme;
+  const { colors, space, radius, textStyles, fontFamilies, spacing } = theme;
 
   const activePet = usePetStore(s => s.activePet);
   const records = useSmartHealthRecordStore(s => s.records);
@@ -71,21 +131,15 @@ export const HealthRecordScreen: React.FC = () => {
   const error = useSmartHealthRecordStore(s => s.error);
   const markAsDone = useSmartHealthRecordStore.getState().markAsDone;
   const reschedule = useSmartHealthRecordStore(s => s.reschedule);
-  const getNextVaccinationTask = useSmartHealthRecordStore(
-    s => s.getNextVaccinationTask,
-  );
-  const getUpcomingVaccinations = useSmartHealthRecordStore(
-    s => s.getUpcomingVaccinations,
-  );
 
-  const [selectedCategory, setSelectedCategory] =
-    useState<CategoryFilter>('Vaccination');
+  const [actionRecord, setActionRecord] = useState<SmartHealthRecord | null>(
+    null,
+  );
   const [editingRecord, setEditingRecord] = useState<SmartHealthRecord | null>(
     null,
   );
   const [editingDueDate, setEditingDueDate] = useState('');
   const [editDueDateError, setEditDueDateError] = useState<string | null>(null);
-  const [isCompletedExpanded, setIsCompletedExpanded] = useState(false);
 
   const [showDewormingModal, setShowDewormingModal] = useState(false);
   const [selectedDewormingDate, setSelectedDewormingDate] = useState('');
@@ -101,20 +155,94 @@ export const HealthRecordScreen: React.FC = () => {
   const [skipReasonInput, setSkipReasonInput] = useState('');
   const [skipError, setSkipError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [focusUnavailableDismissed, setFocusUnavailableDismissed] = useState(false);
+  const [focusUnavailableDismissed, setFocusUnavailableDismissed] =
+    useState(false);
 
-  // Must match DatePickerField (which emits local YYYY-MM-DD).
   const todayDate = getTodayIsoDateLocal();
 
+  React.useEffect(() => {
+    setFocusUnavailableDismissed(false);
+  }, [focusRecordId, focusPetId]);
 
-  const handleSaveDewormingDate = async () => {
-    if (!selectedDewormingDate || !activePet?.dob || !displayPrimaryTask)
-      return;
+  useFocusEffect(
+    React.useCallback(() => {
+      let cancelled = false;
+      const loadRecordsForFocus = async (): Promise<void> => {
+        if (focusPetId != null && focusPetId !== activePet?.id) {
+          await usePetStore.getState().setActivePet(focusPetId);
+        }
+        const petIdToLoad =
+          focusPetId ?? usePetStore.getState().activePet?.id ?? null;
+        if (cancelled || petIdToLoad == null) {
+          return;
+        }
+        await useSmartHealthRecordStore.getState().loadPetRecords(petIdToLoad);
+      };
+      void loadRecordsForFocus();
+      return () => {
+        cancelled = true;
+      };
+    }, [focusPetId, activePet?.id]),
+  );
 
-    const cadence = displayPrimaryTask.cadence;
+  const focusedRecord = useMemo(() => {
+    if (focusRecordId == null) return null;
+    return records.find(record => record.id === focusRecordId) ?? null;
+  }, [focusRecordId, records]);
+
+  const showFocusUnavailableBanner =
+    focusRecordId != null &&
+    !loading &&
+    focusedRecord == null &&
+    !focusUnavailableDismissed;
+
+  const needsNext = useMemo(
+    () => smartHealthSelectors.getActionRequiredItems(records, 2),
+    [records],
+  );
+
+  const planUpcoming = useMemo(
+    () =>
+      smartHealthSelectors.getUpcomingItems(records, {
+        limit: 12,
+        dedupeByFamily: false,
+      }),
+    [records],
+  );
+
+  const overdueCount = useMemo(
+    () =>
+      records.filter(r => r.status === 'overdue' || r.status === 'missed')
+        .length,
+    [records],
+  );
+
+  const statusLine = healthStatusHeadline({
+    overdueCount,
+    needsNextCount: needsNext.length,
+  });
+
+  const ageLabel = useMemo(
+    () => formatPetAgeLabel(activePet?.dob),
+    [activePet?.dob],
+  );
+
+  const dewormingRecords = useMemo(
+    () => records.filter(r => r.type === 'deworming'),
+    [records],
+  );
+  const dewormingProjection = useMemo(
+    () => projectDewormingFromSmartRecords(dewormingRecords),
+    [dewormingRecords],
+  );
+
+  const handleSaveDewormingDate = async (): Promise<void> => {
+    if (!selectedDewormingDate || !activePet?.dob || !actionRecord) return;
+
+    const cadence = actionRecord.cadence;
     const lastCompletionDate = getLastCompletedDewormingIsoDate(
       records,
-      displayPrimaryTask.id,
+      actionRecord.id,
     );
 
     const check = validateLogDateForCadence(
@@ -127,7 +255,7 @@ export const HealthRecordScreen: React.FC = () => {
         | 'every_2_months'
         | 'every_3_months',
       lastCompletionDate,
-      displayPrimaryTask.dueDate,
+      actionRecord.dueDate,
     );
 
     if (!check.ok) {
@@ -137,14 +265,11 @@ export const HealthRecordScreen: React.FC = () => {
 
     setDewormingLogError(null);
 
-    const proceed = async () => {
-      await markAsDone(
-        displayPrimaryTask.id,
-        selectedDewormingDate,
-        activePet.dob,
-      );
+    const proceed = async (): Promise<void> => {
+      await markAsDone(actionRecord.id, selectedDewormingDate, activePet.dob);
       setShowDewormingModal(false);
-      setSuccessMessage('Deworming log saved successfully.');
+      setActionRecord(null);
+      setSuccessMessage('Saved — great job caring for your pet.');
     };
 
     if (check.warning) {
@@ -158,20 +283,17 @@ export const HealthRecordScreen: React.FC = () => {
     await proceed();
   };
 
-  const isDewormingCategory = selectedCategory === 'Deworming';
-
-
-  const handleSaveVaccinationDate = async () => {
-    if (!displayPrimaryTask || !selectedVaccinationDate) return;
+  const handleSaveVaccinationDate = async (): Promise<void> => {
+    if (!actionRecord || !selectedVaccinationDate) return;
     if (!activePet?.dob) {
       setVaccinationLogError('Pet date of birth is required to log a vaccine.');
       return;
     }
     const prereq = resolvePrerequisiteCompletedDate(
       records,
-      displayPrimaryTask.dependsOn,
+      actionRecord.dependsOn,
     );
-    if (displayPrimaryTask.dependsOn && !prereq) {
+    if (actionRecord.dependsOn && !prereq) {
       setVaccinationLogError(
         'Complete the previous dose in this series first.',
       );
@@ -181,9 +303,9 @@ export const HealthRecordScreen: React.FC = () => {
       petDateOfBirth: activePet.dob.slice(0, 10),
       today: todayDate,
       selectedDate: selectedVaccinationDate,
-      dueDate: displayPrimaryTask.dueDate,
+      dueDate: actionRecord.dueDate,
       prerequisiteCompletedDate: prereq,
-      isAnnualBooster: displayPrimaryTask.recurrenceType === 'yearly',
+      isAnnualBooster: actionRecord.recurrenceType === 'yearly',
     });
     if (!vaxCheck.ok) {
       setVaccinationLogError(vaxCheck.error);
@@ -191,14 +313,15 @@ export const HealthRecordScreen: React.FC = () => {
     }
     setVaccinationLogError(null);
 
-    const proceed = async () => {
+    const proceed = async (): Promise<void> => {
       await markAsDone(
-        displayPrimaryTask.id,
+        actionRecord.id,
         selectedVaccinationDate,
         activePet?.dob,
       );
       setShowVaccinationModal(false);
-      setSuccessMessage('Vaccination log saved successfully.');
+      setActionRecord(null);
+      setSuccessMessage('Saved — great job caring for your pet.');
     };
 
     if (vaxCheck.warning) {
@@ -216,250 +339,122 @@ export const HealthRecordScreen: React.FC = () => {
     setShowVaccinationModal(false);
     setSelectedVaccinationDate('');
     setVaccinationLogError(null);
+    setActionRecord(null);
   };
 
   const closeDewormingModal = (): void => {
     setShowDewormingModal(false);
     setSelectedDewormingDate('');
     setDewormingLogError(null);
+    setActionRecord(null);
+  };
+
+  const handleMarkDone = useCallback(
+    (record: SmartHealthRecord): void => {
+      setActionRecord(record);
+      if (record.type === 'deworming') {
+        if (!activePet?.dob || !todayDate) return;
+        setDewormingLogError(null);
+        setSelectedDewormingDate(todayDate);
+        setShowDewormingModal(true);
+        return;
+      }
+      if (!todayDate) return;
+      setVaccinationLogError(null);
+      setSelectedVaccinationDate(todayDate);
+      setShowVaccinationModal(true);
+    },
+    [activePet?.dob, todayDate],
+  );
+
+  const openUpdateDate = useCallback((record: SmartHealthRecord): void => {
+    setEditingRecord(record);
+    setEditingDueDate(record.dueDate);
+    setEditDueDateError(null);
+  }, []);
+
+  const handleOpenSkipModal = useCallback((record: SmartHealthRecord): void => {
+    setActionRecord(record);
+    setSkipReasonInput('');
+    setSkipError(null);
+    setShowSkipModal(true);
+  }, []);
+
+  const closeUpdateDate = (): void => {
+    setEditingRecord(null);
+    setEditingDueDate('');
+    setEditDueDateError(null);
+  };
+
+  const applyDateUpdate = (): void => {
+    if (!editingRecord || !editingDueDate) return;
+    const iso = editingDueDate.slice(0, 10);
+    if (activePet?.dob && iso < activePet.dob.slice(0, 10)) {
+      setEditDueDateError(
+        "Due date cannot be before your pet's date of birth.",
+      );
+      return;
+    }
+    setEditDueDateError(null);
+    void reschedule(editingRecord.id, editingDueDate, activePet?.dob)
+      .then(() => {
+        closeUpdateDate();
+      })
+      .catch((err: unknown) => {
+        const message =
+          err instanceof Error && err.message.trim().length > 0
+            ? err.message
+            : 'Unable to reschedule.';
+        setEditDueDateError(message);
+      });
+  };
+
+  const handleConfirmSkipDose = (): void => {
+    if (!actionRecord || !activePet?.id) return;
+    const reason = skipReasonInput.trim();
+    if (reason.length < 2) {
+      setSkipError('Please enter a short reason.');
+      return;
+    }
+    setSkipError(null);
+    void useSmartHealthRecordStore
+      .getState()
+      .skipDewormingDose(actionRecord.id, reason, activePet.dob)
+      .then(() => {
+        setShowSkipModal(false);
+        setSkipReasonInput('');
+        setActionRecord(null);
+      });
   };
 
   React.useEffect(() => {
-    setFocusUnavailableDismissed(false);
-  }, [focusRecordId, focusPetId]);
-
-  useFocusEffect(
-    React.useCallback(() => {
-      let cancelled = false;
-
-      const loadRecordsForFocus = async (): Promise<void> => {
-        if (focusPetId != null && focusPetId !== activePet?.id) {
-          await usePetStore.getState().setActivePet(focusPetId);
-        }
-
-        const petIdToLoad =
-          focusPetId ?? usePetStore.getState().activePet?.id ?? null;
-        if (cancelled || petIdToLoad == null) {
-          return;
-        }
-
-        await useSmartHealthRecordStore.getState().loadPetRecords(petIdToLoad);
-      };
-
-      void loadRecordsForFocus();
-
-      return () => {
-        cancelled = true;
-      };
-    }, [focusPetId, activePet?.id]),
-  );
-
-  const focusedRecord = useMemo(() => {
-    if (focusRecordId == null) {
-      return null;
-    }
-    return records.find(record => record.id === focusRecordId) ?? null;
-  }, [focusRecordId, records]);
-
-  React.useEffect(() => {
-    if (focusedRecord == null) {
-      return;
-    }
-    setSelectedCategory(
-      focusedRecord.type === 'deworming' ? 'Deworming' : 'Vaccination',
-    );
-  }, [focusedRecord]);
-
-  const showFocusUnavailableBanner =
-    focusRecordId != null &&
-    !loading &&
-    focusedRecord == null &&
-    !focusUnavailableDismissed;
-
-  const vaccinationRecords = useMemo(
-    () =>
-      records
-        .filter(r => r.type === 'vaccination')
-        .sort((a, b) => a.dueDate.localeCompare(b.dueDate)),
-    [records],
-  );
-
-  const dewormingRecords = useMemo(
-    () =>
-      records
-        .filter(r => r.type === 'deworming')
-        .sort((a, b) => a.dueDate.localeCompare(b.dueDate)),
-    [records],
-  );
-
-  const dewormingProjection = useMemo(
-    () => projectDewormingFromSmartRecords(dewormingRecords),
-    [dewormingRecords],
-  );
-  const dewormingNextStep = dewormingProjection.primary;
-  const dewormingUpcoming = dewormingProjection.upcoming;
-
-  const dewormingCompleted = useMemo(
-    () => dewormingRecords.filter(r => r.status === 'completed'),
-    [dewormingRecords],
-  );
-
-  const vaccinationPrimaryTask = useMemo(() => {
-    // Reference records to ensure memo re-runs when state changes
-    if (records) return getNextVaccinationTask();
-    return null;
-  }, [getNextVaccinationTask, records]);
-
-  const vaccinationUpcomingItems = useMemo(() => {
-    // Reference records to ensure memo re-runs when state changes
-    if (records) return getUpcomingVaccinations(5);
-    return [];
-  }, [getUpcomingVaccinations, records]);
-
-  const displayPrimaryTask = useMemo(
-    () => (isDewormingCategory ? dewormingNextStep : vaccinationPrimaryTask),
-    [isDewormingCategory, dewormingNextStep, vaccinationPrimaryTask],
-  );
-
-  const displayUpcomingItems = useMemo(
-    () =>
-      isDewormingCategory
-        ? dewormingUpcoming.slice(0, 5)
-        : vaccinationUpcomingItems,
-    [isDewormingCategory, dewormingUpcoming, vaccinationUpcomingItems],
-  );
-
-  const displayCompletedRecords = useMemo(
-    () =>
-      isDewormingCategory
-        ? dewormingProjection.history
-        : vaccinationRecords.filter(r => r.status === 'completed'),
-    [isDewormingCategory, dewormingProjection.history, vaccinationRecords],
-  );
-
-  const handleMarkDewormingDone = React.useCallback((record: SmartHealthRecord) => {
-    if (!record || !activePet?.dob || !todayDate) return;
-
-    setDewormingLogError(null);
-    setSelectedDewormingDate(todayDate);
-    setShowDewormingModal(true);
-  }, [activePet?.dob, todayDate]);
-
-  const handleMarkVaccinationDone = React.useCallback((record: SmartHealthRecord) => {
-    if (!record || !todayDate) return;
-    setVaccinationLogError(null);
-    setSelectedVaccinationDate(todayDate);
-    setShowVaccinationModal(true);
-  }, [todayDate]);
-
-  const canMarkDewormingDone = useMemo(() => {
-    if (!isDewormingCategory || !displayPrimaryTask || !todayDate) return false;
-    const dueDate = displayPrimaryTask.dueDate;
-    const due = new Date(`${dueDate}T00:00:00`);
-    const todayd = new Date(`${todayDate}T00:00:00`);
-    const diffDays = Math.floor(
-      (todayd.getTime() - due.getTime()) / (1000 * 60 * 60 * 24),
-    );
-    return diffDays >= -3;
-  }, [isDewormingCategory, displayPrimaryTask, todayDate]);
-
-  const canMarkVaccinationDone = useMemo(() => {
-    if (isDewormingCategory || !displayPrimaryTask || !todayDate) return false;
-    if (displayPrimaryTask.status === 'overdue' || displayPrimaryTask.status === 'missed') {
-      return true;
-    }
-    return todayDate >= displayPrimaryTask.dueDate;
-  }, [isDewormingCategory, displayPrimaryTask, todayDate]);
-
-  const canShowDewormingAdjustActions = useMemo(() => {
-    if (!isDewormingCategory || !displayPrimaryTask || !todayDate) return false;
-    if (
-      displayPrimaryTask.status === 'overdue' ||
-      displayPrimaryTask.status === 'missed'
-    ) {
-      return true;
-    }
-    const due = new Date(`${displayPrimaryTask.dueDate}T00:00:00`);
-    const todayd = new Date(`${todayDate}T00:00:00`);
-    const diffDays = Math.floor(
-      (todayd.getTime() - due.getTime()) / (1000 * 60 * 60 * 24),
-    );
-    return diffDays >= -3;
-  }, [isDewormingCategory, displayPrimaryTask, todayDate]);
+    if (!successMessage) return;
+    const timer = setTimeout(() => setSuccessMessage(null), 1600);
+    return () => clearTimeout(timer);
+  }, [successMessage]);
 
   const dewormingLogPickerMinimum = useMemo((): Date | undefined => {
-    if (
-      !isDewormingCategory ||
-      !activePet?.dob ||
-      !displayPrimaryTask ||
-      !todayDate
-    ) {
+    if (!activePet?.dob || !actionRecord || actionRecord.type !== 'deworming') {
       return undefined;
     }
-    const c = (displayPrimaryTask.cadence ?? 'every_3_months') as
+    const c = (actionRecord.cadence ?? 'every_3_months') as
       | 'every_14_days'
       | 'monthly'
       | 'every_2_months'
       | 'every_3_months';
-    const iso = getMinimumLogDate(
-      activePet.dob.slice(0, 10),
-      todayDate,
-      c,
-    );
+    const iso = getMinimumLogDate(activePet.dob.slice(0, 10), todayDate, c);
     return new Date(`${iso}T12:00:00`);
-  }, [isDewormingCategory, activePet?.dob, displayPrimaryTask, todayDate]);
+  }, [activePet?.dob, actionRecord, todayDate]);
 
   const vaccinationLogPickerMinimum = useMemo((): Date | undefined => {
-    if (isDewormingCategory || !activePet?.dob || !displayPrimaryTask) {
+    if (!activePet?.dob || !actionRecord || actionRecord.type !== 'vaccination') {
       return undefined;
     }
     const d0 = activePet.dob.slice(0, 10);
-    const due = displayPrimaryTask.dueDate.slice(0, 10);
+    const due = actionRecord.dueDate.slice(0, 10);
     const floor = d0 > due ? d0 : due;
     return new Date(`${floor}T12:00:00`);
-  }, [isDewormingCategory, activePet?.dob, displayPrimaryTask]);
-
-  const petAgeWeeks = useMemo(
-    () => weeksBetweenDobAndToday(activePet?.dob ?? ''),
-    [activePet?.dob],
-  );
-
-  const nextDewormingFallbackDate = useMemo((): string | null => {
-    if (!isDewormingCategory) return null;
-    if (dewormingNextStep || dewormingUpcoming.length > 0) return null;
-    const latestCompleted = dewormingCompleted
-      .slice()
-      .sort((a, b) =>
-        (b.completedDate ?? b.dueDate).localeCompare(a.completedDate ?? a.dueDate),
-      )[0];
-    if (!latestCompleted) return null;
-    const anchor = (
-      latestCompleted.completedDate ?? latestCompleted.dueDate
-    ).slice(0, 10);
-    return nextDateFromCadence(
-      anchor,
-      latestCompleted.cadence ?? 'every_3_months',
-    );
-  }, [
-    isDewormingCategory,
-    dewormingNextStep,
-    dewormingUpcoming.length,
-    dewormingCompleted,
-  ]);
-
-  const nextVaccinationProjectionDate = useMemo((): string | null => {
-    if (isDewormingCategory) return null;
-    if (vaccinationPrimaryTask || vaccinationUpcomingItems.length > 0) return null;
-    const nextPlanned = vaccinationRecords.find(
-      record => record.status === 'upcoming' || record.status === 'locked',
-    );
-    return nextPlanned?.dueDate ?? null;
-  }, [
-    isDewormingCategory,
-    vaccinationPrimaryTask,
-    vaccinationUpcomingItems.length,
-    vaccinationRecords,
-  ]);
+  }, [activePet?.dob, actionRecord]);
 
   const minimumEditDueDate = useMemo(() => {
     if (!editingRecord || !todayDate) {
@@ -477,59 +472,6 @@ export const HealthRecordScreen: React.FC = () => {
     }
     return undefined;
   }, [editingRecord, todayDate, activePet?.dob]);
-
-  const formatUiDate = (isoDate: string): string => {
-    const date = new Date(`${isoDate}T00:00:00`);
-    if (Number.isNaN(date.getTime())) return isoDate;
-    return date.toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
-  React.useEffect(() => {
-    if (!successMessage) return;
-    const timer = setTimeout(() => setSuccessMessage(null), 1600);
-    return () => clearTimeout(timer);
-  }, [successMessage]);
-
-  const logPrimaryCtaLabel = 'Mark as done';
-
-  const listSections = useMemo((): HealthRecordListSection[] => {
-    const sections: HealthRecordListSection[] = [
-      {
-        key: 'upcoming',
-        title: 'COMING UP',
-        data: displayUpcomingItems as SmartHealthRecord[],
-      },
-    ];
-    if (isCompletedExpanded) {
-      sections.push({
-        key: 'history',
-        title: `HISTORY (${displayCompletedRecords.length})`,
-        data: displayCompletedRecords as SmartHealthRecord[],
-      });
-    }
-    return sections;
-  }, [
-    displayUpcomingItems,
-    displayCompletedRecords,
-    isCompletedExpanded,
-  ]);
-
-  const openUpdateDate = React.useCallback((record: SmartHealthRecord): void => {
-    setEditingRecord(record);
-    setEditingDueDate(record.dueDate);
-    setEditDueDateError(null);
-  }, []);
-
-  const handleOpenSkipModal = React.useCallback((record: SmartHealthRecord) => {
-    if (!record) return;
-    setSkipReasonInput('');
-    setSkipError(null);
-    setShowSkipModal(true);
-  }, []);
 
   if (!activePet) {
     return (
@@ -570,518 +512,215 @@ export const HealthRecordScreen: React.FC = () => {
     );
   }
 
-  const closeUpdateDate = (): void => {
-    setEditingRecord(null);
-    setEditingDueDate('');
-    setEditDueDateError(null);
-  };
-
-  const applyDateUpdate = (): void => {
-    if (!editingRecord || !editingDueDate) return;
-    const iso = editingDueDate.slice(0, 10);
-    if (activePet?.dob && iso < activePet.dob.slice(0, 10)) {
-      setEditDueDateError(
-        'Due date cannot be before your pet\'s date of birth.',
-      );
-      return;
-    }
-    setEditDueDateError(null);
-    void reschedule(editingRecord.id, editingDueDate, activePet?.dob)
-      .then(() => {
-        closeUpdateDate();
-      })
-      .catch((err: unknown) => {
-        const message =
-          err instanceof Error && err.message.trim().length > 0
-            ? err.message
-            : 'Unable to reschedule.';
-        setEditDueDateError(message);
-      });
-  };
-
-  const handleConfirmSkipDose = (): void => {
-    if (!displayPrimaryTask || !activePet?.id) return;
-    const reason = skipReasonInput.trim();
-    if (reason.length < 2) {
-      setSkipError('Please enter a short reason.');
-      return;
-    }
-    setSkipError(null);
-    void useSmartHealthRecordStore
-      .getState()
-      .skipDewormingDose(displayPrimaryTask.id, reason, activePet.dob)
-      .then(() => {
-        setShowSkipModal(false);
-        setSkipReasonInput('');
-      });
-  };
+  const onTrackEmpty =
+    needsNext.length === 0 &&
+    !dewormingProjection.primary &&
+    planUpcoming.length === 0;
 
   return (
     <SafeAreaView
       edges={['top', 'left', 'right']}
       style={[styles.safeArea, { backgroundColor: colors.backgroundAlt }]}
     >
-      <View style={styles.header}>
-        <View style={styles.headerTopRow}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Back"
-            onPress={() => navigation.goBack()}
+      <HealthHeroBar
+        petName={activePet.name}
+        petPhoto={resolvePetAvatarSource(activePet)}
+        ageLabel={ageLabel === 'Not set' ? 'Age not set' : ageLabel}
+        onPressBack={() => navigation.goBack()}
+        theme={theme}
+      />
+
+      <View style={[styles.body, { backgroundColor: colors.backgroundAlt }]}>
+        {showFocusUnavailableBanner ? (
+          <View
             style={[
-              styles.backBtn,
+              styles.focusUnavailableBanner,
               {
-                backgroundColor: colors.brandTint10,
-                borderRadius: radius.round,
+                backgroundColor: colors.surfaceAlt,
+                borderColor: colors.borderSubtle,
+                borderRadius: radius.md,
+                marginHorizontal: spacing.lg,
+                marginBottom: spacing.sm,
+                padding: spacing.sm,
               },
             ]}
           >
-            <MaterialIcon name="arrow_back" size={20} color={colors.accent} />
-          </Pressable>
-
-          <View style={styles.headerTitleBlock}>
-            <AppText
-              style={[
-                textStyles.title,
-                {
-                  color: colors.text.heading,
-                  fontFamily: fontFamilies.extrabold,
-                },
-              ]}
-              numberOfLines={1}
-            >
-              {activePet.name}
-            </AppText>
             <AppText
               style={[
                 textStyles.caption,
                 {
                   color: colors.text.secondary,
+                  flex: 1,
                   fontFamily: fontFamilies.medium,
                 },
               ]}
-              numberOfLines={1}
             >
-              {petAgeWeeks !== null
-                ? `${petAgeWeeks} weeks old`
-                : 'Age not set'}
+              This health task is no longer available.
             </AppText>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Dismiss"
+              onPress={() => setFocusUnavailableDismissed(true)}
+              hitSlop={8}
+            >
+              <MaterialIcon
+                name="close"
+                size={18}
+                color={colors.text.subdued}
+              />
+            </Pressable>
           </View>
+        ) : null}
 
-          <View style={styles.headerRightSpacer} />
-        </View>
+        <ScrollView
+          contentContainerStyle={{
+            paddingHorizontal: spacing.lg,
+            paddingTop: spacing.md,
+            paddingBottom: tabBarInset + spacing['2xl'],
+            gap: spacing.lg,
+          }}
+          showsVerticalScrollIndicator={false}
+        >
+          <AppText
+            style={[
+              textStyles.body,
+              {
+                color:
+                  overdueCount > 0 ? colors.danger : colors.primaryDark,
+                fontFamily: fontFamilies.semibold,
+              },
+            ]}
+          >
+            {statusLine}
+            {overdueCount === 0 ? ' ❤️' : ''}
+          </AppText>
 
-        <View style={styles.tabsRow}>
-          {CATEGORIES.map(category => {
-            const selected = category === selectedCategory;
-            const handleCategoryPress = () => {
-              setSelectedCategory(category);
-            };
-            return (
-              <Pressable
-                key={category}
-                accessibilityRole="button"
-                accessibilityLabel={`Filter: ${categoryTabLabel(category)}`}
-                onPress={handleCategoryPress}
+          <View style={{ gap: spacing.sm }}>
+            <AppText
+              style={[
+                textStyles.subtitle,
+                {
+                  color: colors.text.heading,
+                  fontFamily: fontFamilies.bold,
+                },
+              ]}
+            >
+              What {activePet.name} needs next
+            </AppText>
+
+            {needsNext.length > 0 ? (
+              needsNext.map(record => (
+                <NeedsNextCareCard
+                  key={record.id}
+                  record={record}
+                  petName={activePet.name}
+                  whenLine={formatWhenLine(record.dueDate, record.status)}
+                  statusLabel={statusChipLabel(record.status)}
+                  primaryActionLabel={
+                    canMarkRecord(record, todayDate) ? 'I did this' : undefined
+                  }
+                  onMarkDone={
+                    canMarkRecord(record, todayDate)
+                      ? handleMarkDone
+                      : undefined
+                  }
+                  onEditDate={
+                    record.type === 'deworming'
+                      ? canAdjustDeworm(record, todayDate)
+                        ? openUpdateDate
+                        : undefined
+                      : openUpdateDate
+                  }
+                  onSkipDose={
+                    canAdjustDeworm(record, todayDate)
+                      ? handleOpenSkipModal
+                      : undefined
+                  }
+                />
+              ))
+            ) : (
+              <View
                 style={[
-                  styles.tab,
+                  styles.emptyActionHint,
                   {
-                    borderBottomColor: selected
-                      ? colors.accent
-                      : colors.borderSubtle,
-                    borderBottomWidth: 2,
+                    backgroundColor: colors.surface,
+                    borderColor: colors.borderSubtle,
+                    borderRadius: radius.xl,
+                    padding: spacing.md,
                   },
                 ]}
               >
                 <AppText
                   style={[
-                    textStyles.caption,
+                    textStyles.body,
                     {
-                      color: selected ? colors.accent : colors.text.subdued,
-                      fontFamily: selected
-                        ? fontFamilies.bold
-                        : fontFamilies.medium,
-                    },
-                  ]}
-                >
-                  {categoryTabLabel(category)}
-                </AppText>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
-
-      {showFocusUnavailableBanner ? (
-        <View
-          style={[
-            styles.focusUnavailableBanner,
-            {
-              backgroundColor: colors.surfaceAlt,
-              borderColor: colors.borderSubtle,
-              borderRadius: radius.md,
-              marginHorizontal: space('lg'),
-              marginBottom: space('sm'),
-              padding: space('sm'),
-            },
-          ]}
-        >
-          <AppText
-            style={[
-              textStyles.caption,
-              {
-                color: colors.text.secondary,
-                flex: 1,
-                fontFamily: fontFamilies.medium,
-              },
-            ]}
-          >
-            This health task is no longer available.
-          </AppText>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Dismiss"
-            onPress={() => setFocusUnavailableDismissed(true)}
-            hitSlop={8}
-          >
-            <MaterialIcon name="close" size={18} color={colors.text.subdued} />
-          </Pressable>
-        </View>
-      ) : null}
-
-      <SectionList
-        sections={listSections}
-        keyExtractor={item => item.id}
-        stickySectionHeadersEnabled={false}
-        ListHeaderComponent={
-          <View>
-            <View style={{ marginTop: space('md') }}>
-              <AppText
-                style={[textStyles.overline, { color: colors.text.subdued }]}
-              >
-                NEXT STEP
-              </AppText>
-            </View>
-
-            <View style={{ marginTop: space('sm') }}>
-              {displayPrimaryTask ? (
-                !isDewormingCategory ? (
-                  <SmartHealthRecordItem
-                    record={displayPrimaryTask as SmartHealthRecord}
-                    variant="hero"
-                    primaryActionLabel={
-                      canMarkVaccinationDone ? logPrimaryCtaLabel : undefined
-                    }
-                    onMarkDone={
-                      canMarkVaccinationDone
-                        ? handleMarkVaccinationDone
-                        : undefined
-                    }
-                    onEditDate={openUpdateDate}
-                  />
-                ) : (
-                  <SmartHealthRecordItem
-                    record={displayPrimaryTask as SmartHealthRecord}
-                    variant="hero"
-                    primaryActionLabel={
-                      canMarkDewormingDone ? logPrimaryCtaLabel : undefined
-                    }
-                    onMarkDone={
-                      canMarkDewormingDone
-                        ? handleMarkDewormingDone
-                        : undefined
-                    }
-                    onEditDate={
-                      canShowDewormingAdjustActions
-                        ? openUpdateDate
-                        : undefined
-                    }
-                    onSkipDose={
-                      canShowDewormingAdjustActions
-                        ? handleOpenSkipModal
-                        : undefined
-                    }
-                  />
-                )
-              ) : isDewormingCategory && nextDewormingFallbackDate ? (
-                <View
-                  style={[
-                    styles.emptyActionHint,
-                    {
-                      backgroundColor: colors.surface,
-                      borderColor: colors.borderSubtle,
-                      borderRadius: radius.lg,
-                      padding: space('md'),
-                    },
-                  ]}
-                >
-                  <AppText
-                    style={[
-                      textStyles.body,
-                      {
-                        color: colors.text.heading,
-                        fontFamily: fontFamilies.medium,
-                      },
-                    ]}
-                  >
-                    You&apos;re on track.
-                  </AppText>
-                  <AppText
-                    style={[
-                      textStyles.caption,
-                      {
-                        color: colors.text.secondary,
-                        fontFamily: fontFamilies.medium,
-                        marginTop: space('xs'),
-                      },
-                    ]}
-                  >
-                    Next dose is estimated around{' '}
-                    {formatUiDate(nextDewormingFallbackDate)}.
-                  </AppText>
-                </View>
-              ) : !isDewormingCategory && nextVaccinationProjectionDate ? (
-                <View
-                  style={[
-                    styles.emptyActionHint,
-                    {
-                      backgroundColor: colors.surface,
-                      borderColor: colors.borderSubtle,
-                      borderRadius: radius.lg,
-                      padding: space('md'),
-                    },
-                  ]}
-                >
-                  <AppText
-                    style={[
-                      textStyles.body,
-                      {
-                        color: colors.text.heading,
-                        fontFamily: fontFamilies.medium,
-                      },
-                    ]}
-                  >
-                    Vaccinations look current.
-                  </AppText>
-                  <AppText
-                    style={[
-                      textStyles.caption,
-                      {
-                        color: colors.text.secondary,
-                        fontFamily: fontFamilies.medium,
-                        marginTop: space('xs'),
-                      },
-                    ]}
-                  >
-                    Next projected dose:{' '}
-                    {formatUiDate(nextVaccinationProjectionDate)}.
-                  </AppText>
-                </View>
-              ) : (
-                <View
-                  style={[
-                    styles.emptyActionHint,
-                    {
-                      backgroundColor: colors.surface,
-                      borderColor: colors.borderSubtle,
-                      borderRadius: radius.lg,
-                      padding: space('md'),
-                    },
-                  ]}
-                >
-                  <AppText
-                    style={[
-                      textStyles.caption,
-                      {
-                        color: colors.text.secondary,
-                        fontFamily: fontFamilies.medium,
-                      },
-                    ]}
-                  >
-                    No urgent items — you&apos;re caught up for this tab.
-                  </AppText>
-                </View>
-              )}
-            </View>
-          </View>
-        }
-        renderSectionHeader={({ section }) => {
-          if (section.key === 'upcoming') {
-            return (
-              <View style={{ marginTop: space('lg') }}>
-                <AppText
-                  style={[textStyles.overline, { color: colors.text.subdued }]}
-                >
-                  {section.title}
-                </AppText>
-                <View style={{ height: space('sm') }} />
-              </View>
-            );
-          }
-          return (
-            <View style={{ marginTop: space('lg') }}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Toggle history records"
-                onPress={() => setIsCompletedExpanded(prev => !prev)}
-                style={styles.completedHeader}
-              >
-                <AppText
-                  style={[textStyles.overline, { color: colors.text.subdued }]}
-                >
-                  HISTORY ({displayCompletedRecords.length})
-                </AppText>
-                <AppText
-                  style={[
-                    textStyles.caption,
-                    {
-                      color: colors.text.subdued,
+                      color: colors.text.heading,
                       fontFamily: fontFamilies.medium,
                     },
                   ]}
                 >
-                  Hide
+                  {onTrackEmpty
+                    ? `You're on track — ${activePet.name} looks covered for now.`
+                    : `Nothing urgent right now for ${activePet.name}.`}
                 </AppText>
-              </Pressable>
-              <View style={{ height: space('sm') }} />
-            </View>
-          );
-        }}
-        renderItem={({ item, section }) => (
-          <View style={{ marginBottom: space('sm') }}>
-            <SmartHealthRecordItem
-              record={item}
-              onEditDate={
-                section.key === 'history'
-                  ? item.status === 'completed' || !isDewormingCategory
-                    ? openUpdateDate
-                    : undefined
-                  : openUpdateDate
-              }
-            />
-          </View>
-        )}
-        renderSectionFooter={({ section }) => {
-          if (section.key === 'upcoming' && section.data.length === 0) {
-            return (
-              <AppText
-                style={[
-                  textStyles.caption,
-                  {
-                    color: colors.text.subdued,
-                    fontFamily: fontFamilies.medium,
-                    paddingVertical: space('xs'),
-                  },
-                ]}
-              >
-                No further scheduled doses.
-              </AppText>
-            );
-          }
-          if (section.key === 'history' && section.data.length === 0) {
-            return (
-              <View
-                style={[
-                  styles.emptyCard,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.borderSubtle,
-                  },
-                ]}
-              >
-                <AppText
-                  style={[
-                    textStyles.caption,
-                    { color: colors.text.secondary },
-                  ]}
-                >
-                  No history yet
-                </AppText>
-              </View>
-            );
-          }
-          return null;
-        }}
-        ListFooterComponent={
-          <View>
-            {!isCompletedExpanded ? (
-              <View style={{ marginTop: space('lg') }}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Toggle history records"
-                  onPress={() => setIsCompletedExpanded(prev => !prev)}
-                  style={styles.completedHeader}
-                >
-                  <AppText
-                    style={[textStyles.overline, { color: colors.text.subdued }]}
-                  >
-                    HISTORY ({displayCompletedRecords.length})
-                  </AppText>
-                  <AppText
-                    style={[
-                      textStyles.caption,
-                      {
-                        color: colors.text.subdued,
-                        fontFamily: fontFamilies.medium,
-                      },
-                    ]}
-                  >
-                    Show
-                  </AppText>
-                </Pressable>
-              </View>
-            ) : null}
-
-            {error ? (
-              <View style={{ marginTop: space('lg') }}>
-                <MaterialIcon name="info" size={20} color={colors.accent} />
                 <AppText
                   style={[
                     textStyles.caption,
                     {
                       color: colors.text.secondary,
-                      fontFamily: fontFamilies.medium,
+                      marginTop: spacing.xs,
                     },
                   ]}
                 >
-                  {error}
+                  Open the full plan below anytime.
                 </AppText>
               </View>
-            ) : null}
-
-            <View style={{ marginTop: space('xl') }}>
-              <AppText
-                style={[
-                  textStyles.caption,
-                  {
-                    color: colors.text.subdued,
-                    fontFamily: fontFamilies.medium,
-                    textAlign: 'center',
-                  },
-                ]}
-              >
-                These are reminders to help you remember. Your vet decides what
-                is right for your pet.
-              </AppText>
-            </View>
-
-            <View style={{ marginTop: space('2xl') }}>
-              <PremiumUpgradeCard />
-            </View>
+            )}
           </View>
-        }
-        contentContainerStyle={{
-          paddingHorizontal: space('lg'),
-          paddingTop: space('md'),
-          paddingBottom: tabBarInset + space('2xl'),
-        }}
-        showsVerticalScrollIndicator={false}
-      />
 
-      {loading ? (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      ) : null}
+          <WhySeeingThisSection
+            petName={activePet.name}
+            ageLabel={
+              ageLabel === 'Not set' ? 'still growing' : ageLabel.toLowerCase()
+            }
+          />
+
+          <HealthFullPlanSection records={records} />
+
+          {error ? (
+            <AppText
+              style={[
+                textStyles.caption,
+                { color: colors.text.secondary },
+              ]}
+            >
+              {error}
+            </AppText>
+          ) : null}
+
+          <AppText
+            style={[
+              textStyles.caption,
+              {
+                color: colors.text.subdued,
+                fontFamily: fontFamilies.medium,
+                textAlign: 'center',
+              },
+            ]}
+          >
+            These are reminders to help you remember. Your vet decides what is
+            right for your pet.
+          </AppText>
+
+          <PremiumUpgradeCard />
+        </ScrollView>
+
+        {loading ? (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        ) : null}
+      </View>
 
       <Modal
         transparent
@@ -1109,7 +748,7 @@ export const HealthRecordScreen: React.FC = () => {
                 { color: colors.text.heading, fontFamily: fontFamilies.bold },
               ]}
             >
-              Edit due date
+              Change date
             </AppText>
             <View style={{ marginTop: space('sm') }}>
               <DatePickerField
@@ -1134,8 +773,294 @@ export const HealthRecordScreen: React.FC = () => {
             <View style={[styles.modalActions, { marginTop: space('md') }]}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Cancel update"
                 onPress={closeUpdateDate}
+                style={[
+                  styles.modalActionBtn,
+                  {
+                    borderRadius: radius.md,
+                    borderColor: colors.borderSubtle,
+                    backgroundColor: colors.surfaceAlt,
+                  },
+                ]}
+              >
+                <AppText
+                  style={[
+                    textStyles.caption,
+                    { color: colors.text.secondary, fontFamily: fontFamilies.bold },
+                  ]}
+                >
+                  Cancel
+                </AppText>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                onPress={applyDateUpdate}
+                style={[
+                  styles.modalActionBtn,
+                  { borderRadius: radius.md, backgroundColor: colors.accent },
+                ]}
+              >
+                <AppText
+                  style={[
+                    textStyles.caption,
+                    { color: colors.text.inverse, fontFamily: fontFamilies.bold },
+                  ]}
+                >
+                  Save
+                </AppText>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        transparent
+        visible={showSkipModal}
+        animationType="fade"
+        onRequestClose={() => setShowSkipModal(false)}
+      >
+        <View
+          style={[styles.modalBackdrop, { backgroundColor: colors.overlay }]}
+        >
+          <View
+            style={[
+              styles.modalCard,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.borderSubtle,
+                borderRadius: radius.lg,
+                padding: space('lg'),
+              },
+            ]}
+          >
+            <AppText
+              style={[
+                textStyles.subtitle,
+                { color: colors.text.heading, fontFamily: fontFamilies.bold },
+              ]}
+            >
+              Skip for now
+            </AppText>
+            <AppText
+              style={[
+                textStyles.caption,
+                { color: colors.text.secondary, marginTop: space('xs') },
+              ]}
+            >
+              Tell us why in a few words. We will move the next worm medicine
+              day.
+            </AppText>
+            <TextInput
+              accessibilityLabel="Skip reason"
+              value={skipReasonInput}
+              onChangeText={text => {
+                setSkipReasonInput(text);
+                setSkipError(null);
+              }}
+              placeholder="e.g. No product at home"
+              placeholderTextColor={colors.text.subdued}
+              style={{
+                borderWidth: 1,
+                borderColor: colors.borderSubtle,
+                borderRadius: radius.md,
+                padding: space('sm'),
+                marginTop: space('sm'),
+                color: colors.text.body,
+                fontFamily: fontFamilies.medium,
+              }}
+              multiline
+            />
+            {skipError ? (
+              <AppText
+                style={[
+                  textStyles.caption,
+                  { color: colors.danger, marginTop: space('sm') },
+                ]}
+              >
+                {skipError}
+              </AppText>
+            ) : null}
+            <View style={[styles.modalActions, { marginTop: space('md') }]}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setShowSkipModal(false)}
+                style={[
+                  styles.modalActionBtn,
+                  {
+                    borderRadius: radius.md,
+                    borderColor: colors.borderSubtle,
+                    backgroundColor: colors.surfaceAlt,
+                  },
+                ]}
+              >
+                <AppText
+                  style={[
+                    textStyles.caption,
+                    { color: colors.text.secondary },
+                  ]}
+                >
+                  Cancel
+                </AppText>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                onPress={handleConfirmSkipDose}
+                style={[
+                  styles.modalActionBtn,
+                  { borderRadius: radius.md, backgroundColor: colors.accent },
+                ]}
+              >
+                <AppText
+                  style={[
+                    textStyles.caption,
+                    { color: colors.text.inverse },
+                  ]}
+                >
+                  Confirm skip
+                </AppText>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        transparent
+        visible={showDewormingModal}
+        animationType="fade"
+        onRequestClose={closeDewormingModal}
+      >
+        <View
+          style={[styles.modalBackdrop, { backgroundColor: colors.overlay }]}
+        >
+          <View
+            style={[
+              styles.modalCard,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.borderSubtle,
+                borderRadius: radius.lg,
+                padding: space('lg'),
+              },
+            ]}
+          >
+            <AppText
+              style={[textStyles.subtitle, { color: colors.text.heading }]}
+            >
+              When did you give worm medicine?
+            </AppText>
+            <View style={{ marginTop: space('lg') }}>
+              <DatePickerField
+                value={selectedDewormingDate}
+                onChange={setSelectedDewormingDate}
+                minimumDate={dewormingLogPickerMinimum}
+                maximumDate={new Date()}
+              />
+            </View>
+            {dewormingLogError ? (
+              <AppText
+                style={[
+                  textStyles.caption,
+                  { color: colors.danger, marginTop: space('sm') },
+                ]}
+              >
+                {dewormingLogError}
+              </AppText>
+            ) : null}
+            <View style={[styles.modalActions, { marginTop: space('md') }]}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={closeDewormingModal}
+                style={[
+                  styles.modalActionBtn,
+                  {
+                    borderRadius: radius.md,
+                    borderColor: colors.borderSubtle,
+                    backgroundColor: colors.surfaceAlt,
+                  },
+                ]}
+              >
+                <AppText
+                  style={[
+                    textStyles.caption,
+                    { color: colors.text.secondary },
+                  ]}
+                >
+                  Cancel
+                </AppText>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  void handleSaveDewormingDate();
+                }}
+                style={[
+                  styles.modalActionBtn,
+                  { borderRadius: radius.md, backgroundColor: colors.accent },
+                ]}
+              >
+                <AppText
+                  style={[textStyles.caption, { color: colors.text.inverse }]}
+                >
+                  Save
+                </AppText>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        transparent
+        visible={showVaccinationModal}
+        animationType="fade"
+        onRequestClose={closeVaccinationModal}
+      >
+        <View
+          style={[styles.modalBackdrop, { backgroundColor: colors.overlay }]}
+        >
+          <View
+            style={[
+              styles.modalCard,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.borderSubtle,
+                borderRadius: radius.lg,
+                padding: space('lg'),
+              },
+            ]}
+          >
+            <AppText
+              style={[
+                textStyles.subtitle,
+                { color: colors.text.heading, fontFamily: fontFamilies.bold },
+              ]}
+            >
+              When was this vaccine given?
+            </AppText>
+            <View style={{ marginTop: space('lg') }}>
+              <DatePickerField
+                value={selectedVaccinationDate}
+                onChange={setSelectedVaccinationDate}
+                minimumDate={vaccinationLogPickerMinimum}
+                maximumDate={new Date()}
+              />
+            </View>
+            {vaccinationLogError ? (
+              <AppText
+                style={[
+                  textStyles.caption,
+                  { color: colors.danger, marginTop: space('sm') },
+                ]}
+              >
+                {vaccinationLogError}
+              </AppText>
+            ) : null}
+            <View style={[styles.modalActions, { marginTop: space('md') }]}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={closeVaccinationModal}
                 style={[
                   styles.modalActionBtn,
                   {
@@ -1159,14 +1084,12 @@ export const HealthRecordScreen: React.FC = () => {
               </Pressable>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Save due date update"
-                onPress={applyDateUpdate}
+                onPress={() => {
+                  void handleSaveVaccinationDate();
+                }}
                 style={[
                   styles.modalActionBtn,
-                  {
-                    borderRadius: radius.md,
-                    backgroundColor: colors.accent,
-                  },
+                  { borderRadius: radius.md, backgroundColor: colors.accent },
                 ]}
               >
                 <AppText
@@ -1186,329 +1109,15 @@ export const HealthRecordScreen: React.FC = () => {
         </View>
       </Modal>
 
-      {isDewormingCategory ? (
-        <Modal
-          transparent
-          visible={showSkipModal}
-          animationType="fade"
-          onRequestClose={() => setShowSkipModal(false)}
-        >
-          <View
-            style={[styles.modalBackdrop, { backgroundColor: colors.overlay }]}
-          >
-            <View
-              style={[
-                styles.modalCard,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.borderSubtle,
-                  borderRadius: radius.lg,
-                  padding: space('lg'),
-                },
-              ]}
-            >
-              <AppText
-                style={[
-                  textStyles.subtitle,
-                  { color: colors.text.heading, fontFamily: fontFamilies.bold },
-                ]}
-              >
-                Skip for now
-              </AppText>
-              <AppText
-                style={[
-                  textStyles.caption,
-                  { color: colors.text.secondary, marginTop: space('xs') },
-                ]}
-              >
-                Tell us why in a few words. We will move the next worm medicine
-                day.
-              </AppText>
-              <TextInput
-                accessibilityLabel="Skip reason"
-                value={skipReasonInput}
-                onChangeText={text => {
-                  setSkipReasonInput(text);
-                  setSkipError(null);
-                }}
-                placeholder="e.g. No product at home"
-                placeholderTextColor={colors.text.subdued}
-                style={{
-                  borderWidth: 1,
-                  borderColor: colors.borderSubtle,
-                  borderRadius: radius.md,
-                  padding: space('sm'),
-                  marginTop: space('sm'),
-                  color: colors.text.body,
-                  fontFamily: fontFamilies.medium,
-                }}
-                multiline
-              />
-              {skipError ? (
-                <AppText
-                  style={[
-                    textStyles.caption,
-                    { color: colors.danger, marginTop: space('sm') },
-                  ]}
-                >
-                  {skipError}
-                </AppText>
-              ) : null}
-              <View style={[styles.modalActions, { marginTop: space('md') }]}>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => setShowSkipModal(false)}
-                  style={[
-                    styles.modalActionBtn,
-                    {
-                      borderRadius: radius.md,
-                      borderColor: colors.borderSubtle,
-                      backgroundColor: colors.surfaceAlt,
-                    },
-                  ]}
-                >
-                  <AppText
-                    style={[
-                      textStyles.caption,
-                      { color: colors.text.secondary },
-                    ]}
-                  >
-                    Cancel
-                  </AppText>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={handleConfirmSkipDose}
-                  style={[
-                    styles.modalActionBtn,
-                    {
-                      borderRadius: radius.md,
-                      backgroundColor: colors.accent,
-                    },
-                  ]}
-                >
-                  <AppText
-                    style={[
-                      textStyles.caption,
-                      { color: colors.text.inverse },
-                    ]}
-                  >
-                    Confirm skip
-                  </AppText>
-                </Pressable>
-              </View>
-            </View>
-          </View>
-        </Modal>
-      ) : null}
-
-      {isDewormingCategory && (
-        <Modal
-          transparent
-          visible={showDewormingModal}
-          animationType="fade"
-          onRequestClose={closeDewormingModal}
-        >
-          <View
-            style={[styles.modalBackdrop, { backgroundColor: colors.overlay }]}
-          >
-            <View
-              style={[
-                styles.modalCard,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.borderSubtle,
-                  borderRadius: 16,
-                  padding: space('lg'),
-                },
-              ]}
-            >
-              <AppText
-                style={[textStyles.subtitle, { color: colors.text.heading }]}
-              >
-                Log Deworming
-              </AppText>
-              <AppText
-                style={[
-                  textStyles.caption,
-                  { color: colors.text.secondary, marginTop: space('xs') },
-                ]}
-              >
-                Select the date you completed the deworming
-              </AppText>
-
-              <View style={{ marginTop: space('lg') }}>
-                <DatePickerField
-                  value={selectedDewormingDate}
-                  onChange={setSelectedDewormingDate}
-                  minimumDate={dewormingLogPickerMinimum}
-                  maximumDate={new Date()}
-                />
-              </View>
-
-              {dewormingLogError ? (
-                <AppText
-                  style={[
-                    textStyles.caption,
-                    { color: colors.danger, marginTop: space('sm') },
-                  ]}
-                >
-                  {dewormingLogError}
-                </AppText>
-              ) : null}
-
-              <View style={[styles.modalActions, { marginTop: space('md') }]}>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={closeDewormingModal}
-                  style={[
-                    styles.modalActionBtn,
-                    {
-                      borderRadius: 12,
-                      borderColor: colors.borderSubtle,
-                      backgroundColor: colors.surfaceAlt,
-                    },
-                  ]}
-                >
-                  <AppText
-                    style={[
-                      textStyles.caption,
-                      { color: colors.text.secondary },
-                    ]}
-                  >
-                    Cancel
-                  </AppText>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={handleSaveDewormingDate}
-                  style={[
-                    styles.modalActionBtn,
-                    { borderRadius: 12, backgroundColor: colors.accent },
-                  ]}
-                >
-                  <AppText
-                    style={[textStyles.caption, { color: colors.text.inverse }]}
-                  >
-                    Save
-                  </AppText>
-                </Pressable>
-              </View>
-            </View>
-          </View>
-        </Modal>
-      )}
-
-      {!isDewormingCategory ? (
-        <Modal
-          transparent
-          visible={showVaccinationModal}
-          animationType="fade"
-          onRequestClose={closeVaccinationModal}
-        >
-          <View
-            style={[styles.modalBackdrop, { backgroundColor: colors.overlay }]}
-          >
-            <View
-              style={[
-                styles.modalCard,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.borderSubtle,
-                  borderRadius: radius.lg,
-                  padding: space('lg'),
-                },
-              ]}
-            >
-              <AppText
-                style={[
-                  textStyles.subtitle,
-                  { color: colors.text.heading, fontFamily: fontFamilies.bold },
-                ]}
-              >
-                Log Vaccination
-              </AppText>
-              <AppText
-                style={[
-                  textStyles.caption,
-                  { color: colors.text.secondary, marginTop: space('xs') },
-                ]}
-              >
-                Select the date this vaccine was administered.
-              </AppText>
-
-              <View style={{ marginTop: space('lg') }}>
-                <DatePickerField
-                  value={selectedVaccinationDate}
-                  onChange={setSelectedVaccinationDate}
-                  minimumDate={vaccinationLogPickerMinimum}
-                  maximumDate={new Date()}
-                />
-              </View>
-
-              {vaccinationLogError ? (
-                <AppText
-                  style={[
-                    textStyles.caption,
-                    { color: colors.danger, marginTop: space('sm') },
-                  ]}
-                >
-                  {vaccinationLogError}
-                </AppText>
-              ) : null}
-
-              <View style={[styles.modalActions, { marginTop: space('md') }]}>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={closeVaccinationModal}
-                  style={[
-                    styles.modalActionBtn,
-                    {
-                      borderRadius: radius.md,
-                      borderColor: colors.borderSubtle,
-                      backgroundColor: colors.surfaceAlt,
-                    },
-                  ]}
-                >
-                  <AppText
-                    style={[
-                      textStyles.caption,
-                      { color: colors.text.secondary, fontFamily: fontFamilies.bold },
-                    ]}
-                  >
-                    Cancel
-                  </AppText>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={handleSaveVaccinationDate}
-                  style={[
-                    styles.modalActionBtn,
-                    { borderRadius: radius.md, backgroundColor: colors.accent },
-                  ]}
-                >
-                  <AppText
-                    style={[
-                      textStyles.caption,
-                      { color: colors.text.inverse, fontFamily: fontFamilies.bold },
-                    ]}
-                  >
-                    Save
-                  </AppText>
-                </Pressable>
-              </View>
-            </View>
-          </View>
-        </Modal>
-      ) : null}
-
       <Modal
         transparent
         visible={Boolean(successMessage)}
         animationType="fade"
         onRequestClose={() => setSuccessMessage(null)}
       >
-        <View style={[styles.modalBackdrop, { backgroundColor: colors.overlay }]}>
+        <View
+          style={[styles.modalBackdrop, { backgroundColor: colors.overlay }]}
+        >
           <View
             style={[
               styles.modalCard,
@@ -1544,72 +1153,21 @@ export const HealthRecordScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
+  safeArea: { flex: 1 },
+  body: { flex: 1 },
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
   },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 10,
+  emptyActionHint: { borderWidth: 1 },
+  emptyCard: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
     gap: 12,
-  },
-  headerTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  headerTitleBlock: {
-    flex: 1,
-    minWidth: 0,
-    alignItems: 'center',
-  },
-  emptyActionHint: {
-    borderWidth: 1,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  addBtn: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  headerRightSpacer: {
-    width: 40,
-    height: 40,
-  },
-  tabsRow: {
-    flexDirection: 'row',
-  },
-  tab: {
-    flex: 1,
-    paddingBottom: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderBottomWidth: 2,
-  },
-  errorCard: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
   },
   loadingOverlay: {
     position: 'absolute',
@@ -1625,31 +1183,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 24,
   },
-  modalCard: {
-    borderWidth: 1,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
+  modalCard: { borderWidth: 1 },
+  modalActions: { flexDirection: 'row', gap: 12 },
   modalActionBtn: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     minHeight: 44,
-  },
-  emptyCard: {
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-    gap: 12,
-  },
-  completedHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
   },
   focusUnavailableBanner: {
     borderWidth: 1,
