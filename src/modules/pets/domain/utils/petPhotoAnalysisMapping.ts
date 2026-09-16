@@ -27,84 +27,92 @@ const CAT_LABELS = new Set([
 ]);
 
 /** ML Kit / ImageNet-style label → display breed name */
-const BREED_LABEL_MAP: Record<string, string> = {
-  'golden retriever': 'Golden Retriever',
-  'labrador retriever': 'Labrador Retriever',
-  labrador: 'Labrador Retriever',
-  'german shepherd': 'German Shepherd',
-  'german shepherd dog': 'German Shepherd',
-  beagle: 'Beagle',
-  pug: 'Pug',
-  bulldog: 'Bulldog',
-  'french bulldog': 'French Bulldog',
-  poodle: 'Poodle',
-  'toy poodle': 'Poodle',
-  'standard poodle': 'Poodle',
-  'miniature poodle': 'Poodle',
-  husky: 'Siberian Husky',
-  'siberian husky': 'Siberian Husky',
-  'border collie': 'Border Collie',
-  'cocker spaniel': 'Cocker Spaniel',
-  'english cocker spaniel': 'Cocker Spaniel',
-  dachshund: 'Dachshund',
-  'yorkshire terrier': 'Yorkshire Terrier',
-  boxer: 'Boxer',
-  rottweiler: 'Rottweiler',
-  'shih tzu': 'Shih Tzu',
-  chihuahua: 'Chihuahua',
-  'great dane': 'Great Dane',
-  doberman: 'Doberman',
-  'doberman pinscher': 'Doberman',
-  malamute: 'Alaskan Malamute',
-  'alaskan malamute': 'Alaskan Malamute',
-  'australian shepherd': 'Australian Shepherd',
-  corgi: 'Corgi',
-  'pembroke welsh corgi': 'Corgi',
-  'cardigan welsh corgi': 'Corgi',
-  'jack russell terrier': 'Jack Russell Terrier',
-  'cavalier king charles spaniel': 'Cavalier King Charles Spaniel',
-  'basset hound': 'Basset Hound',
-  dalmatian: 'Dalmatian',
-  'saint bernard': 'Saint Bernard',
-  'bull terrier': 'Bull Terrier',
-  'staffordshire bull terrier': 'Staffordshire Bull Terrier',
-  'american staffordshire terrier': 'American Staffordshire Terrier',
-  'persian cat': 'Persian',
-  persian: 'Persian',
-  'siamese cat': 'Siamese',
-  siamese: 'Siamese',
-  'maine coon': 'Maine Coon',
-  'british shorthair': 'British Shorthair',
-  'american shorthair': 'American Shorthair',
-  ragdoll: 'Ragdoll',
-  bengal: 'Bengal',
-  'bengal cat': 'Bengal',
-  sphynx: 'Sphynx',
-  'scottish fold': 'Scottish Fold',
-  abyssinian: 'Abyssinian',
-  'russian blue': 'Russian Blue',
-  'norwegian forest cat': 'Norwegian Forest Cat',
-  birman: 'Birman',
-  'oriental shorthair': 'Oriental Shorthair',
-  'exotic shorthair': 'Exotic Shorthair',
-  himalayan: 'Himalayan',
-  'himalayan cat': 'Himalayan',
-  burmese: 'Burmese',
-  'burmese cat': 'Burmese',
-  'manx cat': 'Manx',
-  manx: 'Manx',
-};
+const BREED_LABEL_MAP: Record<string, { display: string; species: 'dog' | 'cat' }> =
+  {
+    'golden retriever': { display: 'Golden Retriever', species: 'dog' },
+    'labrador retriever': { display: 'Labrador Retriever', species: 'dog' },
+    labrador: { display: 'Labrador Retriever', species: 'dog' },
+    'german shepherd': { display: 'German Shepherd', species: 'dog' },
+    'german shepherd dog': { display: 'German Shepherd', species: 'dog' },
+    beagle: { display: 'Beagle', species: 'dog' },
+    pug: { display: 'Pug', species: 'dog' },
+    bulldog: { display: 'Bulldog', species: 'dog' },
+    'french bulldog': { display: 'French Bulldog', species: 'dog' },
+    poodle: { display: 'Poodle', species: 'dog' },
+    'toy poodle': { display: 'Poodle', species: 'dog' },
+    'standard poodle': { display: 'Poodle', species: 'dog' },
+    'miniature poodle': { display: 'Poodle', species: 'dog' },
+    husky: { display: 'Siberian Husky', species: 'dog' },
+    'siberian husky': { display: 'Siberian Husky', species: 'dog' },
+    'border collie': { display: 'Border Collie', species: 'dog' },
+    'cocker spaniel': { display: 'Cocker Spaniel', species: 'dog' },
+    'english cocker spaniel': { display: 'Cocker Spaniel', species: 'dog' },
+    dachshund: { display: 'Dachshund', species: 'dog' },
+    'yorkshire terrier': { display: 'Yorkshire Terrier', species: 'dog' },
+    boxer: { display: 'Boxer', species: 'dog' },
+    rottweiler: { display: 'Rottweiler', species: 'dog' },
+    'shih tzu': { display: 'Shih Tzu', species: 'dog' },
+    chihuahua: { display: 'Chihuahua', species: 'dog' },
+    'great dane': { display: 'Great Dane', species: 'dog' },
+    doberman: { display: 'Doberman', species: 'dog' },
+    'doberman pinscher': { display: 'Doberman', species: 'dog' },
+    malamute: { display: 'Alaskan Malamute', species: 'dog' },
+    'alaskan malamute': { display: 'Alaskan Malamute', species: 'dog' },
+    'australian shepherd': { display: 'Australian Shepherd', species: 'dog' },
+    corgi: { display: 'Corgi', species: 'dog' },
+    'pembroke welsh corgi': { display: 'Corgi', species: 'dog' },
+    'cardigan welsh corgi': { display: 'Corgi', species: 'dog' },
+    'jack russell terrier': { display: 'Jack Russell Terrier', species: 'dog' },
+    'cavalier king charles spaniel': {
+      display: 'Cavalier King Charles Spaniel',
+      species: 'dog',
+    },
+    'basset hound': { display: 'Basset Hound', species: 'dog' },
+    dalmatian: { display: 'Dalmatian', species: 'dog' },
+    'saint bernard': { display: 'Saint Bernard', species: 'dog' },
+    'bull terrier': { display: 'Bull Terrier', species: 'dog' },
+    'staffordshire bull terrier': {
+      display: 'Staffordshire Bull Terrier',
+      species: 'dog',
+    },
+    'american staffordshire terrier': {
+      display: 'American Staffordshire Terrier',
+      species: 'dog',
+    },
+    'indian pariah dog': { display: 'Indie / Pariah Dog', species: 'dog' },
+    'pariah dog': { display: 'Indie / Pariah Dog', species: 'dog' },
+    indie: { display: 'Indie / Pariah Dog', species: 'dog' },
+    'street dog': { display: 'Indie / Pariah Dog', species: 'dog' },
+    'mixed breed': { display: 'Mixed breed', species: 'dog' },
+    mongrel: { display: 'Mixed breed', species: 'dog' },
+    'persian cat': { display: 'Persian', species: 'cat' },
+    persian: { display: 'Persian', species: 'cat' },
+    'siamese cat': { display: 'Siamese', species: 'cat' },
+    siamese: { display: 'Siamese', species: 'cat' },
+    'maine coon': { display: 'Maine Coon', species: 'cat' },
+    'british shorthair': { display: 'British Shorthair', species: 'cat' },
+    'american shorthair': { display: 'American Shorthair', species: 'cat' },
+    ragdoll: { display: 'Ragdoll', species: 'cat' },
+    bengal: { display: 'Bengal', species: 'cat' },
+    'bengal cat': { display: 'Bengal', species: 'cat' },
+    sphynx: { display: 'Sphynx', species: 'cat' },
+    'scottish fold': { display: 'Scottish Fold', species: 'cat' },
+    abyssinian: { display: 'Abyssinian', species: 'cat' },
+    'russian blue': { display: 'Russian Blue', species: 'cat' },
+    'norwegian forest cat': { display: 'Norwegian Forest Cat', species: 'cat' },
+    birman: { display: 'Birman', species: 'cat' },
+    'oriental shorthair': { display: 'Oriental Shorthair', species: 'cat' },
+    'exotic shorthair': { display: 'Exotic Shorthair', species: 'cat' },
+    himalayan: { display: 'Himalayan', species: 'cat' },
+    'himalayan cat': { display: 'Himalayan', species: 'cat' },
+    burmese: { display: 'Burmese', species: 'cat' },
+    'burmese cat': { display: 'Burmese', species: 'cat' },
+    'manx cat': { display: 'Manx', species: 'cat' },
+    manx: { display: 'Manx', species: 'cat' },
+  };
 
 export function normalizeLabel(label: string): string {
   return label.trim().toLowerCase().replace(/\s+/g, ' ');
-}
-
-function titleCaseLabel(label: string): string {
-  return label
-    .split(' ')
-    .filter(part => part.length > 0)
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
 }
 
 type SpeciesScores = {
@@ -133,8 +141,7 @@ export function scoreSpecies(labels: RawImageLabel[]): SpeciesScores {
     if (breed == null) {
       continue;
     }
-    // Breed map includes both dog and cat breeds — infer from key
-    if (key.includes('cat') || isCatBreedKey(key)) {
+    if (breed.species === 'cat') {
       cat = Math.max(cat, confidence);
     } else {
       dog = Math.max(dog, confidence);
@@ -144,75 +151,40 @@ export function scoreSpecies(labels: RawImageLabel[]): SpeciesScores {
   return { dog, cat };
 }
 
-const CAT_BREED_KEYS = new Set([
-  'persian',
-  'siamese',
-  'maine coon',
-  'british shorthair',
-  'american shorthair',
-  'ragdoll',
-  'bengal',
-  'sphynx',
-  'scottish fold',
-  'abyssinian',
-  'russian blue',
-  'norwegian forest cat',
-  'birman',
-  'oriental shorthair',
-  'exotic shorthair',
-  'himalayan',
-  'burmese',
-  'manx',
-]);
-
-function isCatBreedKey(key: string): boolean {
-  if (key.includes('cat')) {
-    return true;
-  }
-  return CAT_BREED_KEYS.has(key);
-}
-
+/**
+ * Only allowlisted breed labels become suggestions.
+ * Generic ML Kit labels (fur, pet, mammal, animal, …) are never breeds.
+ */
 export function pickBreedSuggestions(
   labels: RawImageLabel[],
+  species: PetPhotoSpecies,
 ): PetPhotoBreedSuggestion[] {
+  if (species !== 'dog' && species !== 'cat') {
+    return [];
+  }
+
   const byBreed = new Map<string, number>();
 
   for (const entry of labels) {
     const key = normalizeLabel(entry.label);
     const confidence = clampConfidence(entry.confidence);
     const mapped = BREED_LABEL_MAP[key];
-    if (mapped != null) {
-      byBreed.set(mapped, Math.max(byBreed.get(mapped) ?? 0, confidence));
+    if (mapped == null || mapped.species !== species) {
       continue;
     }
-    // Unmapped high-confidence breed-like labels (best guess)
-    if (
-      confidence >= 0.5 &&
-      !DOG_LABELS.has(key) &&
-      !CAT_LABELS.has(key) &&
-      !isNonPetLabel(key)
-    ) {
-      const guess = `${titleCaseLabel(key)} (best guess)`;
-      byBreed.set(guess, Math.max(byBreed.get(guess) ?? 0, confidence));
-    }
+    byBreed.set(
+      mapped.display,
+      Math.max(byBreed.get(mapped.display) ?? 0, confidence),
+    );
   }
 
   return [...byBreed.entries()]
     .map(([label, confidence]) => ({ label, confidence }))
-    .sort((a, b) => b.confidence - a.confidence || a.label.localeCompare(b.label))
+    .sort(
+      (a, b) =>
+        b.confidence - a.confidence || a.label.localeCompare(b.label),
+    )
     .slice(0, MAX_BREED_SUGGESTIONS);
-}
-
-function isNonPetLabel(key: string): boolean {
-  return (
-    key === 'person' ||
-    key === 'people' ||
-    key === 'human' ||
-    key === 'food' ||
-    key === 'furniture' ||
-    key === 'car' ||
-    key === 'building'
-  );
 }
 
 function clampConfidence(value: number): number {
@@ -272,8 +244,7 @@ export function mapLabelsToPetPhotoAnalysis(
     speciesConfidence < SPECIES_LOW_CONFIDENCE_THRESHOLD ||
     Math.abs(scores.dog - scores.cat) <= SPECIES_TIE_DELTA;
 
-  const breedSuggestions =
-    species === 'unknown' ? [] : pickBreedSuggestions(labels);
+  const breedSuggestions = pickBreedSuggestions(labels, species);
 
   const { quality, qualityHint } = deriveQuality(species, speciesConfidence);
 

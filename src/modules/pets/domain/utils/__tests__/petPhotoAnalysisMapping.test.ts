@@ -44,4 +44,28 @@ describe('mapLabelsToPetPhotoAnalysis', () => {
     expect(result.quality).toBe('poor');
     expect(result.breedSuggestions).toHaveLength(0);
   });
+
+  it('ignores generic animal labels like fur and pet for breed suggestions', () => {
+    const result = mapLabelsToPetPhotoAnalysis([
+      { label: 'Dog', confidence: 0.97 },
+      { label: 'Fur', confidence: 0.88 },
+      { label: 'Pet', confidence: 0.81 },
+      { label: 'Mammal', confidence: 0.76 },
+      { label: 'Animal', confidence: 0.7 },
+    ]);
+
+    expect(result.species).toBe('dog');
+    expect(result.breedSuggestions).toHaveLength(0);
+  });
+
+  it('only suggests allowlisted breeds matching detected species', () => {
+    const result = mapLabelsToPetPhotoAnalysis([
+      { label: 'Dog', confidence: 0.9 },
+      { label: 'Persian cat', confidence: 0.8 },
+      { label: 'Beagle', confidence: 0.65 },
+    ]);
+
+    expect(result.species).toBe('dog');
+    expect(result.breedSuggestions.map(b => b.label)).toEqual(['Beagle']);
+  });
 });

@@ -73,6 +73,10 @@ export const PetPhotoAnalysisCard: React.FC<PetPhotoAnalysisCardProps> = ({
         section: {
           marginTop: spacing.md,
         },
+        emptyBreedHint: {
+          marginTop: spacing.sm,
+          color: colors.text.body,
+        },
         warning: {
           marginTop: spacing.sm,
           color: colors.warning,
@@ -214,6 +218,12 @@ export const PetPhotoAnalysisCard: React.FC<PetPhotoAnalysisCardProps> = ({
 
           <View style={styles.section}>
             <AppText style={textStyles.caption}>Possible breed</AppText>
+            {breeds.length === 0 ? (
+              <AppText style={[textStyles.body, styles.emptyBreedHint]}>
+                No breed matched this photo — choose Something else or type it
+                later.
+              </AppText>
+            ) : null}
             <View style={styles.chipRow}>
               {breeds.map(breed => {
                 const selected = effectiveBreedKey === breed.label;
