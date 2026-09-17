@@ -17,8 +17,11 @@ export const PetProfileSectionHeader: React.FC<PetProfileSectionHeaderProps> = R
       <View style={[styles.row, { marginBottom: spacing.md, gap: spacing.md }]}>
         <AppText
           style={[
-            textStyles.subtitle,
-            { color: colors.text.heading, fontFamily: fontFamilies.bold },
+            textStyles.caption,
+            {
+              color: colors.text.secondary,
+              fontFamily: fontFamilies.semibold,
+            },
           ]}
         >
           {title}

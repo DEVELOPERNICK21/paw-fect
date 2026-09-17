@@ -55,4 +55,14 @@ describe('isDayFullyComplete', () => {
   it('returns false below 100%', () => {
     expect(isDayFullyComplete({ done: 2, total: 3, percentage: 67 })).toBe(false);
   });
+
+  it('counts skipped blocks toward day completion', () => {
+    const blocks = [
+      block({ id: 'a', isSkipped: true }),
+      block({ id: 'b', status: 'upcoming' }),
+    ];
+    const result = getDayCompletion(blocks, true);
+    expect(result.done).toBe(1);
+    expect(result.total).toBe(2);
+  });
 });

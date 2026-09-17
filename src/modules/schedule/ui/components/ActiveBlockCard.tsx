@@ -1,33 +1,40 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../../../../shared/components/AppText';
 import { Button } from '../../../../shared/components/Button';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
 import { useTheme } from '../../../../shared/hooks/useTheme';
-import { PLAN_CATALOG } from '../../../../shared/subscription/planCatalog';
 import type { DailyCareBlock } from '../../domain/models/DailyCareBlock';
+import {
+  careTaskActionLabel,
+  careTaskSubtitle,
+} from '../../domain/utils/careTaskCopy';
 import { careCategoryIcon } from '../utils/careCategoryIcon';
 import { formatScheduleTimeLabel } from '../utils/scheduleDisplay';
 
 export interface ActiveBlockCardProps {
   block: DailyCareBlock | null;
+  petName: string;
   locked: boolean;
   onMarkDone: () => void;
-  onSkip: () => void;
+  onLater: () => void;
   onUpgrade: () => void;
 }
 
+/**
+ * Primary care task card — calm, professional, one clear action.
+ */
 export const ActiveBlockCard: React.FC<ActiveBlockCardProps> = ({
   block,
+  petName,
   locked,
   onMarkDone,
-  onSkip,
+  onLater,
   onUpgrade,
 }) => {
-  const { colors, spacing, radius, textStyles, fontFamilies, shadows } = useTheme();
-  const [tipExpanded, setTipExpanded] = useState(false);
-  const price = PLAN_CATALOG.care_plus.priceMonthlyInr;
+  const { colors, spacing, radius, textStyles, fontFamilies, shadows } =
+    useTheme();
 
   const styles = useMemo(
     () =>
@@ -35,10 +42,10 @@ export const ActiveBlockCard: React.FC<ActiveBlockCardProps> = ({
         card: {
           borderRadius: radius.xl,
           borderWidth: 1,
-          borderColor: colors.primary,
+          borderColor: colors.borderSubtle,
           backgroundColor: colors.surface,
           padding: spacing.xl,
-          gap: spacing.md,
+          gap: spacing.lg,
         },
         head: {
           flexDirection: 'row',
@@ -46,31 +53,26 @@ export const ActiveBlockCard: React.FC<ActiveBlockCardProps> = ({
           gap: spacing.md,
         },
         iconWrap: {
-          width: spacing['3xl'],
-          height: spacing['3xl'],
+          width: 48,
+          height: 48,
           borderRadius: radius.md,
-          backgroundColor: colors.brandTint10,
+          backgroundColor: colors.brandTint12,
           alignItems: 'center',
           justifyContent: 'center',
         },
         meta: {
           flex: 1,
           gap: spacing.xxs,
+          minWidth: 0,
         },
-        tipBox: {
-          borderRadius: radius.md,
-          backgroundColor: colors.surfaceAlt,
-          padding: spacing.md,
-          gap: spacing.xs,
+        actions: {
+          gap: spacing.sm,
         },
-        skipBtn: {
-          alignSelf: 'center',
-          paddingVertical: spacing.xs,
-        },
-        upsell: {
-          flexDirection: 'row',
+        laterBtn: {
+          minHeight: 48,
           alignItems: 'center',
-          gap: spacing.xs,
+          justifyContent: 'center',
+          paddingVertical: spacing.sm,
         },
       }),
     [colors, radius, spacing],
@@ -80,87 +82,76 @@ export const ActiveBlockCard: React.FC<ActiveBlockCardProps> = ({
     return null;
   }
 
-  const isActive = block.status === 'active';
-  const label = isActive ? 'Now' : 'Up next';
+  const action = careTaskActionLabel(block, petName);
+  const detail = careTaskSubtitle(block);
 
   return (
-    <View style={[styles.card, shadows.md]}>
+    <View style={[styles.card, shadows.sm]}>
       <AppText
         style={[
           textStyles.caption,
-          { color: colors.primary, fontFamily: fontFamilies.semibold },
+          { color: colors.text.secondary, fontFamily: fontFamilies.semibold },
         ]}
       >
-        {label}
+        Now
       </AppText>
+
       <View style={styles.head}>
         <View style={styles.iconWrap}>
           <MaterialIcon
             name={careCategoryIcon(block.category)}
-            size={22}
-            color={colors.primary}
+            size={24}
+            color={colors.accent}
           />
         </View>
         <View style={styles.meta}>
           <AppText
             style={[
-              textStyles.title,
-              { color: colors.text.heading, fontFamily: fontFamilies.bold },
+              textStyles.subtitle,
+              {
+                color: colors.text.heading,
+                fontFamily: fontFamilies.bold,
+              },
             ]}
           >
-            {block.title}
+            {action}
           </AppText>
-          <AppText style={[textStyles.caption, { color: colors.text.secondary }]}>
-            {formatScheduleTimeLabel(block.scheduledTime)} · {block.durationMinutes} min
+          <AppText
+            style={[textStyles.body, { color: colors.text.secondary }]}
+            numberOfLines={2}
+          >
+            {detail}
+            {block.scheduledTime
+              ? ` · ${formatScheduleTimeLabel(block.scheduledTime)}`
+              : ''}
           </AppText>
         </View>
       </View>
 
-      {block.insightTip ? (
-        <View style={styles.tipBox}>
-          <Pressable
-            onPress={() => setTipExpanded(current => !current)}
-            accessibilityRole="button"
-          >
-            <AppText
-              style={[
-                textStyles.caption,
-                { color: colors.text.secondary, fontFamily: fontFamilies.semibold },
-              ]}
+      <View style={styles.actions}>
+        {locked ? (
+          <Button title="Upgrade to unlock" onPress={onUpgrade} />
+        ) : (
+          <>
+            <Button title="Mark as done" onPress={onMarkDone} />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Remind me later about ${action}`}
+              onPress={onLater}
+              style={styles.laterBtn}
             >
-              Why this matters {tipExpanded ? '▴' : '▾'}
-            </AppText>
-          </Pressable>
-          {tipExpanded ? (
-            <AppText style={[textStyles.body, { color: colors.text.secondary }]}>
-              {block.insightTip}
-            </AppText>
-          ) : null}
-        </View>
-      ) : null}
-
-      {locked ? (
-        <Pressable style={styles.upsell} onPress={onUpgrade} accessibilityRole="button">
-          <MaterialIcon name="lock" size={16} color={colors.text.subdued} />
-          <AppText style={[textStyles.caption, { color: colors.text.subdued }]}>
-            Unlock with Care+ — ₹{price}/month
-          </AppText>
-        </Pressable>
-      ) : (
-        <>
-          <Button title="Mark Done" onPress={onMarkDone} />
-          <Pressable
-            style={styles.skipBtn}
-            onPress={onSkip}
-            accessibilityRole="button"
-            accessibilityLabel="Skip for today"
-          >
-            <AppText style={[textStyles.caption, { color: colors.text.subdued }]}>
-              Skip for today
-            </AppText>
-          </Pressable>
-        </>
-      )}
+              <AppText
+                style={[
+                  textStyles.caption,
+                  { color: colors.accent, fontFamily: fontFamilies.semibold },
+                ]}
+              >
+                Remind me later
+              </AppText>
+            </Pressable>
+          </>
+        )}
+      </View>
     </View>
   );
 };

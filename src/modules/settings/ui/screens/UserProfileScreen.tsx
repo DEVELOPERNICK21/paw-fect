@@ -5,8 +5,8 @@ import { useNavigation } from '@react-navigation/native';
 
 import type { SettingsRootNavigation } from '../../../../app/navigation/types';
 import { AppText } from '../../../../shared/components/AppText';
+import { FlatTabHeroBar } from '../../../../shared/components/FlatTabHeroBar';
 import { Input } from '../../../../shared/components/Input';
-import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { useAuthStore } from '../../../auth/store/authStore';
 
@@ -15,7 +15,8 @@ const isValidPhone = (value: string): boolean =>
 
 export const UserProfileScreen: React.FC = () => {
   const navigation = useNavigation<SettingsRootNavigation>();
-  const { colors, textStyles, fontFamilies, space, radius } = useTheme();
+  const theme = useTheme();
+  const { colors, textStyles, fontFamilies, space, radius } = theme;
   const user = useAuthStore(s => s.user);
   const loading = useAuthStore(s => s.loading);
   const authError = useAuthStore(s => s.authError);
@@ -32,23 +33,10 @@ export const UserProfileScreen: React.FC = () => {
     () =>
       StyleSheet.create({
         safeArea: { flex: 1, backgroundColor: colors.backgroundAlt },
-        header: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingHorizontal: space('lg'),
-          paddingVertical: space('md'),
-        },
         content: { paddingHorizontal: space('lg'), paddingBottom: space('2xl') },
-        row: {
-          width: 40,
-          height: 40,
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
         saveBtn: {
           marginTop: space('lg'),
-          borderRadius: radius.md,
+          borderRadius: radius.pill,
           minHeight: 48,
           alignItems: 'center',
           justifyContent: 'center',
@@ -89,20 +77,12 @@ export const UserProfileScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      <View style={styles.header}>
-        <Pressable style={styles.row} onPress={() => navigation.goBack()}>
-          <MaterialIcon name="arrow_back" size={20} color={colors.text.heading} />
-        </Pressable>
-        <AppText
-          style={[
-            textStyles.subtitle,
-            { color: colors.text.heading, fontFamily: fontFamilies.bold },
-          ]}
-        >
-          User Profile
-        </AppText>
-        <View style={styles.row} />
-      </View>
+      <FlatTabHeroBar
+        title="Profile"
+        caption="Your account details"
+        theme={theme}
+        onPressBack={() => navigation.goBack()}
+      />
 
       <ScrollView style={styles.content} keyboardShouldPersistTaps="handled">
         <AppText

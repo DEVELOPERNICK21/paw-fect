@@ -1,5 +1,11 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
@@ -9,19 +15,48 @@ import type {
   WellnessHubRootNavigation,
 } from '../../../../app/navigation/types';
 import { useAppTabBarInset } from '../../../../app/navigation/layout';
-import { getAppSessionUserId } from '../../../../shared/session/appSessionPorts';
 import { AppText } from '../../../../shared/components/AppText';
 import { Button } from '../../../../shared/components/Button';
-import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
+import { FlatTabHeroBar } from '../../../../shared/components/FlatTabHeroBar';
+import { Paw3dIcon } from '../../../../shared/components/Paw3dIcon';
 import { useTheme } from '../../../../shared/hooks/useTheme';
-import { HomePetSwitcherBar } from '../../../app/ui/components/home/HomePetSwitcherBar';
-import { usePetStore } from '../../../pets/store/petStore';
-import { DEFAULT_PET_SCHEDULE_PREFERENCES } from '../../domain/DailyScheduleEngine';
-import { isScheduleProUser } from '../../domain/models/ScheduleFeatureGates';
 import { useAppSession } from '../../../../shared/session/useAppSession';
+import { usePetStore } from '../../../pets/store/petStore';
+import {
+  aggregateCareDay,
+  type CareAggregatedItem,
+} from '../../domain/utils/careAggregator';
+import { careTaskShortVerb } from '../../domain/utils/careTaskCopy';
+import {
+  getDayCompletion,
+  isDayFullyComplete,
+} from '../../domain/utils/wellnessCompletion';
+import { isScheduleProUser } from '../../domain/models/ScheduleFeatureGates';
 import { useScheduleStore } from '../../store/scheduleStore';
-import { useWellnessStore } from '../../store/wellnessStore';
-import { TodayCareSection } from '../components/TodayCareSection';
+import { CareAttentionCard } from '../components/CareAttentionCard';
+import { CareDoneBurst } from '../components/CareDoneBurst';
+import { CareFullDayCta } from '../components/CareFullDayCta';
+import { CarePetFilter } from '../components/CarePetFilter';
+import { CarePlayHud } from '../components/CarePlayHud';
+import { CareUpNextList } from '../components/CareUpNextList';
+import { CareBlockDetailSheet } from '../components/CareBlockDetailSheet';
+import {
+  type CareRewardKind,
+  WellnessCompletionToast,
+} from '../components/WellnessCompletionToast';
+
+const LATER_PRESETS: Array<{ label: string; minutes: number }> = [
+  { label: 'In 30 minutes', minutes: 30 },
+  { label: 'In 1 hour', minutes: 60 },
+  { label: 'This evening', minutes: 180 },
+];
+
+type RewardToast = {
+  petName: string;
+  kind: CareRewardKind;
+  streakDays: number;
+  taskLabel?: string;
+};
 
 export const WellnessHubScreen: React.FC = () => {
   const navigation = useNavigation<WellnessHubRootNavigation>();
@@ -31,234 +66,216 @@ export const WellnessHubScreen: React.FC = () => {
   const { colors, spacing, radius, textStyles, fontFamilies, shadows } = theme;
   const { plan } = useAppSession();
   const isPro = isScheduleProUser(plan);
+
   const pets = usePetStore(state => state.pets);
-  const activePet = usePetStore(state => state.activePet);
   const loadPets = usePetStore(state => state.loadPets);
-  const setActivePet = usePetStore(state => state.setActivePet);
-  const schedule = useScheduleStore(state => state.schedule);
-  const preferences = useScheduleStore(state => state.preferences);
-  const weekScores = useScheduleStore(state => state.weekScores);
-  const loading = useScheduleStore(state => state.loading);
-  const loadDaySchedule = useScheduleStore(state => state.loadDaySchedule);
-  const loadPreferences = useScheduleStore(state => state.loadPreferences);
-  const loadWeekScores = useScheduleStore(state => state.loadWeekScores);
-  const hydrateDay = useWellnessStore(state => state.hydrateDay);
-  const loadRelaxedMode = useWellnessStore(state => state.loadRelaxedMode);
-  const completion = useWellnessStore(state => state.completion);
-  const setSelectedBlockId = useWellnessStore(state => state.setSelectedBlockId);
+
+  const careSchedulesByPetId = useScheduleStore(s => s.careSchedulesByPetId);
+  const careFilterPetId = useScheduleStore(s => s.careFilterPetId);
+  const careLoading = useScheduleStore(s => s.careLoading);
+  const careStreakDays = useScheduleStore(s => s.careStreakDays);
+  const error = useScheduleStore(s => s.error);
+  const loadCareDaySchedules = useScheduleStore(s => s.loadCareDaySchedules);
+  const setCareFilterPetId = useScheduleStore(s => s.setCareFilterPetId);
+  const markCareBlockDone = useScheduleStore(s => s.markCareBlockDone);
+  const skipCareBlock = useScheduleStore(s => s.skipCareBlock);
+  const snoozeCareBlock = useScheduleStore(s => s.snoozeCareBlock);
+
+  const [laterItem, setLaterItem] = useState<CareAggregatedItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<CareAggregatedItem | null>(
+    null,
+  );
+  const [rewardToast, setRewardToast] = useState<RewardToast | null>(null);
+  const [burstVisible, setBurstVisible] = useState(false);
+  const [burstIntensity, setBurstIntensity] = useState<'soft' | 'day'>('soft');
+  const [pulseToken, setPulseToken] = useState(0);
 
   const routePetId = route.params?.petId;
-  const petId = routePetId ?? activePet?.id ?? pets[0]?.id;
-  const pet = pets.find(item => item.id === petId);
-
-  const syncWellnessDay = useCallback(
-    async (targetPetId: string) => {
-      const targetPet = pets.find(item => item.id === targetPetId) ?? activePet;
-      if (!targetPet) {
-        return;
-      }
-      await loadPreferences(targetPetId);
-      await loadDaySchedule(targetPetId, undefined, { skipNotificationSync: true });
-      const latestSchedule = useScheduleStore.getState().schedule;
-      const latestPrefs = useScheduleStore.getState().preferences;
-      if (!latestSchedule || latestSchedule.petId !== targetPetId) {
-        return;
-      }
-      const userId = getAppSessionUserId();
-      if (userId) {
-        loadRelaxedMode(userId);
-      }
-      await hydrateDay({
-        petId: targetPetId,
-        petName: targetPet.name,
-        species: targetPet.type,
-        blocks: latestSchedule.blocks,
-        date: latestSchedule.date,
-        isPro,
-        ownerSleepTime:
-          latestPrefs?.ownerSleepTime ??
-          preferences?.ownerSleepTime ??
-          DEFAULT_PET_SCHEDULE_PREFERENCES.ownerSleepTime,
-      });
-    },
-    [activePet, hydrateDay, isPro, loadDaySchedule, loadPreferences, loadRelaxedMode, pets, preferences],
-  );
 
   useFocusEffect(
     useCallback(() => {
-      void loadPets().catch(() => {});
-      if (petId) {
-        void syncWellnessDay(petId);
-        if (isPro) {
-          void loadWeekScores(petId);
+      void (async () => {
+        await loadPets().catch(() => {});
+        const latestPets = usePetStore.getState().pets;
+        if (routePetId) {
+          setCareFilterPetId(routePetId);
+        } else if (latestPets.length === 1) {
+          setCareFilterPetId(latestPets[0].id);
+        } else {
+          setCareFilterPetId('all');
         }
-      }
-    }, [isPro, loadPets, loadWeekScores, petId, syncWellnessDay]),
+        if (latestPets.length > 0) {
+          await loadCareDaySchedules(latestPets.map(pet => pet.id));
+        }
+      })();
+    }, [loadCareDaySchedules, loadPets, routePetId, setCareFilterPetId]),
   );
 
-  useEffect(() => {
-    if (routePetId && routePetId !== activePet?.id) {
-      void setActivePet(routePetId);
-    }
-  }, [activePet?.id, routePetId, setActivePet]);
+  const carePets = useMemo(
+    () =>
+      pets.map(pet => ({
+        id: pet.id,
+        name: pet.name,
+        type: pet.type,
+        photo: pet.photo,
+      })),
+    [pets],
+  );
 
-  useEffect(() => {
-    const blockId = route.params?.blockId;
-    if (blockId) {
-      setSelectedBlockId(blockId);
+  const blocksByPetId = useMemo(() => {
+    const map: Record<string, (typeof careSchedulesByPetId)[string]['blocks']> =
+      {};
+    for (const [petId, schedule] of Object.entries(careSchedulesByPetId)) {
+      map[petId] = schedule.blocks;
     }
-  }, [route.params?.blockId, setSelectedBlockId]);
+    return map;
+  }, [careSchedulesByPetId]);
+
+  const careView = useMemo(
+    () =>
+      aggregateCareDay({
+        pets: carePets,
+        blocksByPetId,
+        filterPetId: careFilterPetId,
+        now: new Date(),
+        isPro,
+        upNextLimit: 3,
+        laterLimit: 0,
+      }),
+    [blocksByPetId, careFilterPetId, carePets, isPro],
+  );
+
+  const attentionCount = careView.openCount;
+  const caption =
+    pets.length === 0
+      ? 'Add a pet to get started'
+      : careFilterPetId === 'all'
+        ? attentionCount > 0
+          ? `${attentionCount} need${attentionCount === 1 ? 's' : ''} attention`
+          : 'All pets'
+        : pets.find(p => p.id === careFilterPetId)?.name ?? 'Care';
 
   const styles = useMemo(
     () =>
       StyleSheet.create({
         safeArea: { flex: 1, backgroundColor: colors.backgroundAlt },
-        header: {
-          paddingHorizontal: spacing.lg,
-          paddingTop: spacing.md,
-          gap: spacing.md,
-        },
-        titleRow: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: spacing.md,
-        },
-        headerActions: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.sm,
-        },
-        headerAction: {
-          width: spacing['2xl'] + spacing.xs,
-          height: spacing['2xl'] + spacing.xs,
-          borderRadius: radius.md,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderWidth: 1,
-          borderColor: colors.borderSubtle,
-          backgroundColor: colors.surface,
-        },
         content: {
           paddingHorizontal: spacing.lg,
-          paddingTop: spacing.lg,
-          gap: spacing.xl,
+          paddingTop: spacing.md,
+          gap: spacing.lg,
         },
-        sectionLabel: {
-          marginBottom: spacing.sm,
+        filterWrap: { gap: spacing.sm },
+        attentionWrap: {
+          position: 'relative',
+          overflow: 'visible',
         },
-        scoreCard: {
+        laterSheet: {
+          borderRadius: radius.xl,
+          borderWidth: 1,
+          borderColor: colors.borderSubtle,
+          backgroundColor: colors.surface,
+          padding: spacing.lg,
+          gap: spacing.sm,
+        },
+        laterOption: {
+          minHeight: 48,
+          justifyContent: 'center',
+          paddingHorizontal: spacing.lg,
+          borderRadius: radius.lg,
+          backgroundColor: colors.surfaceAlt,
+        },
+        laterCancel: {
+          alignSelf: 'center',
+          minHeight: 44,
+          justifyContent: 'center',
+        },
+        emptyCard: {
           borderRadius: radius.xl,
           borderWidth: 1,
           borderColor: colors.borderSubtle,
           backgroundColor: colors.surface,
           padding: spacing.xl,
-          gap: spacing.sm,
-        },
-        weekRow: {
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          gap: spacing.sm,
-        },
-        dot: {
-          width: spacing.xl,
-          height: spacing.xl,
-          borderRadius: radius.round,
-        },
-        placeholderCard: {
-          borderRadius: radius.xl,
-          borderWidth: 1,
-          borderColor: colors.borderSubtle,
-          backgroundColor: colors.surfaceAlt,
-          padding: spacing.xl,
           gap: spacing.md,
+          alignItems: 'flex-start',
         },
       }),
     [colors, radius, spacing],
   );
 
-  const weeklyAverage = useMemo(() => {
-    if (weekScores.length === 0) {
-      return completion.percentage || schedule?.completionPercent || 0;
-    }
-    const total = weekScores.reduce((sum, item) => sum + item.percent, 0);
-    return Math.round(total / weekScores.length);
-  }, [completion.percentage, schedule?.completionPercent, weekScores]);
-
-  const handleOpenInbox = useCallback(() => {
-    navigation.navigate('NotificationInbox');
-  }, [navigation]);
-
-  const handleOpenReminders = useCallback(() => {
-    navigation.navigate('ReminderList');
-  }, [navigation]);
-
-  const handleOpenSetup = useCallback(() => {
+  const handleSeeFullDay = useCallback(() => {
+    const petId =
+      careFilterPetId === 'all' ? pets[0]?.id : careFilterPetId;
     if (!petId) {
       return;
     }
-    navigation.navigate('PetsTab', { screen: 'ScheduleSetup', params: { petId } });
-  }, [navigation, petId]);
+    // Stay on Care tab — DayView is in the Notifications stack.
+    navigation.navigate('DayView', {
+      petId,
+    });
+  }, [careFilterPetId, navigation, pets]);
 
-  const handleUpgrade = useCallback(() => {
-    navigation.navigate('SettingsTab', { screen: 'Paywall', params: { source: 'settings' } });
-  }, [navigation]);
-
-  const headerActions = (
-    <View style={styles.headerActions}>
-      <Pressable
-        style={styles.headerAction}
-        onPress={handleOpenInbox}
-        accessibilityRole="button"
-        accessibilityLabel="Open notifications"
-      >
-        <MaterialIcon name="notifications" size={20} color={colors.text.heading} />
-      </Pressable>
-      <Pressable
-        style={styles.headerAction}
-        onPress={handleOpenReminders}
-        accessibilityRole="button"
-        accessibilityLabel="Open reminders"
-      >
-        <MaterialIcon name="schedule" size={20} color={colors.text.heading} />
-      </Pressable>
-    </View>
+  const handleMarkDone = useCallback(
+    async (item: CareAggregatedItem) => {
+      await markCareBlockDone(item.pet.id, item.block.id, true);
+      const schedule =
+        useScheduleStore.getState().careSchedulesByPetId[item.pet.id];
+      const completion = schedule
+        ? getDayCompletion(schedule.blocks, isPro)
+        : { done: 0, total: 0, percentage: 0 };
+      const dayDone = isDayFullyComplete(completion);
+      const streak = useScheduleStore.getState().careStreakDays;
+      setBurstIntensity(dayDone ? 'day' : 'soft');
+      setBurstVisible(true);
+      setPulseToken(token => token + 1);
+      setRewardToast({
+        petName: item.pet.name,
+        kind: dayDone ? 'day' : 'task',
+        streakDays: streak,
+        taskLabel: careTaskShortVerb(item.block),
+      });
+      setLaterItem(null);
+      setSelectedItem(null);
+      setTimeout(() => setBurstVisible(false), dayDone ? 700 : 520);
+    },
+    [isPro, markCareBlockDone],
   );
 
-  if (!pet) {
+  const attentionLocked =
+    careView.attentionItem != null &&
+    !careView.attentionItem.block.isFreeFeature &&
+    !isPro;
+
+  if (pets.length === 0) {
     return (
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-        <View style={[styles.header, { paddingBottom: spacing.sm }]}>
-          <View style={styles.titleRow}>
-            <AppText
-              style={[
-                textStyles.title,
-                { color: colors.text.heading, fontFamily: fontFamilies.bold },
-              ]}
-            >
-              Care
-            </AppText>
-            {headerActions}
-          </View>
-        </View>
-        <View style={[styles.content, { paddingBottom: tabBarInset }]}>
-          <View style={styles.placeholderCard}>
-            <AppText
-              style={[
-                textStyles.title,
-                { color: colors.text.heading, fontFamily: fontFamilies.bold },
-              ]}
-            >
-              Care starts with a pet profile
-            </AppText>
-            <AppText style={[textStyles.body, { color: colors.text.secondary }]}>
-              Add a pet to unlock today&apos;s care plan, weekly scores, and streaks.
-            </AppText>
-            <Button
-              title="Add a pet"
-              onPress={() => navigation.navigate('PetsTab', { screen: 'AddPet' })}
-            />
-          </View>
+        <FlatTabHeroBar title="Care" caption="Add a pet" theme={theme} />
+        <View
+          style={[
+            styles.emptyCard,
+            shadows.md,
+            { margin: spacing.lg, paddingBottom: tabBarInset },
+          ]}
+        >
+          <Paw3dIcon size={48} />
+          <AppText
+            style={[
+              textStyles.title,
+              {
+                color: colors.text.heading,
+                fontFamily: fontFamilies.extrabold,
+                letterSpacing: -0.3,
+              },
+            ]}
+          >
+            Your pets need to be here
+          </AppText>
+          <AppText style={[textStyles.body, { color: colors.text.secondary }]}>
+            Add your first pet to start tracking their care.
+          </AppText>
+          <Button
+            title="Add pet"
+            onPress={() => navigation.navigate('PetsTab', { screen: 'AddPet' })}
+          />
         </View>
       </SafeAreaView>
     );
@@ -266,116 +283,222 @@ export const WellnessHubScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      <View style={styles.header}>
-        <View style={styles.titleRow}>
-          <AppText
-            style={[
-              textStyles.title,
-              { color: colors.text.heading, fontFamily: fontFamilies.bold },
-            ]}
-          >
-            Care
-          </AppText>
-          {headerActions}
+      <FlatTabHeroBar title="Care" caption={caption} theme={theme} />
+
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: tabBarInset }]}
+      >
+        <WellnessCompletionToast
+          visible={rewardToast != null}
+          petName={rewardToast?.petName ?? ''}
+          rewardKind={rewardToast?.kind}
+          streakDays={rewardToast?.streakDays}
+          taskLabel={rewardToast?.taskLabel}
+          onDismiss={() => setRewardToast(null)}
+        />
+
+        <View style={styles.filterWrap}>
+          <CarePetFilter
+            pets={pets}
+            selectedId={
+              pets.length === 1 ? pets[0].id : careFilterPetId
+            }
+            showAllChip={pets.length > 1}
+            onSelect={id => {
+              setCareFilterPetId(id);
+            }}
+          />
         </View>
-        <HomePetSwitcherBar
-          pets={pets}
-          activePetId={petId ?? null}
-          onSelectPet={nextPetId => {
-            void (async () => {
-              await setActivePet(nextPetId);
-              await syncWellnessDay(nextPetId);
-              if (isPro) {
-                await loadWeekScores(nextPetId);
-              }
-            })();
-          }}
-          theme={theme}
-        />
-      </View>
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: tabBarInset }]}>
-        <TodayCareSection
-          pet={pet}
-          onOpenSetup={handleOpenSetup}
-          onUpgrade={handleUpgrade}
-        />
+        {careLoading && Object.keys(careSchedulesByPetId).length === 0 ? (
+          <ActivityIndicator color={colors.primary} />
+        ) : null}
 
-        <View>
-          <AppText
-            style={[
-              textStyles.caption,
-              styles.sectionLabel,
-              { color: colors.text.secondary, fontFamily: fontFamilies.semibold },
-            ]}
-          >
-            Weekly wellness
+        {error ? (
+          <AppText style={[textStyles.body, { color: colors.danger }]}>
+            {error}
           </AppText>
-          <View style={[styles.scoreCard, shadows.sm]}>
+        ) : null}
+
+        {!careLoading && careView.totalCount === 0 ? (
+          <View style={[styles.emptyCard, shadows.sm]}>
             <AppText
               style={[
-                textStyles.caption,
-                { color: colors.text.secondary, fontFamily: fontFamilies.semibold },
-              ]}
-            >
-              This week
-            </AppText>
-            <AppText
-              style={[
-                textStyles.title,
+                textStyles.subtitle,
                 { color: colors.text.heading, fontFamily: fontFamilies.bold },
               ]}
             >
-              {weeklyAverage} / 100
+              No care tasks yet
             </AppText>
             <AppText style={[textStyles.body, { color: colors.text.secondary }]}>
-              {pet.name}&apos;s care consistency score
+              Set a daily rhythm so we can show what needs attention.
             </AppText>
-            <AppText style={[textStyles.body, { color: colors.text.secondary }]}>
-              Today&apos;s wellness score:{' '}
-              {completion.percentage || schedule?.wellnessScore || schedule?.completionPercent || 0} / 100
-            </AppText>
+            <Button
+              title="Set up care schedule"
+              onPress={() => {
+                const petId =
+                  careFilterPetId === 'all' ? pets[0]?.id : careFilterPetId;
+                if (!petId) {
+                  return;
+                }
+                navigation.navigate('PetsTab', {
+                  screen: 'ScheduleSetup',
+                  params: { petId },
+                });
+              }}
+            />
           </View>
+        ) : (
+          <>
+            <View style={styles.attentionWrap}>
+              <CareDoneBurst
+                visible={burstVisible}
+                intensity={burstIntensity}
+              />
+              <CareAttentionCard
+                item={careView.attentionItem}
+                allGood={careView.allGood}
+                nextHint={careView.upNext[0] ?? null}
+                locked={attentionLocked}
+                onMarkDone={() => {
+                  if (careView.attentionItem) {
+                    void handleMarkDone(careView.attentionItem);
+                  }
+                }}
+                onLater={() => setLaterItem(careView.attentionItem)}
+                onUpgrade={() =>
+                  navigation.navigate('SettingsTab', {
+                    screen: 'Paywall',
+                    params: { source: 'settings' },
+                  })
+                }
+              />
+            </View>
 
-          {isPro && weekScores.length > 0 ? (
-            <View style={[styles.weekRow, { marginTop: spacing.md }]}>
-              {weekScores.map(item => (
-                <View key={item.date} style={{ alignItems: 'center', gap: spacing.xs }}>
-                  <View
+            {laterItem ? (
+              <View style={styles.laterSheet}>
+                <AppText
+                  style={[
+                    textStyles.caption,
+                    {
+                      color: colors.text.secondary,
+                      fontFamily: fontFamilies.semibold,
+                    },
+                  ]}
+                >
+                  Remind me
+                </AppText>
+                {LATER_PRESETS.map(preset => (
+                  <Pressable
+                    key={preset.label}
+                    accessibilityRole="button"
+                    style={styles.laterOption}
+                    onPress={() => {
+                      void snoozeCareBlock(
+                        laterItem.pet.id,
+                        laterItem.block.id,
+                        preset.minutes,
+                      );
+                      setLaterItem(null);
+                    }}
+                  >
+                    <AppText
+                      style={[
+                        textStyles.caption,
+                        {
+                          color: colors.text.heading,
+                          fontFamily: fontFamilies.semibold,
+                        },
+                      ]}
+                    >
+                      {preset.label}
+                    </AppText>
+                  </Pressable>
+                ))}
+                <Pressable
+                  accessibilityRole="button"
+                  style={styles.laterOption}
+                  onPress={() => {
+                    void skipCareBlock(laterItem.pet.id, laterItem.block.id);
+                    setLaterItem(null);
+                  }}
+                >
+                  <AppText
                     style={[
-                      styles.dot,
-                      {
-                        backgroundColor:
-                          item.percent >= 80
-                            ? colors.success
-                            : item.percent >= 50
-                              ? colors.warning
-                              : colors.danger,
-                      },
+                      textStyles.caption,
+                      { color: colors.text.secondary },
                     ]}
-                  />
-                  <AppText style={[textStyles.footer, { color: colors.text.secondary }]}>
-                    {item.percent}%
+                  >
+                    Skip for today
                   </AppText>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <View style={[styles.placeholderCard, { marginTop: spacing.md }]}>
-              <AppText
-                style={[
-                  textStyles.body,
-                  { color: colors.text.heading, fontFamily: fontFamilies.semibold },
-                ]}
-              >
-                {loading
-                  ? 'Building this week’s wellness picture…'
-                  : 'Complete a few care blocks to unlock the weekly calendar.'}
-              </AppText>
-            </View>
-          )}
-        </View>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  style={styles.laterCancel}
+                  onPress={() => setLaterItem(null)}
+                >
+                  <AppText
+                    style={[textStyles.caption, { color: colors.text.secondary }]}
+                  >
+                    Cancel
+                  </AppText>
+                </Pressable>
+              </View>
+            ) : null}
+
+            <CareUpNextList
+              title="Up next"
+              items={careView.upNext}
+              onSelect={setSelectedItem}
+            />
+
+            {careView.totalCount > 0 ? (
+              <CareFullDayCta
+                doneCount={careView.doneCount}
+                totalCount={careView.totalCount}
+                onPress={handleSeeFullDay}
+              />
+            ) : null}
+
+            {careView.totalCount > 0 ? (
+              <CarePlayHud
+                doneCount={careView.doneCount}
+                totalCount={careView.totalCount}
+                streakDays={careStreakDays}
+                pulseToken={pulseToken}
+              />
+            ) : null}
+          </>
+        )}
       </ScrollView>
+
+      <CareBlockDetailSheet
+        visible={selectedItem != null}
+        block={selectedItem?.block ?? null}
+        locked={
+          selectedItem != null &&
+          !selectedItem.block.isFreeFeature &&
+          !isPro
+        }
+        onClose={() => setSelectedItem(null)}
+        onMarkDone={() => {
+          if (selectedItem) {
+            void handleMarkDone(selectedItem);
+          }
+        }}
+        onSkip={() => {
+          if (selectedItem) {
+            void skipCareBlock(selectedItem.pet.id, selectedItem.block.id);
+            setSelectedItem(null);
+          }
+        }}
+        onUpgrade={() =>
+          navigation.navigate('SettingsTab', {
+            screen: 'Paywall',
+            params: { source: 'settings' },
+          })
+        }
+      />
     </SafeAreaView>
   );
 };

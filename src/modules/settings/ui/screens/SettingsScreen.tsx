@@ -16,6 +16,8 @@ import { useNavigation } from '@react-navigation/native';
 import { useAppTabBarInset } from '../../../../app/navigation/layout';
 import type { SettingsRootNavigation } from '../../../../app/navigation/types';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
+import { AppText } from '../../../../shared/components/AppText';
+import { FlatTabHeroBar } from '../../../../shared/components/FlatTabHeroBar';
 import { UserAvatar } from '../../../../shared/components/UserAvatar';
 import { icons } from '../../../../shared/assets/icons';
 import { images } from '../../../../shared/assets/images';
@@ -53,8 +55,13 @@ import { useSettingsStore } from '../../store/settingsStore';
 export const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<SettingsRootNavigation>();
   const tabBarInset = useAppTabBarInset();
-  const { fontFamilies, colors, isDarkMode, selectedThemeMode } = useTheme();
-  const styles = useMemo(() => createStyles(colors, tabBarInset), [colors, tabBarInset]);
+  const theme = useTheme();
+  const { fontFamilies, colors, isDarkMode, selectedThemeMode, shadows } =
+    theme;
+  const styles = useMemo(
+    () => createStyles(colors, tabBarInset, shadows),
+    [colors, shadows, tabBarInset],
+  );
   const settings = useSettingsStore(s => s.settings);
   const loadSettings = useSettingsStore(s => s.loadSettings);
   const updateSettings = useSettingsStore(s => s.updateSettings);
@@ -301,13 +308,15 @@ export const SettingsScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      <View style={styles.header}>
-        <Pressable style={styles.headerBtn} onPress={goBackFromTabRoot}>
-          <MaterialIcon name="arrow_back" size={20} color={colors.text.heading} />
-        </Pressable>
-        <Text style={[styles.headerTitle, { fontFamily: fontFamilies.bold }]}>Settings</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      <FlatTabHeroBar
+        title="Settings"
+        caption={
+          profileLabels.maskedEmail ??
+          formatSubscriptionStatusLine(entitlement)
+        }
+        theme={theme}
+        onPressBack={goBackFromTabRoot}
+      />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.profileSection}>
@@ -326,23 +335,31 @@ export const SettingsScreen: React.FC = () => {
               <icons.editPencil width={14} height={14} />
             </Pressable>
           </View>
-          <Text style={[styles.profileName, { fontFamily: fontFamilies.bold }]}>
+          <AppText style={[styles.profileName, { fontFamily: fontFamilies.bold }]}>
             {profileLabels.primaryDisplayName}
-          </Text>
+          </AppText>
           {profileLabels.maskedEmail ? (
-            <Text style={[styles.profileMeta, { fontFamily: fontFamilies.medium }]}>
+            <AppText style={[styles.profileMeta, { fontFamily: fontFamilies.medium }]}>
               {profileLabels.maskedEmail}
-            </Text>
+            </AppText>
           ) : null}
           {profileLabels.memberSinceLine ? (
-            <Text style={[styles.profileMeta, styles.profileMetaSecondary, { fontFamily: fontFamilies.medium }]}>
+            <AppText
+              style={[
+                styles.profileMeta,
+                styles.profileMetaSecondary,
+                { fontFamily: fontFamilies.medium },
+              ]}
+            >
               {profileLabels.memberSinceLine}
-            </Text>
+            </AppText>
           ) : null}
         </View>
 
         <View style={styles.group}>
-          <Text style={[styles.groupTitle, { fontFamily: fontFamilies.bold }]}>NOTIFICATIONS</Text>
+          <AppText style={[styles.groupTitle, { fontFamily: fontFamilies.semibold }]}>
+            Notifications
+          </AppText>
           <View style={styles.groupCard}>
             <View style={styles.row}>
               <View style={styles.rowLeft}>
@@ -536,7 +553,9 @@ export const SettingsScreen: React.FC = () => {
         </View>
 
         <View style={styles.group}>
-          <Text style={[styles.groupTitle, { fontFamily: fontFamilies.bold }]}>ACCOUNT & PETS</Text>
+          <AppText style={[styles.groupTitle, { fontFamily: fontFamilies.semibold }]}>
+            Account & pets
+          </AppText>
           <View style={styles.groupCard}>
             <Pressable
               style={styles.actionRow}
@@ -576,7 +595,7 @@ export const SettingsScreen: React.FC = () => {
             >
               <View style={styles.rowLeft}>
                 <View style={styles.rowIconNeutral}>
-                  <MaterialIcon name="manage_accounts" size={20} color={colors.text.body} />
+                  <MaterialIcon name="settings" size={20} color={colors.text.body} />
                 </View>
                 <View>
                   <Text style={[styles.rowTitle, { fontFamily: fontFamilies.semibold }]}>
@@ -660,7 +679,7 @@ export const SettingsScreen: React.FC = () => {
                     confirmDeletePetFromSettings(pet);
                   }}
                 >
-                  <icons.paw width={20} height={20} />
+                  <MaterialIcon name="pets" size={20} color={colors.accent} />
                   <Text
                     style={[styles.modalRowLabel, { fontFamily: fontFamilies.semibold, color: colors.text.heading }]}
                   >
@@ -688,36 +707,10 @@ export const SettingsScreen: React.FC = () => {
 const createStyles = (
   colors: ReturnType<typeof useTheme>['colors'],
   tabBarInset: number,
+  shadows: ReturnType<typeof useTheme>['shadows'],
 ) =>
   StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.backgroundAlt },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderSubtle,
-    backgroundColor: colors.backgroundAlt,
-  },
-  headerBtn: {
-    width: spacing['3xl'],
-    height: spacing['3xl'],
-    borderRadius: radius.round,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: fontSizes.lg,
-    lineHeight: lineHeights.xl,
-    color: colors.text.heading,
-    marginRight: spacing['3xl'],
-  },
-  headerSpacer: { width: spacing['3xl'], height: spacing['3xl'] },
   content: {
     paddingBottom: spacing['4xl'] + spacing['3xl'] + spacing.md + tabBarInset,
   },
@@ -731,8 +724,8 @@ const createStyles = (
     height: spacing['4xl'] * 2,
     borderRadius: radius.round,
     borderWidth: 2,
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryLight,
+    borderColor: colors.brandTint12,
+    backgroundColor: colors.brandTint10,
   },
   profileImage: { width: '100%', height: '100%', borderRadius: radius.round },
   editProfileBadge: {
@@ -742,7 +735,7 @@ const createStyles = (
     width: spacing.xl + spacing.xs,
     height: spacing.xl + spacing.xs,
     borderRadius: radius.round,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     borderWidth: 2,
     borderColor: colors.backgroundAlt,
     alignItems: 'center',
@@ -766,20 +759,20 @@ const createStyles = (
   group: { marginTop: spacing.lg + spacing.xxs, paddingHorizontal: spacing.lg },
   groupTitle: {
     marginLeft: spacing.sm,
-    marginBottom: spacing.sm + spacing.xxs,
-    fontSize: fontSizes.xs - 1,
-    lineHeight: lineHeights.sm - spacing.xxs,
-    letterSpacing: 1.2,
-    color: colors.text.subdued,
+    marginBottom: spacing.sm,
+    fontSize: fontSizes.sm,
+    lineHeight: lineHeights.sm,
+    color: colors.text.secondary,
   },
   groupCard: {
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: colors.borderSubtle,
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs + spacing.xxs,
     gap: spacing.xxs,
+    ...shadows.sm,
   },
   row: {
     minHeight: spacing['4xl'] + spacing.xl - spacing.xs,
@@ -798,8 +791,8 @@ const createStyles = (
   rowIcon: {
     width: spacing['3xl'],
     height: spacing['3xl'],
-    borderRadius: radius.md,
-    backgroundColor: colors.primaryLight,
+    borderRadius: radius.round,
+    backgroundColor: colors.brandTint10,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -813,8 +806,8 @@ const createStyles = (
   rowIconNeutral: {
     width: spacing['3xl'],
     height: spacing['3xl'],
-    borderRadius: radius.md,
-    backgroundColor: colors.surfaceAlt,
+    borderRadius: radius.round,
+    backgroundColor: colors.brandTint10,
     alignItems: 'center',
     justifyContent: 'center',
   },

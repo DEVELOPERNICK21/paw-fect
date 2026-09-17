@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { icons } from '../../assets/icons';
 import { AppText } from '../AppText';
+import { Paw3dIcon } from '../Paw3dIcon';
 import { ScalePressable } from '../ScalePressable';
 import { useTheme } from '../../hooks/useTheme';
 
@@ -29,7 +30,7 @@ const SpeciesIcon: React.FC<{ kind: PetSpeciesOption['kind'] }> = ({
   if (kind === 'cat') {
     return <icons.catIcon width={SPECIES_ICON_SIZE} height={SPECIES_ICON_SIZE} />;
   }
-  return <icons.paws width={SPECIES_ICON_SIZE} height={SPECIES_ICON_SIZE} />;
+  return <Paw3dIcon size={SPECIES_ICON_SIZE} tone="cream" />;
 };
 
 export const PetSpeciesCards: React.FC<PetSpeciesCardsProps> = ({

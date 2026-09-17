@@ -34,7 +34,7 @@ const StatCard: React.FC<{
       style={[
         styles.card,
         {
-          borderRadius: radius.lg,
+          borderRadius: radius.xl,
           backgroundColor: colors.surface,
           borderColor: colors.borderSubtle,
           paddingVertical: spacing.sm,

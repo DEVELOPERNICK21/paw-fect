@@ -86,9 +86,10 @@ export function buildCareOwnerCopy(
 export function healthStatusHeadline(params: {
   overdueCount: number;
   needsNextCount: number;
-}): string {
+}): string | null {
+  // Overdue urgency lives on the needs-next cards — avoid a red "error-like" banner.
   if (params.overdueCount > 0) {
-    return 'Something needs attention';
+    return null;
   }
   if (params.needsNextCount === 0) {
     return "You're on track";

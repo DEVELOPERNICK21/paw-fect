@@ -10,6 +10,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -28,9 +29,9 @@ import type { Pet } from '../../../modules/pets/domain/models/Pet';
 import { usePetStore } from '../../../modules/pets/store/petStore';
 import { AppText } from '../../../shared/components/AppText';
 import { MaterialIcon } from '../../../shared/components/MaterialIcon';
+import { Paw3dIcon } from '../../../shared/components/Paw3dIcon';
 import { useTheme, type Theme } from '../../../shared/hooks/useTheme';
 import { fontSizes, lineHeights } from '../../../shared/theme/typography';
-import { icons } from '../../../shared/assets/icons';
 import { resolvePetAvatarSource } from '../../../shared/utils/petDisplayPhoto';
 import {
   BAR_HEIGHT,
@@ -957,7 +958,6 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
               <Pressable
                 style={[
                   styles.fabButton,
-                  { backgroundColor: colors.accent },
                   petsTabActive && [
                     styles.fabButtonActive,
                     { borderColor: colors.onAccent },
@@ -979,7 +979,31 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
                   radius: FAB_SIZE / 2,
                 }}
               >
-                <icons.paws width={32} height={32} />
+                <LinearGradient
+                  colors={[
+                    colors.primaryLight,
+                    colors.accent,
+                    colors.primaryDark,
+                  ]}
+                  locations={[0, 0.45, 1]}
+                  start={{ x: 0.15, y: 0 }}
+                  end={{ x: 0.85, y: 1 }}
+                  style={styles.fabGradient}
+                  pointerEvents="none"
+                />
+                <LinearGradient
+                  colors={[
+                    'rgba(255,255,255,0.38)',
+                    'rgba(255,255,255,0.08)',
+                    'rgba(255,255,255,0)',
+                  ]}
+                  locations={[0, 0.35, 1]}
+                  start={{ x: 0.2, y: 0 }}
+                  end={{ x: 0.8, y: 0.7 }}
+                  style={styles.fabSheen}
+                  pointerEvents="none"
+                />
+                <Paw3dIcon size={34} tone="cream" />
               </Pressable>
             </View>
           </Animated.View>
@@ -1233,6 +1257,23 @@ const createStyles = () =>
       borderRadius: FAB_SIZE / 2,
       alignItems: 'center',
       justifyContent: 'center',
+      overflow: 'hidden',
+    },
+    fabGradient: {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      borderRadius: FAB_SIZE / 2,
+    },
+    fabSheen: {
+      position: 'absolute',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      borderRadius: FAB_SIZE / 2,
     },
     fabButtonActive: {
       borderWidth: 3,

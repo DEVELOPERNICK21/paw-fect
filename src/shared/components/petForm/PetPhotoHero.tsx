@@ -6,9 +6,9 @@ import {
   type ImageSourcePropType,
 } from 'react-native';
 
-import { icons } from '../../assets/icons';
 import { AppText } from '../AppText';
 import { MaterialIcon } from '../MaterialIcon';
+import { Paw3dIcon } from '../Paw3dIcon';
 import { ScalePressable } from '../ScalePressable';
 import { useTheme } from '../../hooks/useTheme';
 
@@ -97,7 +97,7 @@ export const PetPhotoHero: React.FC<PetPhotoHeroProps> = ({
 
   const defaultPlaceholder = (
     <View style={styles.defaultIcon}>
-      <icons.paws width={72} height={72} />
+      <Paw3dIcon size={72} tone="cream" />
     </View>
   );
 

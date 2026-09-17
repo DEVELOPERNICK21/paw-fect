@@ -24,6 +24,7 @@ export class SnoozeCareBlock {
       {
         completedAt: null,
         snoozedUntil,
+        skippedAt: null,
       },
     );
     return nextTime;

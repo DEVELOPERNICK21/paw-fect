@@ -12,7 +12,6 @@ export interface TodayCareCompleteCardProps {
 
 export const TodayCareCompleteCard: React.FC<TodayCareCompleteCardProps> = ({
   petName,
-  completionPercent,
 }) => {
   const { colors, spacing, radius, textStyles, fontFamilies } = useTheme();
   const styles = useMemo(
@@ -34,14 +33,14 @@ export const TodayCareCompleteCard: React.FC<TodayCareCompleteCardProps> = ({
     <View style={styles.card}>
       <AppText
         style={[
-          textStyles.title,
+          textStyles.subtitle,
           { color: colors.text.heading, fontFamily: fontFamilies.bold },
         ]}
       >
-        {petName}&apos;s day is complete
+        {petName}&apos;s care is complete
       </AppText>
       <AppText style={[textStyles.body, { color: colors.text.secondary }]}>
-        Great job today. Wellness score {completionPercent}%.
+        Nice work looking after {petName} today.
       </AppText>
     </View>
   );
@@ -52,10 +51,9 @@ export interface TodayCareSetupPlaceholderProps {
   onPressSetup: () => void;
 }
 
-export const TodayCareSetupPlaceholder: React.FC<TodayCareSetupPlaceholderProps> = ({
-  petName,
-  onPressSetup,
-}) => {
+export const TodayCareSetupPlaceholder: React.FC<
+  TodayCareSetupPlaceholderProps
+> = ({ petName, onPressSetup }) => {
   const { colors, spacing, radius, textStyles, fontFamilies } = useTheme();
   const styles = useMemo(
     () =>
@@ -76,15 +74,14 @@ export const TodayCareSetupPlaceholder: React.FC<TodayCareSetupPlaceholderProps>
     <View style={styles.card}>
       <AppText
         style={[
-          textStyles.title,
+          textStyles.subtitle,
           { color: colors.text.heading, fontFamily: fontFamilies.bold },
         ]}
       >
-        Build {petName}&apos;s daily rhythm
+        No care tasks yet
       </AppText>
       <AppText style={[textStyles.body, { color: colors.text.secondary }]}>
-        Set wake time, meals, and walks once. Pawsoul turns that into a clear
-        care plan for today.
+        Set a daily rhythm for {petName} so we can show what&apos;s next.
       </AppText>
       <Button title="Set up care schedule" onPress={onPressSetup} />
     </View>
@@ -100,8 +97,9 @@ export const TodayCareLoadingPlaceholder: React.FC = () => {
           borderRadius: radius.xl,
           borderWidth: 1,
           borderColor: colors.borderSubtle,
-          backgroundColor: colors.surfaceAlt,
+          backgroundColor: colors.surface,
           padding: spacing.xl,
+          alignItems: 'center',
         },
       }),
     [colors, radius, spacing],
@@ -110,7 +108,7 @@ export const TodayCareLoadingPlaceholder: React.FC = () => {
   return (
     <View style={styles.card}>
       <AppText style={[textStyles.body, { color: colors.text.secondary }]}>
-        Loading today&apos;s care plan…
+        Loading care plan…
       </AppText>
     </View>
   );

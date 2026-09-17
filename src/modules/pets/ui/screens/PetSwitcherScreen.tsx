@@ -80,9 +80,7 @@ export const PetSwitcherScreen: React.FC = () => {
       StyleSheet.create({
         safeArea: { flex: 1 },
         body: { flex: 1 },
-        well: {
-          borderBottomWidth: StyleSheet.hairlineWidth,
-        },
+        well: {},
         topRow: {
           flexDirection: 'row',
           alignItems: 'center',
@@ -400,8 +398,7 @@ export const PetSwitcherScreen: React.FC = () => {
         style={[
           styles.well,
           {
-            backgroundColor: colors.surface,
-            borderBottomColor: colors.borderSubtle,
+            backgroundColor: colors.backgroundAlt,
             paddingHorizontal: spacing.lg,
             paddingTop: spacing.sm,
             paddingBottom: spacing.md,

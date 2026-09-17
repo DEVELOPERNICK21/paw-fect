@@ -31,7 +31,11 @@ export function getDayCompletion(
     return { done: 0, total: 0, percentage: 0 };
   }
   const done = countable.filter(
-    block => block.status === 'done' || block.isCompleted,
+    block =>
+      block.status === 'done' ||
+      block.status === 'skipped' ||
+      block.isCompleted === true ||
+      block.isSkipped === true,
   ).length;
   const total = countable.length;
   const percentage = Math.round((done / total) * 100);

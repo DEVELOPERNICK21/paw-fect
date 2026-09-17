@@ -40,20 +40,11 @@ const BreedPill: React.FC<{ label: string; theme: Theme }> = React.memo(
             borderRadius: radius.pill,
             paddingHorizontal: spacing.sm,
             paddingVertical: spacing.xs,
+            gap: spacing.xs,
           },
         ]}
       >
-        <View
-          style={[
-            styles.pawWrap,
-            {
-              backgroundColor: colors.brandTint12,
-              borderColor: colors.brandTint20,
-            },
-          ]}
-        >
-          <icons.paw width={14} height={14} />
-        </View>
+        <MaterialIcon name="pets" size={14} color={colors.onAccent} />
         <AppText
           style={[
             textStyles.overline,
@@ -61,7 +52,6 @@ const BreedPill: React.FC<{ label: string; theme: Theme }> = React.memo(
               // Always light on the media pill (dark-mode text.inverse is near-black).
               color: colors.onAccent,
               fontFamily: fontFamilies.bold,
-              marginLeft: spacing.xs,
             },
           ]}
         >
@@ -369,13 +359,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-  },
-  pawWrap: {
-    borderWidth: 1,
-    borderRadius: radiusTokens.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacingTokens.xs,
   },
   glowOverlay: {
     ...StyleSheet.absoluteFillObject,

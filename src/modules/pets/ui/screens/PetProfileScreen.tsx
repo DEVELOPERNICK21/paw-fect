@@ -19,14 +19,13 @@ import { PetProfileSectionHeader } from '../components/profile/PetProfileSection
 import { PetProfileTodayCareSection } from '../components/profile/PetProfileTodayCareSection';
 import { PetProfileTipCard } from '../components/profile/PetProfileTipCard';
 
-import { HomeHeader } from '../../../../shared/components/HomeHeader';
+import { FlatTabHeroBar } from '../../../../shared/components/FlatTabHeroBar';
 import { AppText } from '../../../../shared/components/AppText';
 import { Button } from '../../../../shared/components/Button';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { spacing } from '../../../../shared/theme/spacing';
 import { radius as radiusTokens } from '../../../../shared/theme/radius';
-import { icons } from '../../../../shared/assets/icons';
 
 import { useHomeDashboardStore } from '../../../app/store/homeDashboardStore';
 import { usePetStore } from '../../store/petStore';
@@ -85,8 +84,12 @@ export const PetProfileScreen: React.FC = () => {
     }, [loadPets, loadRecords, requestDashboardRefresh]),
   );
 
-  const goSettings = useCallback(() => {
-    navigation.navigate('SettingsTab', { screen: 'Settings' });
+  const goBackFromProfile = useCallback(() => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+      return;
+    }
+    navigation.navigate('HomeTab', { screen: 'Home' });
   }, [navigation]);
 
   const goEditPet = useCallback(() => {
@@ -155,7 +158,9 @@ export const PetProfileScreen: React.FC = () => {
   const ageLabel = formatPetAgeLabel(effectivePet?.dob);
   const locationLine = 'San Francisco, CA';
 
-  const breedLabel = (effectivePet?.breed?.trim() || 'Not set').toUpperCase();
+  const breedRaw = effectivePet?.breed?.trim() ?? '';
+  const breedLabel = (breedRaw || 'Not set').toUpperCase();
+  const headerCaption = [ageLabel, breedRaw || null].filter(Boolean).join(' · ');
   const tip = effectivePet
     ? getPawsitiveTip(effectivePet)
     : { title: 'Pawsitive Tip', body: '' };
@@ -367,6 +372,7 @@ export const PetProfileScreen: React.FC = () => {
         <View
           style={[
             styles.completionCard,
+            theme.shadows.sm,
             {
               backgroundColor: colors.surface,
               borderColor: colors.borderSubtle,
@@ -478,7 +484,7 @@ export const PetProfileScreen: React.FC = () => {
 
         <View>
           <PetProfileSectionHeader
-            title="My Pets"
+            title="My pets"
             rightElement={
               <Pressable
                 onPress={goPetSwitcher}
@@ -548,7 +554,7 @@ export const PetProfileScreen: React.FC = () => {
         <PetProfileTipCard title={tip.title} body={tip.body} />
 
         <PetProfileSectionHeader
-          title="Health Records"
+          title="Health records"
           rightElement={
             <Pressable
               onPress={goAddHealthRecord}
@@ -558,7 +564,7 @@ export const PetProfileScreen: React.FC = () => {
               <MaterialIcon
                 name="add_circle"
                 size={22}
-                color={colors.text.subdued}
+                color={colors.accent}
               />
             </Pressable>
           }
@@ -585,11 +591,15 @@ export const PetProfileScreen: React.FC = () => {
     goNextAction,
     todayCare,
     todayCareLoading,
-    goHealthRecords,
+    goDaySchedule,
     tip.body,
     tip.title,
     goAddHealthRecord,
-    colors.text.subdued,
+    colors,
+    theme.shadows.sm,
+    textStyles,
+    fontFamilies,
+    spacingTokens,
   ]);
 
   const listFooter = useMemo(() => {
@@ -605,6 +615,12 @@ export const PetProfileScreen: React.FC = () => {
         edges={['top', 'left', 'right']}
         style={[styles.safeArea, { backgroundColor: colors.backgroundAlt }]}
       >
+        <FlatTabHeroBar
+          title="Pet profile"
+          caption="Loading…"
+          theme={theme}
+          onPressBack={goBackFromProfile}
+        />
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -618,17 +634,17 @@ export const PetProfileScreen: React.FC = () => {
         edges={['top', 'left', 'right']}
         style={[styles.safeArea, { backgroundColor: colors.backgroundAlt }]}
       >
-        <HomeHeader
-          title="Pawsoul"
-          onPressMenu={goSettings}
-          onPressProfile={goSettings}
+        <FlatTabHeroBar
+          title="Pet profile"
+          caption="Could not load pets"
           theme={theme}
+          onPressBack={goBackFromProfile}
         />
         <View
           style={[
             styles.stateCard,
             {
-              backgroundColor: colors.surfaceAlt,
+              backgroundColor: colors.surface,
               borderColor: colors.borderSubtle,
             },
           ]}
@@ -657,11 +673,11 @@ export const PetProfileScreen: React.FC = () => {
         edges={['top', 'left', 'right']}
         style={[styles.safeArea, { backgroundColor: colors.backgroundAlt }]}
       >
-        <HomeHeader
-          title="Pawsoul"
-          onPressMenu={goSettings}
-          onPressProfile={goSettings}
+        <FlatTabHeroBar
+          title="Pet profile"
+          caption="Add a pet to get started"
           theme={theme}
+          onPressBack={goBackFromProfile}
         />
         <View style={styles.center}>
           <View
@@ -673,7 +689,7 @@ export const PetProfileScreen: React.FC = () => {
               },
             ]}
           >
-            <icons.paw width={40} height={40} />
+            <MaterialIcon name="pets" size={40} color={colors.accent} />
             <AppText
               style={[
                 textStyles.subtitle,
@@ -705,11 +721,19 @@ export const PetProfileScreen: React.FC = () => {
       edges={['top', 'left', 'right']}
       style={[styles.safeArea, { backgroundColor: colors.backgroundAlt }]}
     >
-      <HomeHeader
-        title="Pawsoul"
-        onPressMenu={goSettings}
-        onPressProfile={goSettings}
+      <FlatTabHeroBar
+        title={effectivePet.name}
+        caption={headerCaption || 'Your pet'}
         theme={theme}
+        onPressBack={goBackFromProfile}
+        actions={[
+          {
+            key: 'switch',
+            accessibilityLabel: 'Switch pet',
+            icon: 'pets',
+            onPress: goPetSwitcher,
+          },
+        ]}
       />
 
       <View style={styles.mainWithFab}>
@@ -729,7 +753,7 @@ export const PetProfileScreen: React.FC = () => {
                 style={[
                   styles.emptyCard,
                   {
-                    backgroundColor: colors.surfaceAlt,
+                    backgroundColor: colors.surface,
                     borderColor: colors.borderSubtle,
                   },
                 ]}
@@ -829,7 +853,7 @@ const styles = StyleSheet.create({
   },
   completionCard: {
     borderWidth: 1,
-    borderRadius: radiusTokens.lg,
+    borderRadius: radiusTokens.xl,
     padding: spacing.lg,
     gap: 10,
   },
@@ -850,7 +874,7 @@ const styles = StyleSheet.create({
   },
   completionCta: {
     height: 48,
-    borderRadius: 14,
+    borderRadius: radiusTokens.pill,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -865,14 +889,14 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.lg,
     marginTop: spacing.lg,
     borderWidth: 1,
-    borderRadius: radiusTokens.lg,
+    borderRadius: radiusTokens.xl,
     padding: spacing.xl,
     alignItems: 'center',
     gap: spacing.md,
   },
   emptyCard: {
     borderWidth: 1,
-    borderRadius: radiusTokens.lg,
+    borderRadius: radiusTokens.xl,
     padding: spacing.xl,
     alignItems: 'center',
     gap: spacing.md,

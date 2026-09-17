@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -29,7 +29,6 @@ import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { getTodayIsoDateLocal } from '../../../../shared/utils/calendarDate';
 import { resolvePetAvatarSource } from '../../../../shared/utils/petDisplayPhoto';
-import { icons } from '../../../../shared/assets/icons';
 import { formatPetAgeLabel } from '../../../pets/domain/utils/petDobDisplay';
 import { usePetStore } from '../../../pets/store/petStore';
 import { useSmartHealthRecordStore } from '../../store/smartHealthRecordStore';
@@ -44,9 +43,14 @@ import {
   validateVaccinationLogDate,
 } from '../../domain/utils/vaccinationLogValidation';
 import { getLastCompletedDewormingIsoDate } from '../../domain/utils/smartHealthDewormingInference';
-import { healthStatusHeadline } from '../../domain/utils/careOwnerCopy';
+import {
+  careWhatLabel,
+  healthStatusHeadline,
+} from '../../domain/utils/careOwnerCopy';
 import { HealthFullPlanSection } from '../components/HealthFullPlanSection';
 import { HealthHeroBar } from '../components/HealthHeroBar';
+import { HealthLogDateSheet } from '../components/HealthLogDateSheet';
+import { HealthSaveToast } from '../components/HealthSaveToast';
 import { NeedsNextCareCard } from '../components/NeedsNextCareCard';
 import { PremiumUpgradeCard } from '../components/PremiumUpgradeCard';
 import { WhySeeingThisSection } from '../components/WhySeeingThisSection';
@@ -157,6 +161,8 @@ export const HealthRecordScreen: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [focusUnavailableDismissed, setFocusUnavailableDismissed] =
     useState(false);
+  const [logSaving, setLogSaving] = useState(false);
+  const logSavingRef = useRef(false);
 
   const todayDate = getTodayIsoDateLocal();
 
@@ -196,10 +202,21 @@ export const HealthRecordScreen: React.FC = () => {
     focusedRecord == null &&
     !focusUnavailableDismissed;
 
-  const needsNext = useMemo(
-    () => smartHealthSelectors.getActionRequiredItems(records, 2),
-    [records],
-  );
+  const needsNext = useMemo(() => {
+    // Ask for a few candidates; engine already dedupes by family + owner label.
+    // Extra label guard here so Needs Next never shows two identical cards.
+    const candidates = smartHealthSelectors.getActionRequiredItems(records, 6);
+    const seenLabels = new Set<string>();
+    const unique: typeof candidates = [];
+    for (const record of candidates) {
+      const label = careWhatLabel(record).toLowerCase();
+      if (seenLabels.has(label)) continue;
+      seenLabels.add(label);
+      unique.push(record);
+      if (unique.length >= 2) break;
+    }
+    return unique;
+  }, [records]);
 
   const planUpcoming = useMemo(
     () =>
@@ -237,6 +254,7 @@ export const HealthRecordScreen: React.FC = () => {
   );
 
   const handleSaveDewormingDate = async (): Promise<void> => {
+    if (logSavingRef.current) return;
     if (!selectedDewormingDate || !activePet?.dob || !actionRecord) return;
 
     const cadence = actionRecord.cadence;
@@ -266,10 +284,24 @@ export const HealthRecordScreen: React.FC = () => {
     setDewormingLogError(null);
 
     const proceed = async (): Promise<void> => {
-      await markAsDone(actionRecord.id, selectedDewormingDate, activePet.dob);
+      if (logSavingRef.current) return;
+      logSavingRef.current = true;
+      setLogSaving(true);
+      const recordId = actionRecord.id;
+      const completedDate = selectedDewormingDate;
+      const dob = activePet.dob;
+      // Close sheet + toast immediately; store paints Needs next / plan optimistically.
       setShowDewormingModal(false);
+      setSelectedDewormingDate('');
+      setDewormingLogError(null);
       setActionRecord(null);
-      setSuccessMessage('Saved — great job caring for your pet.');
+      setSuccessMessage('Great job caring for your pet.');
+      try {
+        await markAsDone(recordId, completedDate, dob);
+      } finally {
+        logSavingRef.current = false;
+        setLogSaving(false);
+      }
     };
 
     if (check.warning) {
@@ -284,6 +316,7 @@ export const HealthRecordScreen: React.FC = () => {
   };
 
   const handleSaveVaccinationDate = async (): Promise<void> => {
+    if (logSavingRef.current) return;
     if (!actionRecord || !selectedVaccinationDate) return;
     if (!activePet?.dob) {
       setVaccinationLogError('Pet date of birth is required to log a vaccine.');
@@ -314,14 +347,24 @@ export const HealthRecordScreen: React.FC = () => {
     setVaccinationLogError(null);
 
     const proceed = async (): Promise<void> => {
-      await markAsDone(
-        actionRecord.id,
-        selectedVaccinationDate,
-        activePet?.dob,
-      );
+      if (logSavingRef.current) return;
+      logSavingRef.current = true;
+      setLogSaving(true);
+      const recordId = actionRecord.id;
+      const completedDate = selectedVaccinationDate;
+      const dob = activePet?.dob;
+      // Close sheet + toast immediately; store paints Needs next / plan optimistically.
       setShowVaccinationModal(false);
+      setSelectedVaccinationDate('');
+      setVaccinationLogError(null);
       setActionRecord(null);
-      setSuccessMessage('Saved — great job caring for your pet.');
+      setSuccessMessage('Great job caring for your pet.');
+      try {
+        await markAsDone(recordId, completedDate, dob);
+      } finally {
+        logSavingRef.current = false;
+        setLogSaving(false);
+      }
     };
 
     if (vaxCheck.warning) {
@@ -336,6 +379,7 @@ export const HealthRecordScreen: React.FC = () => {
   };
 
   const closeVaccinationModal = (): void => {
+    if (logSavingRef.current) return;
     setShowVaccinationModal(false);
     setSelectedVaccinationDate('');
     setVaccinationLogError(null);
@@ -343,6 +387,7 @@ export const HealthRecordScreen: React.FC = () => {
   };
 
   const closeDewormingModal = (): void => {
+    if (logSavingRef.current) return;
     setShowDewormingModal(false);
     setSelectedDewormingDate('');
     setDewormingLogError(null);
@@ -427,11 +472,9 @@ export const HealthRecordScreen: React.FC = () => {
       });
   };
 
-  React.useEffect(() => {
-    if (!successMessage) return;
-    const timer = setTimeout(() => setSuccessMessage(null), 1600);
-    return () => clearTimeout(timer);
-  }, [successMessage]);
+  const dismissSuccessToast = useCallback((): void => {
+    setSuccessMessage(null);
+  }, []);
 
   const dewormingLogPickerMinimum = useMemo((): Date | undefined => {
     if (!activePet?.dob || !actionRecord || actionRecord.type !== 'deworming') {
@@ -489,7 +532,7 @@ export const HealthRecordScreen: React.FC = () => {
               },
             ]}
           >
-            <icons.paw width={40} height={40} />
+            <MaterialIcon name="pets" size={40} color={colors.accent} />
             <AppText
               style={[
                 textStyles.subtitle,
@@ -581,19 +624,20 @@ export const HealthRecordScreen: React.FC = () => {
           }}
           showsVerticalScrollIndicator={false}
         >
-          <AppText
-            style={[
-              textStyles.body,
-              {
-                color:
-                  overdueCount > 0 ? colors.danger : colors.primaryDark,
-                fontFamily: fontFamilies.semibold,
-              },
-            ]}
-          >
-            {statusLine}
-            {overdueCount === 0 ? ' ❤️' : ''}
-          </AppText>
+          {statusLine ? (
+            <AppText
+              style={[
+                textStyles.body,
+                {
+                  color: colors.primaryDark,
+                  fontFamily: fontFamilies.semibold,
+                },
+              ]}
+            >
+              {statusLine}
+              {' ❤️'}
+            </AppText>
+          ) : null}
 
           <View style={{ gap: spacing.sm }}>
             <AppText
@@ -925,229 +969,60 @@ export const HealthRecordScreen: React.FC = () => {
         </View>
       </Modal>
 
-      <Modal
-        transparent
+      <HealthLogDateSheet
         visible={showDewormingModal}
-        animationType="fade"
-        onRequestClose={closeDewormingModal}
-      >
-        <View
-          style={[styles.modalBackdrop, { backgroundColor: colors.overlay }]}
-        >
-          <View
-            style={[
-              styles.modalCard,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.borderSubtle,
-                borderRadius: radius.lg,
-                padding: space('lg'),
-              },
-            ]}
-          >
-            <AppText
-              style={[textStyles.subtitle, { color: colors.text.heading }]}
-            >
-              When did you give worm medicine?
-            </AppText>
-            <View style={{ marginTop: space('lg') }}>
-              <DatePickerField
-                value={selectedDewormingDate}
-                onChange={setSelectedDewormingDate}
-                minimumDate={dewormingLogPickerMinimum}
-                maximumDate={new Date()}
-              />
-            </View>
-            {dewormingLogError ? (
-              <AppText
-                style={[
-                  textStyles.caption,
-                  { color: colors.danger, marginTop: space('sm') },
-                ]}
-              >
-                {dewormingLogError}
-              </AppText>
-            ) : null}
-            <View style={[styles.modalActions, { marginTop: space('md') }]}>
-              <Pressable
-                accessibilityRole="button"
-                onPress={closeDewormingModal}
-                style={[
-                  styles.modalActionBtn,
-                  {
-                    borderRadius: radius.md,
-                    borderColor: colors.borderSubtle,
-                    backgroundColor: colors.surfaceAlt,
-                  },
-                ]}
-              >
-                <AppText
-                  style={[
-                    textStyles.caption,
-                    { color: colors.text.secondary },
-                  ]}
-                >
-                  Cancel
-                </AppText>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => {
-                  void handleSaveDewormingDate();
-                }}
-                style={[
-                  styles.modalActionBtn,
-                  { borderRadius: radius.md, backgroundColor: colors.accent },
-                ]}
-              >
-                <AppText
-                  style={[textStyles.caption, { color: colors.text.inverse }]}
-                >
-                  Save
-                </AppText>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        title="When did you give worm medicine?"
+        subtitle={
+          actionRecord
+            ? `Log the day you treated ${activePet?.name ?? 'your pet'}.`
+            : undefined
+        }
+        value={selectedDewormingDate}
+        onChange={next => {
+          setSelectedDewormingDate(next);
+          setDewormingLogError(null);
+        }}
+        minimumDate={dewormingLogPickerMinimum}
+        maximumDate={new Date()}
+        error={dewormingLogError}
+        saving={logSaving}
+        saveLabel="Save"
+        onSave={() => {
+          void handleSaveDewormingDate();
+        }}
+        onClose={closeDewormingModal}
+      />
 
-      <Modal
-        transparent
+      <HealthLogDateSheet
         visible={showVaccinationModal}
-        animationType="fade"
-        onRequestClose={closeVaccinationModal}
-      >
-        <View
-          style={[styles.modalBackdrop, { backgroundColor: colors.overlay }]}
-        >
-          <View
-            style={[
-              styles.modalCard,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.borderSubtle,
-                borderRadius: radius.lg,
-                padding: space('lg'),
-              },
-            ]}
-          >
-            <AppText
-              style={[
-                textStyles.subtitle,
-                { color: colors.text.heading, fontFamily: fontFamilies.bold },
-              ]}
-            >
-              When was this vaccine given?
-            </AppText>
-            <View style={{ marginTop: space('lg') }}>
-              <DatePickerField
-                value={selectedVaccinationDate}
-                onChange={setSelectedVaccinationDate}
-                minimumDate={vaccinationLogPickerMinimum}
-                maximumDate={new Date()}
-              />
-            </View>
-            {vaccinationLogError ? (
-              <AppText
-                style={[
-                  textStyles.caption,
-                  { color: colors.danger, marginTop: space('sm') },
-                ]}
-              >
-                {vaccinationLogError}
-              </AppText>
-            ) : null}
-            <View style={[styles.modalActions, { marginTop: space('md') }]}>
-              <Pressable
-                accessibilityRole="button"
-                onPress={closeVaccinationModal}
-                style={[
-                  styles.modalActionBtn,
-                  {
-                    borderRadius: radius.md,
-                    borderColor: colors.borderSubtle,
-                    backgroundColor: colors.surfaceAlt,
-                  },
-                ]}
-              >
-                <AppText
-                  style={[
-                    textStyles.caption,
-                    {
-                      color: colors.text.secondary,
-                      fontFamily: fontFamilies.bold,
-                    },
-                  ]}
-                >
-                  Cancel
-                </AppText>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => {
-                  void handleSaveVaccinationDate();
-                }}
-                style={[
-                  styles.modalActionBtn,
-                  { borderRadius: radius.md, backgroundColor: colors.accent },
-                ]}
-              >
-                <AppText
-                  style={[
-                    textStyles.caption,
-                    {
-                      color: colors.text.inverse,
-                      fontFamily: fontFamilies.bold,
-                    },
-                  ]}
-                >
-                  Save
-                </AppText>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        title="When was this vaccine given?"
+        subtitle={
+          actionRecord
+            ? careWhatLabel(actionRecord)
+            : undefined
+        }
+        value={selectedVaccinationDate}
+        onChange={next => {
+          setSelectedVaccinationDate(next);
+          setVaccinationLogError(null);
+        }}
+        minimumDate={vaccinationLogPickerMinimum}
+        maximumDate={new Date()}
+        error={vaccinationLogError}
+        saving={logSaving}
+        saveLabel="Save"
+        onSave={() => {
+          void handleSaveVaccinationDate();
+        }}
+        onClose={closeVaccinationModal}
+      />
 
-      <Modal
-        transparent
+      <HealthSaveToast
         visible={Boolean(successMessage)}
-        animationType="fade"
-        onRequestClose={() => setSuccessMessage(null)}
-      >
-        <View
-          style={[styles.modalBackdrop, { backgroundColor: colors.overlay }]}
-        >
-          <View
-            style={[
-              styles.modalCard,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.success,
-                borderRadius: radius.lg,
-                padding: space('md'),
-              },
-            ]}
-          >
-            <AppText
-              style={[
-                textStyles.subtitle,
-                { color: colors.text.heading, fontFamily: fontFamilies.bold },
-              ]}
-            >
-              Success
-            </AppText>
-            <AppText
-              style={[
-                textStyles.caption,
-                { color: colors.text.secondary, marginTop: space('xs') },
-              ]}
-            >
-              {successMessage}
-            </AppText>
-          </View>
-        </View>
-      </Modal>
+        message={successMessage ?? ''}
+        bottomInset={tabBarInset}
+        onDismiss={dismissSuccessToast}
+      />
     </SafeAreaView>
   );
 };

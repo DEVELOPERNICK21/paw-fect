@@ -55,6 +55,7 @@ export type NotificationsStackParamList = {
         petId?: string;
         blockId?: string;
       };
+  DayView: { petId?: string; blockId?: string } | undefined;
   NotificationInbox: undefined;
   NotificationDetail: { notificationId: string };
   ReminderList: undefined;

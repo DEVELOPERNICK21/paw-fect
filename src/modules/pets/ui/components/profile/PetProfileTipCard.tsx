@@ -19,12 +19,11 @@ export const PetProfileTipCard: React.FC<PetProfileTipCardProps> = React.memo(
         style={[
           styles.card,
           {
-            borderRadius: radius.lg,
+            borderRadius: radius.xl,
             backgroundColor: colors.brandTint12,
             borderColor: colors.brandTint20,
             borderWidth: 1,
             padding: spacing.lg,
-            marginVertical: spacing.lg,
           },
         ]}
       >

@@ -103,7 +103,8 @@ export const HealthFullPlanSection: React.FC<HealthFullPlanSectionProps> =
     }, [records]);
 
     const visibleRows = tab === 'coming' ? comingRows : doneRows;
-    const completedCount = doneRows.filter(r => r.done).length;
+    // Same count as Done tab (completed + skipped).
+    const doneCount = doneRows.length;
 
     const styles = useMemo(
       () =>
@@ -288,7 +289,7 @@ export const HealthFullPlanSection: React.FC<HealthFullPlanSectionProps> =
                   { color: colors.success, fontFamily: fontFamilies.bold },
                 ]}
               >
-                {completedCount} done
+                {doneCount} done
               </AppText>
             </View>
           </View>
@@ -310,7 +311,7 @@ export const HealthFullPlanSection: React.FC<HealthFullPlanSectionProps> =
               style={[
                 styles.segmentTrack,
                 {
-                  backgroundColor: colors.brandTint12,
+                  backgroundColor: colors.surfaceAlt,
                   borderRadius: radius.pill,
                 },
               ]}
@@ -325,7 +326,7 @@ export const HealthFullPlanSection: React.FC<HealthFullPlanSectionProps> =
                   {
                     key: 'done' as const,
                     label: 'Done',
-                    count: doneRows.length,
+                    count: doneCount,
                   },
                 ] as const
               ).map(seg => {
@@ -342,11 +343,10 @@ export const HealthFullPlanSection: React.FC<HealthFullPlanSectionProps> =
                       {
                         borderRadius: radius.pill,
                         backgroundColor: selected
-                          ? colors.surface
-                          : colors.brandTint12,
+                          ? colors.accent
+                          : 'transparent',
                         opacity: pressed && !selected ? 0.85 : 1,
                       },
-                      selected ? shadows.sm : null,
                     ]}
                   >
                     <AppText
@@ -354,7 +354,7 @@ export const HealthFullPlanSection: React.FC<HealthFullPlanSectionProps> =
                         textStyles.caption,
                         {
                           color: selected
-                            ? colors.text.heading
+                            ? colors.text.inverse
                             : colors.text.secondary,
                           fontFamily: selected
                             ? fontFamilies.bold
@@ -369,7 +369,7 @@ export const HealthFullPlanSection: React.FC<HealthFullPlanSectionProps> =
                         textStyles.footer,
                         {
                           color: selected
-                            ? colors.accent
+                            ? colors.text.inverse
                             : colors.text.subdued,
                           fontFamily: fontFamilies.bold,
                         },

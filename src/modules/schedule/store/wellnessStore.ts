@@ -3,7 +3,6 @@ import { create } from 'zustand';
 import { ensureNotificationsReady } from '../../../infrastructure/notifications/notificationDiagnostics';
 import { notificationService } from '../../../infrastructure/notifications/notificationService';
 import { getAppSessionUserId } from '../../../shared/session/appSessionPorts';
-import { getTodayIsoDateLocal } from '../../../shared/utils/calendarDate';
 import { syncWellnessDigestNotifications } from '../data/notifications/wellnessDigestNotificationSync';
 import type { DailyCareBlock } from '../domain/models/DailyCareBlock';
 import type { DayCompletion } from '../domain/utils/wellnessCompletion';
@@ -14,6 +13,7 @@ import {
 import {
   enrichWellnessBlocks,
   resolveHeroBlockId,
+  resolveLaterBlocks,
   resolveUpNextBlocks,
 } from '../domain/utils/enrichWellnessBlocks';
 import { scheduleComposition } from '../scheduleComposition';
@@ -62,6 +62,7 @@ export interface WellnessState {
   relaxedMode: boolean;
   heroBlockId: string | null;
   upNextBlocks: DailyCareBlock[];
+  laterBlocks: DailyCareBlock[];
   showCelebration: boolean;
   celebrationPetName: string | null;
   selectedBlockId: string | null;
@@ -97,6 +98,7 @@ export const useWellnessStore = create<WellnessState>((set, get) => ({
   relaxedMode: false,
   heroBlockId: null,
   upNextBlocks: [],
+  laterBlocks: [],
   showCelebration: false,
   celebrationPetName: null,
   selectedBlockId: null,
@@ -115,6 +117,7 @@ export const useWellnessStore = create<WellnessState>((set, get) => ({
       streakDays: 0,
       heroBlockId: null,
       upNextBlocks: [],
+      laterBlocks: [],
       showCelebration: false,
       celebrationPetName: null,
       selectedBlockId: null,
@@ -124,41 +127,27 @@ export const useWellnessStore = create<WellnessState>((set, get) => ({
 
   hydrateDay: async input => {
     const userId = getAppSessionUserId();
-    const today = getTodayIsoDateLocal();
     const now = new Date();
     const relaxedMode =
       userId != null ? scheduleComposition.getRelaxedMode(userId) : false;
     const rawBlocks = input.blocks.map(stripEnrichment);
 
-    let taskMap = scheduleComposition.getWellnessTasks(
-      input.petId,
-      input.date,
-      today,
-    );
-    if (userId != null && Object.keys(taskMap).length === 0) {
-      const blockStates = await scheduleComposition.getBlockStates(
-        userId,
-        input.petId,
-        input.date,
-      );
-      taskMap = scheduleComposition.seedWellnessTasksFromBlockStates(
-        input.petId,
-        input.date,
-        blockStates,
-        today,
-      );
-    }
-
+    // Completion SSOT is already on blocks from BuildDailySchedule.
+    // Do not read/write MMKV task maps for done/skip.
     const enriched = enrichWellnessBlocks({
       blocks: rawBlocks,
       species: input.species,
-      taskMap,
       now,
       relaxedMode,
     });
     const completion = getDayCompletion(enriched, input.isPro);
     const heroBlockId = resolveHeroBlockId(enriched);
-    const upNextBlocks = resolveUpNextBlocks(enriched, heroBlockId);
+    const upNextBlocks = resolveUpNextBlocks(enriched, heroBlockId, 1);
+    const laterBlocks = resolveLaterBlocks(
+      enriched,
+      heroBlockId,
+      new Set(upNextBlocks.map(block => block.id)),
+    );
     const streak = scheduleComposition.getWellnessStreak(input.petId);
 
     set({
@@ -169,6 +158,7 @@ export const useWellnessStore = create<WellnessState>((set, get) => ({
       relaxedMode,
       heroBlockId,
       upNextBlocks,
+      laterBlocks,
       petId: input.petId,
       date: input.date,
       isPro: input.isPro,
@@ -196,24 +186,28 @@ export const useWellnessStore = create<WellnessState>((set, get) => ({
 
   markTaskDone: async (petId, blockId, date) => {
     const userId = getAppSessionUserId();
-    const today = getTodayIsoDateLocal();
     const state = get();
-
-    scheduleComposition.saveWellnessTask(petId, date, blockId, 'done', today);
-
-    if (userId != null) {
-      await scheduleComposition.markCareBlockDone.execute({
-        userId,
-        petId,
-        date,
-        blockId,
-        completed: true,
-      });
+    if (userId == null) {
+      return;
     }
+
+    await scheduleComposition.markCareBlockDone.execute({
+      userId,
+      petId,
+      date,
+      blockId,
+      completed: true,
+    });
+    await scheduleComposition.cancelScheduleBlockNotification(blockId, petId);
 
     const updatedRaw = state.rawBlocks.map(block =>
       block.id === blockId
-        ? { ...block, isCompleted: true, completedAt: new Date().toISOString() }
+        ? {
+            ...block,
+            isCompleted: true,
+            isSkipped: false,
+            completedAt: new Date().toISOString(),
+          }
         : block,
     );
 
@@ -235,15 +229,35 @@ export const useWellnessStore = create<WellnessState>((set, get) => ({
   },
 
   skipTask: async (petId, blockId, date) => {
-    const today = getTodayIsoDateLocal();
+    const userId = getAppSessionUserId();
     const state = get();
-    scheduleComposition.saveWellnessTask(petId, date, blockId, 'skipped', today);
+    if (userId == null) {
+      return;
+    }
+
+    await scheduleComposition.skipCareBlock.execute({
+      userId,
+      petId,
+      date,
+      blockId,
+    });
+
+    const updatedRaw = state.rawBlocks.map(block =>
+      block.id === blockId
+        ? {
+            ...block,
+            isCompleted: false,
+            isSkipped: true,
+            completedAt: null,
+          }
+        : block,
+    );
 
     await get().hydrateDay({
       petId,
       petName: state.petName,
       species: state.species,
-      blocks: state.rawBlocks,
+      blocks: updatedRaw,
       date,
       isPro: state.isPro,
       ownerSleepTime: state.ownerSleepTime,
@@ -309,5 +323,6 @@ export const useWellnessStore = create<WellnessState>((set, get) => ({
 
   setSelectedBlockId: blockId => set({ selectedBlockId: blockId }),
 
-  clearCelebration: () => set({ showCelebration: false, celebrationPetName: null }),
+  clearCelebration: () =>
+    set({ showCelebration: false, celebrationPetName: null }),
 }));

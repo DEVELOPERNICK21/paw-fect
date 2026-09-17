@@ -81,19 +81,20 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = React.memo(
       setOpen(true);
     }, [disabled]);
 
-    const handleChange = useCallback(
-      (_event: unknown, selectedDate?: Date) => {
-        // datetimepicker returns `selectedDate` on iOS/Android; if cancelled it's undefined.
-        if (!selectedDate) {
+    const handleValueChange = useCallback(
+      (_event: unknown, selectedDate: Date) => {
+        onChange(isoDateFromLocal(selectedDate));
+        // Android dialog closes itself after a selection; unmount our node.
+        if (Platform.OS === 'android') {
           setOpen(false);
-          return;
         }
-        const nextIso = isoDateFromLocal(selectedDate);
-        onChange(nextIso);
-        setOpen(false);
       },
       [onChange],
     );
+
+    const handleDismiss = useCallback((): void => {
+      setOpen(false);
+    }, []);
 
     return (
       <>
@@ -136,14 +137,47 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = React.memo(
         </Pressable>
 
         {open ? (
-          <DateTimePicker
-            value={current}
-            mode="date"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={handleChange}
-            minimumDate={minimumDate}
-            maximumDate={maximumDate}
-          />
+          <View>
+            <DateTimePicker
+              value={current}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onValueChange={handleValueChange}
+              onDismiss={handleDismiss}
+              minimumDate={minimumDate}
+              maximumDate={maximumDate}
+            />
+            {Platform.OS === 'ios' ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Done picking date"
+                onPress={handleDismiss}
+                style={[
+                  styles.iosDone,
+                  {
+                    marginTop: spacing.sm,
+                    borderColor: colors.borderSubtle,
+                    borderRadius: radius.md,
+                    backgroundColor: colors.brandTint12,
+                    paddingVertical: spacing.sm,
+                  },
+                ]}
+              >
+                <AppText
+                  style={[
+                    textStyles.caption,
+                    {
+                      color: colors.accent,
+                      fontFamily: fontFamilies.bold,
+                      textAlign: 'center',
+                    },
+                  ]}
+                >
+                  Done
+                </AppText>
+              </Pressable>
+            ) : null}
+          </View>
         ) : null}
       </>
     );
@@ -161,5 +195,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  iosDone: {
+    borderWidth: 1,
   },
 });

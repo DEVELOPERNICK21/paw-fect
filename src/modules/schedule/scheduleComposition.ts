@@ -8,7 +8,9 @@ import { createScheduleRepository } from './data/repositories/ScheduleRepository
 import { BuildDailySchedule } from './domain/usecases/BuildDailySchedule';
 import { GetSchedulePreferences } from './domain/usecases/GetSchedulePreferences';
 import { MarkCareBlockDone } from './domain/usecases/MarkCareBlockDone';
+import { MigrateWellnessTasksToBlockStates } from './domain/usecases/MigrateWellnessTasksToBlockStates';
 import { SaveSchedulePreferences } from './domain/usecases/SaveSchedulePreferences';
+import { SkipCareBlock } from './domain/usecases/SkipCareBlock';
 import { SnoozeCareBlock } from './domain/usecases/SnoozeCareBlock';
 import type { DailyCareBlock } from './domain/models/DailyCareBlock';
 import type { DailySchedule } from './domain/models/DailySchedule';
@@ -21,13 +23,22 @@ import type { ScheduleCompletionRecord } from './domain/repositories/ScheduleRep
 
 const scheduleRepository = createScheduleRepository();
 const petRepository = createPetRepository();
+const migrateWellnessTasks = new MigrateWellnessTasksToBlockStates(
+  scheduleRepository,
+);
 
 export const scheduleComposition = {
-  buildDailySchedule: new BuildDailySchedule(petRepository, scheduleRepository),
+  buildDailySchedule: new BuildDailySchedule(
+    petRepository,
+    scheduleRepository,
+    migrateWellnessTasks,
+  ),
   getSchedulePreferences: new GetSchedulePreferences(scheduleRepository),
   saveSchedulePreferences: new SaveSchedulePreferences(scheduleRepository),
   markCareBlockDone: new MarkCareBlockDone(scheduleRepository),
+  skipCareBlock: new SkipCareBlock(scheduleRepository),
   snoozeCareBlock: new SnoozeCareBlock(scheduleRepository),
+  migrateWellnessTasksToBlockStates: migrateWellnessTasks,
   getDailyCompletionPercents: (
     userId: string,
     petId: string,

@@ -8,6 +8,7 @@ import type {
 } from '../domain/models/SmartHealthRecord';
 import type { MilestoneShareKind } from '../domain/utils/isMilestoneCompletion';
 import { isMilestoneCompletion } from '../domain/utils/isMilestoneCompletion';
+import { applySmartHealthQueueOptimistic } from '../domain/utils/applySmartHealthQueueOptimistic';
 import { smartHealthSelectors } from './smartHealthSelectors';
 import { recordsComposition } from '../recordsComposition';
 
@@ -293,30 +294,55 @@ export const useSmartHealthRecordStore = create<SmartHealthRecordState>(
       }
 
       const snapshot = get().records;
-      set({ error: null });
+      // Instant UI update before queue / network I/O.
+      const preview = applySmartHealthQueueOptimistic(snapshot, [
+        {
+          id: `preview-mark-${recordId}`,
+          op: 'markDone',
+          petId: record.petId,
+          recordId: record.id,
+          record,
+          completedDate,
+          petDateOfBirth,
+          enqueuedAt: new Date().toISOString(),
+        },
+      ]);
+      set({ records: preview, error: null, loading: false });
 
       try {
-        const result = await withTimeout(
-          recordsComposition.markSmartHealthRecordDoneWithQueue(
-            userId,
-            snapshot,
-            record,
-            completedDate,
-            petDateOfBirth,
-          ),
-          STORE_ACTION_TIMEOUT_MS,
+        await recordsComposition.markSmartHealthRecordDoneWithQueue(
+          userId,
+          snapshot,
+          record,
+          completedDate,
+          petDateOfBirth,
+          {
+            onOptimistic: optimistic => {
+              set({ records: optimistic, loading: false, error: null });
+            },
+            onSyncSuccess: () => {
+              void reloadPetRecordsAfterMutation(
+                record.petId,
+                recordId,
+                set,
+                get,
+              ).catch(() => {});
+            },
+            onSyncFailure: error => {
+              // eslint-disable-next-line no-console
+              console.error('[smartHealthRecordStore] markAsDone sync error', error);
+              set({
+                records: snapshot,
+                loading: false,
+                error:
+                  error instanceof Error && error.message.trim().length > 0
+                    ? error.message
+                    : 'Unable to mark dose as done. Please try again.',
+              });
+            },
+          },
         );
         await refreshPendingSyncCount(set);
-        if (result.offline) {
-          const optimistic = await recordsComposition.mergeSmartHealthRecordsWithQueue(
-            userId,
-            record.petId,
-            snapshot,
-          );
-          set({ records: optimistic, loading: false, error: null });
-          return;
-        }
-        await reloadPetRecordsAfterMutation(record.petId, recordId, set, get);
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('[smartHealthRecordStore] markAsDone error', error);
@@ -345,32 +371,48 @@ export const useSmartHealthRecordStore = create<SmartHealthRecordState>(
       set({ error: null });
 
       try {
-        const result = await withTimeout(
-          recordsComposition.skipSmartHealthRecordWithQueue(
-            userId,
-            snapshot,
-            record,
-            reason,
-            petDateOfBirth,
-          ),
-          STORE_ACTION_TIMEOUT_MS,
+        await recordsComposition.skipSmartHealthRecordWithQueue(
+          userId,
+          snapshot,
+          record,
+          reason,
+          petDateOfBirth,
+          {
+            onOptimistic: optimistic => {
+              set({ records: optimistic, loading: false, error: null });
+            },
+            onSyncSuccess: () => {
+              void withTimeout(
+                recordsComposition.getSmartHealthRecords.execute(
+                  userId,
+                  record.petId,
+                ),
+                STORE_ACTION_TIMEOUT_MS,
+              )
+                .then(records => {
+                  set({ records, loading: false, error: null });
+                  void refreshDueNotifications(records).catch(() => {});
+                })
+                .catch(() => {});
+            },
+            onSyncFailure: error => {
+              // eslint-disable-next-line no-console
+              console.error(
+                '[smartHealthRecordStore] skipDewormingDose sync error',
+                error,
+              );
+              set({
+                records: snapshot,
+                loading: false,
+                error:
+                  error instanceof Error && error.message.trim().length > 0
+                    ? error.message
+                    : 'Unable to skip dose. Please try again.',
+              });
+            },
+          },
         );
         await refreshPendingSyncCount(set);
-        if (result.offline) {
-          const optimistic = await recordsComposition.mergeSmartHealthRecordsWithQueue(
-            userId,
-            record.petId,
-            snapshot,
-          );
-          set({ records: optimistic, loading: false, error: null });
-          return;
-        }
-        const records = await withTimeout(
-          recordsComposition.getSmartHealthRecords.execute(userId, record.petId),
-          STORE_ACTION_TIMEOUT_MS,
-        );
-        set({ records, loading: false, error: null });
-        void refreshDueNotifications(records).catch(() => {});
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('[smartHealthRecordStore] skipDewormingDose error', error);
@@ -399,32 +441,46 @@ export const useSmartHealthRecordStore = create<SmartHealthRecordState>(
       set({ error: null });
 
       try {
-        const result = await withTimeout(
-          recordsComposition.rescheduleSmartHealthRecordWithQueue(
-            userId,
-            snapshot,
-            record,
-            newDueDate,
-            petDateOfBirth,
-          ),
-          STORE_ACTION_TIMEOUT_MS,
+        await recordsComposition.rescheduleSmartHealthRecordWithQueue(
+          userId,
+          snapshot,
+          record,
+          newDueDate,
+          petDateOfBirth,
+          {
+            onOptimistic: optimistic => {
+              set({ records: optimistic, loading: false, error: null });
+            },
+            onSyncSuccess: () => {
+              void withTimeout(
+                recordsComposition.getSmartHealthRecords.execute(
+                  userId,
+                  record.petId,
+                ),
+                STORE_ACTION_TIMEOUT_MS,
+              )
+                .then(records => {
+                  set({ records, loading: false, error: null });
+                  void refreshDueNotifications(records).catch(() => {});
+                })
+                .catch(() => {});
+            },
+            onSyncFailure: error => {
+              // eslint-disable-next-line no-console
+              console.error('[smartHealthRecordStore] reschedule sync error', error);
+              const message =
+                error instanceof Error && error.message.trim().length > 0
+                  ? error.message
+                  : 'Unable to reschedule dose. Please try again.';
+              set({
+                records: snapshot,
+                loading: false,
+                error: message,
+              });
+            },
+          },
         );
         await refreshPendingSyncCount(set);
-        if (result.offline) {
-          const optimistic = await recordsComposition.mergeSmartHealthRecordsWithQueue(
-            userId,
-            record.petId,
-            snapshot,
-          );
-          set({ records: optimistic, loading: false, error: null });
-          return;
-        }
-        const records = await withTimeout(
-          recordsComposition.getSmartHealthRecords.execute(userId, record.petId),
-          STORE_ACTION_TIMEOUT_MS,
-        );
-        set({ records, loading: false, error: null });
-        void refreshDueNotifications(records).catch(() => {});
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('[smartHealthRecordStore] reschedule error', error);

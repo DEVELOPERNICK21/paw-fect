@@ -5,47 +5,47 @@ export const NOTIFICATION_TEMPLATES: Record<
   (petName: string, detail?: string) => { title: string; body: string }
 > = {
   feeding: (name, detail) => ({
-    title: `${name}'s Meal Time 🍽️`,
-    body: detail ?? `Time for ${name}'s meal — fresh water too!`,
+    title: `${name} needs a meal`,
+    body: detail ?? `It's time to feed ${name}.`,
   }),
   walk: (name, detail) => ({
-    title: `${name}'s Walk Time 🐾`,
-    body: detail ?? `Time for a walk — let ${name} sniff and explore!`,
+    title: `${name} needs a walk`,
+    body: detail ?? `It's time for ${name}'s walk.`,
   }),
   play: (name, detail) => ({
-    title: `Playtime for ${name} 🎾`,
-    body: detail ?? `5–10 min of play — then meal time!`,
+    title: `Play with ${name}`,
+    body: detail ?? `A short play session will help ${name}.`,
   }),
   potty: name => ({
-    title: `${name}'s Potty Break`,
-    body: `Quick potty break for ${name}`,
+    title: `${name} needs a potty break`,
+    body: `Quick potty break for ${name}.`,
   }),
   grooming: (name, detail) => ({
-    title: `${name}'s Grooming Time 🧴`,
-    body: detail ?? `Brushing + quick health check for ${name}`,
+    title: `Groom ${name}`,
+    body: detail ?? `Brushing and a quick check for ${name}.`,
   }),
   training: name => ({
-    title: `Training Time for ${name} 🎓`,
-    body: `5 min commands + use reserved kibble as treats`,
+    title: `Train ${name}`,
+    body: `A few minutes of training with ${name}.`,
   }),
   health_check: (name, detail) => ({
-    title: `${name}'s Health Check 🩺`,
-    body: detail ?? `Quick check: eyes, ears, coat, energy`,
+    title: `Check on ${name}`,
+    body: detail ?? `Quick look: eyes, ears, coat, energy.`,
   }),
   litter: name => ({
-    title: `${name}'s Litter Box 🧹`,
-    body: `Scoop ${name}'s litter box — cats refuse dirty litter`,
+    title: `Scoop ${name}'s litter`,
+    body: `Scoop the litter box for ${name}.`,
   }),
   rest: name => ({
-    title: `Rest Time for ${name} 😴`,
-    body: `Leave ${name} undisturbed — rest is essential`,
+    title: `Rest time for ${name}`,
+    body: `Give ${name} quiet time to rest.`,
   }),
   medication: (name, detail) => ({
-    title: `${name}'s Medication 💊`,
-    body: detail ?? `Time for ${name}'s medication`,
+    title: `${name}'s medicine`,
+    body: detail ?? `Time for ${name}'s medicine.`,
   }),
   bedtime: name => ({
-    title: `Bedtime for ${name} 🌙`,
-    body: `Last potty break done? Lights out for ${name}`,
+    title: `Bedtime for ${name}`,
+    body: `Help ${name} wind down for the night.`,
   }),
 };

@@ -19,7 +19,7 @@ export interface HealthHeroBarProps {
   theme: Theme;
 }
 
-/** Flat health header — pet identity once, no category tabs. */
+/** Flat health header — blends with page background (no strip). Home keeps tint well. */
 export const HealthHeroBar: React.FC<HealthHeroBarProps> = React.memo(
   ({ petName, petPhoto, ageLabel, onPressBack, theme }) => {
     const { colors, radius, spacing, textStyles, fontFamilies, shadows } =
@@ -30,8 +30,7 @@ export const HealthHeroBar: React.FC<HealthHeroBarProps> = React.memo(
         style={[
           styles.header,
           {
-            backgroundColor: colors.surface,
-            borderBottomColor: colors.borderSubtle,
+            backgroundColor: colors.backgroundAlt,
             paddingHorizontal: spacing.lg,
             paddingTop: spacing.sm,
             paddingBottom: spacing.md,
@@ -111,9 +110,7 @@ export const HealthHeroBar: React.FC<HealthHeroBarProps> = React.memo(
 HealthHeroBar.displayName = 'HealthHeroBar';
 
 const styles = StyleSheet.create({
-  header: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
+  header: {},
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',

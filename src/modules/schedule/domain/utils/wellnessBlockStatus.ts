@@ -43,17 +43,18 @@ export function isBlockMissed(
 }
 
 /**
- * Derives the runtime status for a care block from persisted state and current time.
+ * Derives runtime status from completion SSOT on the block (and optional
+ * legacy MMKV task overlay during migration).
  */
 export function deriveBlockStatus(
   block: DailyCareBlock,
   persisted: PersistedWellnessTask | undefined,
   now: Date,
 ): WellnessBlockStatus {
-  if (persisted?.status === 'done' || block.isCompleted) {
+  if (block.isCompleted || persisted?.status === 'done') {
     return 'done';
   }
-  if (persisted?.status === 'skipped') {
+  if (block.isSkipped || persisted?.status === 'skipped') {
     return 'skipped';
   }
   if (isWithinActiveWindow(block.scheduledTime, now)) {

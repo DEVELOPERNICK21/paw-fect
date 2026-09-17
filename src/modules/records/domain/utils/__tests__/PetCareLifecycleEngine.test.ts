@@ -102,6 +102,106 @@ describe('PetCareLifecycleEngine', () => {
     expect(dedupedFamilies.size).toBe(deduped.length);
   });
 
+  it('dedupes action-required list by family so Needs Next is not duplicated', () => {
+    const base = {
+      userId: 'u1',
+      petId: 'p-dup',
+      type: 'vaccination' as const,
+      category: 'core' as const,
+      recurrenceType: 'none' as const,
+      completedDate: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+    const records: SmartHealthRecord[] = [
+      {
+        ...base,
+        id: 'dhpp-1a',
+        key: 'dhpp-1a',
+        family: 'DHPP',
+        name: 'DHPP (1st)',
+        dueDate: '2026-06-25',
+        status: 'overdue',
+      },
+      {
+        ...base,
+        id: 'dhpp-1b',
+        key: 'dhpp-1b',
+        family: 'DHPP',
+        name: 'DHPP (1st)',
+        dueDate: '2026-06-25',
+        status: 'overdue',
+      },
+      {
+        ...base,
+        id: 'deworm-1',
+        key: 'deworm-1',
+        type: 'deworming',
+        family: 'Deworming',
+        name: 'Deworming',
+        dueDate: '2026-07-01',
+        status: 'overdue',
+      },
+    ];
+
+    const action = engine.getActionRequiredList(records, 2);
+    expect(action).toHaveLength(2);
+    expect(action.map(r => r.family)).toEqual(['DHPP', 'Deworming']);
+    expect(action.filter(r => r.family === 'DHPP')).toHaveLength(1);
+  });
+
+  it('dedupes action-required when family strings differ but owner label matches', () => {
+    const base = {
+      userId: 'u1',
+      petId: 'p-label',
+      type: 'vaccination' as const,
+      category: 'core' as const,
+      recurrenceType: 'none' as const,
+      completedDate: null,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      status: 'overdue' as const,
+      dueDate: '2026-06-25',
+    };
+    const records: SmartHealthRecord[] = [
+      {
+        ...base,
+        id: 'a',
+        key: 'DHPP_1',
+        family: 'DHPP',
+        name: 'DHPP (1st)',
+      },
+      {
+        ...base,
+        id: 'b',
+        key: 'DHPP_1_alt',
+        family: 'DHPP (1st)',
+        name: 'DHPP (1st)',
+      },
+      {
+        ...base,
+        id: 'c',
+        key: 'CORE_ALT',
+        family: 'Core',
+        name: 'DHPP (1st)',
+      },
+      {
+        ...base,
+        id: 'd',
+        key: 'DEWORM',
+        type: 'deworming',
+        family: 'Deworming',
+        name: 'Deworming',
+        dueDate: '2026-07-01',
+      },
+    ];
+
+    const action = engine.getActionRequiredList(records, 2);
+    expect(action).toHaveLength(2);
+    expect(action[0]?.id).toBe('a');
+    expect(action[1]?.id).toBe('d');
+  });
+
   it('schedules last required puppy DHPP at 16+ weeks of age', () => {
     const records = engine.generateInitialPlan({
       userId: 'u1',

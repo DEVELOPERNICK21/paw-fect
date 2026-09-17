@@ -20,14 +20,17 @@ export const PetProfileTodayCareSection: React.FC<PetProfileTodayCareSectionProp
 
     return (
       <View style={styles.wrap}>
-        <View style={[styles.sectionHead, { gap: spacing.md }]}>
+        <View style={[styles.sectionHead, { gap: spacing.md, marginBottom: spacing.md }]}>
           <AppText
             style={[
-              textStyles.title,
-              { color: colors.text.heading, marginVertical: spacing.lg },
+              textStyles.caption,
+              {
+                color: colors.text.secondary,
+                fontFamily: fontFamilies.semibold,
+              },
             ]}
           >
-            Today&apos;s Care
+            Today&apos;s care
           </AppText>
 
           <Pressable
@@ -39,10 +42,10 @@ export const PetProfileTodayCareSection: React.FC<PetProfileTodayCareSectionProp
             <AppText
               style={[
                 textStyles.caption,
-                { color: colors.primary, fontFamily: fontFamilies.semibold },
+                { color: colors.accent, fontFamily: fontFamilies.bold },
               ]}
             >
-              Open today&apos;s care
+              Open care
             </AppText>
           </Pressable>
         </View>
@@ -58,9 +61,9 @@ export const PetProfileTodayCareSection: React.FC<PetProfileTodayCareSectionProp
             style={[
               styles.empty,
               {
-                borderRadius: theme.radius.lg,
+                borderRadius: theme.radius.xl,
                 borderColor: colors.borderSubtle,
-                backgroundColor: colors.surfaceAlt,
+                backgroundColor: colors.surface,
                 padding: spacing.xl,
               },
             ]}

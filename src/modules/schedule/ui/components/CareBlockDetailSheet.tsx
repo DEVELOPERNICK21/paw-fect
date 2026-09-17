@@ -124,7 +124,7 @@ export const CareBlockDetailSheet: React.FC<CareBlockDetailSheetProps> = ({
                   <Button title="Snooze 30 min" variant="secondary" onPress={onSnooze} />
                 ) : null}
                 {onSkip ? (
-                  <Button title="Skip for today" variant="secondary" onPress={onSkip} />
+                  <Button title="Skip today" variant="secondary" onPress={onSkip} />
                 ) : null}
               </>
             )}

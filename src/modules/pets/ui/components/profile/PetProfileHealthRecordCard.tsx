@@ -5,7 +5,6 @@ import type { HealthRecord } from '../../../../records/domain/models/HealthRecor
 import { AppText } from '../../../../../shared/components/AppText';
 import { MaterialIcon } from '../../../../../shared/components/MaterialIcon';
 import type { IconName } from '../../../../../shared/components/MaterialIcon';
-import { WidgetSurface } from '../../../../../shared/components/WidgetSurface';
 import { healthRecordIconName } from './healthRecordVisuals';
 import { useTheme } from '../../../../../shared/hooks/useTheme';
 import type { Theme } from '../../../../../shared/hooks/useTheme';
@@ -42,16 +41,28 @@ export const PetProfileHealthRecordCard: React.FC<PetProfileHealthRecordCardProp
     const styles = useMemo(
       () =>
         createStyles({
-          colors,
           radius,
           spacing,
           iconShell,
         }),
-      [colors, radius, spacing, iconShell],
+      [radius, spacing, iconShell],
     );
 
     return (
-      <WidgetSurface theme={theme} style={{ borderLeftWidth: 2, borderLeftColor: colors.success }}>
+      <View
+        style={[
+          styles.card,
+          theme.shadows.sm,
+          {
+            backgroundColor: colors.surface,
+            borderRadius: radius.xl,
+            borderColor: colors.borderSubtle,
+            borderWidth: 1,
+            padding: spacing.lg,
+            gap: spacing.md,
+          },
+        ]}
+      >
         <View style={styles.topRow}>
           <View style={styles.iconTile}>
             <MaterialIcon name={iconName} size={18} color={iconShell.fg} />
@@ -71,11 +82,19 @@ export const PetProfileHealthRecordCard: React.FC<PetProfileHealthRecordCardProp
               style={[textStyles.footer, { color: colors.text.secondary }]}
               numberOfLines={1}
             >
-              {record.category} • {formatShortRecordDate(record.date)}
+              {record.category} · {formatShortRecordDate(record.date)}
             </AppText>
           </View>
 
-          <View style={styles.tag}>
+          <View
+            style={[
+              styles.tag,
+              {
+                backgroundColor: colors.successSurface,
+                borderRadius: radius.pill,
+              },
+            ]}
+          >
             <MaterialIcon name="check" size={12} color={colors.success} />
             <AppText
               style={[
@@ -83,7 +102,7 @@ export const PetProfileHealthRecordCard: React.FC<PetProfileHealthRecordCardProp
                 { color: colors.success, fontFamily: fontFamilies.bold },
               ]}
             >
-              DONE
+              Done
             </AppText>
           </View>
         </View>
@@ -98,13 +117,13 @@ export const PetProfileHealthRecordCard: React.FC<PetProfileHealthRecordCardProp
           <AppText
             style={[
               textStyles.caption,
-              { color: colors.text.secondary, fontFamily: fontFamilies.bold },
+              { color: colors.accent, fontFamily: fontFamilies.bold },
             ]}
           >
             Details
           </AppText>
         </Pressable>
-      </WidgetSurface>
+      </View>
     );
   });
 
@@ -121,14 +140,14 @@ function iconShellFromIconName(
 PetProfileHealthRecordCard.displayName = 'PetProfileHealthRecordCard';
 
 interface StyleParams {
-  colors: AppColors;
   radius: Theme['radius'];
   spacing: Theme['spacing'];
   iconShell: { bg: string; fg: string };
 }
 
-const createStyles = ({ colors, radius, spacing, iconShell }: StyleParams) =>
+const createStyles = ({ radius, spacing, iconShell }: StyleParams) =>
   StyleSheet.create({
+    card: {},
     topRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -137,7 +156,7 @@ const createStyles = ({ colors, radius, spacing, iconShell }: StyleParams) =>
     iconTile: {
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: radius.sm,
+      borderRadius: radius.md,
       backgroundColor: iconShell.bg,
       width: spacing['2xl'],
       height: spacing['2xl'],
@@ -150,22 +169,12 @@ const createStyles = ({ colors, radius, spacing, iconShell }: StyleParams) =>
     tag: {
       flexDirection: 'row',
       alignItems: 'center',
-      borderRadius: radius.xs,
-      backgroundColor: colors.successSurface,
       paddingHorizontal: spacing.sm,
       paddingVertical: spacing.xxs,
       gap: spacing.xs,
     },
     detailsBtn: {
-      marginTop: spacing.sm,
-      alignSelf: 'stretch',
-      backgroundColor: colors.surfaceAlt,
-      borderRadius: radius.sm,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: 1,
-      borderColor: colors.borderSubtle,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
+      alignSelf: 'flex-start',
+      paddingVertical: spacing.xxs,
     },
   });

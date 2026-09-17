@@ -27,7 +27,7 @@ export const UpNextList: React.FC<UpNextListProps> = ({ blocks, onSelectBlock })
         },
         card: {
           width: 148,
-          borderRadius: radius.lg,
+          borderRadius: radius.xl,
           borderWidth: 1,
           borderColor: colors.borderSubtle,
           backgroundColor: colors.surface,

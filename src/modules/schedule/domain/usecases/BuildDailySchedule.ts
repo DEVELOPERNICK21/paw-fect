@@ -1,12 +1,12 @@
 import type { DailySchedule } from '../models/DailySchedule';
 import type { DailyCareBlock } from '../models/DailyCareBlock';
-import type { PetSchedulePreferences } from '../models/PetProfile';
 import type { PetRepository } from '../../../pets/domain/repositories/PetRepository';
 import { generateDailySchedule } from '../DailyScheduleEngine';
 import type { ScheduleRepository } from '../repositories/ScheduleRepository';
 import { getDayCompletion } from '../utils/wellnessCompletion';
 import { mapPetToScheduleProfile } from '../utils/mapPetToScheduleProfile';
 import { getTodayIsoDateLocal } from '../../../../shared/utils/calendarDate';
+import type { MigrateWellnessTasksToBlockStates } from './MigrateWellnessTasksToBlockStates';
 
 export interface BuildDailyScheduleInput {
   userId: string;
@@ -20,6 +20,7 @@ export class BuildDailySchedule {
   constructor(
     private readonly petRepository: PetRepository,
     private readonly scheduleRepository: ScheduleRepository,
+    private readonly migrateWellnessTasks?: MigrateWellnessTasksToBlockStates,
   ) {}
 
   async execute(input: BuildDailyScheduleInput): Promise<DailySchedule | null> {
@@ -30,6 +31,15 @@ export class BuildDailySchedule {
 
     const date = input.date ?? getTodayIsoDateLocal();
     const isPro = input.isPro ?? false;
+
+    if (this.migrateWellnessTasks) {
+      await this.migrateWellnessTasks.execute({
+        userId: input.userId,
+        petId: input.petId,
+        date,
+      });
+    }
+
     const preferences =
       (await this.scheduleRepository.getPreferences(input.userId, input.petId)) ??
       undefined;
@@ -43,10 +53,12 @@ export class BuildDailySchedule {
 
     const blocks: DailyCareBlock[] = generated.map(block => {
       const state = states[block.id];
+      const isSkipped = state?.skippedAt != null && state.completedAt == null;
       return {
         ...block,
         isCompleted: state?.completedAt != null,
         completedAt: state?.completedAt ?? null,
+        isSkipped,
         scheduledTime:
           state?.snoozedUntil != null &&
           state.snoozedUntil.slice(0, 10) === date
@@ -97,7 +109,9 @@ export class BuildDailySchedule {
     if (scores.length === 0) {
       return 0;
     }
-    return Math.round(scores.reduce((sum, value) => sum + value, 0) / scores.length);
+    return Math.round(
+      scores.reduce((sum, value) => sum + value, 0) / scores.length,
+    );
   }
 
   private shiftDate(date: string, deltaDays: number): string {

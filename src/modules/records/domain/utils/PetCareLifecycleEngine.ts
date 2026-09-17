@@ -9,6 +9,7 @@ import type {
 } from '../models/CarePlanTemplate';
 import { CARE_PLAN_TEMPLATES } from '../models/CarePlanTemplates';
 import type { SmartHealthRecord } from '../models/SmartHealthRecord';
+import { careWhatLabel } from './careOwnerCopy';
 import { dewormingEngine } from './DewormingEngine';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -193,11 +194,14 @@ const adultCoreBooster = (
 
 export class PetCareLifecycleEngine {
   private familyKey(record: SmartHealthRecord): string {
-    if (record.family?.trim()) return record.family.trim().toLowerCase();
-    return (
-      record.name.split('(')[0]?.trim().toLowerCase() ||
-      record.name.toLowerCase()
-    );
+    const raw = record.family?.trim()
+      ? record.family.trim()
+      : record.name.split('(')[0]?.trim() || record.name;
+    return raw
+      .toLowerCase()
+      .replace(/\s*\((?:1st|2nd|3rd|4th|start|booster[^)]*)\)\s*$/i, '')
+      .replace(/\s+booster\b.*$/i, '')
+      .trim();
   }
 
   getTemplate(petType: 'dog' | 'cat'): SpeciesCarePlanTemplate {
@@ -548,7 +552,7 @@ export class PetCareLifecycleEngine {
     records: SmartHealthRecord[],
     limit = 2,
   ): SmartHealthRecord[] {
-    return records
+    const sorted = records
       .filter(
         r =>
           r.status === 'overdue' ||
@@ -560,8 +564,24 @@ export class PetCareLifecycleEngine {
         if (a.status === 'overdue' && b.status !== 'overdue') return -1;
         if (b.status === 'overdue' && a.status !== 'overdue') return 1;
         return a.dueDate.localeCompare(b.dueDate);
-      })
-      .slice(0, limit);
+      });
+
+    // Needs Next: one card per care family AND per owner-facing label.
+    // Stored family strings can differ ("DHPP" vs "DHPP (1st)" vs "Core")
+    // while careWhatLabel still shows identical "Core vaccine (shot 1)".
+    const seenFamilies = new Set<string>();
+    const seenLabels = new Set<string>();
+    const deduped: SmartHealthRecord[] = [];
+    for (const item of sorted) {
+      const family = this.familyKey(item);
+      const label = careWhatLabel(item).toLowerCase();
+      if (seenFamilies.has(family) || seenLabels.has(label)) continue;
+      seenFamilies.add(family);
+      seenLabels.add(label);
+      deduped.push(item);
+      if (deduped.length >= limit) break;
+    }
+    return deduped;
   }
 
   getUpcoming(

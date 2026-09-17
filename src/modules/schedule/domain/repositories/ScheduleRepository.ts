@@ -8,6 +8,8 @@ import type {
 export interface ScheduleCompletionRecord {
   completedAt: string | null;
   snoozedUntil: string | null;
+  /** When set, block is skipped for that day (SSOT — not MMKV tasks). */
+  skippedAt?: string | null;
 }
 
 export interface ScheduleRepository {

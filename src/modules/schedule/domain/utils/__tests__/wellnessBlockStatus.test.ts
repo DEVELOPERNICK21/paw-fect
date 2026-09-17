@@ -37,6 +37,26 @@ describe('isWithinActiveWindow', () => {
 });
 
 describe('deriveBlockStatus', () => {
+  it('returns done when block SSOT isCompleted', () => {
+    expect(
+      deriveBlockStatus(
+        block({ isCompleted: true }),
+        undefined,
+        new Date(2026, 5, 9, 12, 0, 0),
+      ),
+    ).toBe('done');
+  });
+
+  it('returns skipped when block SSOT isSkipped', () => {
+    expect(
+      deriveBlockStatus(
+        block({ isSkipped: true }),
+        undefined,
+        new Date(2026, 5, 9, 12, 0, 0),
+      ),
+    ).toBe('skipped');
+  });
+
   it('returns done when persisted as done', () => {
     expect(
       deriveBlockStatus(

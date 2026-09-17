@@ -8,30 +8,35 @@ type PetSpecies = 'dog' | 'cat';
 export interface EnrichWellnessBlocksInput {
   blocks: DailyCareBlock[];
   species: PetSpecies;
-  taskMap: WellnessTaskMap;
+  /** @deprecated Prefer block.isCompleted / isSkipped from BuildDailySchedule. */
+  taskMap?: WellnessTaskMap;
   now: Date;
   relaxedMode: boolean;
 }
 
 /**
  * Enriches engine-generated blocks with wellness UI fields (status, tips, missed flag).
+ * Completion comes from DailyCareBlock SSOT; taskMap is legacy fallback only.
  */
 export function enrichWellnessBlocks(
   input: EnrichWellnessBlocksInput,
 ): DailyCareBlock[] {
+  const taskMap = input.taskMap ?? {};
   return input.blocks.map(block => {
-    const persisted = input.taskMap[block.id];
+    const persisted = taskMap[block.id];
     const status = deriveBlockStatus(block, persisted, input.now);
     const isProFeature = !block.isFreeFeature;
     const isCompleted = status === 'done';
+    const isSkipped = status === 'skipped';
     return {
       ...block,
       status,
       isProFeature,
       isCompleted,
+      isSkipped,
       completedAt:
         status === 'done'
-          ? persisted?.updatedAt ?? block.completedAt ?? new Date().toISOString()
+          ? block.completedAt ?? persisted?.updatedAt ?? new Date().toISOString()
           : block.completedAt,
       insightTip: resolveInsightTip(block, input.species, input.now),
       isMissed: isBlockMissed(
@@ -66,12 +71,12 @@ export function resolveHeroBlockId(blocks: DailyCareBlock[]): string | null {
 }
 
 /**
- * Returns the next 2–3 upcoming blocks after the hero, sorted by time.
+ * Returns the next upcoming block after the hero (Up Next — single item).
  */
 export function resolveUpNextBlocks(
   blocks: DailyCareBlock[],
   heroBlockId: string | null,
-  limit = 3,
+  limit = 1,
 ): DailyCareBlock[] {
   return blocks
     .filter(
@@ -85,4 +90,26 @@ export function resolveUpNextBlocks(
         left.order - right.order,
     )
     .slice(0, limit);
+}
+
+/**
+ * Remaining incomplete blocks after hero + up-next (Later list).
+ */
+export function resolveLaterBlocks(
+  blocks: DailyCareBlock[],
+  heroBlockId: string | null,
+  upNextIds: Set<string>,
+): DailyCareBlock[] {
+  return blocks
+    .filter(
+      block =>
+        block.status === 'upcoming' &&
+        block.id !== heroBlockId &&
+        !upNextIds.has(block.id),
+    )
+    .sort(
+      (left, right) =>
+        left.scheduledTime.localeCompare(right.scheduledTime) ||
+        left.order - right.order,
+    );
 }

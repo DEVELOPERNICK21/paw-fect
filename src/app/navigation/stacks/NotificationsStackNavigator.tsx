@@ -8,6 +8,7 @@ import ReminderListScreen from '../../../modules/reminders/ui/screens/ReminderLi
 import { NotificationDetailScreen } from '../../../modules/notifications/ui/screens/NotificationDetailScreen';
 import { NotificationInboxScreen } from '../../../modules/notifications/ui/screens/NotificationInboxScreen';
 import { WellnessHubScreen } from '../../../modules/schedule/ui/screens/WellnessHubScreen';
+import DayViewScreen from '../../../modules/schedule/ui/screens/DayViewScreen';
 
 const Stack = createNativeStackNavigator<NotificationsStackParamList>();
 
@@ -22,6 +23,7 @@ export const NotificationsStackNavigator = React.memo(
         }}
       >
         <Stack.Screen name="WellnessHub" component={WellnessHubScreen} />
+        <Stack.Screen name="DayView" component={DayViewScreen} />
         <Stack.Screen name="NotificationInbox" component={NotificationInboxScreen} />
         <Stack.Screen
           name="NotificationDetail"

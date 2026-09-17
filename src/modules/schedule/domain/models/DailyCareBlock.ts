@@ -36,6 +36,8 @@ export interface DailyCareBlock {
   notificationBody: string;
   isCompleted: boolean;
   completedAt: string | null;
+  /** Set by BuildDailySchedule from ScheduleCompletionRecord.skippedAt. */
+  isSkipped?: boolean;
   isFreeFeature: boolean;
   order: number;
   /** Populated by wellness enrichment only — not set by DailyScheduleEngine. */

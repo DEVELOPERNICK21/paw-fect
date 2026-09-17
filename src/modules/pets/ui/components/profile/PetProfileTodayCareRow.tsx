@@ -49,10 +49,10 @@ export const PetProfileTodayCareRow: React.FC<PetProfileTodayCareRowProps> =
           {
             height: spacing['6xl'] * 1.2,
             backgroundColor: colors.surface,
-            borderRadius: radius.lg,
+            borderRadius: radius.xl,
             borderColor: showCompletedCheck
               ? colors.brandTint20
-              : colors.brandTint10,
+              : colors.borderSubtle,
             borderWidth: 1,
             padding: spacing.lg,
             gap: spacing.md,

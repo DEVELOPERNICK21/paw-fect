@@ -1,4 +1,5 @@
 import { isLikelyOfflineError } from '../../shared/utils/isLikelyOfflineError';
+import { withTimeout } from '../../shared/utils/withTimeout';
 import { notificationService } from '../../infrastructure/notifications/notificationService';
 import { cancelSmartHealthNotificationsForRecord } from '../../infrastructure/notifications/smartHealthNotificationSchedule';
 import { requestNotificationResync } from '../../infrastructure/notifications/requestNotificationResync';
@@ -18,6 +19,8 @@ import { GetSmartHealthRecords } from './domain/usecases/GetSmartHealthRecords';
 import { MarkSmartHealthRecordDone } from './domain/usecases/MarkSmartHealthRecordDone';
 import { RescheduleSmartHealthRecord } from './domain/usecases/RescheduleSmartHealthRecord';
 import { SkipSmartHealthRecord } from './domain/usecases/SkipSmartHealthRecord';
+
+const MUTATION_SYNC_TIMEOUT_MS = 12_000;
 
 const healthRecordRepository = createHealthRecordRepository();
 
@@ -51,7 +54,10 @@ async function runQueuedSmartHealthMutation(input: {
   snapshot: SmartHealthRecord[];
   queueEntry: SmartHealthQueueEntryInput;
   execute: () => Promise<void>;
-}): Promise<{ offline: boolean }> {
+  onOptimistic?: (records: SmartHealthRecord[]) => void;
+  onSyncSuccess?: () => void;
+  onSyncFailure?: (error: unknown) => void;
+}): Promise<{ optimistic: SmartHealthRecord[] }> {
   const queued = await smartHealthRepository.enqueueMutation(
     input.userId,
     input.queueEntry,
@@ -61,23 +67,39 @@ async function runQueuedSmartHealthMutation(input: {
     input.petId,
     input.snapshot,
   );
-  await smartHealthRepository.saveCachedRecords(input.userId, input.petId, optimistic);
+  // Paint UI as soon as the optimistic merge is ready (before disk/network).
+  input.onOptimistic?.(optimistic);
 
-  try {
-    await cancelSmartHealthNotificationsForRecord(
-      input.queueEntry.recordId,
-      notificationService,
-    );
-    await input.execute();
-    await smartHealthRepository.removeQueueEntry(input.userId, queued.id);
-    return { offline: false };
-  } catch (error) {
-    if (isLikelyOfflineError(error)) {
-      return { offline: true };
+  await smartHealthRepository.saveCachedRecords(
+    input.userId,
+    input.petId,
+    optimistic,
+  );
+
+  void (async () => {
+    try {
+      await cancelSmartHealthNotificationsForRecord(
+        input.queueEntry.recordId,
+        notificationService,
+      );
+      await withTimeout(
+        input.execute(),
+        MUTATION_SYNC_TIMEOUT_MS,
+        'Request timed out. Please try again.',
+      );
+      await smartHealthRepository.removeQueueEntry(input.userId, queued.id);
+      input.onSyncSuccess?.();
+    } catch (error) {
+      // Timeout / offline: keep queue + optimistic so UI stays updated and sync retries.
+      if (isLikelyOfflineError(error)) {
+        return;
+      }
+      await smartHealthRepository.removeQueueEntry(input.userId, queued.id);
+      input.onSyncFailure?.(error);
     }
-    await smartHealthRepository.removeQueueEntry(input.userId, queued.id);
-    throw error;
-  }
+  })();
+
+  return { optimistic };
 }
 
 export const recordsComposition = {
@@ -110,7 +132,12 @@ export const recordsComposition = {
     record: SmartHealthRecord,
     completedDate?: string,
     petDateOfBirth?: string,
-  ): Promise<{ offline: boolean }> =>
+    hooks?: {
+      onOptimistic?: (records: SmartHealthRecord[]) => void;
+      onSyncSuccess?: () => void;
+      onSyncFailure?: (error: unknown) => void;
+    },
+  ): Promise<{ optimistic: SmartHealthRecord[] }> =>
     runQueuedSmartHealthMutation({
       userId,
       petId: record.petId,
@@ -125,6 +152,9 @@ export const recordsComposition = {
       },
       execute: () =>
         markSmartHealthRecordDone.execute(record, completedDate, petDateOfBirth),
+      onOptimistic: hooks?.onOptimistic,
+      onSyncSuccess: hooks?.onSyncSuccess,
+      onSyncFailure: hooks?.onSyncFailure,
     }),
   skipSmartHealthRecordWithQueue: async (
     userId: string,
@@ -132,7 +162,12 @@ export const recordsComposition = {
     record: SmartHealthRecord,
     reason: string,
     petDateOfBirth?: string,
-  ): Promise<{ offline: boolean }> =>
+    hooks?: {
+      onOptimistic?: (records: SmartHealthRecord[]) => void;
+      onSyncSuccess?: () => void;
+      onSyncFailure?: (error: unknown) => void;
+    },
+  ): Promise<{ optimistic: SmartHealthRecord[] }> =>
     runQueuedSmartHealthMutation({
       userId,
       petId: record.petId,
@@ -147,6 +182,9 @@ export const recordsComposition = {
       },
       execute: () =>
         skipSmartHealthRecord.execute(record, reason, petDateOfBirth),
+      onOptimistic: hooks?.onOptimistic,
+      onSyncSuccess: hooks?.onSyncSuccess,
+      onSyncFailure: hooks?.onSyncFailure,
     }),
   rescheduleSmartHealthRecordWithQueue: async (
     userId: string,
@@ -154,7 +192,12 @@ export const recordsComposition = {
     record: SmartHealthRecord,
     newDueDate: string,
     petDateOfBirth?: string,
-  ): Promise<{ offline: boolean }> =>
+    hooks?: {
+      onOptimistic?: (records: SmartHealthRecord[]) => void;
+      onSyncSuccess?: () => void;
+      onSyncFailure?: (error: unknown) => void;
+    },
+  ): Promise<{ optimistic: SmartHealthRecord[] }> =>
     runQueuedSmartHealthMutation({
       userId,
       petId: record.petId,
@@ -169,6 +212,9 @@ export const recordsComposition = {
       },
       execute: () =>
         rescheduleSmartHealthRecord.execute(record, newDueDate, petDateOfBirth),
+      onOptimistic: hooks?.onOptimistic,
+      onSyncSuccess: hooks?.onSyncSuccess,
+      onSyncFailure: hooks?.onSyncFailure,
     }),
   notificationService,
   syncSmartHealthNotificationsForRecords,

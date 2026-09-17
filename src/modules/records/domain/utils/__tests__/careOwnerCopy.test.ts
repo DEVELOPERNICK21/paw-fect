@@ -61,12 +61,15 @@ describe('careOwnerCopy', () => {
     expect(buildCareOwnerCopy(worm, 'Bruno').what).toBe('Worm medicine');
   });
 
-  it('status headline reflects overdue vs on track', () => {
+  it('status headline stays calm — overdue has no banner line', () => {
     expect(healthStatusHeadline({ overdueCount: 1, needsNextCount: 2 })).toBe(
-      'Something needs attention',
+      null,
     );
     expect(healthStatusHeadline({ overdueCount: 0, needsNextCount: 0 })).toBe(
       "You're on track",
+    );
+    expect(healthStatusHeadline({ overdueCount: 0, needsNextCount: 2 })).toBe(
+      'Coming up soon',
     );
   });
 

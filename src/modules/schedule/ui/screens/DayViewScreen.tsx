@@ -1,63 +1,155 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Animated,
+  Pressable,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import type { RouteProp } from '@react-navigation/native';
+import type { CompositeNavigationProp, RouteProp } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 
-import type { PetsStackParamList, PetProfileRootNavigation } from '../../../../app/navigation/types';
+import type {
+  AppTabParamList,
+  NotificationsStackParamList,
+  PetsStackParamList,
+} from '../../../../app/navigation/types';
 import { useAppTabBarInset } from '../../../../app/navigation/layout';
 import { AppText } from '../../../../shared/components/AppText';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
+import { Paw3dIcon } from '../../../../shared/components/Paw3dIcon';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { useAppSession } from '../../../../shared/session/useAppSession';
 import { usePetStore } from '../../../pets/store/petStore';
 import { isScheduleProUser } from '../../domain/models/ScheduleFeatureGates';
+import { chronologicalCareItems } from '../../domain/utils/careAggregator';
 import { useScheduleStore } from '../../store/scheduleStore';
 import { CareBlockDetailSheet } from '../components/CareBlockDetailSheet';
-import { DayCareTimeline } from '../components/DayCareTimeline';
+import { CareDayPath } from '../components/CareDayPath';
 import { formatScheduleDateLabel } from '../utils/scheduleDisplay';
 
-type DayViewRoute = RouteProp<PetsStackParamList, 'DayView'>;
+type DayViewRoute =
+  | RouteProp<PetsStackParamList, 'DayView'>
+  | RouteProp<NotificationsStackParamList, 'DayView'>;
+
+type DayViewNav = CompositeNavigationProp<
+  NativeStackNavigationProp<
+    PetsStackParamList & NotificationsStackParamList,
+    'DayView'
+  >,
+  BottomTabNavigationProp<AppTabParamList>
+>;
 
 export const DayViewScreen: React.FC = () => {
-  const navigation = useNavigation<PetProfileRootNavigation>();
+  const navigation = useNavigation<DayViewNav>();
   const route = useRoute<DayViewRoute>();
   const tabBarInset = useAppTabBarInset();
-  const { colors, spacing, radius, textStyles, fontFamilies, shadows } = useTheme();
+  const { height: windowHeight } = useWindowDimensions();
+  const { colors, spacing, radius, textStyles, fontFamilies, shadows, isDarkMode } =
+    useTheme();
+  const scrollY = useRef(new Animated.Value(0)).current;
   const { plan } = useAppSession();
   const isPro = isScheduleProUser(plan);
   const pets = usePetStore(state => state.pets);
   const activePet = usePetStore(state => state.activePet);
-  const schedule = useScheduleStore(state => state.schedule);
-  const loading = useScheduleStore(state => state.loading);
+  const careSchedulesByPetId = useScheduleStore(
+    state => state.careSchedulesByPetId,
+  );
+  const careFilterPetId = useScheduleStore(state => state.careFilterPetId);
+  const careLoading = useScheduleStore(state => state.careLoading);
+  const careStreakDays = useScheduleStore(state => state.careStreakDays);
   const error = useScheduleStore(state => state.error);
   const selectedBlockId = useScheduleStore(state => state.selectedBlockId);
-  const loadDaySchedule = useScheduleStore(state => state.loadDaySchedule);
-  const markBlockDone = useScheduleStore(state => state.markBlockDone);
-  const snoozeBlock = useScheduleStore(state => state.snoozeBlock);
-  const setSelectedBlockId = useScheduleStore(state => state.setSelectedBlockId);
-  const [expandedBlockId, setExpandedBlockId] = useState<string | null>(null);
+  const loadCareDaySchedules = useScheduleStore(
+    state => state.loadCareDaySchedules,
+  );
+  const markCareBlockDone = useScheduleStore(state => state.markCareBlockDone);
+  const snoozeCareBlock = useScheduleStore(state => state.snoozeCareBlock);
+  const setSelectedBlockId = useScheduleStore(
+    state => state.setSelectedBlockId,
+  );
 
-  const petId = route.params?.petId ?? activePet?.id ?? pets[0]?.id;
-  const pet = pets.find(item => item.id === petId);
+  const routePetId = route.params?.petId ?? activePet?.id ?? pets[0]?.id;
+  const filterPetId =
+    careFilterPetId === 'all' && pets.length > 1 ? 'all' : routePetId ?? 'all';
 
   useEffect(() => {
-    if (petId) {
-      void loadDaySchedule(petId);
+    if (pets.length > 0) {
+      void loadCareDaySchedules(pets.map(pet => pet.id));
     }
-  }, [loadDaySchedule, petId]);
+  }, [loadCareDaySchedules, pets]);
 
   useEffect(() => {
     if (route.params?.blockId) {
-      setExpandedBlockId(route.params.blockId);
       setSelectedBlockId(route.params.blockId);
     }
   }, [route.params?.blockId, setSelectedBlockId]);
 
+  const carePets = useMemo(
+    () =>
+      pets.map(pet => ({
+        id: pet.id,
+        name: pet.name,
+        type: pet.type,
+        photo: pet.photo,
+      })),
+    [pets],
+  );
+
+  const blocksByPetId = useMemo(() => {
+    const map: Record<string, (typeof careSchedulesByPetId)[string]['blocks']> =
+      {};
+    for (const [id, schedule] of Object.entries(careSchedulesByPetId)) {
+      map[id] = schedule.blocks;
+    }
+    return map;
+  }, [careSchedulesByPetId]);
+
+  const dayItems = useMemo(
+    () =>
+      chronologicalCareItems({
+        pets: carePets,
+        blocksByPetId,
+        filterPetId: filterPetId === 'all' ? 'all' : (filterPetId as string),
+        now: new Date(),
+        isPro,
+      }),
+    [blocksByPetId, carePets, filterPetId, isPro],
+  );
+
+  const doneCount = dayItems.filter(item => item.urgency === 'done').length;
+
+  const selectedItem = useMemo(() => {
+    if (!selectedBlockId) {
+      return null;
+    }
+    return dayItems.find(item => item.block.id === selectedBlockId) ?? null;
+  }, [dayItems, selectedBlockId]);
+
+  const headerTitle =
+    filterPetId === 'all'
+      ? "Today's path"
+      : `${pets.find(p => p.id === filterPetId)?.name ?? 'Pet'}'s path`;
+
+  const dateLabel = Object.values(careSchedulesByPetId)[0]?.date;
+
   const styles = useMemo(
     () =>
       StyleSheet.create({
-        safeArea: { flex: 1, backgroundColor: colors.backgroundAlt },
+        root: { flex: 1 },
+        skyLayer: {
+          position: 'absolute',
+          top: 0,
+          right: 0,
+          bottom: 0,
+          left: 0,
+        },
+        safeArea: { flex: 1, backgroundColor: 'transparent' },
         header: {
           flexDirection: 'row',
           alignItems: 'center',
@@ -66,11 +158,6 @@ export const DayViewScreen: React.FC = () => {
           gap: spacing.sm,
         },
         headerTitle: { flex: 1, gap: spacing.xxs },
-        headerActions: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.xs,
-        },
         iconBtn: {
           width: spacing['2xl'] + spacing.xs,
           height: spacing['2xl'] + spacing.xs,
@@ -81,44 +168,28 @@ export const DayViewScreen: React.FC = () => {
           borderWidth: 1,
           borderColor: colors.borderSubtle,
         },
-        summaryCard: {
-          marginHorizontal: spacing.lg,
-          marginTop: spacing.md,
-          borderRadius: radius.xl,
-          backgroundColor: colors.surface,
-          borderWidth: 1,
-          borderColor: colors.borderSubtle,
-          padding: spacing.lg,
-          gap: spacing.md,
-        },
-        summaryRow: {
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: spacing.md,
-        },
-        statChip: {
-          flex: 1,
-          borderRadius: radius.lg,
-          backgroundColor: colors.surfaceAlt,
-          paddingVertical: spacing.sm,
-          paddingHorizontal: spacing.md,
-          gap: spacing.xxs,
-        },
-        progressTrack: {
-          height: spacing.sm,
-          borderRadius: radius.round,
-          backgroundColor: colors.surfaceAlt,
-          overflow: 'hidden',
-        },
-        progressFill: {
-          height: '100%',
-          backgroundColor: colors.primary,
-        },
         content: {
           paddingHorizontal: spacing.lg,
           paddingTop: spacing.lg,
           gap: spacing.lg,
+        },
+        summary: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.md,
+          padding: spacing.lg,
+          borderRadius: radius.xl,
+          borderWidth: 1,
+          borderColor: colors.brandTint20,
+          backgroundColor: colors.surface,
+        },
+        summaryText: { flex: 1, gap: 2, minWidth: 0 },
+        phaseChip: {
+          alignSelf: 'flex-start',
+          paddingHorizontal: spacing.md,
+          paddingVertical: spacing.xs,
+          borderRadius: radius.pill,
+          borderWidth: 1,
         },
         empty: {
           padding: spacing.xl,
@@ -126,80 +197,60 @@ export const DayViewScreen: React.FC = () => {
           backgroundColor: colors.surface,
           borderWidth: 1,
           borderColor: colors.borderSubtle,
+          gap: spacing.sm,
         },
       }),
     [colors, radius, spacing],
   );
 
-  const currentBlockId = useMemo(() => {
-    if (!schedule) {
-      return null;
-    }
-    const upcoming = schedule.blocks.find(block => !block.isCompleted);
-    return upcoming?.id ?? null;
-  }, [schedule]);
+  const nightOpacity = scrollY.interpolate({
+    inputRange: [
+      0,
+      Math.max(windowHeight * 0.35, 180),
+      Math.max(windowHeight * 0.75, 360),
+    ],
+    outputRange: [0, 0.55, 1],
+    extrapolate: 'clamp',
+  });
 
-  const selectedBlock = useMemo(
-    () => schedule?.blocks.find(block => block.id === selectedBlockId) ?? null,
-    [schedule, selectedBlockId],
+  const [skyPhase, setSkyPhase] = useState<'Morning' | 'Afternoon' | 'Evening' | 'Night'>(
+    'Morning',
   );
+
+  useEffect(() => {
+    const id = scrollY.addListener(({ value }) => {
+      if (value < windowHeight * 0.2) {
+        setSkyPhase('Morning');
+      } else if (value < windowHeight * 0.45) {
+        setSkyPhase('Afternoon');
+      } else if (value < windowHeight * 0.7) {
+        setSkyPhase('Evening');
+      } else {
+        setSkyPhase('Night');
+      }
+    });
+    return () => {
+      scrollY.removeListener(id);
+    };
+  }, [scrollY, windowHeight]);
 
   const handleOpenSetup = useCallback(() => {
-    if (!petId) {
+    const target = filterPetId === 'all' ? routePetId : filterPetId;
+    if (!target) {
       return;
     }
-    navigation.navigate('ScheduleSetup', { petId });
-  }, [navigation, petId]);
+    navigation.navigate('PetsTab', {
+      screen: 'ScheduleSetup',
+      params: { petId: target },
+    });
+  }, [filterPetId, navigation, routePetId]);
 
-  const handleOpenWeek = useCallback(() => {
-    if (!petId) {
-      return;
-    }
-    navigation.navigate('ScheduleWeekView', { petId });
-  }, [navigation, petId]);
-
-  const handleOpenWellness = useCallback(() => {
-    if (!petId) {
-      return;
-    }
-    navigation.navigate('WellnessScore', { petId });
-  }, [navigation, petId]);
-
-  const handleUpgrade = useCallback(() => {
-    navigation.navigate('Paywall', { source: 'settings' });
-  }, [navigation]);
-
-  const handleToggleExpand = useCallback((blockId: string) => {
-    setExpandedBlockId(current => (current === blockId ? null : blockId));
-  }, []);
-
-  const handleToggleComplete = useCallback(
-    (blockId: string, completed: boolean) => {
-      void markBlockDone(blockId, completed);
-    },
-    [markBlockDone],
-  );
-
-  const handleOpenActions = useCallback(
-    (blockId: string) => {
-      setSelectedBlockId(blockId);
-    },
-    [setSelectedBlockId],
-  );
-
-  const handleSnooze = useCallback(
-    (blockId: string) => {
-      void snoozeBlock(blockId, 30);
-    },
-    [snoozeBlock],
-  );
-
-  if (!petId || !pet) {
+  if (pets.length === 0) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.empty}>
           <AppText style={[textStyles.body, { color: colors.text.secondary }]}>
-            This pet&apos;s record no longer exists.
+            Add a pet to see today&apos;s schedule.
           </AppText>
         </View>
       </SafeAreaView>
@@ -207,116 +258,207 @@ export const DayViewScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+    <View style={styles.root}>
+      {/* Day base sky */}
+      <LinearGradient
+        colors={
+          isDarkMode
+            ? ['#5A4A3A', '#3D4558', '#2A3348']
+            : ['#FFD9A8', '#B8D9F5', '#DCEAF8']
+        }
+        locations={[0, 0.45, 1]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={styles.skyLayer}
+        pointerEvents="none"
+      />
+      {/* Night veil deepens as you scroll the day schedule */}
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.skyLayer, { opacity: nightOpacity }]}
+      >
+        <LinearGradient
+          colors={
+            isDarkMode
+              ? ['#2A3348', '#121826', '#0A0F1C']
+              : ['#5A6F9A', '#2A3A5C', '#1A2440']
+          }
+          locations={[0, 0.5, 1]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={styles.skyLayer}
+        />
+      </Animated.View>
+
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()} hitSlop={8} style={styles.iconBtn}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          hitSlop={8}
+          style={styles.iconBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+        >
           <MaterialIcon name="arrow_back" size={20} color={colors.text.heading} />
         </Pressable>
         <View style={styles.headerTitle}>
           <AppText
             style={[
-              textStyles.title,
-              { color: colors.text.heading, fontFamily: fontFamilies.bold },
+              textStyles.subtitle,
+              {
+                color: colors.text.heading,
+                fontFamily: fontFamilies.extrabold,
+                letterSpacing: -0.2,
+              },
             ]}
           >
-            {pet.name}&apos;s Day
+            {headerTitle}
           </AppText>
           <AppText style={[textStyles.caption, { color: colors.text.secondary }]}>
-            {schedule ? formatScheduleDateLabel(schedule.date) : 'Today'}
+            {dateLabel ? formatScheduleDateLabel(dateLabel) : 'Today'}
           </AppText>
         </View>
-        <View style={styles.headerActions}>
-          <Pressable onPress={handleOpenWeek} style={styles.iconBtn} hitSlop={8}>
-            <MaterialIcon name="calendar_today" size={18} color={colors.text.heading} />
-          </Pressable>
-          <Pressable onPress={handleOpenWellness} style={styles.iconBtn} hitSlop={8}>
-            <MaterialIcon name="analytics" size={18} color={colors.text.heading} />
-          </Pressable>
-          <Pressable onPress={handleOpenSetup} style={styles.iconBtn} hitSlop={8}>
-            <MaterialIcon name="settings" size={18} color={colors.text.heading} />
-          </Pressable>
-        </View>
+        <Pressable
+          onPress={handleOpenSetup}
+          style={styles.iconBtn}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Care schedule settings"
+        >
+          <MaterialIcon name="settings" size={18} color={colors.text.heading} />
+        </Pressable>
       </View>
 
-      <View style={[styles.summaryCard, shadows.sm]}>
-        <View style={styles.summaryRow}>
-          <View style={styles.statChip}>
-            <AppText style={[textStyles.footer, { color: colors.text.secondary }]}>
-              Streak
-            </AppText>
-            <AppText
-              style={[
-                textStyles.body,
-                { color: colors.text.heading, fontFamily: fontFamilies.bold },
-              ]}
-            >
-              {schedule?.streakDays ?? 0} days
-            </AppText>
-          </View>
-          <View style={styles.statChip}>
-            <AppText style={[textStyles.footer, { color: colors.text.secondary }]}>
-              Today
-            </AppText>
-            <AppText
-              style={[
-                textStyles.body,
-                { color: colors.text.heading, fontFamily: fontFamilies.bold },
-              ]}
-            >
-              {schedule?.completionPercent ?? 0}%
-            </AppText>
-          </View>
-        </View>
-        <View style={styles.progressTrack}>
-          <View
-            style={[
-              styles.progressFill,
-              { width: `${schedule?.completionPercent ?? 0}%` },
-            ]}
-          />
-        </View>
-      </View>
-
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: tabBarInset }]}>
-        {loading ? <ActivityIndicator color={colors.primary} /> : null}
+      <Animated.ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: tabBarInset }]}
+        scrollEventThrottle={16}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true },
+        )}
+      >
+        {careLoading && dayItems.length === 0 ? (
+          <ActivityIndicator color={colors.primary} />
+        ) : null}
         {error ? (
-          <AppText style={[textStyles.body, { color: colors.danger }]}>{error}</AppText>
+          <AppText style={[textStyles.body, { color: colors.danger }]}>
+            {error}
+          </AppText>
         ) : null}
 
-        {schedule ? (
-          <DayCareTimeline
-            blocks={schedule.blocks}
-            currentBlockId={currentBlockId}
-            expandedBlockId={expandedBlockId}
-            isPro={isPro}
-            onToggleExpand={handleToggleExpand}
-            onToggleComplete={handleToggleComplete}
-            onSnooze={handleSnooze}
-            onOpenActions={handleOpenActions}
+        <View style={[styles.summary, shadows.sm]}>
+          <Paw3dIcon size={28} />
+          <View style={styles.summaryText}>
+            <AppText
+              style={[
+                textStyles.caption,
+                {
+                  color: colors.text.heading,
+                  fontFamily: fontFamilies.bold,
+                  fontVariant: ['tabular-nums'],
+                },
+              ]}
+            >
+              {doneCount} of {dayItems.length} stops done
+            </AppText>
+            <AppText
+              style={[textStyles.footer, { color: colors.text.secondary }]}
+            >
+              {careStreakDays > 0
+                ? `${careStreakDays}-day streak · follow the path`
+                : 'Follow the path · morning to night'}
+            </AppText>
+            <View
+              style={[
+                styles.phaseChip,
+                {
+                  marginTop: spacing.xs,
+                  backgroundColor: colors.brandTint12,
+                  borderColor: colors.brandTint20,
+                },
+              ]}
+            >
+              <AppText
+                style={[
+                  textStyles.footer,
+                  {
+                    color: colors.accent,
+                    fontFamily: fontFamilies.bold,
+                    letterSpacing: 0.4,
+                  },
+                ]}
+              >
+                {skyPhase} sky
+              </AppText>
+            </View>
+          </View>
+        </View>
+
+        {dayItems.length === 0 ? (
+          <View style={styles.empty}>
+            <AppText
+              style={[
+                textStyles.subtitle,
+                { color: colors.text.heading, fontFamily: fontFamilies.bold },
+              ]}
+            >
+              No stops today
+            </AppText>
+            <AppText style={[textStyles.body, { color: colors.text.secondary }]}>
+              Set up a care schedule to build today&apos;s path.
+            </AppText>
+          </View>
+        ) : (
+          <CareDayPath
+            items={dayItems}
+            onSelect={item => setSelectedBlockId(item.block.id)}
+            onMarkDone={item => {
+              void markCareBlockDone(item.pet.id, item.block.id, true);
+            }}
           />
-        ) : null}
-      </ScrollView>
+        )}
+      </Animated.ScrollView>
 
       <CareBlockDetailSheet
-        visible={selectedBlockId != null}
-        block={selectedBlock}
-        locked={selectedBlock != null && !selectedBlock.isFreeFeature && !isPro}
-        onClose={() => setSelectedBlockId(null)}
+        visible={selectedItem != null}
+        block={selectedItem?.block ?? null}
+        locked={
+          selectedItem != null &&
+          !selectedItem.block.isFreeFeature &&
+          !isPro
+        }
+        onClose={() => {
+          setSelectedBlockId(null);
+        }}
         onMarkDone={() => {
-          if (selectedBlockId) {
-            void markBlockDone(selectedBlockId, true);
+          if (selectedItem) {
+            void markCareBlockDone(
+              selectedItem.pet.id,
+              selectedItem.block.id,
+              true,
+            );
             setSelectedBlockId(null);
           }
         }}
         onSnooze={() => {
-          if (selectedBlockId) {
-            void snoozeBlock(selectedBlockId, 30);
+          if (selectedItem) {
+            void snoozeCareBlock(
+              selectedItem.pet.id,
+              selectedItem.block.id,
+              30,
+            );
             setSelectedBlockId(null);
           }
         }}
-        onUpgrade={handleUpgrade}
+        onUpgrade={() =>
+          navigation.navigate('SettingsTab', {
+            screen: 'Paywall',
+            params: { source: 'settings' },
+          })
+        }
       />
     </SafeAreaView>
+    </View>
   );
 };
 
