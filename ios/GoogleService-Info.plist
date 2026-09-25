@@ -3,19 +3,19 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>119015458250-ug5e519htv1hc9e87p99holkn5vdccje.apps.googleusercontent.com</string>
+	<string>119015458250-gu2u086nv5ttpc8vb24q2s63vgl9svpm.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.119015458250-ug5e519htv1hc9e87p99holkn5vdccje</string>
+	<string>com.googleusercontent.apps.119015458250-gu2u086nv5ttpc8vb24q2s63vgl9svpm</string>
 	<key>ANDROID_CLIENT_ID</key>
 	<string>119015458250-2rq16ok5b1ch3aor6jl27l203r6m098s.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
-	<string>AIzaSyD2sOhKrmot-ZEAIHgY1LSjWHHMN2S0LfM</string>
+	<string>AIzaSyA3KvZcObGMAO0SIHxEXy-D32SlSUvUuFk</string>
 	<key>GCM_SENDER_ID</key>
 	<string>119015458250</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>app.pawfect</string>
+	<string>app.pawfect.ios</string>
 	<key>PROJECT_ID</key>
 	<string>paw-fect-b89be</string>
 	<key>STORAGE_BUCKET</key>
@@ -31,6 +31,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:119015458250:ios:00ea8c41134349175bfb33</string>
+	<string>1:119015458250:ios:422056742e46cf0c5bfb33</string>
 </dict>
 </plist>

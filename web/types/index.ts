@@ -9,6 +9,8 @@ export interface PricingPlan {
   id: string;
   name: string;
   slug: string;
+  /** Optional Care+ weekly reference price (INR). Purchases are in-app only. */
+  priceWeekly?: number | null;
   priceMonthly: number;
   priceAnnual: number;
   currency: string;

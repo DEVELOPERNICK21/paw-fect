@@ -9,7 +9,7 @@ export class CheckoutStoreSubscription {
 
   async execute(
     planKey: PlayStorePlanKey,
-    billingPeriod: 'monthly' | 'annual',
+    billingPeriod: 'weekly' | 'monthly' | 'annual',
   ): Promise<ComputedEntitlement> {
     return this.repository.checkoutStore(planKey, billingPeriod);
   }

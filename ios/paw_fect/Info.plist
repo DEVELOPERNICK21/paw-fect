@@ -31,7 +31,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.119015458250-ug5e519htv1hc9e87p99holkn5vdccje</string>
+				<string>com.googleusercontent.apps.119015458250-gu2u086nv5ttpc8vb24q2s63vgl9svpm</string>
 			</array>
 		</dict>
 	</array>
@@ -45,11 +45,9 @@
 		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>Pawsoul needs camera access so you can take a photo of your pet.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string/>
+	<string>Pawfect needs camera access so you can take a photo of your pet.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Pawsoul needs photo library access so you can choose a photo of your pet.</string>
+	<string>Pawfect needs photo library access so you can choose a photo of your pet.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
@@ -65,6 +63,9 @@
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>

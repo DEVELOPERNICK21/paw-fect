@@ -6,7 +6,7 @@ import {
   type PlanKey,
 } from './planCatalog';
 
-export type SubscriptionBillingPeriod = 'monthly' | 'annual';
+export type SubscriptionBillingPeriod = 'weekly' | 'monthly' | 'annual';
 
 /** Normalized subscription lifecycle for entitlement checks. */
 export type StoredSubscriptionStatus =

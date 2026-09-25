@@ -30,7 +30,11 @@ export function parseStoredSubscription(
     return null;
   }
   const billingPeriod = raw.billingPeriod;
-  if (billingPeriod !== "monthly" && billingPeriod !== "annual") {
+  if (
+    billingPeriod !== "weekly" &&
+    billingPeriod !== "monthly" &&
+    billingPeriod !== "annual"
+  ) {
     return null;
   }
   const status = raw.status;

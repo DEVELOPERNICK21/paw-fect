@@ -1,6 +1,7 @@
 /**
  * PawCare subscription catalog — source of truth for limits and features.
- * Mirrors business rules; keep in sync with web marketing defaults and Razorpay plan mapping.
+ * Display/reference INR prices must match App Store India tiers (and Play).
+ * Checkout always uses localized store prices via RevenueCat.
  */
 
 export const PLAN_FREE = 'free' as const;
@@ -11,9 +12,11 @@ export type PlanKey = typeof PLAN_FREE | typeof PLAN_CARE_PLUS | typeof PLAN_FAM
 
 export interface PlanDefinition {
   readonly key: PlanKey;
+  /** Weekly price in INR (₹). Null when the plan has no weekly SKU. */
+  readonly priceWeeklyInr: number | null;
   /** Monthly price in INR (₹). */
   readonly priceMonthlyInr: number;
-  /** Annual price in INR — 10× monthly (two months free). */
+  /** Annual price in INR — App Store India tier (not exact 10× monthly). */
   readonly priceAnnualInr: number;
   readonly maxPets: number;
   /** Number of months of history on free; null = unlimited. */
@@ -31,6 +34,7 @@ export interface PlanDefinition {
 export const PLAN_CATALOG: Record<PlanKey, PlanDefinition> = {
   [PLAN_FREE]: {
     key: PLAN_FREE,
+    priceWeeklyInr: null,
     priceMonthlyInr: 0,
     priceAnnualInr: 0,
     maxPets: 1,
@@ -46,8 +50,9 @@ export const PLAN_CATALOG: Record<PlanKey, PlanDefinition> = {
   },
   [PLAN_CARE_PLUS]: {
     key: PLAN_CARE_PLUS,
+    priceWeeklyInr: 49,
     priceMonthlyInr: 149,
-    priceAnnualInr: 1490,
+    priceAnnualInr: 1499,
     maxPets: 3,
     historyMonthsCap: null,
     features: {
@@ -62,8 +67,9 @@ export const PLAN_CATALOG: Record<PlanKey, PlanDefinition> = {
   },
   [PLAN_FAMILY]: {
     key: PLAN_FAMILY,
+    priceWeeklyInr: null,
     priceMonthlyInr: 299,
-    priceAnnualInr: 2990,
+    priceAnnualInr: 2999,
     maxPets: 10,
     historyMonthsCap: null,
     features: {

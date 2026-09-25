@@ -15,6 +15,7 @@ import {
   PLAN_FAMILY,
 } from '../../shared/subscription/planCatalog';
 import { playProductIdFor } from '../../shared/subscription/playStoreCatalog';
+import type { StoreBillingPeriod } from '../../shared/subscription/playStoreCatalog';
 import { RC_ENTITLEMENT_PAWSOUL_PRO } from '../../shared/subscription/revenueCatCatalog';
 
 let configured = false;
@@ -98,7 +99,7 @@ export async function hasPawsoulProEntitlement(
 
 async function findPackage(
   planKey: typeof PLAN_CARE_PLUS | typeof PLAN_FAMILY,
-  billingPeriod: 'monthly' | 'annual',
+  billingPeriod: StoreBillingPeriod,
 ): Promise<PurchasesPackage> {
   const productId = playProductIdFor(planKey, billingPeriod);
   if (!productId) {
@@ -110,8 +111,10 @@ async function findPackage(
     throw new Error('No RevenueCat offering is configured (expected default).');
   }
   const pkg =
-    current.availablePackages.find(p => p.product.identifier === productId) ??
-    null;
+    current.availablePackages.find(p => {
+      const id = p.product.identifier;
+      return id === productId || id.startsWith(`${productId}:`);
+    }) ?? null;
   if (!pkg) {
     throw new Error(`Package not found in offering for ${productId}.`);
   }
@@ -121,7 +124,7 @@ async function findPackage(
 export async function purchaseStorePackage(
   uid: string,
   planKey: typeof PLAN_CARE_PLUS | typeof PLAN_FAMILY,
-  billingPeriod: 'monthly' | 'annual',
+  billingPeriod: StoreBillingPeriod,
 ): Promise<void> {
   await ensureRevenueCatIdentifiedUser(uid);
   const pkg = await findPackage(planKey, billingPeriod);

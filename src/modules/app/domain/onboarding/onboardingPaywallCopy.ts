@@ -152,7 +152,7 @@ export function orderPlanFeaturesForOnboarding(input: {
 export function buildOnboardingCtaLabel(
   nickname: string | null | undefined,
   planLabel: string,
-  billing: 'monthly' | 'annual',
+  billing: 'weekly' | 'monthly' | 'annual',
 ): string {
   const name = nickname?.trim();
   if (name) {

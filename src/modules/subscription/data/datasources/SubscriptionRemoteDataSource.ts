@@ -21,7 +21,7 @@ export interface SubscriptionRemoteDataSource {
   refreshBootstrap(): Promise<ComputedEntitlement>;
   checkoutStore(
     planKey: PlayStorePlanKey,
-    billingPeriod: 'monthly' | 'annual',
+    billingPeriod: 'weekly' | 'monthly' | 'annual',
   ): Promise<ComputedEntitlement>;
   restorePurchases(): Promise<ComputedEntitlement>;
 }
@@ -77,15 +77,10 @@ class SubscriptionRemoteDataSourceImpl implements SubscriptionRemoteDataSource {
 
   async checkoutStore(
     planKey: PlayStorePlanKey,
-    billingPeriod: 'monthly' | 'annual',
+    billingPeriod: 'weekly' | 'monthly' | 'annual',
   ): Promise<ComputedEntitlement> {
-    if (Platform.OS === 'ios') {
-      throw new Error(
-        'App Store subscriptions are not available in this build yet.',
-      );
-    }
-    if (Platform.OS !== 'android') {
-      throw new Error('Store subscriptions are only available on Android.');
+    if (Platform.OS !== 'android' && Platform.OS !== 'ios') {
+      throw new Error('Store subscriptions are only available on iOS and Android.');
     }
     const uid = requireSignedInUid();
     await purchaseStorePackage(uid, planKey, billingPeriod);

@@ -51,7 +51,7 @@ Paywall
 | RC concept | Value |
 |------------|--------|
 | Entitlements | `care_plus`, `family` |
-| Play products | `care_plus_monthly`, `care_plus_annual`, `family_monthly`, `family_annual` |
+| Play products | `care_plus_weekly`, `care_plus_monthly`, `care_plus_annual`, `family_monthly`, `family_annual` |
 | iOS products | Same IDs when created (or explicit aliases documented in plan) |
 | Offering | `default` with packages covering Care Plus / Family × monthly / annual |
 

@@ -2,7 +2,7 @@ import Foundation
 import WidgetKit
 
 enum WidgetGlanceStorage {
-  static let appGroupId = "group.app.pawfect.glance"
+  static let appGroupId = "group.app.pawfect.ios.glance"
   static let payloadKey = "payload"
 
   static var defaults: UserDefaults {

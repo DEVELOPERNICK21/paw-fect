@@ -2,7 +2,7 @@ import SwiftUI
 import WidgetKit
 
 // Add a Widget Extension target in Xcode (File → New → Target → Widget Extension),
-// name it "PawfectWidgets", include these files, and set App Group: group.app.pawfect.glance
+// name it "PawfectWidgets", include these files, and set App Group: group.app.pawfect.ios.glance
 
 private let brandOrange = Color(red: 234 / 255, green: 88 / 255, blue: 12 / 255)
 

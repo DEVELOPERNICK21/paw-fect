@@ -12,6 +12,8 @@ function docToPlan(
     id,
     name: data.name as string,
     slug: data.slug as string,
+    priceWeekly:
+      typeof data.priceWeekly === "number" ? data.priceWeekly : null,
     priceMonthly: data.priceMonthly as number,
     priceAnnual: data.priceAnnual as number,
     currency: (data.currency as string) ?? "INR",

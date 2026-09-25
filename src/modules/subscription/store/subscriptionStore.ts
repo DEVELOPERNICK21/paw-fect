@@ -37,12 +37,12 @@ export interface SubscriptionState {
   refreshBootstrap: () => Promise<void>;
   startStoreCheckout: (
     planKey: typeof PLAN_CARE_PLUS | typeof PLAN_FAMILY,
-    billingPeriod: 'monthly' | 'annual',
+    billingPeriod: 'weekly' | 'monthly' | 'annual',
   ) => Promise<void>;
   /** @deprecated Use startStoreCheckout */
   startPlayStoreCheckout: (
     planKey: typeof PLAN_CARE_PLUS | typeof PLAN_FAMILY,
-    billingPeriod: 'monthly' | 'annual',
+    billingPeriod: 'weekly' | 'monthly' | 'annual',
   ) => Promise<void>;
   restorePurchases: () => Promise<void>;
   /** Opens RevenueCat Paywalls UI (dashboard-designed paywall). */

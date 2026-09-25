@@ -29,7 +29,8 @@ def ensure_grpc_modulemap_symlink
   FileUtils.ln_sf(grpc_modulemap_src, grpc_modulemap_dest) if should_link
 end
 
-platform :ios, min_ios_version_supported
+# RN default is 15.1; @react-native-ml-kit/image-labeling requires >= 15.5.
+platform :ios, '15.5'
 prepare_react_native_project!
 
 framework_linkage = ENV['USE_FRAMEWORKS'] == 'dynamic' ? :dynamic : :static

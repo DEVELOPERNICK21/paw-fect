@@ -29,7 +29,7 @@ export default async function PricingPage(): Promise<React.ReactElement> {
             Start free to try the schedule. Most families pick{" "}
             <span className="font-semibold text-stone-800 dark:text-stone-200">Care+ on annual billing</span>
             {" "}
-            for the best balance of pets, history, and exports.
+            for the best value. Prefer to try first? Care+ Weekly is available in the app.
           </p>
           <div className="mx-auto mt-8 flex flex-wrap items-center justify-center gap-6 text-sm text-stone-600 dark:text-stone-400">
             <span className="inline-flex items-center gap-2">

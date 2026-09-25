@@ -31,6 +31,22 @@ describe('revenueCatWebhook', () => {
     expect(sub?.currentPeriodEnd).toBe('2026-10-13T00:00:00.000Z');
   });
 
+  it('maps care_plus_weekly to weekly billing period', () => {
+    const sub = mapRevenueCatEventToSubscription({
+      type: 'INITIAL_PURCHASE',
+      app_user_id: 'firebase-uid-1',
+      product_id: 'care_plus_weekly',
+      expiration_at_ms: Date.parse('2026-09-20T00:00:00.000Z'),
+      entitlement_ids: ['pawsoul_pro'],
+    });
+    expect(sub).toMatchObject({
+      planKey: 'care_plus',
+      billingPeriod: 'weekly',
+      status: 'active',
+      revenueCatProductId: 'care_plus_weekly',
+    });
+  });
+
   it('maps EXPIRATION to cancelled', () => {
     const sub = mapRevenueCatEventToSubscription({
       type: 'EXPIRATION',

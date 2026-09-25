@@ -137,6 +137,12 @@ export function PricingCards({ plans, variant = "page" }: Props): React.ReactEle
                         {savings}
                       </p>
                     ) : null}
+                    {typeof p.priceWeekly === "number" && p.priceWeekly > 0 ? (
+                      <p className="mt-2 text-xs text-stone-500">
+                        Also in app: {sym}
+                        {p.priceWeekly}/week (low commitment)
+                      </p>
+                    ) : null}
                   </div>
 
                   <ul className="mt-8 flex-1 space-y-3 text-sm">

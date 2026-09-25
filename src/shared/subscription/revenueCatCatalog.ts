@@ -8,8 +8,9 @@ export const RC_OFFERING_DEFAULT = 'default' as const;
 
 /** Play / App Store product identifiers → RC package identifiers in default offering */
 export const RC_STORE_PRODUCTS = {
-  care_plus_monthly: { productId: 'care_plus_monthly', packageId: 'monthly' },
-  care_plus_annual: { productId: 'care_plus_annual', packageId: 'yearly' },
-  family_monthly: { productId: 'family_monthly', packageId: 'monthly_2' },
-  family_annual: { productId: 'family_annual', packageId: 'yearly_2' },
+  care_plus_weekly: { productId: 'care_plus_weekly', packageId: '$rc_weekly' },
+  care_plus_monthly: { productId: 'care_plus_monthly', packageId: '$rc_monthly' },
+  care_plus_annual: { productId: 'care_plus_annual', packageId: '$rc_annual' },
+  family_monthly: { productId: 'family_monthly', packageId: 'custom_monthly_2' },
+  family_annual: { productId: 'family_annual', packageId: 'custom_yearly_2' },
 } as const;

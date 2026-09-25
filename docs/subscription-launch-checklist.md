@@ -33,14 +33,35 @@ Mobile checkout uses **RevenueCat** (`react-native-purchases`) — not direct Pl
 1. **Fix Play Console payments profile** — required before real or test charges succeed.
 2. Create a **RevenueCat project**; connect the Google Play app (service account / app link).
 3. Create entitlement **`pawsoul_pro`** (identifier must match exactly) and attach all four products to it. Optionally keep plan-specific entitlements for analytics; the app unlocks Pro via `pawsoul_pro`, while Firestore plan (`care_plus` / `family`) is mapped from **product_id**.
-4. Attach the four Play subscription products; IDs must match **`src/shared/subscription/playStoreCatalog.ts`** / **`revenueCatCatalog.ts`**:
-   - `care_plus_monthly` (RC package `monthly`), `care_plus_annual` (`yearly`)
-   - `family_monthly` (`monthly_2`), `family_annual` (`yearly_2`)
-5. Publish the **`default`** offering with packages for all four products, then attach a **Paywall** and enable **Customer Center** in the RC dashboard.
-6. Set **`REVENUECAT_GOOGLE_API_KEY`** (and later Apple) in the RN app `.env` / release build. Install **`react-native-purchases`** + **`react-native-purchases-ui`**.
-7. Configure RevenueCat webhook URL → **`https://<site>/api/subscription/revenuecat`** (production Vercel URL) with **`REVENUECAT_WEBHOOK_SECRET`**.
-8. Add license testers and run an **internal testing track** purchase end-to-end (Paywall CTA + Settings → Manage subscription).
-9. Confirm Firestore: `subscription.provider === 'revenuecat'` and `entitlement.source === 'paid'` after purchase.
+4. Attach Play / App Store subscription products; IDs must match **`src/shared/subscription/playStoreCatalog.ts`** / **`revenueCatCatalog.ts`**:
+   - Care+: `care_plus_weekly` (RC `$rc_weekly`), `care_plus_monthly` (`$rc_monthly`), `care_plus_annual` (`$rc_annual`)
+   - Family: `family_monthly` (`custom_monthly_2`), `family_annual` (`custom_yearly_2`)
+5. Publish the **`default`** offering with those packages, then attach a **Paywall** (highlight **Annual** as best value; Weekly last among Care+). Enable **Customer Center**.
+6. Set **`REVENUECAT_GOOGLE_API_KEY`** and **`REVENUECAT_APPLE_API_KEY`** in the RN app `.env` / release build.
+7. Configure RevenueCat webhook URL → **`https://paw-fect.vercel.app/api/subscription/revenuecat`** with **`REVENUECAT_WEBHOOK_SECRET`**.
+8. On Vercel, set `PLAY_SUB_CARE_PLUS_WEEKLY=care_plus_weekly` (and existing `PLAY_SUB_*` ids).
+9. Add license / Sandbox testers and run purchase end-to-end (Paywall CTA + Settings → Manage subscription).
+10. Confirm Firestore: `subscription.provider === 'revenuecat'` and `entitlement.source === 'paid'` after purchase.
+
+### Care+ Weekly store setup
+
+| Store | Create |
+|-------|--------|
+| **Play** | Product `care_plus_weekly`, base plan `weekly`, ₹49/week |
+| **App Store** | Auto-renewable `care_plus_weekly`, 1 week, ₹49/week (same subscription group) |
+| **RC Paywall** | Package order: Annual → Monthly → Weekly → Family…; Annual = recommended |
+
+### Canonical India prices (all platforms)
+
+| Product ID | Period | Price |
+|------------|--------|-------|
+| `care_plus_weekly` | week | **₹49** |
+| `care_plus_monthly` | month | **₹149** |
+| `care_plus_annual` | year | **₹1,499** |
+| `family_monthly` | month | **₹299** |
+| `family_annual` | year | **₹2,999** |
+
+Use these exact App Store India tiers on Play as well. Website `pricing_plans` + `planCatalog` must match.
 
 ---
 
@@ -55,6 +76,7 @@ Mobile checkout uses **RevenueCat** (`react-native-purchases`) — not direct Pl
 
 | Item | Notes |
 |------|--------|
-| **iOS IAP** | RC SDK wired; purchase CTAs gated until App Store products + RC App Store app exist. |
+| **Store products** | Create `care_plus_weekly` in Play + App Store Connect if not live yet; sync in RC. |
+| **RC Paywall layout** | Set Annual as default/recommended; Weekly as low-commitment option. |
 | **Razorpay in Paywall** | API client exists (`postCreateRazorpaySubscription`); UI + RN Razorpay flow still to wire. |
 | **Crash / analytics** | Recommended before scaling traffic. |

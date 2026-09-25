@@ -28,7 +28,7 @@ export class SubscriptionRepositoryImpl implements SubscriptionRepository {
 
   checkoutStore(
     planKey: PlayStorePlanKey,
-    billingPeriod: 'monthly' | 'annual',
+    billingPeriod: 'weekly' | 'monthly' | 'annual',
   ): Promise<ComputedEntitlement> {
     return this.remote.checkoutStore(planKey, billingPeriod);
   }

@@ -53,7 +53,8 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
   const presentRcPaywall = useSubscriptionStore(s => s.presentRcPaywall);
   const openCustomerCenter = useSubscriptionStore(s => s.openCustomerCenter);
 
-  const storeCheckoutEnabled = Platform.OS === 'android';
+  const storeCheckoutEnabled =
+    Platform.OS === 'android' || Platform.OS === 'ios';
   const didAutoPresentRef = useRef(false);
 
   const isOnboarding = source === 'onboarding';
@@ -289,8 +290,8 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
           <Text
             style={[styles.storeCaption, { fontFamily: fontFamilies.medium }]}
           >
-            App Store billing is coming soon. You can still continue on Free /
-            trial.
+            In-app subscriptions are available on iOS and Android builds with
+            store billing configured.
           </Text>
         ) : null}
 
@@ -377,8 +378,9 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
             { fontFamily: fontFamilies.regular, marginTop: spacing.lg },
           ]}
         >
-          Plans and prices come from RevenueCat / Google Play. Your access
-          updates after purchase confirmation.
+          Plans and prices come from RevenueCat (localized store pricing). Care+
+          includes Weekly, Monthly, and Annual — Annual is recommended in the
+          paywall. Your access updates after purchase confirmation.
         </Text>
       </ScrollView>
     </SafeAreaView>

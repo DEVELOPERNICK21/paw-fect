@@ -85,7 +85,7 @@ export default function TermsPage(): React.ReactElement {
         </p>
         <h3>4.2 Paid plans</h3>
         <p>
-          Care+ (₹149/month, up to 3 pets) and Family (₹299/month, up to 10 pets) plans are available. Paid subscriptions
+          Care+ (₹149/month or ₹1,499/year; weekly ₹49 in app) and Family (₹299/month or ₹2,999/year) plans are available. Paid subscriptions
           are processed exclusively through Google Play Billing (Android) or Apple App Store (iOS), as required by
           applicable platform policies.
         </p>
