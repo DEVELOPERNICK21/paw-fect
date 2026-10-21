@@ -39,4 +39,22 @@ describe('requestNotificationPermission', () => {
     expect(third).toBe(true);
     expect(notifee.requestPermission).toHaveBeenCalledTimes(1);
   });
+
+  it('picks up a grant made in system Settings after an earlier denial', async () => {
+    (notifee.requestPermission as jest.Mock).mockResolvedValueOnce({
+      authorizationStatus: AuthorizationStatus.DENIED,
+    });
+    (notifee.getNotificationSettings as jest.Mock)
+      .mockResolvedValueOnce({ authorizationStatus: AuthorizationStatus.DENIED })
+      .mockResolvedValueOnce({
+        authorizationStatus: AuthorizationStatus.AUTHORIZED,
+      });
+
+    expect(await requestNotificationPermission()).toBe(false);
+    expect(await requestNotificationPermission()).toBe(false);
+    expect(await requestNotificationPermission()).toBe(true);
+    expect(await requestNotificationPermission()).toBe(true);
+    expect(notifee.requestPermission).toHaveBeenCalledTimes(1);
+    expect(notifee.getNotificationSettings).toHaveBeenCalledTimes(2);
+  });
 });

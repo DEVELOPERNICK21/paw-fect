@@ -3,15 +3,23 @@
 import type { FaqItem } from "@/types";
 import { useState } from "react";
 
-export function PricingFaq({ items }: { items: FaqItem[] }): React.ReactElement {
+export function PricingFaq({
+  items,
+  heading = "Questions before you subscribe?",
+  subheading = "Straight answers. Tap to expand.",
+}: {
+  items: FaqItem[];
+  heading?: string;
+  subheading?: string;
+}): React.ReactElement {
   const [open, setOpen] = useState<string | null>(items[0]?.id ?? null);
 
   return (
     <section className="mt-20 md:mt-28">
       <div className="mx-auto max-w-2xl text-center">
-        <h2 className="text-2xl font-bold text-stone-900 dark:text-stone-50 md:text-3xl">Questions before you subscribe?</h2>
+        <h2 className="text-2xl font-bold text-stone-900 dark:text-stone-50 md:text-3xl">{heading}</h2>
         <p className="mt-3 text-stone-600 dark:text-stone-400">
-          Straight answers. Tap to expand.
+          {subheading}
         </p>
       </div>
       <div className="mx-auto mt-10 max-w-3xl space-y-3">

@@ -1,6 +1,7 @@
-import notifee from '@notifee/react-native';
-
-import type { NotificationService } from '../../../../infrastructure/notifications/notificationService';
+import {
+  priorityForWellnessDigest,
+  type NotificationCandidate,
+} from '../../../../infrastructure/notifications/notificationCandidate';
 import { parseReminderLocalDateTime } from '../../../../shared/utils/reminderDateTime';
 import type { DailyCareBlock } from '../../domain/models/DailyCareBlock';
 
@@ -127,23 +128,6 @@ export function buildWellnessDigestCopy(
   };
 }
 
-async function cancelDigestTriggersForPet(
-  petId: string,
-  service: NotificationService,
-): Promise<void> {
-  try {
-    const triggers = await notifee.getTriggerNotifications();
-    for (const row of triggers) {
-      const id = row.notification?.id;
-      if (id != null && id.startsWith(`wellness-digest-${petId}-`)) {
-        await service.cancelNotification(id);
-      }
-    }
-  } catch {
-    // Best effort cleanup before rescheduling.
-  }
-}
-
 function scheduleDateForBlock(
   scheduleDate: string,
   block: DailyCareBlock,
@@ -157,19 +141,17 @@ function scheduleDateForBlock(
 }
 
 /**
- * Schedules up to three wellness digest notifications for remaining undone tasks.
+ * Builds up to three wellness digest planner candidates for remaining undone tasks.
  */
-export async function syncWellnessDigestNotifications(
+export function buildWellnessDigestCandidates(
   scheduleDate: string,
   petId: string,
   petName: string,
   blocks: DailyCareBlock[],
-  service: NotificationService,
-): Promise<number> {
-  await cancelDigestTriggersForPet(petId, service);
-
+  nowMs: number = Date.now(),
+): NotificationCandidate[] {
   const slots = pickWellnessDigestBlocks(blocks);
-  let scheduled = 0;
+  const candidates: NotificationCandidate[] = [];
 
   for (const slot of ['morning', 'midday', 'evening'] as const) {
     const block = slots[slot];
@@ -177,37 +159,33 @@ export async function syncWellnessDigestNotifications(
       continue;
     }
     const scheduledDate = scheduleDateForBlock(scheduleDate, block);
-    if (!scheduledDate || scheduledDate.getTime() <= Date.now() + 1500) {
+    if (!scheduledDate || scheduledDate.getTime() <= nowMs + 1500) {
       continue;
     }
     const copy = buildWellnessDigestCopy(slot, petName, block);
     const notificationId = wellnessDigestNotificationId(petId, slot);
-    await service.scheduleNotification({
+    candidates.push({
       id: notificationId,
-      title: copy.title,
-      body: copy.body,
-      scheduledDate,
-      data: {
-        kind: 'wellnessDigest',
-        petId,
-        blockId: block.id,
-        date: scheduleDate,
-        slot,
-        notificationId,
+      kind: 'wellnessDigest',
+      petId,
+      fireAt: scheduledDate,
+      priority: priorityForWellnessDigest(),
+      payload: {
+        id: notificationId,
+        title: copy.title,
+        body: copy.body,
+        scheduledDate,
+        data: {
+          kind: 'wellnessDigest',
+          petId,
+          blockId: block.id,
+          date: scheduleDate,
+          slot,
+          notificationId,
+        },
       },
     });
-    scheduled += 1;
   }
 
-  return scheduled;
-}
-
-/**
- * Cancels all wellness digest notifications for a pet.
- */
-export async function cancelWellnessDigestNotifications(
-  petId: string,
-  service: NotificationService,
-): Promise<void> {
-  await cancelDigestTriggersForPet(petId, service);
+  return candidates;
 }

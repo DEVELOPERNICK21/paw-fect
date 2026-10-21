@@ -2,10 +2,10 @@ import { AppGallerySection } from "@/components/marketing/AppGallerySection";
 import { CommitmentSection } from "@/components/marketing/CommitmentSection";
 import { ContrastSection } from "@/components/marketing/ContrastSection";
 import { DownloadCTA } from "@/components/marketing/DownloadCTA";
-import { WaitlistSection } from "@/components/marketing/WaitlistSection";
 import { HomeWidgetsShowcaseSection } from "@/components/marketing/HomeWidgetsShowcaseSection";
 import { FeaturesSection } from "@/components/marketing/FeaturesSection";
 import { HeroSection } from "@/components/marketing/HeroSection";
+import { HomeFaqSection } from "@/components/marketing/HomeFaqSection";
 import { HomeJsonLd } from "@/components/marketing/HomeJsonLd";
 import { HowItWorksSection } from "@/components/marketing/HowItWorksSection";
 import { LossAversionSection } from "@/components/marketing/LossAversionSection";
@@ -21,20 +21,20 @@ import type { Metadata } from "next";
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "Pawsoul - Smart Pet Health Scheduling",
+  title: { absolute: "Pawfect: Pet Care & Reminders for Dogs & Cats" },
   description:
-    "Vet-validated vaccination and deworming schedules, pet journey stages, and health records for dogs and cats.",
+    "Age-aware vaccine and deworming schedules, daily care reminders and health records for dogs and cats. Free on iPhone and Android.",
   openGraph: {
-    title: "Pawsoul - Smart Pet Health Scheduling",
+    title: "Pawfect: Pet Care & Reminders for Dogs & Cats",
     description:
-      "Vet-validated vaccination and deworming schedules, pet journey stages, and health records for dogs and cats.",
+      "Age-aware vaccine and deworming schedules, daily care reminders and health records for dogs and cats. Free on iPhone and Android.",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Pawsoul - Smart Pet Health Scheduling",
+    title: "Pawfect: Pet Care & Reminders for Dogs & Cats",
     description:
-      "Vet-validated vaccination and deworming schedules, pet journey stages, and health records for dogs and cats.",
+      "Age-aware vaccine and deworming schedules, daily care reminders and health records for dogs and cats. Free on iPhone and Android.",
   },
   robots: { index: true, follow: true },
 };
@@ -58,7 +58,7 @@ export default async function HomePage(): Promise<React.ReactElement> {
       <PricingPreviewSection plans={plans} />
       <CommitmentSection />
       <HomeWidgetsShowcaseSection />
-      <WaitlistSection />
+      <HomeFaqSection />
       <DownloadCTA />
     </>
   );

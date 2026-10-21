@@ -3,5 +3,6 @@
 @interface RCT_EXTERN_MODULE(WidgetDataModule, NSObject)
 
 RCT_EXTERN_METHOD(sync:(NSString *)json)
+RCT_EXTERN_METHOD(clear)
 
 @end

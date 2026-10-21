@@ -1,11 +1,16 @@
 import { getApp } from '@react-native-firebase/app';
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
+  getDocs,
   getFirestore,
+  limit,
+  query,
   serverTimestamp,
   setDoc,
+  writeBatch,
 } from '@react-native-firebase/firestore';
 import { getAuth, updateProfile } from '@react-native-firebase/auth';
 
@@ -26,11 +31,70 @@ export interface UserProfileRemoteDataSource {
     userId: string,
     input: { displayName: string; phoneNumber: string | null },
   ): Promise<User>;
+  /** Deletes pets (+ child docs) and the users/{uid} profile document. */
+  deleteAllUserData(userId: string): Promise<void>;
 }
 
 class UserProfileRemoteDataSourceImpl implements UserProfileRemoteDataSource {
   private readonly db = getFirestore(getApp());
   private readonly auth = getAuth(getApp());
+  private static readonly DELETE_CHUNK = 450;
+  private readonly petCascadeCollections = [
+    'healthRecords',
+    'manualHealthRecords',
+    'healthRecordHistory',
+    'vaccinations',
+    'deworming',
+  ] as const;
+
+  private async deleteCollectionDocs(
+    userId: string,
+    petId: string,
+    childCollection: string,
+  ): Promise<void> {
+    const subRef = collection(
+      this.db,
+      'users',
+      userId,
+      'pets',
+      petId,
+      childCollection,
+    );
+    const chunk = UserProfileRemoteDataSourceImpl.DELETE_CHUNK;
+    while (true) {
+      const snap = await getDocs(query(subRef, limit(chunk)));
+      if (snap.empty) {
+        return;
+      }
+      const batch = writeBatch(this.db);
+      for (const d of snap.docs) {
+        batch.delete(d.ref);
+      }
+      await batch.commit();
+    }
+  }
+
+  async deleteAllUserData(userId: string): Promise<void> {
+    const petsRef = collection(this.db, 'users', userId, 'pets');
+    const petsSnap = await getDocs(petsRef);
+    for (const petDoc of petsSnap.docs) {
+      for (const childCollection of this.petCascadeCollections) {
+        try {
+          await this.deleteCollectionDocs(userId, petDoc.id, childCollection);
+        } catch {
+          // Prefer deleting the pet/user even if some child docs fail.
+        }
+      }
+      try {
+        await deleteDoc(petDoc.ref);
+      } catch {
+        // Continue wiping remaining pets / user doc.
+      }
+    }
+
+    const userRef = doc(this.db, 'users', userId);
+    await deleteDoc(userRef);
+  }
 
   async syncOnSignIn(user: User): Promise<User> {
     const ref = doc(collection(this.db, 'users'), user.id);

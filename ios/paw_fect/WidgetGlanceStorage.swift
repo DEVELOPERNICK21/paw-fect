@@ -16,6 +16,13 @@ enum WidgetGlanceStorage {
     }
   }
 
+  static func clearPayload() {
+    defaults.removeObject(forKey: payloadKey)
+    if #available(iOS 14.0, *) {
+      WidgetCenter.shared.reloadAllTimelines()
+    }
+  }
+
   static func loadPayload() -> String? {
     defaults.string(forKey: payloadKey)
   }

@@ -9,6 +9,7 @@ import {
 } from "framer-motion";
 import { useRef } from "react";
 import { Button } from "@/components/ui/Button";
+import { StoreButtons } from "@/components/marketing/StoreButtons";
 import type { SiteContentMarketing } from "@/types";
 import { Sparkles } from "lucide-react";
 import { AppPhoneMockup } from "@/components/marketing/AppPhoneMockup";
@@ -57,7 +58,7 @@ export function HeroSection({ site }: { site: SiteContentMarketing }): React.Rea
             className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary-dark dark:border-primary/30 dark:bg-primary/15 dark:text-primary"
           >
             <Sparkles className="h-3.5 w-3.5" aria-hidden />
-            Dogs &amp; cats, India-first
+            Dogs &amp; cats &middot; Free to start
           </motion.p>
           <h1 className="mt-5 max-w-xl text-4xl font-black leading-[1.1] tracking-tight text-stone-900 dark:text-stone-50 md:text-5xl lg:text-[3.25rem]">
             {reduce ? (
@@ -91,11 +92,16 @@ export function HeroSection({ site }: { site: SiteContentMarketing }): React.Rea
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35, duration: 0.45 }}
           >
-            <Button href="/download">Get the app</Button>
-            <Button href="/#how-it-works" variant="secondary">
-              See how it works
-            </Button>
+            <StoreButtons source="hero" />
           </motion.div>
+          <p className="mt-4 text-sm font-medium text-stone-500 dark:text-stone-400">
+            Free to start &middot; No credit card &middot; iPhone, iPad &amp; Android
+          </p>
+          <p className="mt-3">
+            <Button href="/#how-it-works" variant="ghost" className="!px-0 !py-1 underline-offset-4 hover:underline">
+              See how it works &darr;
+            </Button>
+          </p>
         </motion.div>
 
         <div className="relative mx-auto flex w-full max-w-md justify-center lg:max-w-none lg:justify-end">
@@ -113,7 +119,7 @@ export function HeroSection({ site }: { site: SiteContentMarketing }): React.Rea
           >
             <AppPhoneMockup
               image={heroAppScreenshot}
-              alt="Pawsoul mobile app home dashboard with pet status, health summary, and navigation"
+              alt="Pawfect mobile app home dashboard with pet status, health summary, and navigation"
               priority
               size="xl"
               float={false}

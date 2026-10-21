@@ -4,7 +4,7 @@ import Link from "next/link";
 import pawsoulLogo from "@/app/assets/brand/pawsoul-logo.png";
 
 type BrandLogoProps = {
-  /** Show the Pawsoul wordmark beside the icon. Default true. */
+  /** Show the Pawfect wordmark beside the icon. Default true. */
   showWordmark?: boolean;
   /** Icon edge length in pixels (CSS). Default 40. */
   size?: number;
@@ -35,20 +35,20 @@ export function BrandLogo({
         style={{ width: size, height: size }}
         priority={priority}
       />
-      {showWordmark ? <span className={wordmarkClassName}>Pawsoul</span> : null}
+      {showWordmark ? <span className={wordmarkClassName}>Pawfect</span> : null}
     </span>
   );
 
   if (!href) {
     return (
-      <span className="inline-flex" aria-label="Pawsoul">
+      <span className="inline-flex" aria-label="Pawfect">
         {mark}
       </span>
     );
   }
 
   return (
-    <Link href={href} className="inline-flex items-center" aria-label="Pawsoul home">
+    <Link href={href} className="inline-flex items-center" aria-label="Pawfect home">
       {mark}
     </Link>
   );

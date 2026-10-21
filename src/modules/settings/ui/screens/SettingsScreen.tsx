@@ -73,6 +73,7 @@ export const SettingsScreen: React.FC = () => {
   const loadRelaxedMode = useWellnessStore(s => s.loadRelaxedMode);
   const setRelaxedMode = useWellnessStore(s => s.setRelaxedMode);
   const logout = useAuthStore(s => s.logout);
+  const deleteAccount = useAuthStore(s => s.deleteAccount);
   const loading = useAuthStore(s => s.loading);
   const user = useAuthStore(s => s.user);
   const pets = usePetStore(s => s.pets);
@@ -253,6 +254,31 @@ export const SettingsScreen: React.FC = () => {
 
   const handleLogout = () => {
     logout().catch(() => {});
+  };
+
+  const handleDeleteAccountPress = () => {
+    Alert.alert(
+      'Delete account?',
+      'This permanently deletes your Pawfect account, pets, and care data. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete account',
+          style: 'destructive',
+          onPress: () => {
+            void (async () => {
+              const result = await deleteAccount();
+              if (!result.success) {
+                Alert.alert(
+                  'Could not delete account',
+                  result.error ?? 'Try again.',
+                );
+              }
+            })();
+          },
+        },
+      ],
+    );
   };
 
   const confirmDeletePetFromSettings = useCallback(
@@ -617,6 +643,27 @@ export const SettingsScreen: React.FC = () => {
                 <View>
                   <Text style={[styles.actionTitleDanger, { fontFamily: fontFamilies.semibold }]}>Delete Pet Profile</Text>
                   <Text style={[styles.rowSubtitle, { fontFamily: fontFamilies.medium }]}>Permanently remove a pet</Text>
+                </View>
+              </View>
+              <MaterialIcon name="chevron_right" size={20} color={colors.text.subdued} />
+            </Pressable>
+
+            <Pressable
+              style={styles.actionRow}
+              onPress={handleDeleteAccountPress}
+              disabled={loading}
+            >
+              <View style={styles.rowLeft}>
+                <View style={[styles.rowIcon, styles.dangerIcon]}>
+                  <MaterialIcon name="delete_forever" size={20} color={colors.danger} />
+                </View>
+                <View>
+                  <Text style={[styles.actionTitleDanger, { fontFamily: fontFamilies.semibold }]}>
+                    Delete Account
+                  </Text>
+                  <Text style={[styles.rowSubtitle, { fontFamily: fontFamilies.medium }]}>
+                    Permanently erase your account and data
+                  </Text>
                 </View>
               </View>
               <MaterialIcon name="chevron_right" size={20} color={colors.text.subdued} />

@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import { Outfit } from "next/font/google";
 import { ThemeScript } from "@/components/admin/ThemeScript";
 import "./globals.css";
+import { IOS_APP_ID } from "@/lib/store-links";
 import { Providers } from "./providers";
 
 const outfit = Outfit({
@@ -26,11 +27,13 @@ const siteUrl =
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Pawsoul - Smart Pet Health Scheduling",
-    template: "%s - Pawsoul",
+    default: "Pawfect: Pet Care & Reminders for Dogs & Cats",
+    template: "%s - Pawfect",
   },
   description:
-    "Vet-validated vaccination and deworming schedules, pet journey stages, and health records for dogs and cats.",
+    "Age-aware vaccine and deworming schedules, daily care reminders and health records for dogs and cats. Free on iPhone and Android.",
+  // iOS Safari "Smart App Banner": offers Open / Get for the live app.
+  itunes: { appId: IOS_APP_ID },
   icons: {
     icon: [
       { url: "/favicon-32.png", type: "image/png", sizes: "32x32" },

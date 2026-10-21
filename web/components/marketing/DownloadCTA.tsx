@@ -1,8 +1,7 @@
 "use client";
 
-import { Button } from "@/components/ui/Button";
+import { StoreButtons } from "@/components/marketing/StoreButtons";
 import { motion, useReducedMotion } from "framer-motion";
-import { Download, Smartphone } from "lucide-react";
 
 export function DownloadCTA(): React.ReactElement {
   const reduce = useReducedMotion();
@@ -29,33 +28,12 @@ export function DownloadCTA(): React.ReactElement {
           Every week without a plan is another date that can slip
         </h2>
         <p className="mx-auto mt-5 max-w-xl text-lg text-white/90">
-          Download free. Add your pet once. Get reminders before doses are due, even when you are
-          offline at the clinic.
+          Download free. Add your pet once. Get reminders before doses are due and keep every
+          record in one place.
         </p>
-        <div className="mt-10 flex flex-wrap justify-center gap-4">
-          <Button
-            href="/download"
-            variant="secondary"
-            className="!border-0 !bg-stone-950 !px-8 !py-3.5 !text-white !shadow-xl hover:!bg-stone-900 dark:!bg-stone-950"
-          >
-            <span className="inline-flex items-center gap-2">
-              <Download className="h-5 w-5" aria-hidden />
-              App Store
-            </span>
-          </Button>
-          <Button
-            href="/download"
-            variant="secondary"
-            className="!border-0 !bg-stone-950 !px-8 !py-3.5 !text-white !shadow-xl hover:!bg-stone-900 dark:!bg-stone-950"
-          >
-            <span className="inline-flex items-center gap-2">
-              <Smartphone className="h-5 w-5" aria-hidden />
-              Google Play
-            </span>
-          </Button>
-        </div>
+        <StoreButtons source="cta_band" tone="light" className="mt-10 justify-center" />
         <p className="mt-8 text-sm font-medium text-white/80">
-          Free forever plan. No credit card. Same Pawsoul app on iOS and Android.
+          Free forever plan. No credit card. Same Pawfect app on iOS and Android.
         </p>
       </motion.div>
     </section>

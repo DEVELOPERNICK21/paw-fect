@@ -11,6 +11,7 @@ import {
 
 type WidgetDataModuleType = {
   sync: (json: string) => void;
+  clear?: () => void;
 };
 
 export interface GlanceSurfacesInput {
@@ -59,10 +60,18 @@ export function syncDeviceGlanceSurfaces(input: GlanceSurfacesInput): void {
   pushSnapshot(input);
 }
 
-/** @deprecated Use syncDeviceGlanceSurfaces */
-export function syncDeviceHomeWidgets(
-  vm: HomeDashboardViewModel,
-  pet: Pet,
-): void {
-  syncDeviceGlanceSurfaces({ pet, viewModel: vm });
+/**
+ * Removes the stored snapshot and refreshes every widget so the previous
+ * user's pet data is not left on the home screen after logout / account deletion.
+ */
+export function clearDeviceGlanceSurfaces(): void {
+  if (Platform.OS !== 'android' && Platform.OS !== 'ios') {
+    return;
+  }
+  const mod = NativeModules.WidgetDataModule as WidgetDataModuleType | undefined;
+  try {
+    mod?.clear?.();
+  } catch {
+    // ignore bridge errors in dev
+  }
 }

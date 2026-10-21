@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Blog",
-  description: "Pet health, vaccination, deworming, and behaviour articles from Pawsoul.",
+  description: "Pet health, vaccination, deworming, and behaviour articles from Pawfect.",
 };
 
 export default function BlogIndexPage(): React.ReactElement {

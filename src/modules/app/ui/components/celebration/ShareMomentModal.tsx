@@ -5,6 +5,8 @@ import type { MilestoneShareKind } from '../../../../records/domain/utils/isMile
 import { useTheme } from '../../../../../shared/hooks/useTheme';
 import { AppText } from '../../../../../shared/components/AppText';
 import { Button } from '../../../../../shared/components/Button';
+import { Mascot } from '../../../../../shared/components/Mascot';
+import { useActiveMascotSpecies } from '../../hooks/useActiveMascotSpecies';
 
 export interface ShareMomentModalProps {
   visible: boolean;
@@ -46,6 +48,7 @@ export const ShareMomentModal: React.FC<ShareMomentModalProps> = ({
 }) => {
   const { colors, textStyles, space, radius, fontFamilies } = useTheme();
   const { title, body } = milestoneCopy(kind, petName);
+  const mascotSpecies = useActiveMascotSpecies();
 
   const styles = useMemo(
     () =>
@@ -60,6 +63,10 @@ export const ShareMomentModal: React.FC<ShareMomentModalProps> = ({
           maxWidth: 400,
           alignSelf: 'center',
           width: '100%',
+        },
+        mascot: {
+          alignItems: 'center',
+          marginBottom: space('sm'),
         },
         actions: {
           marginTop: space('md'),
@@ -94,6 +101,9 @@ export const ShareMomentModal: React.FC<ShareMomentModalProps> = ({
             },
           ]}
         >
+          <View style={styles.mascot}>
+            <Mascot mood="celebrating" species={mascotSpecies} size={104} />
+          </View>
           <AppText
             style={[
               textStyles.subtitle,

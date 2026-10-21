@@ -87,9 +87,33 @@ export async function ensureNotificationChannels(): Promise<void> {
   return channelsReadyPromise;
 }
 
+function isAuthorized(status: AuthorizationStatus): boolean {
+  return (
+    status === AuthorizationStatus.AUTHORIZED ||
+    status === AuthorizationStatus.PROVISIONAL
+  );
+}
+
+/** Re-reads OS permission without prompting so a grant in system Settings is picked up. */
+async function recheckDeniedPermission(): Promise<boolean> {
+  try {
+    const settings = await notifee.getNotificationSettings();
+    const granted = isAuthorized(settings.authorizationStatus);
+    if (granted) {
+      cachedPermissionGranted = true;
+    }
+    return granted;
+  } catch {
+    return false;
+  }
+}
+
 export async function requestNotificationPermission(): Promise<boolean> {
-  if (cachedPermissionGranted != null) {
-    return cachedPermissionGranted;
+  if (cachedPermissionGranted === true) {
+    return true;
+  }
+  if (cachedPermissionGranted === false) {
+    return recheckDeniedPermission();
   }
   if (permissionRequestPromise != null) {
     return permissionRequestPromise;
@@ -98,9 +122,7 @@ export async function requestNotificationPermission(): Promise<boolean> {
   permissionRequestPromise = (async () => {
     startupLog('notifications.permission.request');
     const settings = await notifee.requestPermission();
-    const granted =
-      settings.authorizationStatus === AuthorizationStatus.AUTHORIZED ||
-      settings.authorizationStatus === AuthorizationStatus.PROVISIONAL;
+    const granted = isAuthorized(settings.authorizationStatus);
     cachedPermissionGranted = granted;
     startupLog('notifications.permission.result', granted ? 'granted' : 'denied');
     return granted;

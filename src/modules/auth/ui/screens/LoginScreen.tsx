@@ -2,11 +2,14 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Image,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
+  useColorScheme,
   View,
 } from 'react-native';
+import { AppleButton } from '@invertase/react-native-apple-authentication';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { trackEvent } from '../../../../infrastructure/analytics/analytics';
 import { useOnboardingDraftStore } from '../../../app/store/onboardingDraftStore';
@@ -36,6 +39,8 @@ export const LoginScreen: React.FC = () => {
     state => state.validateEmailAuthInput,
   );
   const loginWithGoogle = useAuthStore(state => state.loginWithGoogle);
+  const loginWithApple = useAuthStore(state => state.loginWithApple);
+  const colorScheme = useColorScheme();
   const loading = useAuthStore(state => state.loading);
   const authError = useAuthStore(state => state.authError);
   const clearAuthError = useAuthStore(state => state.clearAuthError);
@@ -122,6 +127,15 @@ export const LoginScreen: React.FC = () => {
     const success = await loginWithGoogle();
     if (success) {
       void trackEvent('user_logged_in', { method: 'google' });
+    }
+  };
+
+  const handleAppleLoginPress = async () => {
+    setError(null);
+    clearAuthError();
+    const success = await loginWithApple();
+    if (success) {
+      void trackEvent('user_logged_in', { method: 'apple' });
     }
   };
 
@@ -256,6 +270,23 @@ export const LoginScreen: React.FC = () => {
               style={styles.primaryButton}
               textStyle={styles.primaryButtonText}
             />
+            {Platform.OS === 'ios' ? (
+              <AppleButton
+                buttonStyle={
+                  colorScheme === 'dark'
+                    ? AppleButton.Style.WHITE
+                    : AppleButton.Style.BLACK
+                }
+                buttonType={AppleButton.Type.CONTINUE}
+                cornerRadius={radius.md}
+                style={[styles.appleButton, loading && styles.appleButtonDisabled]}
+                onPress={() => {
+                  if (!loading) {
+                    void handleAppleLoginPress();
+                  }
+                }}
+              />
+            ) : null}
             <Button
               title="Continue with Google"
               onPress={handleGoogleLoginPress}
@@ -448,6 +479,14 @@ const createStyles = ({
       shadowOpacity: 0.3,
       shadowRadius: spacing.md + spacing.xs,
       elevation: 8,
+    },
+    appleButton: {
+      marginTop: space('lg'),
+      width: '100%',
+      height: spacing['3xl'] + spacing.lg,
+    },
+    appleButtonDisabled: {
+      opacity: 0.5,
     },
     googleButton: {
       marginTop: space('lg'),

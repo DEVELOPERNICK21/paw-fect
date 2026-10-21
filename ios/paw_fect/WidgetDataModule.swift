@@ -11,4 +11,9 @@ class WidgetDataModule: NSObject {
   func sync(_ json: String) {
     WidgetGlanceStorage.savePayload(json)
   }
+
+  @objc
+  func clear() {
+    WidgetGlanceStorage.clearPayload()
+  }
 }

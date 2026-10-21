@@ -1,13 +1,11 @@
 import type { SiteContentMarketing } from "@/types";
 
-/** Rewrite legacy Pawfect brand strings in CMS / marketing copy. */
+/**
+ * Normalise legacy brand strings in CMS / marketing copy to the current store name.
+ * (Domains and email addresses are left alone.)
+ */
 export function rebrandCopy(text: string): string {
-  return text
-    .replaceAll("Pawfect+", "Pawsoul+")
-    .replaceAll("Paw-fect", "Pawsoul")
-    .replaceAll("Pawfect", "Pawsoul")
-    .replaceAll("pawfect.app", "pawsoul.app")
-    .replaceAll("paw-fect.vercel.app", "pawsoul.app");
+  return text.replaceAll("Pawsoul", "Pawfect").replaceAll("Paw-fect", "Pawfect");
 }
 
 export function rebrandSiteContent(

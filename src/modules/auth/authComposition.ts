@@ -6,8 +6,10 @@ import { createAuthRepository } from './data/repositories/AuthRepositoryImpl';
 import { LoginUser } from './domain/usecases/LoginUser';
 import { SignupUser } from './domain/usecases/SignupUser';
 import { LogoutUser } from './domain/usecases/LogoutUser';
+import { DeleteAccount } from './domain/usecases/DeleteAccount';
 import { GetCurrentUser } from './domain/usecases/GetCurrentUser';
 import { LoginWithGoogle } from './domain/usecases/LoginWithGoogle';
+import { LoginWithApple } from './domain/usecases/LoginWithApple';
 import { RequestOtp } from './domain/usecases/RequestOtp';
 import { VerifyOtp } from './domain/usecases/VerifyOtp';
 import { ResendOtp } from './domain/usecases/ResendOtp';
@@ -30,8 +32,10 @@ export const authComposition = {
   login: new LoginUser(repository),
   signup: new SignupUser(repository),
   logout: new LogoutUser(repository),
+  deleteAccount: new DeleteAccount(repository),
   getCurrentUser: new GetCurrentUser(repository),
   loginWithGoogle: new LoginWithGoogle(repository),
+  loginWithApple: new LoginWithApple(repository),
   requestOtp: new RequestOtp(repository),
   verifyOtp: new VerifyOtp(repository),
   resendOtp: new ResendOtp(repository),

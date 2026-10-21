@@ -1,6 +1,7 @@
 import { tryGetAdminDb } from "@/lib/firebase-admin";
 import type { PricingPlan } from "@/types";
 import { defaultPricingPlans } from "@/lib/data/defaults";
+import { hasUnverifiedClaim } from "@/lib/data/unverified-claims";
 
 const COLLECTION = "pricing_plans";
 
@@ -28,6 +29,20 @@ function docToPlan(
   };
 }
 
+/**
+ * Stored plans can still list features the app does not have yet (PDF export,
+ * vet sharing, multi-user). When a plan does, show the accurate default feature list.
+ */
+function withAccurateFeatures(plan: PricingPlan): PricingPlan {
+  if (!plan.features.some((f) => hasUnverifiedClaim(f.label))) {
+    return plan;
+  }
+  const fallback = defaultPricingPlans().find(
+    (d) => d.slug === plan.slug || d.name.toLowerCase() === plan.name.toLowerCase(),
+  );
+  return fallback ? { ...plan, features: fallback.features } : plan;
+}
+
 export async function getActivePricingPlans(): Promise<PricingPlan[]> {
   try {
     const db = tryGetAdminDb();
@@ -47,7 +62,7 @@ export async function getActivePricingPlans(): Promise<PricingPlan[]> {
         id: `default-${i}`,
       }));
     }
-    const plans = snap.docs.map((d) => docToPlan(d.id, d.data()));
+    const plans = snap.docs.map((d) => withAccurateFeatures(docToPlan(d.id, d.data())));
     return plans.sort((a, b) => a.priceMonthly - b.priceMonthly);
   } catch {
     return defaultPricingPlans().map((p, i) => ({

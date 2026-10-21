@@ -12,12 +12,12 @@ export function Footer(): React.ReactElement {
             <div className="flex items-center gap-2.5">
               <BrandLogo showWordmark={false} size={44} />
               <div>
-                <p className="text-lg font-bold text-stone-900 dark:text-stone-50">Pawsoul</p>
+                <p className="text-lg font-bold text-stone-900 dark:text-stone-50">Pawfect</p>
                 <p className="text-xs font-medium text-stone-500">Pet health, lovingly organized</p>
               </div>
             </div>
             <p className="mt-4 text-sm leading-relaxed text-stone-600 dark:text-stone-400">
-              Vet-aligned schedules for dogs and cats: vaccines, deworming, journey stages, and records in one place.
+              Pet care for dogs and cats: vaccine and deworming schedules, reminders, and records in one place.
             </p>
             <p className="mt-4 inline-flex items-center gap-1.5 text-xs text-stone-500">
               <Heart className="h-3.5 w-3.5 text-primary" aria-hidden />
@@ -35,7 +35,6 @@ export function Footer(): React.ReactElement {
                   { href: "/pricing", label: "Pricing" },
                   { href: "/download", label: "Download" },
                   { href: "/blog", label: "Blog" },
-                  { href: "/waitlist", label: "Waitlist" },
                 ].map((l) => (
                   <li key={l.href}>
                     <Link
@@ -94,14 +93,13 @@ export function Footer(): React.ReactElement {
                     Contact
                   </Link>
                 </li>
-                <li className="text-stone-500">Follow us on social soon</li>
               </ul>
             </div>
           </div>
         </div>
         <div className="mt-14 border-t border-stone-200/80 pt-8 text-center text-xs leading-relaxed text-stone-500 dark:border-stone-700 dark:text-stone-500">
           <p>
-            © {new Date().getFullYear()} Pawsoul. Vet-validated protocols. Not a substitute for professional
+            © {new Date().getFullYear()} Pawfect. Not a substitute for professional
             veterinary advice.
           </p>
         </div>

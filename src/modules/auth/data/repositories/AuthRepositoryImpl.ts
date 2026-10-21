@@ -53,6 +53,11 @@ export class AuthRepositoryImpl implements AuthRepository {
     return this.persistSession(response);
   }
 
+  async loginWithApple(): Promise<User> {
+    const response = await this.remote.loginWithApple();
+    return this.persistSession(response);
+  }
+
   async requestOtp(phoneE164: string): Promise<string> {
     const { verificationId } = await this.remote.requestOtp(phoneE164);
     await this.local.setPendingPhone(phoneE164);
@@ -83,6 +88,23 @@ export class AuthRepositoryImpl implements AuthRepository {
       // Remote clears Firebase in `finally`; local must still be wiped.
     }
 
+    await this.local.clearToken();
+    await this.local.clearUser();
+  }
+
+  async deleteAccount(): Promise<void> {
+    const user = await this.local.getUser();
+    const userId = user?.id ?? null;
+
+    if (userId) {
+      try {
+        await this.profile.deleteAllUserData(userId);
+      } catch {
+        // Still attempt Auth deletion so the account cannot keep signing in.
+      }
+    }
+
+    await this.remote.deleteFirebaseUser();
     await this.local.clearToken();
     await this.local.clearUser();
   }

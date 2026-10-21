@@ -1,14 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  Animated,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Animated, StyleSheet, Text, View } from 'react-native';
 
+import { Mascot } from '../../../../../shared/components/Mascot';
 import { useTheme } from '../../../../../shared/hooks/useTheme';
 import { lineHeights } from '../../../../../shared/theme/typography';
+import { mascotSpeciesFor } from '../../../domain/mascot/mascotMood';
 import { buildProcessingLines } from '../../../domain/onboarding/buildProcessingLines';
 import type { PetDraft } from '../../../domain/onboarding/OnboardingDraft';
 import { OnboardingBlobBackdrop } from '../components/OnboardingBlobBackdrop';
@@ -113,7 +109,7 @@ export const ProcessingStep: React.FC<Props> = ({
         <Animated.View
           style={[styles.pulseWrap, { transform: [{ scale: pulse }] }]}
         >
-          <ActivityIndicator size="large" color={colors.accent} />
+          <Mascot mood="thinking" species={mascotSpeciesFor(species)} size={112} />
         </Animated.View>
         <View style={styles.lineSlot}>
           <Text style={[styles.title, { fontFamily: fontFamilies.bold }]}>

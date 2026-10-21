@@ -2,9 +2,11 @@
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:description="@string/widget_care_progress_lock_desc"
     android:initialLayout="@layout/widget_care_progress_lock"
-    android:minWidth="140dp"
-    android:minHeight="40dp"
+    android:minWidth="110dp"
+    android:minHeight="110dp"
     android:previewImage="@mipmap/ic_launcher"
+    android:targetCellWidth="2"
+    android:targetCellHeight="2"
     android:resizeMode="horizontal|vertical"
     android:updatePeriodMillis="1800000"
-    android:widgetCategory="keyguard" />
+    android:widgetCategory="home_screen|keyguard" />

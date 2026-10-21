@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { SUPPORT_EMAIL, supportMailto } from '@/lib/support-email';
 
 export const metadata: Metadata = {
-  title: 'Delete your account - Pawsoul',
+  title: 'Delete your account - Pawfect',
   description:
-    'How to request deletion of your Pawsoul account and associated pet data. Pawsoul pet health app.',
+    'How to request deletion of your Pawfect account and associated pet data. Pawfect pet health app.',
 };
 
 export default function DeleteAccountPage(): React.ReactElement {
@@ -12,32 +13,44 @@ export default function DeleteAccountPage(): React.ReactElement {
     <div className="py-24 md:py-32">
       <article className="prose prose-stone mx-auto max-w-3xl px-4 dark:prose-invert sm:px-6 lg:px-8">
         <p className="not-prose text-sm font-medium uppercase tracking-wide text-stone-500">
-          Pawsoul
+          Pawfect
         </p>
-        <h1>Delete your Pawsoul account and data.</h1>
+        <h1>Delete your Pawfect account and data.</h1>
         <p className="text-sm text-stone-500">
-          This page explains how users of the <strong>Pawsoul</strong> mobile
+          This page explains how users of the <strong>Pawfect</strong> mobile
           app can request account deletion and what happens to their data.
         </p>
 
-        <h2>How to request deletion</h2>
+        <h2>How to delete your account</h2>
 
+        <h3>In the app (recommended)</h3>
+        <ol>
+          <li>Open <strong>Pawfect</strong> and go to <strong>Settings</strong>.</li>
+          <li>Tap <strong>Delete Account</strong>.</li>
+          <li>Confirm. This permanently removes your account, pets, and care data.</li>
+        </ol>
+        <p>
+          If Firebase asks you to sign in again for security, sign out, sign back
+          in, then repeat Delete Account.
+        </p>
+
+        <h3>By email</h3>
         <ol>
           <li>
             Send an email from the{' '}
             <strong>same address or phone-linked account</strong> you use with
-            Pawsoul to{' '}
+            Pawfect to{' '}
             <a
-              href="mailto:privacy@pawsoul.app?subject=Pawsoul%20account%20deletion%20request"
+              href={supportMailto('Pawfect account deletion request')}
               className="text-stone-700 underline dark:text-stone-300"
             >
-              privacy@pawsoul.app
+              {SUPPORT_EMAIL}
             </a>
             .
           </li>
           <li>
             Use the subject line:{' '}
-            <strong>Pawsoul account deletion request</strong>.
+            <strong>Pawfect account deletion request</strong>.
           </li>
           <li>
             In the body, include your{' '}
@@ -56,10 +69,10 @@ export default function DeleteAccountPage(): React.ReactElement {
           </Link>{' '}
           or{' '}
           <a
-            href="mailto:hello@pawsoul.app"
+            href={supportMailto()}
             className="text-stone-700 underline dark:text-stone-300"
           >
-            hello@pawsoul.app
+            {SUPPORT_EMAIL}
           </a>
           .
         </p>
@@ -68,7 +81,7 @@ export default function DeleteAccountPage(): React.ReactElement {
         <p>After we verify your request, we aim to delete:</p>
         <ul>
           <li>
-            Your Pawsoul account and authentication profile associated with that
+            Your Pawfect account and authentication profile associated with that
             account.
           </li>
           <li>
@@ -102,17 +115,17 @@ export default function DeleteAccountPage(): React.ReactElement {
         <p>
           To correct or remove specific data while keeping your account, email{' '}
           <a
-            href="mailto:privacy@pawsoul.app"
+            href={supportMailto()}
             className="text-stone-700 underline dark:text-stone-300"
           >
-            privacy@pawsoul.app
+            {SUPPORT_EMAIL}
           </a>{' '}
           with details. We will respond under the timelines described in our
           Privacy Policy.
         </p>
 
         <p className="text-sm text-stone-500">
-          © 2026 Pawsoul. Pet health scheduling and records.
+          © 2026 Pawfect. Pet health scheduling and records.
         </p>
       </article>
     </div>

@@ -10,7 +10,7 @@ export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "Pricing",
-  description: "Simple plans for Indian pet households: start free, save more on annual billing.",
+  description: "Simple plans for pet households: start free, save more on annual billing. Prices shown in INR; your store shows local prices.",
 };
 
 export default async function PricingPage(): Promise<React.ReactElement> {
@@ -34,11 +34,11 @@ export default async function PricingPage(): Promise<React.ReactElement> {
           <div className="mx-auto mt-8 flex flex-wrap items-center justify-center gap-6 text-sm text-stone-600 dark:text-stone-400">
             <span className="inline-flex items-center gap-2">
               <Shield className="h-4 w-4 text-primary" aria-hidden />
-              Vet-aligned protocols
+              Age-aware schedules
             </span>
             <span className="inline-flex items-center gap-2">
               <Heart className="h-4 w-4 text-primary" aria-hidden />
-              Loved by busy pet parents
+              Free to start, cancel anytime in your store
             </span>
           </div>
         </div>

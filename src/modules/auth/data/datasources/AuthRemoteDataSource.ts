@@ -1,6 +1,8 @@
 import type { User } from '../../domain/models/User';
 import { AuthError } from '../../domain/models/AuthError';
 import { apiClient } from '../../../../infrastructure/api/apiClient';
+import { Platform } from 'react-native';
+import { appleAuth } from '@invertase/react-native-apple-authentication';
 import { getApp } from '@react-native-firebase/app';
 import {
   createUserWithEmailAndPassword,
@@ -8,6 +10,7 @@ import {
   getAuth,
   getIdToken,
   GoogleAuthProvider,
+  AppleAuthProvider,
   onAuthStateChanged,
   PhoneAuthProvider,
   sendPasswordResetEmail as firebaseSendPasswordResetEmail,
@@ -15,6 +18,7 @@ import {
   signInWithCredential,
   signInWithPhoneNumber,
   signOut,
+  updateProfile,
   type FirebaseAuthTypes,
 } from '@react-native-firebase/auth';
 import {
@@ -39,6 +43,7 @@ export interface AuthRemoteDataSource {
   login(email: string, password: string): Promise<AuthResponse>;
   signup(email: string, password: string): Promise<AuthResponse>;
   loginWithGoogle(): Promise<AuthResponse>;
+  loginWithApple(): Promise<AuthResponse>;
   requestOtp(phoneE164: string): Promise<{ verificationId: string }>;
   verifyOtp(
     verificationId: string,
@@ -48,6 +53,8 @@ export interface AuthRemoteDataSource {
   getCurrentSession(): Promise<AuthResponse | null>;
   getCurrentUser(token: string): Promise<User | null>;
   logout(token: string | null): Promise<void>;
+  /** Deletes the Firebase Auth user. Throws AuthError requires_recent_login when needed. */
+  deleteFirebaseUser(): Promise<void>;
   watchAuthChanges(
     onChange: (session: AuthResponse | null) => void,
   ): () => void;
@@ -252,6 +259,59 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
   }
 
+  async loginWithApple(): Promise<AuthResponse> {
+    try {
+      if (Platform.OS !== 'ios' || !appleAuth.isSupported) {
+        throw new AuthError(
+          'configuration',
+          'Sign in with Apple is not available on this device.',
+        );
+      }
+
+      const appleResponse = await appleAuth.performRequest({
+        requestedOperation: appleAuth.Operation.LOGIN,
+        requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
+      });
+
+      const { identityToken, nonce, fullName } = appleResponse;
+      if (!identityToken) {
+        throw new Error('Sign in with Apple did not return an identity token.');
+      }
+
+      const appleCredential = AppleAuthProvider.credential(identityToken, nonce);
+      const authResult = await signInWithCredential(this.auth, appleCredential);
+      if (!authResult.user) {
+        throw new Error('Sign in with Apple failed.');
+      }
+
+      // Apple only returns the name on the very first authorization, so persist it now.
+      if (!authResult.user.displayName) {
+        const name = [fullName?.givenName, fullName?.familyName]
+          .filter((part): part is string => Boolean(part?.trim()))
+          .join(' ')
+          .trim();
+        if (name) {
+          try {
+            await updateProfile(authResult.user, { displayName: name });
+          } catch {
+            // Non-fatal: the user can edit their name from the profile screen.
+          }
+        }
+      }
+
+      const token = await getIdToken(authResult.user);
+      const user = this.mapFirebaseUser(authResult.user, new Date().toISOString());
+      return { user, token };
+    } catch (error) {
+      if (
+        (error as { code?: string | number })?.code === appleAuth.Error.CANCELED
+      ) {
+        throw new AuthError('cancelled', 'Sign-in cancelled.');
+      }
+      throw this.toAuthError(error, 'Sign in with Apple failed.');
+    }
+  }
+
   async requestOtp(phoneE164: string): Promise<{ verificationId: string }> {
     try {
       const confirmation = await signInWithPhoneNumber(this.auth, phoneE164);
@@ -344,6 +404,37 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       // Google session may be absent or Play Services unavailable.
     } finally {
       await signOut(this.auth);
+    }
+  }
+
+  async deleteFirebaseUser(): Promise<void> {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) {
+      throw new AuthError(
+        'invalid_credentials',
+        'No signed-in user to delete.',
+      );
+    }
+    try {
+      await currentUser.delete();
+    } catch (error) {
+      const mapped = this.toAuthError(
+        error,
+        'Could not delete account. Please try again.',
+      );
+      if (mapped.code === 'requires_recent_login') {
+        throw new AuthError(
+          'requires_recent_login',
+          'For security, sign out, sign back in, then delete your account again.',
+        );
+      }
+      throw mapped;
+    }
+    try {
+      this.configureGoogleSignIn();
+      await GoogleSignin.signOut();
+    } catch {
+      // Best-effort Google session clear after Auth user is gone.
     }
   }
 

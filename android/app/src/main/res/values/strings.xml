@@ -1,26 +1,49 @@
 <resources>
-    <string name="app_name">Pawsoul</string>
-    <string name="widget_next_milestone_label">Pawsoul · Next milestone</string>
-    <string name="widget_next_milestone_desc">Next vaccination or deworming for your pet</string>
-    <string name="widget_next_milestone_badge">Next milestone</string>
-    <string name="widget_upcoming_tasks_title">Upcoming tasks</string>
-    <string name="widget_upcoming_tasks_desc">Today\'s care reminders</string>
-    <string name="widget_open_app">Open Pawsoul to set up your pet.</string>
-    <string name="widget_no_milestone">No upcoming milestone</string>
-    <string name="widget_tasks_empty">No tasks for today</string>
-    <string name="widget_paw_emoji">🐾</string>
-    <string name="widget_tasks_header">Tasks</string>
-    <string name="widget_tasks_kebab">⋮</string>
-    <string name="widget_tasks_menu_desc">More options</string>
-    <string name="widget_tasks_add_hint">+ Add New Task — open Pawsoul</string>
-    <string name="widget_tasks_footer_when_list">Tap widget to manage tasks</string>
-    <string name="widget_pet_fallback">Your pet</string>
-    <string name="widget_next_up_lock_label">Pawsoul · Next care</string>
-    <string name="widget_next_up_lock_desc">Next feeding, walk, or care task on your lock screen</string>
-    <string name="widget_next_up_empty">No care tasks today</string>
-    <string name="widget_care_progress_lock_label">Pawsoul · Today\'s care</string>
+    <string name="app_name">Pawfect</string>
+
+    <!-- Widget picker labels + descriptions (the picker already groups them under the app name). -->
+    <string name="widget_next_milestone_label">Next milestone</string>
+    <string name="widget_next_milestone_desc">Your pet\'s next vaccine or deworming, with a countdown</string>
+    <string name="widget_upcoming_tasks_title">Today\'s care</string>
+    <string name="widget_upcoming_tasks_desc">Today\'s care plan with progress and a tick list</string>
+    <string name="widget_next_up_lock_label">Next up</string>
+    <string name="widget_next_up_lock_desc">The next care task and when it\'s due</string>
+    <string name="widget_care_progress_lock_label">Care progress</string>
     <string name="widget_care_progress_lock_desc">How much of today\'s care plan is done</string>
-    <string name="widget_care_progress_empty">Set up daily care in Pawsoul</string>
+
+    <!-- Shared copy -->
+    <string name="widget_pet_fallback">Your pet</string>
+    <string name="widget_setup_title">Set up your pet</string>
+    <string name="widget_setup_hint">Open Pawfect</string>
+    <string name="widget_stale_title">Plan out of date</string>
+    <string name="widget_stale_hint">Open Pawfect to refresh</string>
+
+    <!-- Today's care -->
+    <string name="widget_tasks_header">Today\'s care</string>
+    <string name="widget_tasks_left_fmt">%1$d left</string>
+    <string name="widget_tasks_all_done">All done</string>
+    <string name="widget_tasks_empty_title">Nothing planned today</string>
+    <string name="widget_tasks_empty_hint">Tap to add a reminder</string>
+    <string name="widget_tasks_a11y_fmt">%1$s, today\'s care: %2$d of %3$d done</string>
+
+    <!-- Next up -->
+    <string name="widget_next_up_eyebrow">NEXT UP</string>
+    <string name="widget_next_up_empty">All done for today</string>
+    <string name="widget_next_up_empty_hint">Nice work</string>
+    <string name="widget_next_up_a11y_fmt">%1$s, next up: %2$s %3$s</string>
+
+    <!-- Care progress -->
+    <string name="widget_care_progress_eyebrow">TODAY\'S CARE</string>
     <string name="widget_care_progress_line_fmt">%1$d of %2$d done</string>
-    <string name="widget_care_progress_percent_fmt">%1$d%% complete</string>
+    <string name="widget_care_progress_empty">No plan yet</string>
+
+    <!-- Next milestone -->
+    <string name="widget_next_milestone_eyebrow">NEXT MILESTONE</string>
+    <string name="widget_no_milestone">No upcoming milestone</string>
+    <string name="widget_no_milestone_hint">Add a vaccine or deworming date</string>
+    <string name="widget_milestone_a11y_fmt">%1$s, next milestone: %2$s, %3$s</string>
+    <string name="widget_countdown_overdue">Overdue</string>
+    <string name="widget_countdown_today">Today</string>
+    <string name="widget_countdown_tomorrow">Tomorrow</string>
+    <string name="widget_countdown_days_fmt">In %1$d days</string>
 </resources>

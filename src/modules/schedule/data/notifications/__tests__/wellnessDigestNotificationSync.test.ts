@@ -1,5 +1,6 @@
 import type { DailyCareBlock } from '../../../domain/models/DailyCareBlock';
 import {
+  buildWellnessDigestCandidates,
   buildWellnessDigestCopy,
   pickWellnessDigestBlocks,
 } from '../wellnessDigestNotificationSync';
@@ -47,6 +48,34 @@ describe('pickWellnessDigestBlocks', () => {
     ];
     const slots = pickWellnessDigestBlocks(blocks);
     expect(slots.morning?.id).toBe('mid');
+  });
+});
+
+describe('buildWellnessDigestCandidates', () => {
+  const blocks = [
+    block({ id: 'm', scheduledTime: '07:00', order: 1, title: 'Morning walk' }),
+    block({ id: 'mid', scheduledTime: '12:00', order: 2, category: 'litter', title: 'Midday litter scoop' }),
+    block({ id: 'eve', scheduledTime: '20:00', order: 3, category: 'grooming', title: 'Grooming + health check' }),
+  ];
+
+  it('builds lowest-priority candidates 15 minutes before each slot', () => {
+    const nowMs = new Date(2026, 9, 1, 6, 0).getTime();
+    const candidates = buildWellnessDigestCandidates('2026-10-01', 'p1', 'Bruno', blocks, nowMs);
+
+    expect(candidates.map(c => c.id)).toEqual([
+      'wellness-digest-p1-morning',
+      'wellness-digest-p1-midday',
+      'wellness-digest-p1-evening',
+    ]);
+    expect(candidates.every(c => c.kind === 'wellnessDigest' && c.priority === 5)).toBe(true);
+    expect(candidates[0]?.fireAt).toEqual(new Date(2026, 9, 1, 6, 45));
+  });
+
+  it('skips slots whose fire time has passed', () => {
+    const nowMs = new Date(2026, 9, 1, 13, 0).getTime();
+    const candidates = buildWellnessDigestCandidates('2026-10-01', 'p1', 'Bruno', blocks, nowMs);
+
+    expect(candidates.map(c => c.id)).toEqual(['wellness-digest-p1-evening']);
   });
 });
 

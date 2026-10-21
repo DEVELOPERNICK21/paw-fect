@@ -14,6 +14,8 @@ import { useNavigation } from '@react-navigation/native';
 import { useAppTabBarInset } from '../../../../app/navigation/layout';
 import type { ReminderListRootNavigation } from '../../../../app/navigation/types';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
+import { Mascot } from '../../../../shared/components/Mascot';
+import { useActiveMascotSpecies } from '../../../app/ui/hooks/useActiveMascotSpecies';
 import { useTheme, type Theme } from '../../../../shared/hooks/useTheme';
 import type { Reminder } from '../../domain/models/Reminder';
 import { useReminderStore } from '../../store/reminderStore';
@@ -90,6 +92,7 @@ const createStyles = ({ colors }: Pick<Theme, 'colors'>) =>
       padding: 20,
       alignItems: 'center',
     },
+    mascotWrap: { marginBottom: 12 },
     emptyTitle: { fontSize: 20, lineHeight: 26, color: colors.text.heading },
     emptySubtitle: {
       marginTop: 8,
@@ -242,6 +245,8 @@ export const ReminderListScreen: React.FC = () => {
     [colors, confirmDelete, fontFamilies, navigation, styles],
   );
 
+  const mascotSpecies = useActiveMascotSpecies();
+
   const listEmpty = useMemo(() => {
     if (loading) {
       return (
@@ -261,6 +266,9 @@ export const ReminderListScreen: React.FC = () => {
     }
     return (
       <View style={styles.emptyState}>
+        <View style={styles.mascotWrap}>
+          <Mascot mood="happy" species={mascotSpecies} size={88} />
+        </View>
         <Text style={[styles.emptyTitle, { fontFamily: fontFamilies.bold }]}>
           No reminders yet
         </Text>
@@ -282,7 +290,7 @@ export const ReminderListScreen: React.FC = () => {
         </Pressable>
       </View>
     );
-  }, [colors.primary, error, fontFamilies, loading, navigation, styles]);
+  }, [colors.primary, error, fontFamilies, loading, mascotSpecies, navigation, styles]);
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>

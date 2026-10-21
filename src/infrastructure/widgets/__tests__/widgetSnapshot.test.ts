@@ -121,4 +121,14 @@ describe('buildWidgetSnapshot', () => {
       percent: 50,
     });
   });
+
+  it('stamps the local day so widgets can detect a stale plan', () => {
+    expect(
+      buildWidgetSnapshot({ pet, viewModel: baseVm, forDate: '2026-05-16' })
+        .forDate,
+    ).toBe('2026-05-16');
+    expect(buildWidgetSnapshot({ pet, viewModel: baseVm }).forDate).toMatch(
+      /^\d{4}-\d{2}-\d{2}$/,
+    );
+  });
 });

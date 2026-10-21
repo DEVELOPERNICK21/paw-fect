@@ -22,6 +22,7 @@ import { recordsComposition } from '../../records/recordsComposition';
 import { scheduleComposition } from '../../schedule/scheduleComposition';
 import { normalizeStoredUser } from '../../auth/domain/models/normalizeStoredUser';
 import { buildScheduleNotificationCandidates } from '../../schedule/data/notifications/scheduleNotificationSync';
+import { buildWellnessDigestCandidates } from '../../schedule/data/notifications/wellnessDigestNotificationSync';
 
 const AUTH_USER_KEY = 'authUser';
 
@@ -29,7 +30,9 @@ function toReminderScheduleInputs(
   reminders: Reminder[],
   petSpeciesByPetId: ReadonlyMap<string, PetNotificationSpecies>,
 ): ReminderScheduleInput[] {
-  return reminders.map(reminder => ({
+  return reminders
+    .filter(reminder => petSpeciesByPetId.has(reminder.petId))
+    .map(reminder => ({
     id: reminder.id,
     petId: reminder.petId,
     title: reminder.title,
@@ -41,7 +44,7 @@ function toReminderScheduleInputs(
 
 async function buildScheduleCandidatesForPets(
   userId: string,
-  pets: Array<{ id: string; type: PetNotificationSpecies }>,
+  pets: Array<{ id: string; name: string; type: PetNotificationSpecies }>,
   today: string,
   nowMs: number,
 ): Promise<MustFirePlanPayload['scheduleCandidates']> {
@@ -55,12 +58,21 @@ async function buildScheduleCandidatesForPets(
       if (schedule == null) {
         return [];
       }
-      return buildScheduleNotificationCandidates(
-        schedule,
-        schedule.blocks,
-        pet.type,
-        nowMs,
-      );
+      return [
+        ...buildScheduleNotificationCandidates(
+          schedule,
+          schedule.blocks,
+          pet.type,
+          nowMs,
+        ),
+        ...buildWellnessDigestCandidates(
+          schedule.date,
+          pet.id,
+          pet.name,
+          schedule.blocks,
+          nowMs,
+        ),
+      ];
     }),
   );
   return scheduleEntries.flat();

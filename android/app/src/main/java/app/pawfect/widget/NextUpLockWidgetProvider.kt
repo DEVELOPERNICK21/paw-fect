@@ -1,68 +1,56 @@
 package app.pawfect.widget
 
-import android.app.PendingIntent
-import android.appwidget.AppWidgetManager
-import android.appwidget.AppWidgetProvider
 import android.content.Context
-import android.content.Intent
-import android.os.Build
+import android.os.Bundle
 import android.view.View
 import android.widget.RemoteViews
-import app.pawfect.MainActivity
 import app.pawfect.R
-import org.json.JSONObject
 
-/** Compact lock-screen widget: next care task + time. */
-class NextUpLockWidgetProvider : AppWidgetProvider() {
-  override fun onUpdate(
-    context: Context,
-    appWidgetManager: AppWidgetManager,
-    appWidgetIds: IntArray,
-  ) {
-    val prefs = context.getSharedPreferences(WidgetBridge.PREFS_NAME, Context.MODE_PRIVATE)
-    val raw = prefs.getString(WidgetBridge.KEY_PAYLOAD, null)
-    var petName = context.getString(R.string.widget_pet_fallback)
-    var title = context.getString(R.string.widget_next_up_empty)
-    var timeLabel = ""
+/** Small "Next up" widget: the next pending care task and its time. */
+class NextUpLockWidgetProvider : PawfectWidgetProvider() {
+  override val requestCodeBase = 30_000
+  override val rootViewId = R.id.widget_next_up_root
 
-    if (raw != null) {
-      try {
-        val o = JSONObject(raw)
-        petName = o.optString("petName", petName)
-        val nextUp = o.optJSONObject("nextUp")
-        if (nextUp != null && nextUp.length() > 0) {
-          title = nextUp.optString("title", title)
-          timeLabel = nextUp.optString("timeLabel", "")
-        }
-      } catch (_: Exception) {
-        // keep defaults
+  override fun render(context: Context, payload: WidgetPayload?, options: Bundle): RemoteViews {
+    val views = RemoteViews(context.packageName, R.layout.widget_next_up_lock)
+    val petName = payload?.petName ?: context.getString(R.string.widget_pet_fallback)
+    views.setTextViewText(R.id.widget_next_up_pet, petName)
+
+    val title: String
+    var time = ""
+    when {
+      payload == null -> {
+        title = context.getString(R.string.widget_setup_title)
+        time = context.getString(R.string.widget_setup_hint)
+      }
+      !payload.isForToday -> {
+        title = context.getString(R.string.widget_stale_title)
+        time = context.getString(R.string.widget_stale_hint)
+      }
+      payload.nextUp != null -> {
+        title = payload.nextUp.title
+        time = payload.nextUp.timeLabel
+      }
+      payload.tasks.isEmpty() && payload.progress == null -> {
+        title = context.getString(R.string.widget_tasks_empty_title)
+      }
+      else -> {
+        title = context.getString(R.string.widget_next_up_empty)
+        time = context.getString(R.string.widget_next_up_empty_hint)
       }
     }
 
-    val flags =
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-      } else {
-        @Suppress("DEPRECATION")
-        PendingIntent.FLAG_UPDATE_CURRENT
-      }
-
-    for (id in appWidgetIds) {
-      val views = RemoteViews(context.packageName, R.layout.widget_next_up_lock)
-      views.setTextViewText(R.id.widget_next_up_pet, petName)
-      views.setTextViewText(R.id.widget_next_up_title, title)
-      if (timeLabel.isNotEmpty()) {
-        views.setTextViewText(R.id.widget_next_up_time, timeLabel)
-        views.setViewVisibility(R.id.widget_next_up_time, View.VISIBLE)
-      } else {
-        views.setViewVisibility(R.id.widget_next_up_time, View.GONE)
-      }
-
-      val launch = Intent(context, MainActivity::class.java)
-      val pi = PendingIntent.getActivity(context, id + 30_000, launch, flags)
-      views.setOnClickPendingIntent(R.id.widget_next_up_root, pi)
-
-      appWidgetManager.updateAppWidget(id, views)
+    views.setTextViewText(R.id.widget_next_up_title, title)
+    if (time.isNotEmpty()) {
+      views.setTextViewText(R.id.widget_next_up_time, time)
+      views.setViewVisibility(R.id.widget_next_up_time, View.VISIBLE)
+    } else {
+      views.setViewVisibility(R.id.widget_next_up_time, View.GONE)
     }
+    views.setContentDescription(
+      R.id.widget_next_up_root,
+      context.getString(R.string.widget_next_up_a11y_fmt, petName, title, time).trim(),
+    )
+    return views
   }
 }

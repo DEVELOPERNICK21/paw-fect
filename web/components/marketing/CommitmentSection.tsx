@@ -9,17 +9,17 @@ const reasons = [
   {
     icon: Clock3,
     title: "Small commitment, clear payoff",
-    body: "Add your pet once. Pawsoul builds the care timeline so you are not rebuilding it every month.",
+    body: "Add your pet once. Pawfect builds the care timeline so you are not rebuilding it every month.",
   },
   {
     icon: ShieldCheck,
     title: "Risk removed from trying",
-    body: "Start on the free plan. No card required. Upgrade only if you need more pets, history, or PDF export.",
+    body: "Start on the free plan. No card required. Upgrade only if you need more pets or your full history.",
   },
   {
     icon: Smartphone,
     title: "Help when you are already busy",
-    body: "Reminders and offline access show up at the clinic, not only when you are at a desk.",
+    body: "Reminders and your pet's records are on your phone at the clinic, not only at a desk.",
   },
 ] as const;
 

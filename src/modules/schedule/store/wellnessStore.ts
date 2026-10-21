@@ -1,9 +1,6 @@
 import { create } from 'zustand';
 
-import { ensureNotificationsReady } from '../../../infrastructure/notifications/notificationDiagnostics';
-import { notificationService } from '../../../infrastructure/notifications/notificationService';
 import { getAppSessionUserId } from '../../../shared/session/appSessionPorts';
-import { syncWellnessDigestNotifications } from '../data/notifications/wellnessDigestNotificationSync';
 import type { DailyCareBlock } from '../domain/models/DailyCareBlock';
 import type { DayCompletion } from '../domain/utils/wellnessCompletion';
 import {
@@ -169,19 +166,7 @@ export const useWellnessStore = create<WellnessState>((set, get) => ({
 
     get().checkAndUpdateStreak(input.petId, input.date, input.ownerSleepTime);
 
-    void (async () => {
-      const granted = await ensureNotificationsReady();
-      if (!granted) {
-        return;
-      }
-      await syncWellnessDigestNotifications(
-        input.date,
-        input.petId,
-        input.petName,
-        enriched,
-        notificationService,
-      );
-    })();
+    void scheduleComposition.resyncMustFireNotifications().catch(() => {});
   },
 
   markTaskDone: async (petId, blockId, date) => {

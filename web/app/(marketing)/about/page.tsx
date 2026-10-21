@@ -3,11 +3,11 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "About",
-  description: "Why we built Pawsoul: vet-validated schedules, pet-first design, privacy, India-aware protocols.",
+  description: "Why we built Pawfect: age-aware schedules, pet-first design and privacy, with care your vet confirms.",
 };
 
 const values = [
-  { title: "Vet-validated", body: "Schedules follow commonly used protocols. Your vet finalizes care." },
+  { title: "Common protocols", body: "Schedules follow commonly used protocols. Your vet finalizes care." },
   { title: "Pet-first", body: "Clarity for busy pet parents: fewer spreadsheets, fewer missed dates." },
   { title: "Privacy-safe", body: "Your pet data is for care and product improvement, not sold to advertisers." },
   { title: "India-aware", body: "Built with regional rabies and lifestyle context in mind." },
@@ -17,12 +17,12 @@ export default function AboutPage(): React.ReactElement {
   return (
     <div className="py-24 md:py-32">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-        <h1 className="text-4xl font-bold text-stone-900 dark:text-stone-50">About Pawsoul</h1>
+        <h1 className="text-4xl font-bold text-stone-900 dark:text-stone-50">About Pawfect</h1>
         <p className="mt-6 text-xl font-medium text-stone-800 dark:text-stone-200">
           We believe every pet deserves the same level of healthcare attention that their owners give themselves.
         </p>
         <p className="mt-6 text-stone-600 dark:text-stone-400">
-          Pawsoul started from a simple frustration: missed boosters and scattered photos of vaccine booklets. We built
+          Pawfect started from a simple frustration: missed boosters and scattered photos of vaccine booklets. We built
           an offline-friendly timeline that respects how real households manage multiple pets.
         </p>
         <div className="mt-16 grid gap-6 sm:grid-cols-2">

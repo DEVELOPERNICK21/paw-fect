@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { getSiteContentMarketing } from "@/lib/data/site-content";
+import { SUPPORT_EMAIL, supportMailto } from "@/lib/support-email";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
   description:
-    "How Pawsoul collects, uses, and protects pet and account data — India DPDP-aware policy for our app and website.",
+    "How Pawfect collects, uses, and protects pet and account data — India DPDP-aware policy for our app and website.",
 };
 
 export default async function PrivacyPage(): Promise<React.ReactElement> {
@@ -13,7 +14,7 @@ export default async function PrivacyPage(): Promise<React.ReactElement> {
   return (
     <div className="py-24 md:py-32">
       <article className="prose prose-stone mx-auto max-w-3xl px-4 dark:prose-invert sm:px-6 lg:px-8">
-        <p className="not-prose text-sm font-medium uppercase tracking-wide text-stone-500">Pawsoul</p>
+        <p className="not-prose text-sm font-medium uppercase tracking-wide text-stone-500">Pawfect</p>
         <h1>Privacy Policy</h1>
         <p className="text-sm text-stone-500">
           Last updated: {site.privacyLastUpdated} &nbsp;|&nbsp; Effective: {site.privacyLastUpdated}
@@ -22,9 +23,9 @@ export default async function PrivacyPage(): Promise<React.ReactElement> {
         <aside className="not-prose my-8 rounded-lg border border-amber-200 bg-amber-50 p-4 text-stone-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-stone-200">
           <p className="m-0 text-sm font-semibold">Important — not a veterinary service</p>
           <p className="mt-2 mb-0 text-sm leading-relaxed">
-            Pawsoul is a scheduling and record-keeping tool for pet health reminders. It is not a veterinary service,
-            medical device, or diagnostic tool. Vaccination and deworming schedules are based on general vet-validated
-            protocols and your pet&apos;s date of birth and lifestyle inputs. They do not constitute professional
+            Pawfect is a scheduling and record-keeping tool for pet health reminders. It is not a veterinary service,
+            medical device, or diagnostic tool. Vaccination and deworming schedules are based on commonly used
+            veterinary protocols and your pet&apos;s date of birth and lifestyle inputs. They do not constitute professional
             veterinary advice, diagnosis, or treatment. Always consult a licensed veterinarian for your pet&apos;s
             health decisions.
           </p>
@@ -32,23 +33,23 @@ export default async function PrivacyPage(): Promise<React.ReactElement> {
 
         <h2>1. Who we are</h2>
         <p>
-          Pawsoul (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;) operates a mobile application that helps pet owners
+          Pawfect (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;) operates a mobile application that helps pet owners
           schedule and record pet health activities such as vaccinations, deworming, and vet visits. We are not a
           veterinary practice and do not employ licensed veterinarians.
         </p>
         <p>
           Contact:{" "}
-          <a href="mailto:privacy@pawsoul.app" className="text-stone-700 underline dark:text-stone-300">
-            privacy@pawsoul.app
+          <a href={supportMailto()} className="text-stone-700 underline dark:text-stone-300">
+            {SUPPORT_EMAIL}
           </a>
         </p>
 
         <h2>2. Scope</h2>
         <p>This Privacy Policy applies to:</p>
         <ul>
-          <li>The Pawsoul mobile application (Android / iOS)</li>
+          <li>The Pawfect mobile application (Android / iOS)</li>
           <li>Our website at pawsoul.app</li>
-          <li>Any related services or communications from Pawsoul</li>
+          <li>Any related services or communications from Pawfect</li>
         </ul>
 
         <h2>3. Data we collect</h2>
@@ -76,7 +77,7 @@ export default async function PrivacyPage(): Promise<React.ReactElement> {
           kits (SDKs) in the app may access device or telephony-related information (for example, device identifiers or
           network/connection state) to help prevent fraud, process payments securely, and meet regulatory or platform
           requirements. We do not use this category of information to sell data or to build advertising profiles. For
-          details beyond what Pawsoul controls directly, see the privacy notices of the payment and platform providers
+          details beyond what Pawfect controls directly, see the privacy notices of the payment and platform providers
           listed in Section 7.
         </p>
         <h3>3.5 Push notifications</h3>
@@ -180,7 +181,7 @@ export default async function PrivacyPage(): Promise<React.ReactElement> {
           <li>Not shared with third-party health platforms or insurers without your explicit consent.</li>
         </ul>
         <p>
-          Note: Pawsoul schedules are informational reminders based on standard veterinary protocols and your pet&apos;s
+          Note: Pawfect schedules are informational reminders based on standard veterinary protocols and your pet&apos;s
           profile inputs. They are not diagnostic outputs. Always follow your veterinarian&apos;s specific guidance for
           your pet&apos;s individual health needs.
         </p>
@@ -212,8 +213,8 @@ export default async function PrivacyPage(): Promise<React.ReactElement> {
         </ul>
         <p>
           To exercise any right, email{" "}
-          <a href="mailto:privacy@pawsoul.app" className="text-stone-700 underline dark:text-stone-300">
-            privacy@pawsoul.app
+          <a href={supportMailto()} className="text-stone-700 underline dark:text-stone-300">
+            {SUPPORT_EMAIL}
           </a>{" "}
           with your registered account details. We may verify your identity before fulfilling requests. We will respond
           within 30 days.
@@ -221,10 +222,10 @@ export default async function PrivacyPage(): Promise<React.ReactElement> {
 
         <h2>11. Children</h2>
         <p>
-          Pawsoul is intended for adults (18+) managing pet care. We do not knowingly collect personal data from minors.
+          Pawfect is intended for adults (18+) managing pet care. We do not knowingly collect personal data from minors.
           If you believe a minor has submitted data, contact{" "}
-          <a href="mailto:privacy@pawsoul.app" className="text-stone-700 underline dark:text-stone-300">
-            privacy@pawsoul.app
+          <a href={supportMailto()} className="text-stone-700 underline dark:text-stone-300">
+            {SUPPORT_EMAIL}
           </a>{" "}
           for immediate deletion.
         </p>
@@ -253,14 +254,14 @@ export default async function PrivacyPage(): Promise<React.ReactElement> {
         <ul>
           <li>
             Email:{" "}
-            <a href="mailto:privacy@pawsoul.app" className="text-stone-700 underline dark:text-stone-300">
-              privacy@pawsoul.app
+            <a href={supportMailto()} className="text-stone-700 underline dark:text-stone-300">
+              {SUPPORT_EMAIL}
             </a>
           </li>
           <li>Response time: within 30 days</li>
         </ul>
 
-        <p className="text-sm text-stone-500">© 2026 Pawsoul. All rights reserved.</p>
+        <p className="text-sm text-stone-500">© 2026 Pawfect. All rights reserved.</p>
       </article>
     </div>
   );

@@ -25,13 +25,11 @@ export const MANAGED_TRIGGER_PREFIXES = [
   'reminder-',
   'health-',
   'schedule-block-',
+  'wellness-digest-',
 ] as const;
 
 /** Phase 1: always strip these so they cannot consume OS quota outside the planner. */
-export const PHASE1_CANCEL_EXTRA_PREFIXES = [
-  'routine-',
-  'wellness-digest-',
-] as const;
+export const PHASE1_CANCEL_EXTRA_PREFIXES = ['routine-'] as const;
 
 const UNMANAGED_IDS = new Set(['pawfect-notification-test']);
 
@@ -59,6 +57,11 @@ export function priorityForSmartHealthSlot(
 
 export function priorityForDailySchedule(): NotificationPriority {
   return 2;
+}
+
+/** Lowest tier: digests only fill slots left over after must-fire alerts. */
+export function priorityForWellnessDigest(): NotificationPriority {
+  return 5;
 }
 
 export function isManagedOrPhase1ExtraId(id: string): boolean {

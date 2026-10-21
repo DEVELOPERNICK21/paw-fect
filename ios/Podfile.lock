@@ -4304,6 +4304,8 @@ PODS:
   - RevenueCat (5.88.0)
   - RevenueCatUI (5.88.0):
     - RevenueCat (= 5.88.0)
+  - RNAppleAuthentication (2.5.1):
+    - React-Core
   - RNDateTimePicker (9.1.0):
     - boost
     - DoubleConversion
@@ -4763,6 +4765,7 @@ DEPENDENCIES:
   - ReactAppDependencyProvider (from `build/generated/ios/ReactAppDependencyProvider`)
   - ReactCodegen (from `build/generated/ios/ReactCodegen`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
+  - "RNAppleAuthentication (from `../node_modules/@invertase/react-native-apple-authentication`)"
   - "RNDateTimePicker (from `../node_modules/@react-native-community/datetimepicker`)"
   - "RNFBAnalytics (from `../node_modules/@react-native-firebase/analytics`)"
   - "RNFBApp (from `../node_modules/@react-native-firebase/app`)"
@@ -5010,6 +5013,8 @@ EXTERNAL SOURCES:
     :path: build/generated/ios/ReactCodegen
   ReactCommon:
     :path: "../node_modules/react-native/ReactCommon"
+  RNAppleAuthentication:
+    :path: "../node_modules/@invertase/react-native-apple-authentication"
   RNDateTimePicker:
     :path: "../node_modules/@react-native-community/datetimepicker"
   RNFBAnalytics:
@@ -5178,6 +5183,7 @@ SPEC CHECKSUMS:
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
   RevenueCat: 96e12da1f3de201c65f337ff661506ac28ee1514
   RevenueCatUI: 86e2209d13c41893a4e24da4e26370d4bd9f8b93
+  RNAppleAuthentication: a89c9804592b38ed4ab11f0aee68d05ba12ad432
   RNDateTimePicker: ea25d20659754bfe1014e0d5905d21dbc18ff705
   RNFBAnalytics: 8f676c267a135e69e1b815c197d1175a1ebd1792
   RNFBApp: 3f43568008b1abdef6b743ecb62829ff9fb27b0d

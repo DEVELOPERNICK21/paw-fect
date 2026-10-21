@@ -2,6 +2,7 @@ import type { HomeDashboardViewModel } from '../../modules/app/domain/models/Hom
 import type { Pet } from '../../modules/pets/domain/models/Pet';
 import type { DailyCareBlock } from '../../modules/schedule/domain/models/DailyCareBlock';
 import type { DailySchedule } from '../../modules/schedule/domain/models/DailySchedule';
+import { getTodayIsoDateLocal } from '../../shared/utils/calendarDate';
 
 function formatCareTimeLabel(time24: string): string {
   const [hourPart, minutePart] = time24.split(':').map(Number);
@@ -50,6 +51,12 @@ export interface WidgetSnapshot {
   nextUp: WidgetNextUpSnapshot | null;
   careProgress: WidgetCareProgressSnapshot | null;
   updatedAt: string;
+  /**
+   * Local calendar day (YYYY-MM-DD) that `tasks`, `nextUp` and `careProgress`
+   * describe. Widgets compare it with the device date so yesterday's plan is
+   * never shown as today's after midnight.
+   */
+  forDate: string;
 }
 
 function petBreedLabel(pet: Pet): string {
@@ -160,6 +167,7 @@ export function buildWidgetSnapshot(input: {
   viewModel?: HomeDashboardViewModel | null;
   schedule?: DailySchedule | null;
   updatedAt?: string;
+  forDate?: string;
 }): WidgetSnapshot {
   const { pet, viewModel, schedule } = input;
   const updatedAt = input.updatedAt ?? new Date().toISOString();
@@ -198,6 +206,7 @@ export function buildWidgetSnapshot(input: {
     nextUp,
     careProgress,
     updatedAt,
+    forDate: input.forDate ?? getTodayIsoDateLocal(),
   };
 }
 

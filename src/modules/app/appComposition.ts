@@ -12,7 +12,10 @@ import { HomeDashboardInvalidationHub } from './application/HomeDashboardInvalid
 import type { HomeDashboardViewModel } from './domain/models/HomeDashboardViewModel';
 import { BuildHomeDashboardViewModel } from './domain/usecases/BuildHomeDashboardViewModel';
 import { ObserveHomeDashboard } from './domain/usecases/ObserveHomeDashboard';
-import { syncDeviceGlanceSurfaces } from '../../infrastructure/widgets/syncDeviceGlanceSurfaces';
+import {
+  clearDeviceGlanceSurfaces,
+  syncDeviceGlanceSurfaces,
+} from '../../infrastructure/widgets/syncDeviceGlanceSurfaces';
 import { getTodayIsoDateLocal } from '../../shared/utils/calendarDate';
 import { scheduleComposition } from '../schedule/scheduleComposition';
 import { useSettingsStore } from '../settings/store/settingsStore';
@@ -96,6 +99,7 @@ export const appOrchestrator = new AppOrchestrator(
     }
   },
   homeDashboardInvalidationHub,
+  clearDeviceGlanceSurfaces,
 );
 
 registerHomeDashboardRefresh(() => {

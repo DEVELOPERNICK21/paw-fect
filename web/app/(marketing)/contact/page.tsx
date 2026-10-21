@@ -1,10 +1,11 @@
 import { ContactForm } from "@/components/marketing/ContactForm";
 import { Card } from "@/components/ui/Card";
 import type { Metadata } from "next";
+import { SUPPORT_EMAIL, supportMailto } from "@/lib/support-email";
 
 export const metadata: Metadata = {
   title: "Contact",
-  description: "Reach the Pawsoul team: support, press, partnerships, and feedback.",
+  description: "Reach the Pawfect team: support, press, partnerships, and feedback.",
 };
 
 export default function ContactPage(): React.ReactElement {
@@ -21,7 +22,12 @@ export default function ContactPage(): React.ReactElement {
         <div className="space-y-6">
           <Card>
             <p className="text-sm font-semibold text-stone-900 dark:text-stone-50">Email</p>
-            <p className="mt-2 text-stone-600 dark:text-stone-400">hello@pawsoul.app</p>
+            <a
+              href={supportMailto()}
+              className="mt-2 block text-stone-600 underline dark:text-stone-400"
+            >
+              {SUPPORT_EMAIL}
+            </a>
           </Card>
           <Card>
             <p className="text-sm font-semibold text-stone-900 dark:text-stone-50">Response time</p>

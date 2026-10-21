@@ -342,6 +342,7 @@ export const usePetStore = create<PetState>((set, get) => ({
     await getPetCoordinationPorts().resyncHealthRecordsAfterPetRemoval(
       nextActive?.id,
     );
+    void requestNotificationResync().catch(() => {});
 
     return { success: true };
   },

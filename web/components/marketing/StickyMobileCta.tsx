@@ -1,12 +1,19 @@
 "use client";
 
-import Link from "next/link";
 import { Download } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { BrandLogo } from "@/components/marketing/BrandLogo";
+import { usePlatform } from "@/components/marketing/usePlatform";
+import { appStoreLink, playStoreLink } from "@/lib/store-links";
 
 export function StickyMobileCta(): React.ReactElement {
   const reduce = useReducedMotion();
+  const platform = usePlatform();
+
+  // Phone visitors go straight to their store; everyone else gets the download page.
+  const external = platform !== "other";
+  const href =
+    platform === "ios" ? appStoreLink("sticky") : platform === "android" ? playStoreLink("sticky") : "/download";
 
   return (
     <motion.div
@@ -18,15 +25,16 @@ export function StickyMobileCta(): React.ReactElement {
       <div className="mx-auto flex max-w-lg items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5 text-sm font-medium text-stone-800 dark:text-stone-200">
           <BrandLogo showWordmark={false} size={36} href={null} />
-          <span className="truncate">Don&apos;t lose another booster date</span>
+          <span className="truncate">Never miss a vaccine date</span>
         </div>
-        <Link
-          href="/download"
+        <a
+          href={href}
+          {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
           className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-primary/25 transition active:scale-[0.98] dark:text-stone-900"
         >
           <Download className="h-4 w-4" aria-hidden />
-          Get the app
-        </Link>
+          Get it free
+        </a>
       </div>
     </motion.div>
   );

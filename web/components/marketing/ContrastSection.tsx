@@ -16,11 +16,11 @@ const rows = [
   },
   {
     pain: "Clinic visit with no clear history on your phone",
-    gain: "Offline records you can open in the waiting room, then sync later",
+    gain: "Your pet's records on your phone, ready in the waiting room",
   },
   {
     pain: "Boarding or travel asks for papers you cannot assemble",
-    gain: "Logged care history ready to review or export on paid plans",
+    gain: "Logged care history in one place, ready for boarding or travel check-ins",
   },
 ] as const;
 
@@ -36,7 +36,7 @@ export function ContrastSection(): React.ReactElement {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <ScrollReveal>
           <h2 className="max-w-2xl text-3xl font-black tracking-tight text-stone-900 dark:text-stone-50 md:text-4xl">
-            Without a plan vs with Pawsoul
+            Without a plan vs with Pawfect
           </h2>
           <p className="mt-4 max-w-2xl text-base text-stone-600 dark:text-stone-400 md:text-lg">
             Same pet. Same busy week. Different odds of remembering what matters.
@@ -49,7 +49,7 @@ export function ContrastSection(): React.ReactElement {
               <p className="text-sm font-bold text-stone-500">Without a schedule</p>
             </div>
             <div className="hidden bg-primary/10 px-5 py-4 md:block">
-              <p className="text-sm font-bold text-primary-dark dark:text-primary">With Pawsoul</p>
+              <p className="text-sm font-bold text-primary-dark dark:text-primary">With Pawfect</p>
             </div>
           </div>
 
@@ -80,7 +80,7 @@ export function ContrastSection(): React.ReactElement {
                   </span>
                   <span>
                     <span className="mb-1 block font-semibold text-primary-dark dark:text-primary md:hidden">
-                      With Pawsoul
+                      With Pawfect
                     </span>
                     {row.gain}
                   </span>

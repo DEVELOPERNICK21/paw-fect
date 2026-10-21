@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { contactFormSchema } from "@/lib/schemas";
 import { createContactSubmission } from "@/lib/data/contacts";
-import { getResend, getFromEmail } from "@/lib/resend";
+import { getResend, getFromEmail, getInboxEmail } from "@/lib/resend";
 
 export async function POST(request: Request): Promise<NextResponse> {
   let body: unknown;
@@ -29,8 +29,8 @@ export async function POST(request: Request): Promise<NextResponse> {
     try {
       await resend.emails.send({
         from: getFromEmail(),
-        to: process.env.CONTACT_INBOX_EMAIL ?? getFromEmail(),
-        subject: `[Pawsoul] ${parsed.data.subject}`,
+        to: getInboxEmail(),
+        subject: `[Pawfect] ${parsed.data.subject}`,
         text: `From: ${parsed.data.name} <${parsed.data.email}>\n\n${parsed.data.message}`,
       });
     } catch {

@@ -23,6 +23,7 @@ export class AppOrchestrator {
     private readonly observeHomeDashboard: ObserveHomeDashboardPort,
     private readonly setHomeDashboardViewModel: (vm: HomeDashboardViewModel) => void,
     private readonly homeDashboardInvalidation: HomeDashboardInvalidationPort,
+    private readonly onSessionCleared?: () => void,
   ) {}
 
   startHomeDashboardObservation(): void {
@@ -49,6 +50,7 @@ export class AppOrchestrator {
     deps.resetPets();
     deps.resetReminders();
     deps.resetRecords();
+    this.onSessionCleared?.();
   }
 
   /**

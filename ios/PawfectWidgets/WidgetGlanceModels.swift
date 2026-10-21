@@ -35,6 +35,8 @@ struct WidgetGlancePayload: Codable {
   let nextUp: NextUp?
   let careProgress: CareProgress?
   let updatedAt: String
+  /// Local day (yyyy-MM-dd) the task fields describe; absent in payloads from older builds.
+  let forDate: String?
 }
 
 enum WidgetGlancePayloadLoader {

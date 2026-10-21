@@ -17,4 +17,13 @@ class WidgetDataModule(reactContext: ReactApplicationContext) :
     prefs.edit().putString(WidgetBridge.KEY_PAYLOAD, json).apply()
     WidgetBridge.refreshAll(ctx)
   }
+
+  /** Drops the stored snapshot (logout / account deletion) and repaints every widget. */
+  @ReactMethod
+  fun clear() {
+    val ctx = reactApplicationContext.applicationContext
+    val prefs = ctx.getSharedPreferences(WidgetBridge.PREFS_NAME, Context.MODE_PRIVATE)
+    prefs.edit().remove(WidgetBridge.KEY_PAYLOAD).apply()
+    WidgetBridge.refreshAll(ctx)
+  }
 }

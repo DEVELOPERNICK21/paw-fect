@@ -16,13 +16,13 @@ const iconMap = [Shield, Smartphone, WifiOff, Globe];
 
 const pillars = [
   {
-    label: "Standard care protocols",
+    label: "Common care protocols",
     sub: "DHPP, FVRCP, Rabies, deworming",
     icon: ShieldCheck,
   },
   {
-    label: "Self-adjusting schedules",
-    sub: "Recalculates when you miss a dose",
+    label: "Clear next steps",
+    sub: "Overdue, due soon and upcoming at a glance",
     icon: RefreshCcw,
   },
   {
@@ -31,8 +31,8 @@ const pillars = [
     icon: Footprints,
   },
   {
-    label: "Offline-first",
-    sub: "Works at the vet with no signal",
+    label: "Offline access",
+    sub: "Keep going without signal on Care+",
     icon: WifiOff,
   },
 ];

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Widget palette mirrors src/shared/theme/colors.ts (light). Night variants live in values-night. -->
+<resources>
+    <color name="widget_bg">#FFFFFF</color>
+    <color name="widget_stroke">#E2E8F0</color>
+    <color name="widget_text_primary">#0F172A</color>
+    <color name="widget_text_secondary">#475569</color>
+    <color name="widget_text_tertiary">#64748B</color>
+    <color name="widget_accent">#F28C28</color>
+    <!-- Accent used for small text on the card: 5:1 contrast on white. -->
+    <color name="widget_accent_strong">#B45309</color>
+    <color name="widget_accent_soft">#FDF1E5</color>
+    <!-- Text on a solid accent fill (white on #F28C28 is only 2.4:1). -->
+    <color name="widget_on_accent">#0F172A</color>
+    <color name="widget_danger">#DC2626</color>
+    <color name="widget_danger_soft">#FEE2E2</color>
+    <color name="widget_success">#059669</color>
+    <color name="widget_on_success">#FFFFFF</color>
+    <color name="widget_track">#E2E8F0</color>
+</resources>

@@ -16,7 +16,7 @@ const features = [
     icon: CalendarClock,
     title: "Smart vaccine scheduler",
     body:
-      "Vet-validated DHPP, FVRCP, and Rabies schedules auto-generated from your pet's date of birth. Never miss a critical dose.",
+      "DHPP, FVRCP and rabies vaccine schedules built from your pet's date of birth, based on common protocols. Never miss a critical dose.",
     featured: true,
   },
   {
@@ -35,18 +35,18 @@ const features = [
     icon: FileText,
     title: "Smart health records",
     body:
-      "Every vaccine, deworming, and vet visit logged and accessible. Export as PDF for boarding or travel.",
+      "Every vaccine, deworming, and vet visit logged in one place, ready when a boarder, traveller check-in or new vet asks.",
   },
   {
     icon: WifiOff,
-    title: "Offline-first",
-    body: "Pawsoul works without internet. Records sync automatically when you're back online.",
+    title: "Offline access",
+    body: "On Care+, Pawfect keeps working without internet and syncs your records when you're back online.",
   },
   {
     icon: MapPin,
-    title: "India-aware protocols",
+    title: "Species-aware protocols",
     body:
-      "Rabies annual boosters, regional lifestyle risk, and local vet guidance baked in.",
+      "Core vaccines, rabies boosters and deworming timed to your dog's or cat's age and lifestyle. Always confirm with your vet.",
   },
 ];
 

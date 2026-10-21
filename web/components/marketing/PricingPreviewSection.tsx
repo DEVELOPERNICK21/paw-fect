@@ -18,7 +18,7 @@ export function PricingPreviewSection({ plans }: { plans: PricingPlan[] }): Reac
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-center text-lg text-stone-600 dark:text-stone-400">
             Start free so there is nothing to lose by trying. Upgrade only when you need more pets,
-            history, or PDF export.{" "}
+            full history, or offline access.{" "}
             <span className="font-medium text-primary">Save on annual billing.</span>
           </p>
         </AnimatedSection>

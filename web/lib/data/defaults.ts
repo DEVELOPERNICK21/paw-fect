@@ -1,28 +1,29 @@
 import type { PricingPlan, SiteContentMarketing } from "@/types";
+import { APP_STORE_URL, PLAY_STORE_URL } from "@/lib/store-links";
 
 export const defaultSiteContent = (): SiteContentMarketing => ({
   heroHeadline: "Stop missing what your pet needs next.",
   heroSubline:
-    "Vet-validated schedules for vaccines and deworming, life stage care, and records you can open at the clinic. Free to start.",
+    "Age-aware vaccine and deworming schedules, daily care reminders and health records for dogs and cats, all in one app. Free to start.",
   trustBadges: [
-    "Vet-validated protocols",
+    "Age-aware schedules",
     "Dogs & cats",
-    "Works offline",
-    "India-first",
+    "iPhone & Android",
+    "Free to start",
   ],
   testimonials: [],
   pricingFaqs: [
     {
       id: "1",
-      question: "Is Pawsoul a substitute for veterinary care?",
+      question: "Is Pawfect a substitute for veterinary care?",
       answer:
-        "No. Pawsoul helps you track schedules and records; always consult your vet for medical decisions.",
+        "No. Pawfect helps you track schedules and records; always consult your vet for medical decisions.",
     },
     {
       id: "2",
-      question: "Can I export my pet's records?",
+      question: "How many pets can I add?",
       answer:
-        "Paid plans include PDF export for boarding, grooming, and travel.",
+        "The free plan covers one pet, Care+ covers up to three, and Family covers up to ten.",
     },
     {
       id: "3",
@@ -31,8 +32,8 @@ export const defaultSiteContent = (): SiteContentMarketing => ({
         "Subscriptions renew automatically until cancelled. You can cancel anytime from account settings.",
     },
   ],
-  appStoreUrl: "https://apps.apple.com/",
-  playStoreUrl: "https://play.google.com/store",
+  appStoreUrl: APP_STORE_URL,
+  playStoreUrl: PLAY_STORE_URL,
   privacyLastUpdated: "2026-05-06",
 });
 
@@ -48,11 +49,12 @@ export const defaultPricingPlans = (): Omit<PricingPlan, "id">[] => [
     isActive: true,
     ctaLabel: "Start free",
     features: [
-      { label: "Basic schedule", included: true, sortOrder: 0 },
-      { label: "3 months history", included: true, sortOrder: 1 },
-      { label: "Manual entry", included: true, sortOrder: 2 },
-      { label: "PDF export", included: false, sortOrder: 3 },
-      { label: "Offline sync", included: false, sortOrder: 4 },
+      { label: "1 pet", included: true, sortOrder: 0 },
+      { label: "Vaccine & deworming schedule", included: true, sortOrder: 1 },
+      { label: "Care reminders", included: true, sortOrder: 2 },
+      { label: "3 months of history", included: true, sortOrder: 3 },
+      { label: "Offline access with sync", included: false, sortOrder: 4 },
+      { label: "Wellness score & Pro care tasks", included: false, sortOrder: 5 },
     ],
   },
   {
@@ -68,11 +70,12 @@ export const defaultPricingPlans = (): Omit<PricingPlan, "id">[] => [
     badgeText: "Most popular",
     ctaLabel: "Upgrade to Care+",
     features: [
-      { label: "Full schedule", included: true, sortOrder: 0 },
-      { label: "Unlimited history", included: true, sortOrder: 1 },
-      { label: "PDF export", included: true, sortOrder: 2 },
-      { label: "Offline-first sync", included: true, sortOrder: 3 },
-      { label: "Weekly plan in app (₹49)", included: true, sortOrder: 4 },
+      { label: "Up to 3 pets", included: true, sortOrder: 0 },
+      { label: "Everything in Free", included: true, sortOrder: 1 },
+      { label: "Unlimited history", included: true, sortOrder: 2 },
+      { label: "Offline access with sync", included: true, sortOrder: 3 },
+      { label: "Wellness score & Pro care tasks", included: true, sortOrder: 4 },
+      { label: "Weekly, monthly or annual billing", included: true, sortOrder: 5 },
     ],
   },
   {
@@ -86,10 +89,9 @@ export const defaultPricingPlans = (): Omit<PricingPlan, "id">[] => [
     isActive: true,
     ctaLabel: "Get Family plan",
     features: [
-      { label: "Everything in Care+", included: true, sortOrder: 0 },
-      { label: "Multi-user household", included: true, sortOrder: 1 },
-      { label: "Vet sharing", included: true, sortOrder: 2 },
-      { label: "Priority support", included: true, sortOrder: 3 },
+      { label: "Up to 10 pets", included: true, sortOrder: 0 },
+      { label: "Everything in Care+", included: true, sortOrder: 1 },
+      { label: "Priority support", included: true, sortOrder: 2 },
     ],
   },
 ];

@@ -26,6 +26,7 @@ export interface AuthState {
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
   loginWithGoogle: () => Promise<boolean>;
+  loginWithApple: () => Promise<boolean>;
   requestOtp: (phoneE164: string) => Promise<string | null>;
   verifyOtp: (verificationId: string, otpCode: string) => Promise<boolean>;
   resendOtp: (phoneE164: string) => Promise<string | null>;
@@ -40,6 +41,7 @@ export interface AuthState {
   clearAuthNotice: () => void;
   devLogin: () => void;
   logout: () => Promise<void>;
+  deleteAccount: () => Promise<{ success: boolean; error?: string }>;
   loadCurrentUser: () => Promise<void>;
   validatePhoneForLogin: (
     countryCallingCodeDigits: string,
@@ -194,6 +196,41 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const message = ac.resolveAuthErrorMessage.execute(
         error,
         'Google Sign-In is unavailable right now. Please use email login.',
+      );
+      set({
+        loading: false,
+        authError: message,
+        sessionStatus: 'unauthenticated',
+        isSessionReady: true,
+      });
+      return false;
+    }
+  },
+
+  loginWithApple: async () => {
+    set({ loading: true, authError: null, authNotice: null, sessionStatus: 'idle' });
+    try {
+      const user = await withTimeout(
+        ac.executeAuthWithRetry.execute(() => ac.loginWithApple.execute()),
+        AUTH_ACTION_TIMEOUT_MS,
+      );
+      set({
+        user,
+        isAuthenticated: true,
+        loading: false,
+        authError: null,
+        isSessionReady: true,
+        sessionStatus: 'authenticated',
+      });
+      void ac.notifyLoginWelcome({
+        displayName: user.displayName,
+      }).catch(() => {});
+      return true;
+    } catch (error) {
+      logUnexpectedAuthError('[authStore] loginWithApple error', error);
+      const message = ac.resolveAuthErrorMessage.execute(
+        error,
+        'Sign in with Apple is unavailable right now. Please use email login.',
       );
       set({
         loading: false,
@@ -434,6 +471,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     })();
     return logoutInFlight;
+  },
+
+  deleteAccount: async () => {
+    set({ loading: true, authError: null });
+    try {
+      await ac.deleteAccount.execute();
+      set({
+        user: null,
+        isAuthenticated: false,
+        loading: false,
+        authError: null,
+        authNotice: null,
+        isSessionReady: true,
+        sessionStatus: 'unauthenticated',
+      });
+      return { success: true };
+    } catch (error) {
+      logUnexpectedAuthError('[authStore] deleteAccount error', error);
+      const message =
+        ac.resolveAuthErrorMessage.execute(
+          error,
+          'Unable to delete account. Please try again.',
+        ) ?? 'Unable to delete account. Please try again.';
+      set({ loading: false, authError: message });
+      return { success: false, error: message };
+    }
   },
 
   loadCurrentUser: async () => {
