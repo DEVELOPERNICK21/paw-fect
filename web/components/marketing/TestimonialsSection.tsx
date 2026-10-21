@@ -7,10 +7,10 @@ export function TestimonialsSection({ items }: { items: Testimonial[] }): React.
     return null;
   }
   return (
-    <section className="relative overflow-hidden bg-paw-pattern py-24 dark:bg-stone-900/30 md:py-32">
+    <section className="relative overflow-hidden bg-paw-pattern py-20 dark:bg-stone-900/30 md:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div>
-          <h2 className="text-3xl font-bold text-stone-900 dark:text-stone-50 md:text-4xl">
+          <h2 className="text-stone-900 dark:text-stone-50 text-3xl font-bold tracking-tight md:text-4xl">
             Loved by pet parents
           </h2>
           <p className="mt-4 max-w-xl text-stone-600 dark:text-stone-400">

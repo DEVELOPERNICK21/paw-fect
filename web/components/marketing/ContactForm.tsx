@@ -41,7 +41,7 @@ export function ContactForm(): React.ReactElement {
 
   if (done) {
     return (
-      <p className="rounded-2xl border border-stone-200 bg-stone-50 p-6 text-stone-700 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300">
+      <p className="rounded-2xl border border-stone-200/60 bg-stone-50 p-6 text-stone-700 dark:border-stone-700/50 dark:bg-stone-900 dark:text-stone-300">
         Thanks. We received your message and will get back soon.
       </p>
     );
@@ -64,7 +64,7 @@ export function ContactForm(): React.ReactElement {
         </label>
         <select
           id="c-subject"
-          className="w-full rounded-full border border-stone-200 bg-white px-4 py-2 dark:border-stone-600 dark:bg-stone-900"
+          className="w-full rounded-full border border-stone-200/60 bg-white px-4 py-2 dark:border-stone-600/50 dark:bg-stone-900"
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
         >
@@ -84,7 +84,7 @@ export function ContactForm(): React.ReactElement {
           required
           minLength={20}
           rows={5}
-          className="w-full rounded-2xl border border-stone-200 p-4 dark:border-stone-600 dark:bg-stone-900"
+          className="w-full rounded-2xl border border-stone-200/60 p-4 dark:border-stone-600/50 dark:bg-stone-900"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
         />

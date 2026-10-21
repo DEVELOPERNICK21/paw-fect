@@ -121,6 +121,7 @@ export class MarkSmartHealthRecordDone {
         completedDate: completed,
       },
       contextNowDate: getTodayIsoDateLocal(),
+      petDateOfBirth,
     });
 
     const persistedTarget = recalculated.find(r => r.id === record.id);

@@ -46,7 +46,7 @@ export function SocialProofBar({
   const badges = trustBadges ?? [];
 
   return (
-    <section className="border-y border-stone-200/80 bg-gradient-to-b from-cream/50 to-background py-12 dark:border-stone-700 dark:from-stone-900/40 dark:to-background">
+    <section className="border-y border-stone-200/80 bg-gradient-to-b from-cream/50 to-background py-12 dark:border-stone-700/50 dark:from-stone-900/40 dark:to-background">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {badges.length > 0 ? (
           <ul className="mb-10 flex flex-wrap items-center justify-center gap-3">
@@ -59,7 +59,7 @@ export function SocialProofBar({
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, amount: 0.4 }}
                   transition={{ delay: i * 0.06, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-                  className="inline-flex items-center gap-2 rounded-full border border-stone-200/90 bg-surface/90 px-4 py-2 text-sm font-medium text-stone-700 shadow-sm dark:border-stone-600 dark:bg-stone-800/80 dark:text-stone-200"
+                  className="inline-flex items-center gap-2 rounded-full border border-stone-200/90 bg-surface/90 px-4 py-2 text-sm font-medium text-stone-700 shadow-sm dark:border-stone-600/50 dark:bg-stone-800/80 dark:text-stone-200"
                 >
                   <Icon className="h-4 w-4 shrink-0 text-primary" aria-hidden />
                   {text}
@@ -78,7 +78,7 @@ export function SocialProofBar({
               viewport={{ once: true, amount: 0.35 }}
               transition={{ delay: 0.08 + i * 0.07, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
               whileHover={reduce ? undefined : { y: -4 }}
-              className="group rounded-2xl border border-stone-200/90 bg-surface p-5 text-center shadow-sm transition hover:border-primary/30 hover:shadow-md dark:border-stone-700 dark:bg-stone-800/50"
+              className="group rounded-2xl border border-stone-200/90 bg-surface p-5 text-center shadow-sm transition hover:border-primary/30 hover:shadow-md dark:border-stone-700/50 dark:bg-stone-800/50"
             >
               <p.icon
                 className="mx-auto h-7 w-7 text-primary opacity-80 transition group-hover:scale-110 group-hover:opacity-100"

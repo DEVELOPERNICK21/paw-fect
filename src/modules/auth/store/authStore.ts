@@ -505,7 +505,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const user = await withTimeout(
         ac.getCurrentUser.execute(),
         AUTH_ACTION_TIMEOUT_MS,
-        'Auth request timed out.',
       );
       set({
         user,

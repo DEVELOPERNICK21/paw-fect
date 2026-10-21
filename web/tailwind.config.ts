@@ -10,20 +10,25 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        // CSS-variable colors need color-mix so opacity modifiers (bg-primary/10) work.
+        background: "color-mix(in srgb, var(--background) calc(<alpha-value> * 100%), transparent)",
+        foreground: "color-mix(in srgb, var(--foreground) calc(<alpha-value> * 100%), transparent)",
         primary: {
-          DEFAULT: "var(--color-primary)",
-          dark: "var(--color-primary-dark)",
-          light: "var(--color-primary-light)",
+          DEFAULT: "color-mix(in srgb, var(--color-primary) calc(<alpha-value> * 100%), transparent)",
+          dark: "color-mix(in srgb, var(--color-primary-dark) calc(<alpha-value> * 100%), transparent)",
+          light: "color-mix(in srgb, var(--color-primary-light) calc(<alpha-value> * 100%), transparent)",
         },
         accent: {
-          DEFAULT: "var(--color-accent)",
+          DEFAULT: "color-mix(in srgb, var(--color-accent) calc(<alpha-value> * 100%), transparent)",
         },
-        surface: "var(--color-surface)",
-        muted: "var(--color-muted)",
-        border: "var(--color-border)",
-        cream: "var(--cream)",
+        surface: "color-mix(in srgb, var(--color-surface) calc(<alpha-value> * 100%), transparent)",
+        muted: "color-mix(in srgb, var(--color-muted) calc(<alpha-value> * 100%), transparent)",
+        border: "color-mix(in srgb, var(--color-border) calc(<alpha-value> * 100%), transparent)",
+        cream: "color-mix(in srgb, var(--cream) calc(<alpha-value> * 100%), transparent)",
+      },
+      // Elements with a bare `border` class get a soft theme border, not Tailwind's default gray.
+      borderColor: {
+        DEFAULT: "color-mix(in srgb, var(--color-border) 70%, transparent)",
       },
       fontFamily: {
         sans: ["var(--font-outfit)", "system-ui", "sans-serif"],

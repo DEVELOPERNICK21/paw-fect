@@ -311,8 +311,12 @@ describe('PetCareLifecycleEngine', () => {
       },
       lastVaccinationDate: '2026-01-15',
     });
-    expect(records.find(r => r.key === 'RABIES_1')).toBeUndefined();
-    expect(records.find(r => r.name === 'Rabies Booster')).toBeUndefined();
+    // Rabies is not omitted: it is due now so the owner can confirm the date.
+    expect(records.find(r => r.key === 'RABIES_1')?.dueDate).toBe('2026-03-01');
+    // ...but never anchored to the unrelated 2026-01-15 vaccination.
+    const booster = records.find(r => r.name === 'Rabies Booster');
+    expect(booster?.dueDate).toBe('2027-03-01');
+    expect(booster?.dueDate).not.toBe('2027-01-15');
   });
 
   it('uses booster-only core path for adults with vaccination history', () => {
@@ -613,5 +617,113 @@ describe('PetCareLifecycleEngine', () => {
     expect(skipped?.status).toBe('skipped');
     const july = updated.find(r => r.id === records[2]!.id);
     expect(july?.dueDate).toBe('2026-08-01');
+  });
+
+  describe('rabies for adults with vaccination history', () => {
+    const adultContext = {
+      petType: 'dog' as const,
+      dateOfBirth: '2022-01-01',
+      nowDate: '2026-10-21',
+      region: 'IN' as const,
+      lifestyleType: 'mixed' as const,
+      lifestyleRiskLevel: 'medium' as const,
+    };
+
+    it('schedules a rabies record when history exists but rabies date is unknown', () => {
+      const records = engine.generateInitialPlan({
+        userId: 'u1',
+        petId: 'p1',
+        context: adultContext,
+        lastVaccinationDate: '2026-03-01',
+      });
+      const rabies = records.find(r => r.key === 'RABIES_1');
+      expect(rabies).toBeTruthy();
+      expect(rabies?.dueDate).toBe('2026-10-21');
+      expect(rabies?.contextLabel).toMatch(/rabies date unknown/i);
+    });
+
+    it('does not add a first-dose rabies record when the rabies date is known', () => {
+      const records = engine.generateInitialPlan({
+        userId: 'u1',
+        petId: 'p1',
+        context: adultContext,
+        lastVaccinationDate: '2026-03-01',
+        lastRabiesDate: '2026-03-01',
+      });
+      expect(records.find(r => r.key === 'RABIES_1')).toBeUndefined();
+      expect(records.find(r => r.key === 'RABIES_1_BOOSTER')).toBeTruthy();
+    });
+  });
+
+  describe('final puppy dose minimum age', () => {
+    it('does not schedule DHPP dose 3 before 16 weeks of age', () => {
+      const dob = '2026-08-01';
+      const records = engine.generateInitialPlan({
+        userId: 'u1',
+        petId: 'p1',
+        context: {
+          petType: 'dog',
+          dateOfBirth: dob,
+          nowDate: '2026-09-12',
+          region: 'IN',
+          lifestyleType: 'mixed',
+          lifestyleRiskLevel: 'medium',
+        },
+      });
+      const d1 = records.find(r => r.key === 'DHPP_1')!;
+      const after1 = engine.recalculatePlanOnEvent({
+        records,
+        event: {
+          type: 'completion',
+          recordId: d1.id,
+          completedDate: '2026-09-12',
+        },
+        contextNowDate: '2026-09-12',
+        petDateOfBirth: dob,
+      });
+      const d2 = after1.find(r => r.key === 'DHPP_2')!;
+      const after2 = engine.recalculatePlanOnEvent({
+        records: after1,
+        event: {
+          type: 'completion',
+          recordId: d2.id,
+          completedDate: d2.dueDate,
+        },
+        contextNowDate: d2.dueDate,
+        petDateOfBirth: dob,
+      });
+      const d3 = after2.find(r => r.key === 'DHPP_3')!;
+      // 16 weeks after 2026-08-01
+      expect(d3.dueDate >= '2026-11-21').toBe(true);
+    });
+
+    it('keeps the 3-week interval when the pet is already past the minimum age', () => {
+      const dob = '2026-01-01';
+      const records = engine.generateInitialPlan({
+        userId: 'u1',
+        petId: 'p1',
+        context: {
+          petType: 'dog',
+          dateOfBirth: dob,
+          nowDate: '2026-06-01',
+          region: 'IN',
+          lifestyleType: 'mixed',
+          lifestyleRiskLevel: 'medium',
+        },
+      });
+      const d1 = records.find(r => r.key === 'DHPP_1')!;
+      const after = engine.recalculatePlanOnEvent({
+        records,
+        event: {
+          type: 'completion',
+          recordId: d1.id,
+          completedDate: '2026-06-01',
+        },
+        contextNowDate: '2026-06-01',
+        petDateOfBirth: dob,
+      });
+      const d2 = after.find(r => r.key === 'DHPP_2')!;
+      expect(d2.dueDate).toBe('2026-06-22');
+    });
   });
 });

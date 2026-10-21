@@ -7,7 +7,9 @@
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",
-    "test": "jest"
+    "test": "jest",
+    "pods:simulator": "cd ios && LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 PAWFECT_IOS_SIMULATOR=1 pod install",
+    "pods:device": "cd ios && LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 pod install"
   },
   "dependencies": {
     "@invertase/react-native-apple-authentication": "^2.5.1",
@@ -24,6 +26,8 @@
     "@react-navigation/bottom-tabs": "^7.15.7",
     "@react-navigation/native": "^7.1.33",
     "@react-navigation/native-stack": "^7.14.5",
+    "@rive-app/canvas": "^2.45.0",
+    "@rive-app/react-native": "0.5.5",
     "@shopify/react-native-skia": "^2.6.2",
     "posthog-react-native": "^4.46.21",
     "react": "19.2.3",
@@ -32,7 +36,7 @@
     "react-native-image-picker": "^8.2.1",
     "react-native-linear-gradient": "^2.8.3",
     "react-native-mmkv": "^4.3.1",
-    "react-native-nitro-modules": "^0.35.0",
+    "react-native-nitro-modules": "^0.36.5",
     "react-native-purchases": "^10.9.1",
     "react-native-purchases-ui": "^10.9.1",
     "react-native-razorpay": "^2.3.0",

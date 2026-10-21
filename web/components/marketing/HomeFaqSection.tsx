@@ -14,7 +14,7 @@ export function HomeFaqSection(): React.ReactElement {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
       <PricingFaq items={homeFaqs} heading="Questions before you download?" subheading="Straight answers. Tap to expand." />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(json) }} />
     </div>

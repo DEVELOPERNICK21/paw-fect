@@ -156,8 +156,6 @@ export const PetProfileScreen: React.FC = () => {
   const birthdayValue = formatPetBirthdayLabel(effectivePet?.dob);
 
   const ageLabel = formatPetAgeLabel(effectivePet?.dob);
-  const locationLine = 'San Francisco, CA';
-
   const breedRaw = effectivePet?.breed?.trim() ?? '';
   const breedLabel = (breedRaw || 'Not set').toUpperCase();
   const headerCaption = [ageLabel, breedRaw || null].filter(Boolean).join(' · ');
@@ -357,7 +355,6 @@ export const PetProfileScreen: React.FC = () => {
           photoSource={heroPhotoSource!}
           breedLabel={breedLabel}
           ageLine={ageLabel}
-          locationLine={locationLine}
           onPressEdit={goEditPet}
           onPressShare={goShareHealthCard}
         />
@@ -576,7 +573,6 @@ export const PetProfileScreen: React.FC = () => {
     heroPhotoSource,
     breedLabel,
     ageLabel,
-    locationLine,
     goEditPet,
     goShareHealthCard,
     pets,

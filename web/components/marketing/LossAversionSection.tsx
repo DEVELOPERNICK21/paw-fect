@@ -36,7 +36,7 @@ export function LossAversionSection(): React.ReactElement {
   const reduce = useReducedMotion();
 
   return (
-    <section className="relative overflow-hidden bg-stone-950 py-16 text-stone-50 md:py-20">
+    <section className="relative overflow-hidden bg-stone-950 py-20 text-stone-50 md:py-28">
       <div
         className="pointer-events-none absolute inset-0 opacity-50"
         style={{
@@ -47,7 +47,7 @@ export function LossAversionSection(): React.ReactElement {
       />
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <ScrollReveal>
-          <h2 className="max-w-2xl text-3xl font-black tracking-tight text-white md:text-4xl">
+          <h2 className="max-w-2xl text-white text-3xl font-bold tracking-tight md:text-4xl">
             What slips when care lives in memory
           </h2>
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-stone-400 md:text-lg">
@@ -64,7 +64,7 @@ export function LossAversionSection(): React.ReactElement {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.3 }}
               transition={{ delay: i * 0.07, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              className="rounded-2xl border border-white/10 bg-white/[0.04] p-5"
+              className="rounded-2xl border border-white/[0.07] bg-white/[0.04] p-5"
             >
               <item.icon className="h-6 w-6 text-primary" aria-hidden />
               <h3 className="mt-4 text-base font-bold text-white">{item.title}</h3>

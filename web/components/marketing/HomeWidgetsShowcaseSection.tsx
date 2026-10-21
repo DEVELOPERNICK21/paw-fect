@@ -13,7 +13,7 @@ export function HomeWidgetsShowcaseSection(): React.ReactElement {
   const reduce = useReducedMotion();
 
   return (
-    <section className="relative overflow-hidden py-20 md:py-24">
+    <section className="relative overflow-hidden py-20 md:py-28">
       <PawDotField className="opacity-30" />
       <WarmBlob className="-right-16 top-10 h-64 w-64 opacity-60" blur="2xl" />
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -24,7 +24,7 @@ export function HomeWidgetsShowcaseSection(): React.ReactElement {
             viewport={{ once: true }}
             transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
           >
-            <h2 className="text-3xl font-black tracking-tight text-stone-900 dark:text-stone-50 md:text-4xl">
+            <h2 className="text-stone-900 dark:text-stone-50 text-3xl font-bold tracking-tight md:text-4xl">
               Care on your home screen
             </h2>
             <p className="mt-4 max-w-lg text-stone-600 dark:text-stone-400">

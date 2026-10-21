@@ -30,11 +30,11 @@ export default function FeaturesPage(): React.ReactElement {
               <p className="text-sm font-semibold text-primary">Dog example core series</p>
               <table className="mt-4 w-full text-sm">
                 <tbody>
-                  <tr className="border-b border-stone-100 dark:border-stone-700">
+                  <tr className="border-b border-stone-100/60 dark:border-stone-700/50">
                     <td className="py-2">DHPP</td>
                     <td className="py-2 text-stone-500">Series + boosters</td>
                   </tr>
-                  <tr className="border-b border-stone-100 dark:border-stone-700">
+                  <tr className="border-b border-stone-100/60 dark:border-stone-700/50">
                     <td className="py-2">Rabies</td>
                     <td className="py-2 text-stone-500">Per local law / vet</td>
                   </tr>
@@ -45,11 +45,11 @@ export default function FeaturesPage(): React.ReactElement {
               <p className="text-sm font-semibold text-primary">Cat example core series</p>
               <table className="mt-4 w-full text-sm">
                 <tbody>
-                  <tr className="border-b border-stone-100 dark:border-stone-700">
+                  <tr className="border-b border-stone-100/60 dark:border-stone-700/50">
                     <td className="py-2">FVRCP</td>
                     <td className="py-2 text-stone-500">Kitten series + adult</td>
                   </tr>
-                  <tr className="border-b border-stone-100 dark:border-stone-700">
+                  <tr className="border-b border-stone-100/60 dark:border-stone-700/50">
                     <td className="py-2">Rabies</td>
                     <td className="py-2 text-stone-500">Per local law / vet</td>
                   </tr>

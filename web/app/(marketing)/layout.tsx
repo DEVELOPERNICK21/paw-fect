@@ -1,6 +1,7 @@
 import { ChatbaseChatbot } from "@/components/marketing/ChatbaseChatbot";
 import { Footer } from "@/components/marketing/Footer";
 import { Navbar } from "@/components/marketing/Navbar";
+import { PawPointsProvider } from "@/components/gamification/PawPoints";
 import { ScrollProgress } from "@/components/marketing/ScrollEffects";
 import { StickyMobileCta } from "@/components/marketing/StickyMobileCta";
 
@@ -10,7 +11,7 @@ export default function MarketingLayout({
   children: React.ReactNode;
 }): React.ReactElement {
   return (
-    <>
+    <PawPointsProvider>
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-primary focus:px-4 focus:py-2 focus:text-white"
@@ -25,6 +26,6 @@ export default function MarketingLayout({
       <Footer />
       <StickyMobileCta />
       <ChatbaseChatbot />
-    </>
+    </PawPointsProvider>
   );
 }

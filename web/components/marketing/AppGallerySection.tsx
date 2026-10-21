@@ -1,8 +1,10 @@
 "use client";
 
+import { HiddenPaw } from "@/components/gamification/HiddenPaw";
 import { useState } from "react";
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
 import { appGalleryScreenshots } from "@/lib/app-screenshots";
+import { usePawPoints } from "@/components/gamification/PawPoints";
 import { AppPhoneMockup } from "@/components/marketing/AppPhoneMockup";
 
 const showcase = [
@@ -15,14 +17,18 @@ const showcase = [
 
 export function AppGallerySection(): React.ReactElement {
   const reduce = useReducedMotion();
-  const [active, setActive] = useState(1); // light home as default center
+  const { award } = usePawPoints();
+  const [device, setDevice] = useState<"ios" | "android">("ios");
+  const [active, setActiveRaw] = useState(1); // light home as default center
+  const setActive = (i: number): void => { setActiveRaw(i); award("gallery", 10); };
 
   const left = showcase[(active - 1 + showcase.length) % showcase.length];
   const center = showcase[active];
   const right = showcase[(active + 1) % showcase.length];
 
   return (
-    <section className="relative overflow-hidden border-y border-stone-200/70 bg-stone-950 py-14 text-stone-50 dark:border-stone-800 md:py-16">
+    <section className="relative overflow-hidden border-y border-stone-200/70 bg-stone-950 py-20 text-stone-50 dark:border-stone-800/50 md:py-28">
+      <HiddenPaw id="gallery" className="right-[5%] top-6" />
       <div
         className="pointer-events-none absolute inset-0 opacity-40"
         style={{
@@ -36,7 +42,7 @@ export function AppGallerySection(): React.ReactElement {
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-8">
           <div className="max-w-xl">
-            <h2 className="text-3xl font-black tracking-tight text-white md:text-4xl">
+            <h2 className="text-white text-3xl font-bold tracking-tight md:text-4xl">
               Real screens, light and dark
             </h2>
             <p className="mt-3 text-base text-stone-400 md:text-lg">
@@ -44,7 +50,20 @@ export function AppGallerySection(): React.ReactElement {
               phone.
             </p>
           </div>
-          <p className="hidden text-sm text-stone-500 md:block">Tap a label to stage that screen</p>
+          <div role="radiogroup" aria-label="Device frame" className="flex w-fit rounded-full bg-white/10 p-1 text-sm font-semibold">
+            {(["ios", "android"] as const).map((d) => (
+              <button
+                key={d}
+                type="button"
+                role="radio"
+                aria-checked={device === d}
+                onClick={() => setDevice(d)}
+                className={`rounded-full px-4 py-1.5 transition ${device === d ? "bg-primary text-stone-900" : "text-stone-300 hover:text-white"}`}
+              >
+                {d === "ios" ? "iPhone" : "Android"}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Desktop / tablet: overlapping stage */}
@@ -60,7 +79,7 @@ export function AppGallerySection(): React.ReactElement {
               alt={left.alt}
               float={false}
               size="md"
-              variant="android"
+              variant={device}
             />
           </button>
 
@@ -78,7 +97,8 @@ export function AppGallerySection(): React.ReactElement {
                 alt={center.alt}
                 float={!reduce}
                 size="xl"
-                variant="android"
+                tilt
+                variant={device}
                 caption={center.label}
               />
             </motion.div>
@@ -95,7 +115,7 @@ export function AppGallerySection(): React.ReactElement {
               alt={right.alt}
               float={false}
               size="md"
-              variant="android"
+              variant={device}
             />
           </button>
         </div>
@@ -107,7 +127,7 @@ export function AppGallerySection(): React.ReactElement {
             alt={center.alt}
             float={!reduce}
             size="lg"
-            variant="android"
+            variant={device}
             caption={center.label}
           />
         </div>
@@ -129,7 +149,7 @@ export function AppGallerySection(): React.ReactElement {
                 className={`rounded-full px-4 py-2 text-sm font-semibold transition active:scale-[0.98] ${
                   isActive
                     ? "bg-primary text-white shadow-brand dark:text-stone-900"
-                    : "border border-white/15 bg-white/5 text-stone-300 hover:border-primary/40 hover:bg-white/10"
+                    : "border border-white/[0.07] bg-white/5 text-stone-300 hover:border-primary/40 hover:bg-white/10"
                 }`}
               >
                 {shot.label}

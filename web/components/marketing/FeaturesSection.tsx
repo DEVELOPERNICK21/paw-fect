@@ -1,5 +1,6 @@
 "use client";
 
+import { HiddenPaw } from "@/components/gamification/HiddenPaw";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   CalendarClock,
@@ -55,11 +56,12 @@ export function FeaturesSection(): React.ReactElement {
   const [featured, ...rest] = features;
 
   return (
-    <section className="relative overflow-hidden py-24 md:py-32">
+    <section className="relative overflow-hidden py-20 md:py-28">
+      <HiddenPaw id="features" className="left-[4%] bottom-8" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <ScrollReveal>
-          <h2 className="max-w-2xl text-3xl font-bold tracking-tight text-stone-900 dark:text-stone-50 md:text-4xl lg:text-[2.5rem]">
+          <h2 className="max-w-2xl text-stone-900 dark:text-stone-50 text-3xl font-bold tracking-tight md:text-4xl">
             Everything your pet needs
           </h2>
           <p className="mt-4 max-w-2xl text-lg text-stone-600 dark:text-stone-400">
@@ -94,7 +96,7 @@ export function FeaturesSection(): React.ReactElement {
                 viewport={{ once: true, margin: "-40px", amount: 0.25 }}
                 transition={{ delay: i * 0.06, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                 whileHover={reduce ? undefined : { y: -4 }}
-                className={`rounded-2xl border border-stone-200/90 bg-surface p-6 shadow-sm dark:border-stone-700 dark:bg-stone-800/40 ${
+                className={`rounded-2xl border border-stone-200/90 bg-surface p-6 shadow-sm dark:border-stone-700/50 dark:bg-stone-800/40 ${
                   i === rest.length - 1 && rest.length % 2 === 1 ? "sm:col-span-2" : ""
                 }`}
               >

@@ -1,5 +1,6 @@
 "use client";
 
+import { HiddenPaw } from "@/components/gamification/HiddenPaw";
 import { Button } from "@/components/ui/Button";
 import { dogJourneyStages, type DogJourneyStage } from "@/lib/data/dog-journey-stages";
 import { motion, useReducedMotion } from "framer-motion";
@@ -21,8 +22,8 @@ function JourneyHeader({
     <div>
       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Life stages</p>
       <h2
-        className={`mt-3 font-bold text-stone-900 dark:text-stone-50 ${
-          compact ? "text-2xl md:text-3xl" : "text-3xl md:text-4xl lg:text-[2.5rem]"
+        className={`mt-3 font-bold tracking-tight text-stone-900 dark:text-stone-50 ${
+          compact ? "text-2xl md:text-3xl" : "text-3xl md:text-4xl"
         }`}
       >
         Your dog&apos;s journey
@@ -91,7 +92,7 @@ function JourneyStagePicker({
             className={`shrink-0 rounded-full border px-4 py-2 text-left transition active:scale-[0.98] ${
               isActive
                 ? "border-primary bg-primary text-white shadow-brand dark:text-stone-900"
-                : "border-stone-200 bg-surface text-stone-700 hover:border-primary/40 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+                : "border-stone-200/60 bg-surface text-stone-700 hover:border-primary/40 dark:border-stone-600/50 dark:bg-stone-800 dark:text-stone-200"
             }`}
           >
             <span className="block text-sm font-semibold">{stage.title}</span>
@@ -165,10 +166,11 @@ export function PetJourneySection({
     <section
       id={variant === "static" ? undefined : "dog-journey"}
       className={`relative overflow-hidden bg-gradient-to-b from-primary/15 via-primary/10 to-background dark:from-primary/10 dark:via-stone-900/50 dark:to-background ${
-        embedded ? "py-10 md:py-12" : "py-16 md:py-24"
+        embedded ? "py-10 md:py-12" : "py-20 md:py-28"
       }`}
     >
-      <div className="pointer-events-none absolute -right-20 top-20 text-[12rem] opacity-[0.07] dark:opacity-[0.05]">
+      
+      <HiddenPaw id="journey" className="right-[8%] bottom-8" /><div className="pointer-events-none absolute -right-20 top-20 text-[12rem] opacity-[0.07] dark:opacity-[0.05]">
         <Footprints aria-hidden />
       </div>
       <InteractiveJourney showCta={showCta} embedded={embedded} />

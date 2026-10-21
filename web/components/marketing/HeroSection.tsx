@@ -1,5 +1,6 @@
 "use client";
 
+import { HiddenPaw } from "@/components/gamification/HiddenPaw";
 import {
   motion,
   useReducedMotion,
@@ -15,6 +16,7 @@ import { Sparkles } from "lucide-react";
 import { AppPhoneMockup } from "@/components/marketing/AppPhoneMockup";
 import { PawDotField, WarmBlob } from "@/components/marketing/PetDecor";
 import { heroAppScreenshot } from "@/lib/app-screenshots";
+import { HeroReminderCards } from "@/components/marketing/HeroReminderCards";
 
 export function HeroSection({ site }: { site: SiteContentMarketing }): React.ReactElement {
   const reduce = useReducedMotion();
@@ -42,6 +44,7 @@ export function HeroSection({ site }: { site: SiteContentMarketing }): React.Rea
       ref={sectionRef}
       className="relative min-h-[100dvh] overflow-hidden bg-paw-pattern pb-16 pt-16 md:pb-20 md:pt-20 lg:min-h-[100dvh] lg:pt-24"
     >
+      <HiddenPaw id="hero" className="right-[6%] bottom-10" />
       <PawDotField />
       <motion.div style={{ y: blobA }} className="pointer-events-none absolute inset-0" aria-hidden>
         <WarmBlob className="-right-24 -top-24 h-[min(90vw,28rem)] w-[min(90vw,28rem)]" />
@@ -94,6 +97,11 @@ export function HeroSection({ site }: { site: SiteContentMarketing }): React.Rea
           >
             <StoreButtons source="hero" />
           </motion.div>
+          <p className="mt-3">
+            <Button href="/#plan-demo" variant="ghost" className="!px-0 !py-1 font-semibold text-primary underline-offset-4 hover:underline">
+              Build a sample plan for your pet &rarr;
+            </Button>
+          </p>
           <p className="mt-4 text-sm font-medium text-stone-500 dark:text-stone-400">
             Free to start &middot; No credit card &middot; iPhone, iPad &amp; Android
           </p>
@@ -117,13 +125,15 @@ export function HeroSection({ site }: { site: SiteContentMarketing }): React.Rea
             animate={reduce ? undefined : { opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           >
+            <HeroReminderCards />
             <AppPhoneMockup
               image={heroAppScreenshot}
               alt="Pawfect mobile app home dashboard with pet status, health summary, and navigation"
               priority
               size="xl"
               float={false}
-              variant="android"
+              tilt
+              variant="ios"
             />
           </motion.div>
         </div>

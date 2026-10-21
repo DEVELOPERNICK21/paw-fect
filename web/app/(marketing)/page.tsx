@@ -9,10 +9,14 @@ import { HomeFaqSection } from "@/components/marketing/HomeFaqSection";
 import { HomeJsonLd } from "@/components/marketing/HomeJsonLd";
 import { HowItWorksSection } from "@/components/marketing/HowItWorksSection";
 import { LossAversionSection } from "@/components/marketing/LossAversionSection";
+import { PetParentQuizSection } from "@/components/marketing/PetParentQuizSection";
+import { PlanBuilderSection } from "@/components/marketing/PlanBuilderSection";
+import { PremiumUnlockSection } from "@/components/marketing/PremiumUnlockSection";
 import { PetJourneySection } from "@/components/marketing/PetJourneySection";
 import { PricingPreviewSection } from "@/components/marketing/PricingPreviewSection";
 import { SocialProofBar } from "@/components/marketing/SocialProofBar";
 import { SpeciesSection } from "@/components/marketing/SpeciesSection";
+import { TogetherSection } from "@/components/marketing/TogetherSection";
 import { TestimonialsSection } from "@/components/marketing/TestimonialsSection";
 import { getActivePricingPlans } from "@/lib/data/pricing";
 import { getSiteContentMarketing } from "@/lib/data/site-content";
@@ -47,6 +51,8 @@ export default async function HomePage(): Promise<React.ReactElement> {
       <HomeJsonLd />
       <HeroSection site={site} />
       <SocialProofBar trustBadges={site.trustBadges} />
+      <PlanBuilderSection />
+      <PetParentQuizSection />
       <LossAversionSection />
       <FeaturesSection />
       <AppGallerySection />
@@ -54,7 +60,9 @@ export default async function HomePage(): Promise<React.ReactElement> {
       <ContrastSection />
       <PetJourneySection />
       <SpeciesSection />
+      <TogetherSection />
       <TestimonialsSection items={site.testimonials} />
+      <PremiumUnlockSection plans={plans} />
       <PricingPreviewSection plans={plans} />
       <CommitmentSection />
       <HomeWidgetsShowcaseSection />

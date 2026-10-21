@@ -337,3 +337,16 @@ Caveat: with low traffic, tests take weeks. Don't call a winner under a few thou
 5. When will iOS widgets ship (so the description can mention them)?
 6. What does the live Google Play listing say? I could not read it.
 7. Primary category: stay on Lifestyle (safer) or add Health & Fitness as the secondary?
+
+## 12. Finished header and search-results graphics
+
+Files in `docs/aso/assets/` (sources in `assets/src/`, mascot SVGs in `assets/mascot/`):
+
+| File | Size | Slot | Notes |
+|---|---|---|---|
+| `header-21x9.png` / `.jpg` | 3840×1646 | Product page header (21:9) | No alpha channel; text kept inside the central area |
+| `search-3x2.png` / `.jpg` | 3000×2000 | Search results (3:2, allowed range 1920×1280 to 3840×2560) | Large faces and a 5-word headline so it reads at thumbnail size |
+
+Both use the app's own font (Plus Jakarta Sans), brand orange `#F28C28`, and the placeholder mascot art. Re-render after the illustrator delivers the final mascot: edit the HTML in `assets/src/` and run the same headless render at the sizes above.
+
+Upload path: App Store Connect → the version page → Header and Search Results → Upload (or the Asset Library) → submit for approval. Apple reviews assets separately from the app build.

@@ -1558,7 +1558,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - NitroModules (0.35.4):
+  - NitroModules (0.36.5):
     - boost
     - DoubleConversion
     - fast_float
@@ -4304,6 +4304,7 @@ PODS:
   - RevenueCat (5.88.0)
   - RevenueCatUI (5.88.0):
     - RevenueCat (= 5.88.0)
+  - RiveRuntime (6.28.1)
   - RNAppleAuthentication (2.5.1):
     - React-Core
   - RNDateTimePicker (9.1.0):
@@ -4528,6 +4529,36 @@ PODS:
   - RNPurchases (10.9.1):
     - PurchasesHybridCommon (= 18.37.0)
     - React-Core
+  - RNRive (0.5.5):
+    - boost
+    - DoubleConversion
+    - fast_float
+    - fmt
+    - glog
+    - hermes-engine
+    - NitroModules
+    - RCT-Folly
+    - RCT-Folly/Fabric
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - RiveRuntime (= 6.28.1)
+    - SocketRocket
+    - Yoga
   - RNScreens (4.24.0):
     - boost
     - DoubleConversion
@@ -4777,6 +4808,7 @@ DEPENDENCIES:
   - "RNNotifee (from `../node_modules/@notifee/react-native`)"
   - RNPaywalls (from `../node_modules/react-native-purchases-ui`)
   - RNPurchases (from `../node_modules/react-native-purchases`)
+  - "RNRive (from `../node_modules/@rive-app/react-native`)"
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNShare (from `../node_modules/react-native-share`)
   - RNSVG (from `../node_modules/react-native-svg`)
@@ -4833,6 +4865,7 @@ SPEC REPOS:
     - RecaptchaInterop
     - RevenueCat
     - RevenueCatUI
+    - RiveRuntime
     - SocketRocket
 
 EXTERNAL SOURCES:
@@ -5037,6 +5070,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-purchases-ui"
   RNPurchases:
     :path: "../node_modules/react-native-purchases"
+  RNRive:
+    :path: "../node_modules/@rive-app/react-native"
   RNScreens:
     :path: "../node_modules/react-native-screens"
   RNShare:
@@ -5096,7 +5131,7 @@ SPEC CHECKSUMS:
   MMKVCore: 3d16ce9f7d411e135020915fde98a056859a1efa
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   NitroMmkv: 5d6c3a5cca0e47be9a4dd3f66262dbad0799c087
-  NitroModules: f6465691938fc8e4c5ea72851a8812fd9322a15a
+  NitroModules: d52aaa5db99af2be4c2b171460e3a7541d78fe4d
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   PromisesSwift: 9d77319bbe72ebf6d872900551f7eeba9bce2851
   PurchasesHybridCommon: 2e72564d3393d480ca126d4d057737435dd7ccba
@@ -5183,6 +5218,7 @@ SPEC CHECKSUMS:
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
   RevenueCat: 96e12da1f3de201c65f337ff661506ac28ee1514
   RevenueCatUI: 86e2209d13c41893a4e24da4e26370d4bd9f8b93
+  RiveRuntime: cc622dc68db440baf0b425c36d6aa068e36f5050
   RNAppleAuthentication: a89c9804592b38ed4ab11f0aee68d05ba12ad432
   RNDateTimePicker: ea25d20659754bfe1014e0d5905d21dbc18ff705
   RNFBAnalytics: 8f676c267a135e69e1b815c197d1175a1ebd1792
@@ -5195,6 +5231,7 @@ SPEC CHECKSUMS:
   RNNotifee: 5e3b271e8ea7456a36eec994085543c9adca9168
   RNPaywalls: 660b29b1fb64fd90776a21b4005631d43e2e3e9c
   RNPurchases: 2575285384b5e4705a0aca11dfd0791c8484f216
+  RNRive: 0ec57c6b1a423fbceaf501a62e9485bed1bede67
   RNScreens: e902eba58a27d3ad399a495d578e8aba3ea0f490
   RNShare: 61cad1e65b8e3788c97ee7c5cac4bcbb25a8df40
   RNSVG: 88b18f5959cffb583527b9611ce17b53e54c1fb6

@@ -8,7 +8,7 @@ export const APP_STORE_URL = `https://apps.apple.com/app/id${IOS_APP_ID}`;
 export const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=app.pawfect";
 
 /** Where on the site a store click came from (shows up in store analytics). */
-export type StoreSource = "hero" | "download_page" | "cta_band" | "sticky" | "pricing";
+export type StoreSource = "hero" | "download_page" | "cta_band" | "sticky" | "pricing" | "plan_demo" | "premium" | "quiz" | "rewards" | "together";
 
 /**
  * App Store campaign token (`ct`). For App Store Connect campaign reports add your

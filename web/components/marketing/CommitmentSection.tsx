@@ -30,10 +30,10 @@ export function CommitmentSection(): React.ReactElement {
   const reduce = useReducedMotion();
 
   return (
-    <section className="py-16 md:py-20">
+    <section className="py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <ScrollReveal>
-          <h2 className="max-w-2xl text-3xl font-black tracking-tight text-stone-900 dark:text-stone-50 md:text-4xl">
+          <h2 className="max-w-2xl text-stone-900 dark:text-stone-50 text-3xl font-bold tracking-tight md:text-4xl">
             Why people download today, not &ldquo;later&rdquo;
           </h2>
           <p className="mt-4 max-w-2xl text-base text-stone-600 dark:text-stone-400 md:text-lg">
@@ -50,7 +50,7 @@ export function CommitmentSection(): React.ReactElement {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.35 }}
               transition={{ delay: i * 0.08, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-              className="rounded-2xl border border-stone-200 bg-surface p-6 shadow-sm dark:border-stone-700 dark:bg-stone-800/40"
+              className="rounded-2xl border border-stone-200/60 bg-surface p-6 shadow-sm dark:border-stone-700/50 dark:bg-stone-800/40"
             >
               <r.icon className="h-6 w-6 text-primary" aria-hidden />
               <h3 className="mt-4 text-lg font-bold text-stone-900 dark:text-stone-50">{r.title}</h3>

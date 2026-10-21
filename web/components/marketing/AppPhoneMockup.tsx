@@ -1,6 +1,7 @@
 "use client";
 
 import Image, { type StaticImageData } from "next/image";
+import { motion, useMotionTemplate, useMotionValue, useReducedMotion, useSpring, useTransform } from "framer-motion";
 
 type AppPhoneMockupProps = {
   image: StaticImageData;
@@ -14,6 +15,8 @@ type AppPhoneMockupProps = {
    * Chassis style. Pawfect screenshots are Android, so gallery/hero default to android.
    */
   variant?: "android" | "ios";
+  /** Subtle mouse-follow 3D tilt with moving glass glare. */
+  tilt?: boolean;
 };
 
 const sizeStyles: Record<
@@ -39,14 +42,40 @@ export function AppPhoneMockup({
   size = "lg",
   caption,
   variant = "android",
+  tilt = false,
 }: AppPhoneMockupProps): React.ReactElement {
   const styles = sizeStyles[size];
   const isAndroid = variant === "android";
+  const reduce = useReducedMotion();
+  const px = useMotionValue(0.5);
+  const py = useMotionValue(0.5);
+  const sx = useSpring(px, { stiffness: 160, damping: 18 });
+  const sy = useSpring(py, { stiffness: 160, damping: 18 });
+  const rotY = useTransform(sx, [0, 1], tilt && !reduce ? [-12, 12] : [0, 0]);
+  const rotX = useTransform(sy, [0, 1], tilt && !reduce ? [10, -10] : [0, 0]);
+  const glareX = useTransform(sx, [0, 1], ["0%", "100%"]);
+  const glareY = useTransform(sy, [0, 1], ["0%", "100%"]);
+  const glare = useMotionTemplate`radial-gradient(circle at ${glareX} ${glareY}, rgba(255,255,255,0.28), transparent 45%)`;
+  const onMove = (e: React.PointerEvent<HTMLDivElement>): void => {
+    if (!tilt) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    px.set((e.clientX - r.left) / r.width);
+    py.set((e.clientY - r.top) / r.height);
+  };
+  const onLeave = (): void => {
+    px.set(0.5);
+    py.set(0.5);
+  };
 
   return (
     <figure className={`relative w-full ${styles.wrap} ${className}`}>
-      <div className={float ? "animate-float-soft" : undefined}>
-        <div className="relative">
+      <div className={float ? "animate-float-soft" : undefined} style={{ perspective: 1100 }}>
+        <motion.div
+          className="relative"
+          style={{ rotateX: rotX, rotateY: rotY, transformStyle: "preserve-3d" }}
+          onPointerMove={onMove}
+          onPointerLeave={onLeave}
+        >
           <div
             className="pointer-events-none absolute -inset-6 rounded-[3rem] bg-[radial-gradient(circle_at_50%_30%,rgba(242,140,40,0.28),transparent_62%)] opacity-90 blur-2xl"
             aria-hidden
@@ -65,8 +94,9 @@ export function AppPhoneMockup({
           <div
             className={`relative ${isAndroid ? "rounded-[1.85rem] p-[10px] sm:rounded-[2rem] sm:p-[11px]" : "rounded-[2.4rem] p-[11px] sm:rounded-[2.65rem] sm:p-3"}`}
             style={{
-              background:
-                "linear-gradient(160deg, #6b6b70 0%, #2a2a2e 22%, #111113 55%, #3a3a3e 78%, #0c0c0e 100%)",
+              background: isAndroid
+                ? "linear-gradient(160deg, #6b6b70 0%, #2a2a2e 22%, #111113 55%, #3a3a3e 78%, #0c0c0e 100%)"
+                : "linear-gradient(150deg, #d9d6cf 0%, #8f8b84 18%, #3a3935 48%, #a7a39b 72%, #4a4843 100%)",
               boxShadow:
                 "0 30px 60px -20px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -1px 0 rgba(0,0,0,0.5)",
             }}
@@ -107,6 +137,12 @@ export function AppPhoneMockup({
                 />
               </div>
 
+              <motion.div className="pointer-events-none absolute inset-0 z-10" style={{ background: tilt ? glare : undefined }} aria-hidden />
+              <div
+                className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(115deg,transparent_38%,rgba(255,255,255,0.10)_46%,transparent_54%)]"
+                aria-hidden
+              />
+
               {!isAndroid ? (
                 <div
                   className="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex justify-center"
@@ -117,7 +153,7 @@ export function AppPhoneMockup({
               ) : null}
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
       {caption ? (
         <figcaption className="mt-3 text-center text-xs font-semibold tracking-wide text-stone-600 dark:text-stone-300">

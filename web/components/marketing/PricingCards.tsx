@@ -21,19 +21,24 @@ type Props = {
 export function PricingCards({ plans, variant = "page" }: Props): React.ReactElement {
   const reduce = useReducedMotion();
   const [cycle, setCycle] = useState<BillingCycle>("annual");
-  const showToggle = variant === "page";
+  const showToggle = true;
+  const isPage = variant === "page";
 
   const sorted = [...plans].sort((a, b) => a.priceMonthly - b.priceMonthly);
+  const paid = sorted.find((p) => p.priceMonthly > 0 && p.priceAnnual > 0);
+  const savePct = paid
+    ? Math.round((yearlySavingsVsMonthly(paid.priceMonthly, paid.priceAnnual) / (paid.priceMonthly * 12)) * 100)
+    : 0;
 
   return (
     <div>
       {showToggle ? (
         <div className="mx-auto flex max-w-lg flex-col items-center gap-4">
           <p className="text-center text-sm font-medium text-stone-600 dark:text-stone-400">
-            Most families save with <span className="text-primary">annual billing</span>. Two months on us.
+            Save{savePct > 0 ? ` ${savePct}%` : ""} with <span className="text-primary">annual billing</span>.
           </p>
           <div
-            className="inline-flex rounded-full border border-stone-200 bg-cream/80 p-1 shadow-inner dark:border-stone-600 dark:bg-stone-800/80"
+            className="inline-flex rounded-full border border-stone-200/60 bg-cream/80 p-1 shadow-inner dark:border-stone-600/50 dark:bg-stone-800/80"
             role="group"
             aria-label="Billing period"
           >
@@ -64,13 +69,13 @@ export function PricingCards({ plans, variant = "page" }: Props): React.ReactEle
             </button>
           </div>
           <p className="text-center text-xs text-stone-500 dark:text-stone-500">
-            INR · Cancel anytime in app · No surprise charges
+            Shown in INR (India pricing). Your App Store or Google Play shows your local price. Cancel anytime in your store.
           </p>
         </div>
       ) : null}
 
       <div
-        className={`mt-10 grid gap-6 lg:grid-cols-3 ${showToggle ? "lg:items-stretch" : ""} ${!showToggle ? "mt-0" : ""}`}
+        className={`mt-10 grid gap-6 lg:grid-cols-3 lg:items-stretch`}
       >
         {sorted.map((p, i) => {
           const sym = p.currency === "INR" ? "₹" : "$";
@@ -126,7 +131,8 @@ export function PricingCards({ plans, variant = "page" }: Props): React.ReactEle
                     {useAnnual && p.priceAnnual > 0 ? (
                       <p className="mt-1 text-xs text-stone-500">
                         {sym}
-                        {p.priceAnnual} charged once per year
+                        {p.priceAnnual} charged once per year, about {sym}
+                        {(p.priceAnnual / 365).toFixed(1)} a day
                       </p>
                     ) : null}
                     {!useAnnual && p.priceMonthly > 0 && showToggle ? (
@@ -146,7 +152,7 @@ export function PricingCards({ plans, variant = "page" }: Props): React.ReactEle
                   </div>
 
                   <ul className="mt-8 flex-1 space-y-3 text-sm">
-                    {(variant === "preview" ? p.features.slice(0, 4) : p.features).map((f) => (
+                    {(!isPage ? p.features.slice(0, 4) : p.features).map((f) => (
                       <li key={f.label} className="flex gap-3">
                         <span
                           className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
@@ -190,7 +196,7 @@ export function PricingCards({ plans, variant = "page" }: Props): React.ReactEle
           );
         })}
       </div>
-      {showToggle ? (
+      {isPage ? (
         <p className="mx-auto mt-8 max-w-2xl text-center text-[11px] leading-relaxed text-stone-400 dark:text-stone-500">
           Subscriptions and refunds follow Apple / Google policies. Pawfect provides scheduling tools only, not
           veterinary medical advice.

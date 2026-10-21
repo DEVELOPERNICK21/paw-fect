@@ -4,7 +4,7 @@ import { BrandLogo } from "@/components/marketing/BrandLogo";
 
 export function Footer(): React.ReactElement {
   return (
-    <footer className="relative border-t border-stone-200 bg-gradient-to-b from-cream to-stone-100/80 dark:border-stone-700 dark:from-stone-950 dark:to-stone-900">
+    <footer className="relative border-t border-stone-200/60 bg-gradient-to-b from-cream to-stone-100/80 dark:border-stone-700/50 dark:from-stone-950 dark:to-stone-900">
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
@@ -97,7 +97,7 @@ export function Footer(): React.ReactElement {
             </div>
           </div>
         </div>
-        <div className="mt-14 border-t border-stone-200/80 pt-8 text-center text-xs leading-relaxed text-stone-500 dark:border-stone-700 dark:text-stone-500">
+        <div className="mt-14 border-t border-stone-200/80 pt-8 text-center text-xs leading-relaxed text-stone-500 dark:border-stone-700/50 dark:text-stone-500">
           <p>
             © {new Date().getFullYear()} Pawfect. Not a substitute for professional
             veterinary advice.

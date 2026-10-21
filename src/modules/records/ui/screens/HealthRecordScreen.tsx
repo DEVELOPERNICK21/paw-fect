@@ -52,7 +52,6 @@ import { HealthHeroBar } from '../components/HealthHeroBar';
 import { HealthLogDateSheet } from '../components/HealthLogDateSheet';
 import { HealthSaveToast } from '../components/HealthSaveToast';
 import { NeedsNextCareCard } from '../components/NeedsNextCareCard';
-import { PremiumUpgradeCard } from '../components/PremiumUpgradeCard';
 import { WhySeeingThisSection } from '../components/WhySeeingThisSection';
 import { projectDewormingFromSmartRecords } from '../utils/projectDewormingFromSmartRecords';
 
@@ -755,8 +754,6 @@ export const HealthRecordScreen: React.FC = () => {
             These are reminders to help you remember. Your vet decides what is
             right for your pet.
           </AppText>
-
-          <PremiumUpgradeCard />
         </ScrollView>
 
         {loading ? (

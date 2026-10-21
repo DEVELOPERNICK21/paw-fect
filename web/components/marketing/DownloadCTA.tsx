@@ -24,12 +24,12 @@ export function DownloadCTA(): React.ReactElement {
         viewport={{ once: true }}
         transition={{ duration: 0.5 }}
       >
-        <h2 className="text-3xl font-black tracking-tight text-white drop-shadow-sm md:text-4xl lg:text-5xl">
-          Every week without a plan is another date that can slip
+        <h2 className="text-white text-3xl font-bold tracking-tight md:text-4xl">
+          They trust you with everything. Give them a plan that never forgets.
         </h2>
         <p className="mx-auto mt-5 max-w-xl text-lg text-white/90">
-          Download free. Add your pet once. Get reminders before doses are due and keep every
-          record in one place.
+          Download free. Add your pet once. Pawfect reminds you before every dose and keeps
+          every record in one place, so you can focus on the cuddles.
         </p>
         <StoreButtons source="cta_band" tone="light" className="mt-10 justify-center" />
         <p className="mt-8 text-sm font-medium text-white/80">

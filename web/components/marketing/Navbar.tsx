@@ -66,7 +66,7 @@ export function Navbar(): React.ReactElement {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="overflow-hidden border-t border-stone-200 bg-cream dark:border-stone-700 dark:bg-stone-900 md:hidden"
+            className="overflow-hidden border-t border-stone-200/60 bg-cream dark:border-stone-700/50 dark:bg-stone-900 md:hidden"
           >
             <ul className="flex flex-col gap-1 px-4 py-4">
               {links.map((l) => (

@@ -30,12 +30,12 @@ export function HowItWorksSection(): React.ReactElement {
   return (
     <section
       id="how-it-works"
-      className="relative overflow-hidden bg-stone-50 py-24 dark:bg-stone-900/50 md:py-32"
+      className="relative overflow-hidden bg-stone-50 py-20 dark:bg-stone-900/50 md:py-28"
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-primary/10 to-transparent" />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <AnimatedSection>
-          <h2 className="text-center text-3xl font-bold text-stone-900 dark:text-stone-50 md:text-4xl">
+          <h2 className="text-center text-stone-900 dark:text-stone-50 text-3xl font-bold tracking-tight md:text-4xl">
             Three steps to a healthier pet
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-center text-lg text-stone-600 dark:text-stone-400">

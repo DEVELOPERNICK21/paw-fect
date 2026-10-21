@@ -45,4 +45,21 @@ describe('Mascot', () => {
     expect(onPress).toHaveBeenCalledTimes(1);
     act(() => tree.unmount());
   });
+
+  it.each(MASCOT_MOODS)('runs the animated rig for %s (dog and cat) and cleans up', mood => {
+    jest.useFakeTimers();
+    for (const species of ['dog', 'cat'] as const) {
+      let tree!: ReturnType<typeof create>;
+      act(() => {
+        tree = create(<Mascot mood={mood} species={species} />);
+      });
+      act(() => {
+        jest.advanceTimersByTime(7000);
+      });
+      expect(tree.toJSON()).not.toBeNull();
+      act(() => tree.unmount());
+    }
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers();
+  });
 });

@@ -1,5 +1,6 @@
 "use client";
 
+import { HiddenPaw } from "@/components/gamification/HiddenPaw";
 import { motion, useReducedMotion } from "framer-motion";
 import { AnimatedSection } from "@/components/ui/AnimatedSection";
 import type { PricingPlan } from "@/types";
@@ -9,11 +10,12 @@ export function PricingPreviewSection({ plans }: { plans: PricingPlan[] }): Reac
   const reduce = useReducedMotion();
 
   return (
-    <section className="relative py-24 md:py-32">
+    <section className="relative py-20 md:py-28">
+      <HiddenPaw id="pricing" className="left-[6%] top-10" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-cream/80 to-transparent dark:from-stone-900/50" />
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <AnimatedSection>
-          <h2 className="mt-3 text-center text-3xl font-bold text-stone-900 dark:text-stone-50 md:text-4xl">
+          <h2 className="text-center text-stone-900 dark:text-stone-50 text-3xl font-bold tracking-tight md:text-4xl mt-3">
             Simple pricing
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-center text-lg text-stone-600 dark:text-stone-400">

@@ -1,0 +1,10 @@
+@font-face{font-family:"PJS";src:url("PlusJakartaSans-Regular.ttf");font-weight:400}
+@font-face{font-family:"PJS";src:url("PlusJakartaSans-Medium.ttf");font-weight:500}
+@font-face{font-family:"PJS";src:url("PlusJakartaSans-SemiBold.ttf");font-weight:600}
+@font-face{font-family:"PJS";src:url("PlusJakartaSans-Bold.ttf");font-weight:700}
+@font-face{font-family:"PJS";src:url("PlusJakartaSans-ExtraBold.ttf");font-weight:800}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow:hidden}
+body{font-family:"PJS",system-ui,sans-serif;color:#0F172A;-webkit-font-smoothing:antialiased}
+.abs{position:absolute}
+.orange{color:#F28C28}

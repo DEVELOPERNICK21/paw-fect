@@ -345,3 +345,16 @@ These mistakes cause architecture decay.
 The architecture must always remain predictable.
 
 If a developer cannot understand where logic belongs within a few minutes, the system structure is failing.
+
+## iOS simulator vs device pods (ML Kit)
+
+Google ML Kit (used for pet-photo analysis) has no Apple-Silicon simulator build. With it
+installed, Xcode lists **no simulators**. Use the matching pod install for what you are doing:
+
+| Goal | Command | Notes |
+|---|---|---|
+| Run in the iOS Simulator | `yarn pods:simulator` | Leaves ML Kit out. Photo analysis returns "couldn't analyze" (safe fallback). |
+| Real device, TestFlight, App Store | `yarn pods:device` | Full install including ML Kit. **Always run this before archiving.** |
+
+`ios/Podfile.lock` changes between the two modes. Don't commit the simulator-mode lockfile;
+run `yarn pods:device` first. After switching, quit and reopen `ios/paw_fect.xcworkspace`.

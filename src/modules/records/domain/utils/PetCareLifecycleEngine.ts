@@ -158,6 +158,17 @@ const toSmartRecord = (params: {
   };
 };
 
+const minAgeWeeksForRuleKey = (key: string | undefined): number | undefined => {
+  if (!key) return undefined;
+  for (const template of Object.values(CARE_PLAN_TEMPLATES)) {
+    const rule = [...template.coreSeries, ...template.nonCoreSeries].find(
+      r => r.key === key,
+    );
+    if (rule) return rule.ageWeeksMin;
+  }
+  return undefined;
+};
+
 // Catch-up series for adults with no vaccination history
 const dogAdultCoreCatchup = (): Array<{
   key: string;
@@ -397,13 +408,16 @@ export class PetCareLifecycleEngine {
       }
     }
 
-    const shouldScheduleRabiesFirstDose =
-      !isAdultKnownHistory && !input.lastRabiesDate;
+    // Rabies is a core vaccine: never omit it silently. An adult who has other
+    // vaccination history but no rabies date still gets a rabies record (due
+    // now) so the owner is prompted to confirm or vaccinate.
+    const shouldScheduleRabiesFirstDose = !input.lastRabiesDate;
 
     let rabiesFirstDue: string | null = null;
     if (shouldScheduleRabiesFirstDose) {
       // Rabies first dose
-      rabiesFirstDue = isAdultUnknownHistory
+      const rabiesDueNow = isAdultUnknownHistory || isAdultKnownHistory;
+      rabiesFirstDue = rabiesDueNow
         ? context.nowDate
         : addWeeks(dob, template.rabies.firstDoseAgeWeeksMin);
 
@@ -419,6 +433,9 @@ export class PetCareLifecycleEngine {
           nowDate: context.nowDate,
           category: 'core',
           recurrenceType: 'none',
+          contextLabel: isAdultKnownHistory
+            ? 'Rabies date unknown (add it in your pet profile)'
+            : undefined,
         }),
       );
     }
@@ -805,7 +822,18 @@ export class PetCareLifecycleEngine {
       const dependents = cloned.filter(r => r.dependsOn === target.id);
       for (const dep of dependents) {
         if (dep.status === 'locked') {
-          const newDue = addWeeks(completedDate, 3);
+          const intervalDue = addWeeks(completedDate, 3);
+          // Never schedule a dose before the youngest age it is meant for
+          // (e.g. final puppy core dose at 16+ weeks, maternal antibodies).
+          const minAgeWeeks = minAgeWeeksForRuleKey(dep.key);
+          const minAgeDue =
+            params.petDateOfBirth && minAgeWeeks !== undefined
+              ? addWeeks(toIsoDateOnly(params.petDateOfBirth), minAgeWeeks)
+              : null;
+          const newDue =
+            minAgeDue !== null && minAgeDue > intervalDue
+              ? minAgeDue
+              : intervalDue;
           dep.dueDate = newDue;
           dep.recommendedDate = newDue;
           dep.status = resolveStatus(newDue, params.contextNowDate);
