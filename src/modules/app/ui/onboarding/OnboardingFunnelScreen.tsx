@@ -29,6 +29,7 @@ import {
 import { useOnboardingDraftStore } from '../../store/onboardingDraftStore';
 import type { CareInterest } from '../../../settings/domain/models/Settings';
 import { toggleCareInterest } from './careInterestUtils';
+import { OnboardingCompanion } from './components/OnboardingCompanion';
 import { CareFocusStep } from './steps/CareFocusStep';
 import { CommitmentStep } from './steps/CommitmentStep';
 import { GoalStep } from './steps/GoalStep';
@@ -87,6 +88,9 @@ const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
       borderColor: colors.borderSubtle,
       alignItems: 'center',
       justifyContent: 'center',
+    },
+    companionSlot: {
+      marginBottom: spacing.lg,
     },
     backButtonPlaceholder: {
       width: 44,
@@ -296,6 +300,17 @@ export const OnboardingFunnelScreen: React.FC = () => {
     }
   }, [step]);
 
+  const COMPANION_STEPS = [
+    'trustOpen',
+    'problemNaming',
+    'petBasics',
+    'goal',
+    'careFocus',
+    undefined, // processing has its own thinking mascot
+    'planReveal',
+    'commitment',
+  ] as const;
+  const companionStep = COMPANION_STEPS[step];
   const progressPercent = ((step + 1) / QUIZ_STEP_COUNT) * 100;
   const showPrimaryButton = step !== STEP_INDEX.processing;
 
@@ -336,6 +351,15 @@ export const OnboardingFunnelScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
         >
           <View key={step}>
+            {companionStep != null ? (
+              <View style={styles.companionSlot}>
+                <OnboardingCompanion
+                  step={companionStep}
+                  petName={petDraft.nickname}
+                  species={petDraft.species === 'cat' ? 'cat' : 'dog'}
+                />
+              </View>
+            ) : null}
             {step === STEP_INDEX.trustOpen ? <TrustOpenStep /> : null}
             {step === STEP_INDEX.problemNaming ? (
               <ProblemNamingStep

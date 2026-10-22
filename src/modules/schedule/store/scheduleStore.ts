@@ -5,6 +5,10 @@ import { getTodayIsoDateLocal } from '../../../shared/utils/calendarDate';
 import type { DailySchedule } from '../domain/models/DailySchedule';
 import type { PetSchedulePreferences } from '../domain/models/PetProfile';
 import { isScheduleProUser } from '../domain/models/ScheduleFeatureGates';
+import type {
+  CareCompletionListener,
+  CareCompletionUnsubscribe,
+} from '../domain/ports/CareCompletionEventPort';
 import {
   getDayCompletion,
   isDayFullyComplete,
@@ -333,13 +337,33 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
       };
     });
 
-    await scheduleComposition.markCareBlockDone.execute({
+    const result = await scheduleComposition.markCareBlockDone.execute({
       userId,
       petId,
       date,
       blockId,
       completed,
     });
+    if (completed && result.completionChanged) {
+      // Saved, and it really was newly completed: tell listeners (e.g. the mascot).
+      // `dayCompleted` reads the optimistic patch above, which already includes this
+      // block, and the streak record from *before* it is bumped below.
+      const daySchedule = get().careSchedulesByPetId[petId] ?? get().schedule;
+      const isPro = isScheduleProUser(getAppSessionPlan());
+      const dayComplete =
+        daySchedule != null &&
+        daySchedule.petId === petId &&
+        isDayFullyComplete(getDayCompletion(daySchedule.blocks, isPro));
+      scheduleComposition.careCompletionEvents.emit({
+        type: 'care-task-completed',
+        petId,
+        blockId,
+        date,
+        dayCompleted:
+          dayComplete &&
+          scheduleComposition.getWellnessStreak(petId).lastCompletedDate !== date,
+      });
+    }
     if (completed) {
       await scheduleComposition.cancelScheduleBlockNotification(blockId, petId);
     }
@@ -455,3 +479,13 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
     set({ weekScores });
   },
 }));
+
+/**
+ * Subscribe to genuine care-task completions (saved, and newly completed).
+ * Lives here so UI reaches the event through the store, like everything else.
+ */
+export function subscribeToCareCompletions(
+  listener: CareCompletionListener,
+): CareCompletionUnsubscribe {
+  return scheduleComposition.careCompletionEvents.subscribe(listener);
+}

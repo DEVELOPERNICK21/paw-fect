@@ -86,7 +86,7 @@ export const PetHealthShareCard: React.FC<PetHealthShareCardProps> = ({
                 { fontFamily: fontFamilies.bold },
               ]}
             >
-              Just added {pet.name} to Pawsoul 🎉
+              Just added {pet.name} to Pawfect 🎉
             </Text>
             <Text
               style={[

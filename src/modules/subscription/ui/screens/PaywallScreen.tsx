@@ -223,7 +223,7 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
           <MaterialIcon name="close" size={24} color={colors.text.heading} />
         </Pressable>
         <Text style={[styles.headerTitle, { fontFamily: fontFamilies.bold }]}>
-          PawCare plans
+          Pawfect plans
         </Text>
         <View style={styles.closeHit} />
       </View>
@@ -276,7 +276,7 @@ export const PaywallScreen: React.FC<PaywallScreenProps> = ({
               <Text
                 style={[styles.bannerLoss, { fontFamily: fontFamilies.medium }]}
               >
-                Keep {nickname}’s care on track with PawCare Pro.
+                Keep {nickname}’s care on track with Pawfect Care+.
               </Text>
             ) : null}
           </View>

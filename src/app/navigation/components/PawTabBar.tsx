@@ -29,7 +29,7 @@ import type { Pet } from '../../../modules/pets/domain/models/Pet';
 import { usePetStore } from '../../../modules/pets/store/petStore';
 import { AppText } from '../../../shared/components/AppText';
 import { MaterialIcon } from '../../../shared/components/MaterialIcon';
-import { Paw3dIcon } from '../../../shared/components/Paw3dIcon';
+import { PawFabIcon } from '../../../shared/components/PawFabIcon';
 import { useTheme, type Theme } from '../../../shared/hooks/useTheme';
 import { fontSizes, lineHeights } from '../../../shared/theme/typography';
 import { resolvePetAvatarSource } from '../../../shared/utils/petDisplayPhoto';
@@ -958,10 +958,14 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
               <Pressable
                 style={[
                   styles.fabButton,
-                  petsTabActive && [
-                    styles.fabButtonActive,
-                    { borderColor: colors.onAccent },
-                  ],
+                  // Constant border width: toggling it on/off dropped the
+                  // button's layer on Android after leaving the Pets tab.
+                  {
+                    borderWidth: 3,
+                    borderColor: petsTabActive
+                      ? colors.onAccent
+                      : 'transparent',
+                  },
                 ]}
                 onPress={() => jumpToTabRoot('PetsTab')}
                 onLongPress={openPetPicker}
@@ -1003,7 +1007,7 @@ export const PawTabBar: React.FC<BottomTabBarProps> = ({ state, navigation }) =>
                   style={styles.fabSheen}
                   pointerEvents="none"
                 />
-                <Paw3dIcon size={34} tone="cream" />
+                <PawFabIcon size={34} color={colors.onAccent} />
               </Pressable>
             </View>
           </Animated.View>

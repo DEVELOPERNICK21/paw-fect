@@ -100,7 +100,7 @@ export const PetHealthCardShareScreen: React.FC = () => {
         canvasRef: exportCanvasRef.current,
         viewShotRef: exportShotRef.current,
       });
-      const title = `${viewModel.pet.name} — Pawsoul`;
+      const title = `${viewModel.pet.name} — Pawfect`;
       const message = buildShareMessage(viewModel);
       await Share.open(
         buildShareSheetOptions({
@@ -179,7 +179,7 @@ export const PetHealthCardShareScreen: React.FC = () => {
               ]}
             >
               New readers see your pet&apos;s name, what care is due next, and how
-              to get Pawsoul without opening the app.
+              to get Pawfect without opening the app.
             </Text>
 
             <PetHealthShareCardPreview
@@ -262,7 +262,7 @@ function buildShareMessage(vm: PetHealthCardViewModel): string {
     const species =
       vm.snapshot.speciesEmoji === '🐈' ? 'cats' : 'dogs';
     return [
-      `Just added ${vm.pet.name} to Pawsoul 🐾`,
+      `Just added ${vm.pet.name} to Pawfect 🐾`,
       prideLine ?? `Auto-scheduled vaccines and deworming for ${species}.`,
       `Track your pet's health: ${vm.footer.shareUrl}`,
     ].join('\n');
@@ -272,7 +272,7 @@ function buildShareMessage(vm: PetHealthCardViewModel): string {
     ? `Next up: ${next.label} (${next.detail})`
   : prideLine ?? 'On track 💛';
   return [
-    `${vm.pet.name} on Pawsoul 🐾`,
+    `${vm.pet.name} on Pawfect 🐾`,
     nextLine,
     `Track your pet's health: ${vm.footer.shareUrl}`,
   ].join('\n');

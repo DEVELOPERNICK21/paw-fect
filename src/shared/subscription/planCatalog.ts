@@ -1,5 +1,5 @@
 /**
- * PawCare subscription catalog — source of truth for limits and features.
+ * Pawfect subscription catalog — source of truth for limits and features.
  * Display/reference INR prices must match App Store India tiers (and Play).
  * Checkout always uses localized store prices via RevenueCat.
  */

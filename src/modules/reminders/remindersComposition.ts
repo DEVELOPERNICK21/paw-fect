@@ -19,7 +19,7 @@ import { UpdateReminder } from './domain/usecases/UpdateReminder';
 const repository = createReminderRepository();
 
 export const REMINDER_NOTIFICATIONS_BLOCKED_MESSAGE =
-  'Notifications are off or blocked. Turn on alerts in Settings and allow Pawsoul in system settings.';
+  'Notifications are off or blocked. Turn on alerts in Settings and allow Pawfect in system settings.';
 
 export const REMINDER_NOTIFICATIONS_BUDGET_MESSAGE =
   "Couldn't schedule reminder alerts — too many care notifications are already scheduled. Remove or adjust other reminders and try again.";

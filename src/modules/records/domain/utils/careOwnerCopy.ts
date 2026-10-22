@@ -104,7 +104,7 @@ export function whySeeingThisBody(params: {
   return (
     `Because ${params.petName} is ${params.ageLabel}. ` +
     `At this age, pets usually have important vaccines and regular worm-treatment needs. ` +
-    `PawSoul uses ${params.petName}'s age, pet type, and your previous records to create reminders. ` +
+    `Pawfect uses ${params.petName}'s age, pet type, and your previous records to create reminders. ` +
     `Your vet decides the actual treatment and timing.`
   );
 }

@@ -73,7 +73,7 @@ export async function ensureNotificationChannels(): Promise<void> {
 
     await notifee.createChannel({
       id: PAWFECT_CHANNEL_GENERAL,
-      name: 'Pawsoul',
+      name: 'Pawfect',
       importance: AndroidImportance.DEFAULT,
       sound: 'default',
       vibration: false,

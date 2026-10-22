@@ -39,7 +39,7 @@ export function shareCardPetSubline(viewModel: PetHealthCardViewModel): string |
 
 export function shareCardIntro(viewModel: PetHealthCardViewModel): string {
   if (viewModel.snapshot.kind === 'empty') {
-    return `We are setting up ${viewModel.pet.name}'s vaccine and deworming plan in Pawsoul. Share this card when you want family to see the plan is on the way.`;
+    return `We are setting up ${viewModel.pet.name}'s vaccine and deworming plan in Pawfect. Share this card when you want family to see the plan is on the way.`;
   }
 
   const overdue = viewModel.snapshot.items.find(item => item.status === 'overdue');
@@ -49,14 +49,14 @@ export function shareCardIntro(viewModel: PetHealthCardViewModel): string {
 
   const next = viewModel.snapshot.items.find(item => item.status !== 'done');
   if (next) {
-    return `${viewModel.pet.name}'s care is tracked in Pawsoul. Share the wins and what is coming up next.`;
+    return `${viewModel.pet.name}'s care is tracked in Pawfect. Share the wins and what is coming up next.`;
   }
 
   return `${viewModel.pet.name} is up to date. Share the latest care wins with people who love your pet.`;
 }
 
 export function shareCardFooterCta(): string {
-  return 'Get the Pawsoul app';
+  return 'Get the Pawfect app';
 }
 
 export function shareCardFooterHint(): string {

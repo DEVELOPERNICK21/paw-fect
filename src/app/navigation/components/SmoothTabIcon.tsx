@@ -9,7 +9,8 @@ const TAB_MATERIAL_ICONS: Record<
   { filled: IconName; outline: IconName }
 > = {
   home: { filled: 'home', outline: 'home_outline' },
-  favorite: { filled: 'favorite', outline: 'favorite_outline' },
+  // Health tab: medical kit reads as health; a heart reads as "favourites".
+  favorite: { filled: 'medical_services', outline: 'medical_services_outline' },
   wellness: { filled: 'wellness', outline: 'wellness_outline' },
   settings: { filled: 'settings', outline: 'settings_outline' },
 };

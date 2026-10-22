@@ -20,6 +20,7 @@ import {
 } from '../../../notifications/store/notificationFeedStore';
 
 import { HomeActionHealthCarousel } from '../components/home/HomeActionHealthCarousel';
+import { HomeCompanion } from '../components/home/HomeCompanion';
 import { HomeAttentionBanner } from '../components/home/HomeAttentionBanner';
 import { HomeDashboardSkeleton } from '../components/home/HomeDashboardSkeleton';
 import { HomeHealthSummaryCard } from '../components/home/HomeHealthSummaryCard';
@@ -240,6 +241,7 @@ export const HomeScreen: React.FC = () => {
                   }}
                   theme={theme}
                 />
+                <HomeCompanion viewModel={viewModel} />
                 <HomeAttentionBanner
                   banner={viewModel.attentionBanner}
                   onPress={goHealthRecords}

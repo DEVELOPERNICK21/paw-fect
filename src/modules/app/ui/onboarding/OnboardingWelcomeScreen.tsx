@@ -186,7 +186,7 @@ export const OnboardingWelcomeScreen: React.FC = () => {
             accessibilityIgnoresInvertColors
           />
           <Text style={[styles.brandName, { fontFamily: fontFamilies.bold }]}>
-            Pawsoul
+            Pawfect
           </Text>
         </View>
 

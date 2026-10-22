@@ -85,7 +85,7 @@ export const TrustOpenStep: React.FC = () => {
           ]}
         />
         <Text style={[styles.subtitle, { fontFamily: fontFamilies.medium }]}>
-          Pawsoul is built for pet parents who worry they&apos;ve missed a
+          Pawfect is built for pet parents who worry they&apos;ve missed a
           vaccine, a walk, or a warning sign — and want to feel calm and in
           control again.
         </Text>

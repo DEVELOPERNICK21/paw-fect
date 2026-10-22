@@ -5,6 +5,7 @@ import { getAppSessionUserId } from '../../shared/session/appSessionPorts';
 import { cancelScheduleBlockNotification } from './data/notifications/scheduleNotificationSync';
 import { createPetRepository } from '../pets/data/repositories/PetRepositoryImpl';
 import { createScheduleRepository } from './data/repositories/ScheduleRepositoryImpl';
+import { CareCompletionEventHub } from './application/CareCompletionEventHub';
 import { BuildDailySchedule } from './domain/usecases/BuildDailySchedule';
 import { GetSchedulePreferences } from './domain/usecases/GetSchedulePreferences';
 import { MarkCareBlockDone } from './domain/usecases/MarkCareBlockDone';
@@ -12,6 +13,7 @@ import { MigrateWellnessTasksToBlockStates } from './domain/usecases/MigrateWell
 import { SaveSchedulePreferences } from './domain/usecases/SaveSchedulePreferences';
 import { SkipCareBlock } from './domain/usecases/SkipCareBlock';
 import { SnoozeCareBlock } from './domain/usecases/SnoozeCareBlock';
+import type { CareCompletionEventPort } from './domain/ports/CareCompletionEventPort';
 import type { DailyCareBlock } from './domain/models/DailyCareBlock';
 import type { DailySchedule } from './domain/models/DailySchedule';
 import type { PetSchedulePreferences } from './domain/models/PetProfile';
@@ -26,8 +28,11 @@ const petRepository = createPetRepository();
 const migrateWellnessTasks = new MigrateWellnessTasksToBlockStates(
   scheduleRepository,
 );
+const careCompletionEvents: CareCompletionEventPort = new CareCompletionEventHub();
 
 export const scheduleComposition = {
+  /** Fires once per care task that is genuinely newly completed (after it is saved). */
+  careCompletionEvents,
   buildDailySchedule: new BuildDailySchedule(
     petRepository,
     scheduleRepository,

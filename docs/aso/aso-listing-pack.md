@@ -347,6 +347,6 @@ Files in `docs/aso/assets/` (sources in `assets/src/`, mascot SVGs in `assets/ma
 | `header-21x9.png` / `.jpg` | 3840×1646 | Product page header (21:9) | No alpha channel; text kept inside the central area |
 | `search-3x2.png` / `.jpg` | 3000×2000 | Search results (3:2, allowed range 1920×1280 to 3840×2560) | Large faces and a 5-word headline so it reads at thumbnail size |
 
-Both use the app's own font (Plus Jakarta Sans), brand orange `#F28C28`, and the placeholder mascot art. Re-render after the illustrator delivers the final mascot: edit the HTML in `assets/src/` and run the same headless render at the sizes above.
+Both use the app's own font (Plus Jakarta Sans), brand orange `#F28C28`, and the app's real Rive puppy (`src/shared/assets/rive/pawfect-puppy.riv`, rendered live by `assets/src/rive-mascot.js`). To re-render, serve the `paw-fect/` folder over HTTP and screenshot each HTML in `assets/src/` at the sizes above. The `assets/mascot/` SVGs are the golden-retriever fallback and are not used.
 
 Upload path: App Store Connect → the version page → Header and Search Results → Upload (or the Asset Library) → submit for approval. Apple reviews assets separately from the app build.

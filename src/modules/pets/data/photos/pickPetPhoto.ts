@@ -38,7 +38,7 @@ async function ensureAndroidCameraPermission(): Promise<void> {
   }
   const result = await PermissionsAndroid.request(permission, {
     title: 'Camera permission',
-    message: 'Pawsoul needs camera access so you can take a photo of your pet.',
+    message: 'Pawfect needs camera access so you can take a photo of your pet.',
     buttonPositive: 'OK',
     buttonNegative: 'Cancel',
   });

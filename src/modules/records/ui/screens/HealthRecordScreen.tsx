@@ -1,9 +1,9 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -43,16 +43,16 @@ import {
   validateVaccinationLogDate,
 } from '../../domain/utils/vaccinationLogValidation';
 import { getLastCompletedDewormingIsoDate } from '../../domain/utils/smartHealthDewormingInference';
-import {
-  careWhatLabel,
-  healthStatusHeadline,
-} from '../../domain/utils/careOwnerCopy';
+import { careWhatLabel } from '../../domain/utils/careOwnerCopy';
 import { HealthFullPlanSection } from '../components/HealthFullPlanSection';
 import { HealthHeroBar } from '../components/HealthHeroBar';
+import { HealthMascot } from '../components/HealthMascot';
 import { HealthLogDateSheet } from '../components/HealthLogDateSheet';
+import { HealthSummaryCard } from '../components/HealthSummaryCard';
 import { HealthSaveToast } from '../components/HealthSaveToast';
 import { NeedsNextCareCard } from '../components/NeedsNextCareCard';
 import { WhySeeingThisSection } from '../components/WhySeeingThisSection';
+import { buildHealthSummary } from '../../domain/utils/healthSummary';
 import { projectDewormingFromSmartRecords } from '../utils/projectDewormingFromSmartRecords';
 
 function startOfLocalDay(d: Date): Date {
@@ -226,17 +226,24 @@ export const HealthRecordScreen: React.FC = () => {
     [records],
   );
 
-  const overdueCount = useMemo(
-    () =>
-      records.filter(r => r.status === 'overdue' || r.status === 'missed')
-        .length,
-    [records],
+  const summary = useMemo(
+    () => buildHealthSummary(records, todayDate),
+    [records, todayDate],
   );
-
-  const statusLine = healthStatusHeadline({
-    overdueCount,
-    needsNextCount: needsNext.length,
-  });
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefresh = useCallback(async () => {
+    const petId = usePetStore.getState().activePet?.id;
+    if (!petId) return;
+    setRefreshing(true);
+    try {
+      await useSmartHealthRecordStore.getState().loadPetRecords(petId);
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+  const initialLoading = loading && records.length === 0 && !refreshing;
+  const loadFailed = !loading && records.length === 0 && error != null;
+  const showPlan = !initialLoading && !loadFailed;
 
   const ageLabel = useMemo(
     () => formatPetAgeLabel(activePet?.dob),
@@ -555,6 +562,7 @@ export const HealthRecordScreen: React.FC = () => {
   }
 
   const onTrackEmpty =
+    records.length > 0 &&
     needsNext.length === 0 &&
     !dewormingProjection.primary &&
     planUpcoming.length === 0;
@@ -622,22 +630,98 @@ export const HealthRecordScreen: React.FC = () => {
             gap: spacing.lg,
           }}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => void handleRefresh()}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
+            />
+          }
         >
-          {statusLine ? (
-            <AppText
+          <HealthMascot
+            petId={activePet.id}
+            petName={activePet.name}
+            species={activePet.type === 'cat' ? 'cat' : 'dog'}
+            summary={summary}
+          />
+          {initialLoading ? (
+            <View
+              accessibilityLabel="Loading health plan"
+              style={{ gap: spacing.md }}
+            >
+              {[0, 1, 2].map(i => (
+                <View
+                  key={i}
+                  style={{
+                    height: i === 0 ? 92 : 120,
+                    borderRadius: radius.xl,
+                    backgroundColor: colors.surfaceAlt,
+                    opacity: 0.7 - i * 0.15,
+                  }}
+                />
+              ))}
+            </View>
+          ) : loadFailed ? (
+            <View
               style={[
-                textStyles.body,
+                styles.emptyActionHint,
                 {
-                  color: colors.primaryDark,
-                  fontFamily: fontFamilies.semibold,
+                  backgroundColor: colors.surface,
+                  borderColor: colors.borderSubtle,
+                  borderRadius: radius.xl,
+                  padding: spacing.lg,
+                  gap: spacing.sm,
                 },
               ]}
             >
-              {statusLine}
-              {' ❤️'}
-            </AppText>
-          ) : null}
+              <AppText
+                style={[
+                  textStyles.subtitle,
+                  { color: colors.text.heading, fontFamily: fontFamilies.bold },
+                ]}
+              >
+                Couldn&apos;t load {activePet.name}&apos;s plan
+              </AppText>
+              <AppText
+                style={[textStyles.caption, { color: colors.text.secondary }]}
+              >
+                Check your connection, then try again.
+              </AppText>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Try again"
+                onPress={() => void handleRefresh()}
+                style={[
+                  styles.modalActionBtn,
+                  {
+                    flex: 0,
+                    borderColor: colors.primary,
+                    borderRadius: radius.md,
+                    alignSelf: 'flex-start',
+                    paddingHorizontal: spacing.lg,
+                  },
+                ]}
+              >
+                <AppText
+                  style={[
+                    textStyles.body,
+                    {
+                      color: colors.primaryDark,
+                      fontFamily: fontFamilies.semibold,
+                    },
+                  ]}
+                >
+                  Try again
+                </AppText>
+              </Pressable>
+            </View>
+          ) : (
+            <HealthSummaryCard petName={activePet.name} summary={summary} />
+          )}
 
+          {showPlan ? (
+            <>
           <View style={{ gap: spacing.sm }}>
             <AppText
               style={[
@@ -729,6 +813,8 @@ export const HealthRecordScreen: React.FC = () => {
           />
 
           <HealthFullPlanSection records={records} />
+            </>
+          ) : null}
 
           {error ? (
             <AppText
@@ -756,11 +842,6 @@ export const HealthRecordScreen: React.FC = () => {
           </AppText>
         </ScrollView>
 
-        {loading ? (
-          <View style={styles.loadingOverlay}>
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
-        ) : null}
       </View>
 
       <Modal
@@ -1040,15 +1121,6 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: 'center',
     gap: 12,
-  },
-  loadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   modalBackdrop: {
     flex: 1,

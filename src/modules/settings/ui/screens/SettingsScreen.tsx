@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Image,
+  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -22,12 +23,14 @@ import { UserAvatar } from '../../../../shared/components/UserAvatar';
 import { icons } from '../../../../shared/assets/icons';
 import { images } from '../../../../shared/assets/images';
 import { APP_VERSION_LABEL } from '../../../../shared/constants/appMeta';
+import {
+  PRIVACY_POLICY_URL,
+  TERMS_OF_USE_URL,
+} from '../../../../shared/constants/releaseBackend';
 import { trackEvent } from '../../../../infrastructure/analytics/analytics';
 import {
-  countPendingReminderNotifications,
   countPendingTriggerNotifications,
   ensureNotificationsReady,
-  scheduleNotificationSelfTest,
 } from '../../../../infrastructure/notifications/notificationDiagnostics';
 import { notificationService } from '../../../../infrastructure/notifications/notificationService';
 import { resyncAllLocalNotifications } from '../../../../infrastructure/notifications/resyncLocalNotifications';
@@ -135,7 +138,7 @@ export const SettingsScreen: React.FC = () => {
         if (!granted) {
           Alert.alert(
             'Notifications blocked',
-            'Allow notifications and Alarms & reminders for Pawsoul, then try again.',
+            'Allow notifications and Alarms & reminders for Pawfect, then try again.',
           );
           return;
         }
@@ -174,7 +177,7 @@ export const SettingsScreen: React.FC = () => {
       if (!granted) {
         Alert.alert(
           'Notifications blocked',
-          'Allow notifications for Pawsoul and enable Alarms & reminders in system settings, then try again.',
+          'Allow notifications for Pawfect and enable Alarms & reminders in system settings, then try again.',
         );
         return;
       }
@@ -184,54 +187,13 @@ export const SettingsScreen: React.FC = () => {
     })();
   };
 
-  const handleNotificationTest = () => {
-    void (async () => {
-      if (!settings?.notificationsEnabled) {
-        Alert.alert(
-          'Notifications are off',
-          'Turn on Notifications in Settings first.',
-        );
-        return;
-      }
-      const granted = await ensureNotificationsReady();
-      if (!granted) {
-        Alert.alert(
-          'Notifications blocked',
-          'Allow notifications for Pawsoul in system settings, then try again.',
-        );
-        return;
-      }
-      try {
-        const activePet =
-          usePetStore.getState().activePet ?? usePetStore.getState().pets[0];
-        const { scheduledDate, soundProfile } = await scheduleNotificationSelfTest(
-          undefined,
-          activePet != null
-            ? {
-                petSpecies: activePet.type,
-                tone: 'active',
-                tier: 'urgent',
-              }
-            : undefined,
-        );
-        const pending = await countPendingTriggerNotifications();
-        const reminderPending = await countPendingReminderNotifications();
-        const soundLine =
-          soundProfile != null
-            ? ` Uses custom sound: ${soundProfile}.`
-            : ' Add a pet profile to preview custom dog/cat sounds.';
-        Alert.alert(
-          'Test scheduled',
-          `You should get a test alert around ${scheduledDate.toLocaleTimeString()}.${soundLine} ${pending} scheduled alert(s) are queued on this device (${reminderPending} reminder).`,
-        );
-      } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : 'Could not schedule a test notification.';
-        Alert.alert('Test failed', message);
-      }
-    })();
+  const openLegalPage = (url: string) => {
+    Linking.openURL(url).catch(() => {
+      Alert.alert(
+        'Could not open the page',
+        'Check your connection and try again.',
+      );
+    });
   };
 
   const toggleEmail = () => {
@@ -431,23 +393,6 @@ export const SettingsScreen: React.FC = () => {
               />
             </View>
 
-            <Pressable style={styles.actionRow} onPress={handleNotificationTest}>
-              <View style={styles.rowLeft}>
-                <View style={styles.rowIcon}>
-                  <MaterialIcon name="schedule" size={20} color={colors.accent} />
-                </View>
-                <View>
-                  <Text style={[styles.rowTitle, { fontFamily: fontFamilies.semibold }]}>
-                    Send test notification
-                  </Text>
-                  <Text style={[styles.rowSubtitle, { fontFamily: fontFamilies.medium }]}>
-                    Fires in about 2 minutes
-                  </Text>
-                </View>
-              </View>
-              <MaterialIcon name="chevron_right" size={20} color={colors.accent} />
-            </Pressable>
-
             <Pressable
               style={styles.actionRow}
               onPress={handleRefreshAllReminders}
@@ -601,7 +546,7 @@ export const SettingsScreen: React.FC = () => {
                   />
                 </View>
                 <View>
-                  <Text style={[styles.rowTitle, { fontFamily: fontFamilies.semibold }]}>PawCare plans</Text>
+                  <Text style={[styles.rowTitle, { fontFamily: fontFamilies.semibold }]}>Pawfect plans</Text>
                   <Text style={[styles.rowSubtitle, { fontFamily: fontFamilies.medium }]}>
                     {formatSubscriptionStatusLine(entitlement)}
                   </Text>
@@ -669,7 +614,12 @@ export const SettingsScreen: React.FC = () => {
               <MaterialIcon name="chevron_right" size={20} color={colors.text.subdued} />
             </Pressable>
 
-            <Pressable style={styles.actionRow}>
+            <Pressable
+              style={styles.actionRow}
+              onPress={() => openLegalPage(PRIVACY_POLICY_URL)}
+              accessibilityRole="link"
+              accessibilityLabel="Privacy Policy"
+            >
               <View style={styles.rowLeft}>
                 <View style={styles.rowIconNeutral}>
                   <MaterialIcon name="lock" size={20} color={colors.text.body} />
@@ -677,6 +627,24 @@ export const SettingsScreen: React.FC = () => {
                 <View>
                   <Text style={[styles.rowTitle, { fontFamily: fontFamilies.semibold }]}>Privacy Policy</Text>
                   <Text style={[styles.rowSubtitle, { fontFamily: fontFamilies.medium }]}>How we protect your data</Text>
+                </View>
+              </View>
+              <MaterialIcon name="chevron_right" size={20} color={colors.text.subdued} />
+            </Pressable>
+
+            <Pressable
+              style={styles.actionRow}
+              onPress={() => openLegalPage(TERMS_OF_USE_URL)}
+              accessibilityRole="link"
+              accessibilityLabel="Terms of Use"
+            >
+              <View style={styles.rowLeft}>
+                <View style={styles.rowIconNeutral}>
+                  <MaterialIcon name="info" size={20} color={colors.text.body} />
+                </View>
+                <View>
+                  <Text style={[styles.rowTitle, { fontFamily: fontFamilies.semibold }]}>Terms of Use</Text>
+                  <Text style={[styles.rowSubtitle, { fontFamily: fontFamilies.medium }]}>The rules for using Pawfect</Text>
                 </View>
               </View>
               <MaterialIcon name="chevron_right" size={20} color={colors.text.subdued} />
@@ -690,7 +658,7 @@ export const SettingsScreen: React.FC = () => {
             <Text style={[styles.logoutText, { fontFamily: fontFamilies.bold }]}>Logout</Text>
           </Pressable>
           <Text style={[styles.versionText, { fontFamily: fontFamilies.regular }]}>
-            Pawsoul • {APP_VERSION_LABEL} • Made with love for pets
+            Pawfect • {APP_VERSION_LABEL} • Made with love for pets
           </Text>
         </View>
       </ScrollView>
@@ -709,7 +677,7 @@ export const SettingsScreen: React.FC = () => {
               Choose a pet to delete
             </Text>
             <Text style={[styles.modalHint, { fontFamily: fontFamilies.medium, color: colors.text.body }]}>
-              This removes the pet from Pawsoul. This cannot be undone.
+              This removes the pet from Pawfect. This cannot be undone.
             </Text>
             <ScrollView
               style={styles.modalList}

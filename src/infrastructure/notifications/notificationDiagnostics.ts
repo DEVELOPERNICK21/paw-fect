@@ -131,8 +131,8 @@ export async function scheduleNotificationSelfTest(
   if (!granted) {
     throw new Error(
       Platform.OS === 'android'
-        ? 'Allow notifications and turn on "Alarms & reminders" for Pawsoul in system settings, then try again.'
-        : 'Notification permission was not granted. Allow alerts for Pawsoul in system settings.',
+        ? 'Allow notifications and turn on "Alarms & reminders" for Pawfect in system settings, then try again.'
+        : 'Notification permission was not granted. Allow alerts for Pawfect in system settings.',
     );
   }
 
@@ -151,7 +151,7 @@ export async function scheduleNotificationSelfTest(
   const scheduledDate = new Date(Date.now() + delayMs);
   await notificationService.scheduleNotification({
     id: TEST_NOTIFICATION_ID,
-    title: 'Pawsoul test notification',
+    title: 'Pawfect test notification',
     body:
       options?.petSpecies != null
         ? `Custom ${options.petSpecies} alert sound (${tone}, ${tier}). Scheduled delivery works on this device.`

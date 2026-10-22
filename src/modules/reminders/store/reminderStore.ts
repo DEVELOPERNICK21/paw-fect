@@ -58,7 +58,7 @@ export const useReminderStore = create<ReminderState>((set, get) => ({
       const granted = await ensureNotificationsReady();
       if (!granted) {
         throw new Error(
-          'Notifications are off or blocked. Turn on alerts in Settings and allow Pawsoul in system settings.',
+          'Notifications are off or blocked. Turn on alerts in Settings and allow Pawfect in system settings.',
         );
       }
       const created = await remindersComposition.createReminder.execute(reminder);

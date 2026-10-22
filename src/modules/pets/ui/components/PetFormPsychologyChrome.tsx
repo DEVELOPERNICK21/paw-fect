@@ -129,7 +129,7 @@ export const PetFormPsychologyChrome: React.FC<PetFormPsychologyChromeProps> = (
             Your care timeline is reserved
           </Text>
           <Text style={[styles.giftBody, { fontFamily: fontFamilies.regular }]}>
-            As soon as you add a name and birthday, Pawsoul unlocks a vet-aligned
+            As soon as you add a name and birthday, Pawfect unlocks a vet-aligned
             vaccine and deworming plan for {giftName}. No blank start.
           </Text>
         </View>

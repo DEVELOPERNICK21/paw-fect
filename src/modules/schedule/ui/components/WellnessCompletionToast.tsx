@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../../../../shared/components/AppText';
-import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
+import { companionLines } from '../../../../shared/components/Companion';
+import { Mascot, type MascotSpecies } from '../../../../shared/components/Mascot';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 
 export type CareRewardKind = 'task' | 'day';
@@ -15,6 +16,7 @@ export interface WellnessCompletionToastProps {
   rewardKind?: CareRewardKind;
   streakDays?: number;
   taskLabel?: string;
+  species?: MascotSpecies;
 }
 
 export const WellnessCompletionToast: React.FC<WellnessCompletionToastProps> = ({
@@ -24,6 +26,7 @@ export const WellnessCompletionToast: React.FC<WellnessCompletionToastProps> = (
   rewardKind = 'task',
   streakDays = 0,
   taskLabel,
+  species = 'dog',
 }) => {
   const { colors, spacing, radius, textStyles, fontFamilies, shadows } =
     useTheme();
@@ -54,13 +57,10 @@ export const WellnessCompletionToast: React.FC<WellnessCompletionToastProps> = (
           gap: spacing.md,
         },
         iconWell: {
-          width: 40,
-          height: 40,
-          borderRadius: radius.round,
+          width: 52,
+          height: 52,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor:
-            rewardKind === 'day' ? colors.brandTint12 : colors.successSurface,
         },
         textCol: { flex: 1, minWidth: 0, gap: 2 },
         xpChip: {
@@ -121,19 +121,18 @@ export const WellnessCompletionToast: React.FC<WellnessCompletionToastProps> = (
     return null;
   }
 
-  const title =
-    rewardKind === 'day'
-      ? `${petName}'s day is complete`
-      : taskLabel
-        ? `${petName} · ${taskLabel}`
-        : `${petName}'s care task is done`;
+  const [title] = companionLines({
+    scene: 'celebrate',
+    kind: rewardKind,
+    petName,
+  });
 
   const subtitle =
     rewardKind === 'day'
       ? streakDays > 0
         ? `Streak · ${streakDays} day${streakDays === 1 ? '' : 's'} · +5 care points`
         : 'Streak started · +5 care points'
-      : '+1 care point';
+      : `${taskLabel ? `${taskLabel} · ` : ''}+1 care point`;
 
   return (
     <Animated.View
@@ -145,10 +144,14 @@ export const WellnessCompletionToast: React.FC<WellnessCompletionToastProps> = (
     >
       <View style={styles.banner}>
         <View style={styles.iconWell}>
-          <MaterialIcon
-            name={rewardKind === 'day' ? 'favorite' : 'check'}
-            size={20}
-            color={rewardKind === 'day' ? colors.accent : colors.success}
+          <Mascot
+            mood={rewardKind === 'day' ? 'celebrating' : 'happy'}
+            species={species}
+            size={52}
+            reactionRequest={{
+              reaction: rewardKind === 'day' ? 'celebrate' : 'success',
+              id: 'completion-toast',
+            }}
           />
         </View>
         <View style={styles.textCol}>

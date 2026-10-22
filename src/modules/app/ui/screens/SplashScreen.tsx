@@ -145,7 +145,7 @@ export const SplashScreen: React.FC = () => {
       <View style={styles.main}>
         <View style={styles.topSection}>
           <SplashBrandSection
-            title="Pawsoul"
+            title="Pawfect"
             subtitle="Fetching your pet's world"
             iconAnimatedStyle={{
               transform: [{ scale: logoScale }, { translateY: logoFloatY }],

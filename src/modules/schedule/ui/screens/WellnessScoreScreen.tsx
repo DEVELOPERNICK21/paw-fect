@@ -60,7 +60,7 @@ export const WellnessScoreScreen: React.FC = () => {
             <MaterialIcon name="arrow_back" size={22} color={colors.text.heading} />
           </Pressable>
           <AppText style={[textStyles.title, { color: colors.text.heading }]}>
-            Wellness report is part of Pawsoul+
+            Wellness report is part of Pawfect+
           </AppText>
         </View>
       </SafeAreaView>
@@ -100,7 +100,7 @@ export const WellnessScoreScreen: React.FC = () => {
           </AppText>
           {!isPro ? (
             <AppText style={[textStyles.footer, { color: colors.text.subdued }]}>
-              Made with Pawsoul
+              Made with Pawfect
             </AppText>
           ) : null}
         </View>

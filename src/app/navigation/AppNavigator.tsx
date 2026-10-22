@@ -1,6 +1,7 @@
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import React from 'react';
+import React, { useEffect } from 'react';
+import { startBuddyBond } from '../../modules/schedule/store/buddyBondStore';
 import { PawTabBar } from './components/PawTabBar';
 import type { AppTabParamList } from './types';
 import { HealthStackNavigator } from './stacks/HealthStackNavigator';
@@ -32,6 +33,9 @@ const floatingTabBarStyle = {
 };
 
 export const AppNavigator = React.memo(function AppNavigator() {
+  // Earn bond points from care completions for the whole app session.
+  useEffect(() => startBuddyBond(), []);
+
   return (
     <Tab.Navigator
       tabBar={renderPawTabBar}

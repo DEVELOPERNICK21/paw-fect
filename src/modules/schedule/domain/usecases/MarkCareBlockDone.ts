@@ -8,10 +8,15 @@ export interface MarkCareBlockDoneInput {
   completed: boolean;
 }
 
+export interface MarkCareBlockDoneResult {
+  /** `true` only when this call moved the block from not-completed to completed. */
+  completionChanged: boolean;
+}
+
 export class MarkCareBlockDone {
   constructor(private readonly scheduleRepository: ScheduleRepository) {}
 
-  async execute(input: MarkCareBlockDoneInput): Promise<void> {
+  async execute(input: MarkCareBlockDoneInput): Promise<MarkCareBlockDoneResult> {
     const existing = (
       await this.scheduleRepository.getBlockStates(
         input.userId,
@@ -31,5 +36,9 @@ export class MarkCareBlockDone {
         skippedAt: null,
       },
     );
+
+    return {
+      completionChanged: input.completed && existing?.completedAt == null,
+    };
   }
 }

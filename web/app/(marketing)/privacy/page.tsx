@@ -48,7 +48,7 @@ export default async function PrivacyPage(): Promise<React.ReactElement> {
         <p>This Privacy Policy applies to:</p>
         <ul>
           <li>The Pawfect mobile application (Android / iOS)</li>
-          <li>Our website at pawsoul.app</li>
+          <li>The Pawfect website</li>
           <li>Any related services or communications from Pawfect</li>
         </ul>
 

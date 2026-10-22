@@ -272,7 +272,7 @@ export const DayCareBlockCard: React.FC<DayCareBlockCardProps> = React.memo(
               <View style={styles.actions}>
                 {locked ? (
                   <Button
-                    title="Unlock with Pawsoul+"
+                    title="Unlock with Pawfect+"
                     onPress={onOpenActions}
                     style={styles.actionButton}
                   />

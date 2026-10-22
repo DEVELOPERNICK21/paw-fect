@@ -101,7 +101,7 @@ export function buildShareSheetOptions(input: {
     message: Platform.OS === 'android' && !isDataUri ? input.message : undefined,
     url: imageUri,
     type: 'image/png',
-    filename: 'pawsoul-health-card.png',
+    filename: 'pawfect-health-card.png',
     failOnCancel: false,
   };
 }

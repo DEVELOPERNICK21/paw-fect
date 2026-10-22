@@ -12,3 +12,7 @@ export const RELEASE_BACKEND_BASE_URL = 'https://paw-fect.vercel.app';
  * v1.1 will swap this for per-pet deep-link tokens.
  */
 export const SHARE_INSTALL_URL = `${RELEASE_BACKEND_BASE_URL}/download`;
+
+/** Public legal pages served by the marketing site (also used in store listings). */
+export const PRIVACY_POLICY_URL = `${RELEASE_BACKEND_BASE_URL}/privacy`;
+export const TERMS_OF_USE_URL = `${RELEASE_BACKEND_BASE_URL}/terms`;

@@ -159,7 +159,7 @@ export const LoginScreen: React.FC = () => {
             >
               <Image source={images.appIcon} style={styles.brandIcon} />
             </Animated.View>
-            <AppText style={styles.brandTitle}>Pawsoul</AppText>
+            <AppText style={styles.brandTitle}>Pawfect</AppText>
             <AppText style={styles.brandSubtitle}>
               {showActivationContinuityCopy
                 ? `Save ${planPetLabel}'s reminder`

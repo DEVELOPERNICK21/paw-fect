@@ -40,6 +40,7 @@ import { CarePetFilter } from '../components/CarePetFilter';
 import { CarePlayHud } from '../components/CarePlayHud';
 import { CareUpNextList } from '../components/CareUpNextList';
 import { CareBlockDetailSheet } from '../components/CareBlockDetailSheet';
+import { CareMascot } from '../components/CareMascot';
 import {
   type CareRewardKind,
   WellnessCompletionToast,
@@ -145,6 +146,8 @@ export const WellnessHubScreen: React.FC = () => {
     [blocksByPetId, careFilterPetId, carePets, isPro],
   );
 
+  const mascotSpecies =
+    pets.find(pet => pet.id === careFilterPetId)?.type ?? pets[0]?.type ?? 'dog';
   const attentionCount = careView.openCount;
   const caption =
     pets.length === 0
@@ -291,6 +294,7 @@ export const WellnessHubScreen: React.FC = () => {
         <WellnessCompletionToast
           visible={rewardToast != null}
           petName={rewardToast?.petName ?? ''}
+          species={mascotSpecies === 'cat' ? 'cat' : 'dog'}
           rewardKind={rewardToast?.kind}
           streakDays={rewardToast?.streakDays}
           taskLabel={rewardToast?.taskLabel}
@@ -350,6 +354,16 @@ export const WellnessHubScreen: React.FC = () => {
           </View>
         ) : (
           <>
+            <CareMascot
+              species={mascotSpecies === 'cat' ? 'cat' : 'dog'}
+              careView={careView}
+              petFilter={careFilterPetId}
+              petName={
+                careFilterPetId === 'all'
+                  ? undefined
+                  : pets.find(p => p.id === careFilterPetId)?.name
+              }
+            />
             <View style={styles.attentionWrap}>
               <CareDoneBurst
                 visible={burstVisible}

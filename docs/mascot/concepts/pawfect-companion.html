@@ -1,0 +1,172 @@
+<!doctype html><meta charset=utf-8><title>Pawfect Companion</title>
+<style>
+body{margin:0;font:15px system-ui;background:#10151f;color:#eee;padding:24px}
+h1{font-size:20px;margin:0 0 4px}p{margin:0 0 14px;color:#9aa6b8}
+.row{display:flex;gap:18px;flex-wrap:wrap}
+.stage{width:250px;height:330px;border-radius:24px;display:flex;align-items:flex-end;justify-content:center;overflow:hidden}
+.dark{background:radial-gradient(circle at 50% 40%,#22304a,#121a29)}
+.light{background:linear-gradient(160deg,#fff0d9,#ffe3ea)}
+.stage svg{width:214px;height:300px;overflow:visible}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+button{border:0;border-radius:999px;padding:9px 16px;font:600 14px system-ui;background:#2a3550;color:#fff;cursor:pointer}
+button.on{background:#EE8C2B;color:#2b1608}
+.mini{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.chip{width:86px;height:116px;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px}
+.chip svg{width:52px;height:74px;overflow:visible}
+.chip.dark{background:#141b27;color:#9aa6b8}.chip.light{background:#fff3e6;color:#8a6a4a}
+@keyframes bob{0%,100%{transform:translateY(0) scale(1,1)}50%{transform:translateY(-3px) scale(1.012,.99)}}
+@keyframes hop{0%,100%{transform:translateY(0) scale(1,1)}20%{transform:scale(1.05,.93)}50%{transform:translateY(-24px) scale(.97,1.04)}80%{transform:scale(1.04,.95)}}
+@keyframes tilt{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}96%{transform:scaleY(.08)}}
+@keyframes wave{0%,100%{transform:rotate(0)}50%{transform:rotate(-40deg)}}
+@keyframes glow{0%,100%{opacity:.75}50%{opacity:1}}
+@keyframes ant{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(6deg)}}
+@keyframes twinkle{0%,100%{opacity:.25;transform:scale(.7)}50%{opacity:1;transform:scale(1.1)}}
+@keyframes floaty{0%{opacity:0;transform:translateY(8px)}30%{opacity:1}100%{opacity:0;transform:translateY(-22px)}}
+@keyframes fall{0%{transform:translateY(-30px) rotate(0);opacity:0}15%{opacity:1}100%{transform:translateY(260px) rotate(300deg);opacity:1}}
+.fx{transform-box:fill-box;transform-origin:50% 100%}
+.body{transform-box:fill-box;transform-origin:50% 100%;animation:bob 3s ease-in-out infinite}
+.m-celebrating .body{animation:hop 1.1s ease-in-out infinite}
+.m-sleepy .body{animation-duration:5s}
+.head{transform-box:view-box;transform-origin:100px 150px}
+.m-curious .head{animation:tilt 2.6s ease-in-out infinite}
+.eyes{transform-box:fill-box;transform-origin:50% 50%;animation:blink 4.5s infinite}
+.arm{transform-box:fill-box;transform-origin:50% 10%}
+.m-wave .armR{animation:wave .7s ease-in-out infinite}
+.bulb{animation:glow 2s ease-in-out infinite}
+.ant{transform-box:view-box;animation:ant 3s ease-in-out infinite}
+.tw{transform-box:fill-box;transform-origin:center;animation:twinkle 1.6s ease-in-out infinite}
+.fl{animation:floaty 2.4s ease-in-out infinite}
+.conf rect{animation:fall 2.8s linear infinite}
+g[data-x]{display:none}
+.m-celebrating g[data-x~=celebrating],.m-proud g[data-x~=proud],.m-curious g[data-x~=curious],.m-nudge g[data-x~=nudge],.m-thinking g[data-x~=thinking],.m-sleepy g[data-x~=sleepy],.m-wave g[data-x~=wave],.m-happy g[data-x~=happy],.m-caring g[data-x~=caring]{display:inline}
+</style>
+<h1>Pawfect Companion, vector build</h1>
+<p>Layered depth plus a soft felt-plush texture (grain, bump lighting, fuzzy edges). Nine moods.</p>
+<svg width="0" height="0" style="position:absolute"><defs>
+<radialGradient id="hood" cx="35%" cy="25%" r="90%"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".6" stop-color="#FBF1E4"/><stop offset="1" stop-color="#EBD9C4"/></radialGradient>
+<radialGradient id="face" cx="38%" cy="28%" r="90%"><stop offset="0" stop-color="#FFDC8C"/><stop offset=".5" stop-color="#FABA4E"/><stop offset="1" stop-color="#F0983A"/></radialGradient>
+<linearGradient id="jacket" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFAE55"/><stop offset="1" stop-color="#EE8C2B"/></linearGradient>
+<radialGradient id="bulb" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#FFF6B0"/><stop offset=".6" stop-color="#FFDB4D"/><stop offset="1" stop-color="#F7B500"/></radialGradient>
+<radialGradient id="halo" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FFE56B" stop-opacity=".55"/><stop offset="1" stop-color="#FFE56B" stop-opacity="0"/></radialGradient>
+<linearGradient id="shoe" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#EAD7C0"/></linearGradient>
+<linearGradient id="cup" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4A4A57"/><stop offset="1" stop-color="#23232C"/></linearGradient>
+<radialGradient id="hoodIn" cx="50%" cy="50%" r="50%"><stop offset=".7" stop-color="#C9A67F" stop-opacity="0"/><stop offset="1" stop-color="#B98F63" stop-opacity=".22"/></radialGradient>
+<linearGradient id="faceTop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8A4A12" stop-opacity=".14"/><stop offset=".35" stop-color="#8A4A12" stop-opacity="0"/></linearGradient>
+<linearGradient id="faceBot" x1="0" y1="0" x2="0" y2="1"><stop offset=".7" stop-color="#C46A10" stop-opacity="0"/><stop offset="1" stop-color="#C46A10" stop-opacity=".35"/></linearGradient>
+<radialGradient id="blush" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FF7F6E" stop-opacity="1"/><stop offset="1" stop-color="#FF7F6E" stop-opacity="0"/></radialGradient>
+<linearGradient id="jShade" x1="0" y1="0" x2="0" y2="1"><stop offset=".45" stop-color="#B8560A" stop-opacity="0"/><stop offset="1" stop-color="#B8560A" stop-opacity=".45"/></linearGradient>
+<linearGradient id="shorts" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#454555"/><stop offset="1" stop-color="#22222B"/></linearGradient>
+<radialGradient id="hand" cx="35%" cy="30%" r="80%"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#F0D9BC"/></radialGradient>
+<radialGradient id="star" cx="35%" cy="30%" r="80%"><stop offset="0" stop-color="#FFD98A"/><stop offset="1" stop-color="#F08A1E"/></radialGradient>
+<linearGradient id="stalk" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#E9822A"/><stop offset="1" stop-color="#FFC24D"/></linearGradient>
+<linearGradient id="pack" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4A4A58"/><stop offset="1" stop-color="#262630"/></linearGradient>
+<radialGradient id="ao" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#000" stop-opacity=".38"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+<filter id="plush" x="-6%" y="-6%" width="112%" height="112%" color-interpolation-filters="sRGB">
+<feTurbulence type="fractalNoise" baseFrequency="0.62" numOctaves="2" seed="7" result="noise"/>
+<feDiffuseLighting in="noise" lighting-color="#ffffff" surfaceScale="0.9" diffuseConstant="1" result="lit"><feDistantLight azimuth="235" elevation="62"/></feDiffuseLighting>
+<feComponentTransfer in="lit" result="soft"><feFuncR type="linear" slope=".32" intercept=".74"/><feFuncG type="linear" slope=".32" intercept=".74"/><feFuncB type="linear" slope=".32" intercept=".74"/></feComponentTransfer>
+<feComposite in="soft" in2="SourceAlpha" operator="in" result="litClip"/>
+<feBlend in="SourceGraphic" in2="litClip" mode="multiply" result="textured"/>
+<feTurbulence type="fractalNoise" baseFrequency="0.4" numOctaves="2" seed="3" result="rough"/>
+<feDisplacementMap in="textured" in2="rough" scale="1.4" xChannelSelector="R" yChannelSelector="G" result="fuzzy"/>
+<feGaussianBlur in="fuzzy" stdDeviation="0.2"/>
+</filter>
+</defs></svg>
+<div class="btns" id="btns"></div>
+<div class="row" id="stages"></div>
+<p style="margin-top:20px">At app size (56 px wide), dark and light</p>
+<div class="mini" id="mini"></div>
+<script>
+const E={
+ happy:{eyes:'open',mouth:'grin',cheek:.55},
+ wave:{eyes:'open',mouth:'grin',cheek:.6},
+ curious:{eyes:'open',mouth:'o',cheek:.5,look:[4,-2]},
+ nudge:{eyes:'open',mouth:'soft',cheek:.45,look:[0,1],worry:1},
+ thinking:{eyes:'open',mouth:'flat',cheek:.4,look:[-5,-5]},
+ proud:{eyes:'happy',mouth:'smile',cheek:.8},
+ caring:{eyes:'open',mouth:'smile',cheek:.7},
+ celebrating:{eyes:'happy',mouth:'wow',cheek:.8},
+ sleepy:{eyes:'sleep',mouth:'tiny',cheek:.45}
+};
+const dk='#2B1608';
+function eye(cx,e){const l=e.look||[0,0];
+ if(e.eyes==='happy')return `<path d="M${cx-8} 112 Q${cx} 99 ${cx+8} 112" fill="none" stroke="${dk}" stroke-width="4.6" stroke-linecap="round"/>`;
+ if(e.eyes==='sleep')return `<path d="M${cx-8} 106 Q${cx} 115 ${cx+8} 106" fill="none" stroke="${dk}" stroke-width="4.6" stroke-linecap="round"/>`;
+ return `<ellipse cx="${cx+l[0]}" cy="${109+l[1]}" rx="6" ry="8.6" fill="${dk}"/><circle cx="${cx+l[0]+1.9}" cy="${109+l[1]-3.4}" r="2.3" fill="#fff"/>`}
+function mouth(m){return `<g transform="translate(0 4)">`+{
+ grin:`<path d="M90 118 Q100 134 110 118 Z" fill="#5B2A12" stroke="#5B2A12" stroke-width="3" stroke-linejoin="round"/><ellipse cx="100" cy="127" rx="5.5" ry="3.4" fill="#FF8FA3"/>`,
+ smile:`<path d="M91 119 Q100 128 109 119" fill="none" stroke="${dk}" stroke-width="3.8" stroke-linecap="round"/>`,
+ wow:`<ellipse cx="100" cy="124" rx="8" ry="9.5" fill="#5B2A12"/><ellipse cx="100" cy="130" rx="5" ry="3.4" fill="#FF8FA3"/>`,
+ o:`<ellipse cx="100" cy="123" rx="4.5" ry="5.5" fill="#5B2A12"/>`,
+ soft:`<path d="M93 122 Q100 126 107 122" fill="none" stroke="${dk}" stroke-width="3.6" stroke-linecap="round"/>`,
+ flat:`<path d="M94 123 Q100 121 106 123" fill="none" stroke="${dk}" stroke-width="3.6" stroke-linecap="round"/>`,
+ tiny:`<ellipse cx="100" cy="123" rx="3.6" ry="2.8" fill="${dk}"/>`}[m]+`</g>`}
+function star(x,y,s,d){return `<g class="tw" style="animation-delay:${d}s"><path d="M${x} ${y-s} L${x+s*.3} ${y-s*.3} L${x+s} ${y} L${x+s*.3} ${y+s*.3} L${x} ${y+s} L${x-s*.3} ${y+s*.3} L${x-s} ${y} L${x-s*.3} ${y-s*.3} Z" fill="#FFD34D"/></g>`}
+const starP=(x,y,s,c)=>`<path transform="translate(${x} ${y}) scale(${s})" d="M0 -9 L2.6 -3 L9 -2.6 L4 1.8 L5.6 8 L0 4.6 L-5.6 8 L-4 1.8 L-9 -2.6 L-2.6 -3 Z" fill="${c}"/>`;
+function arms(name){
+ const sleeve=(x,rot)=>`<ellipse cx="${x}" cy="176" rx="14" ry="26" transform="rotate(${rot} ${x} 176)" fill="url(#jacket)"/><ellipse cx="${x}" cy="176" rx="14" ry="26" transform="rotate(${rot} ${x} 176)" fill="url(#jShade)"/><ellipse cx="${x-4}" cy="162" rx="4" ry="11" transform="rotate(${rot} ${x} 176)" fill="#fff" opacity=".28"/>`;
+ const cuff=(x,y,r)=>`<ellipse cx="${x}" cy="${y}" rx="12" ry="5.5" transform="rotate(${r} ${x} ${y})" fill="#FFF3E2" stroke="#E7CFAF" stroke-width="1.2"/>`;
+ const hand=(x,y)=>`<circle cx="${x}" cy="${y}" r="10" fill="url(#hand)" stroke="#E4C9A6" stroke-width="1.3"/><ellipse cx="${x-3}" cy="${y-4}" rx="3" ry="2" fill="#fff" opacity=".8"/>`;
+ if(name==='celebrating')return `<g class="arm">${sleeve(44,28)}${cuff(36,154,28)}${hand(33,148)}</g><g class="arm">${sleeve(156,-28)}${cuff(164,154,-28)}${hand(167,148)}</g>`;
+ if(name==='caring')return `<g class="arm"><ellipse cx="64" cy="180" rx="14" ry="23" transform="rotate(-50 64 180)" fill="url(#jacket)"/><ellipse cx="64" cy="180" rx="14" ry="23" transform="rotate(-50 64 180)" fill="url(#jShade)"/>${cuff(77,188,-50)}${hand(82,191)}</g><g class="arm"><ellipse cx="136" cy="180" rx="14" ry="23" transform="rotate(50 136 180)" fill="url(#jacket)"/><ellipse cx="136" cy="180" rx="14" ry="23" transform="rotate(50 136 180)" fill="url(#jShade)"/>${cuff(123,188,50)}${hand(118,191)}</g>`;
+ if(name==='thinking')return `<g class="arm">${sleeve(46,12)}${cuff(44,198,12)}${hand(43,203)}</g><g class="arm"><ellipse cx="138" cy="170" rx="14" ry="23" transform="rotate(35 138 170)" fill="url(#jacket)"/><ellipse cx="138" cy="170" rx="14" ry="23" transform="rotate(35 138 170)" fill="url(#jShade)"/>${cuff(128,150,35)}${hand(123,144)}</g>`;
+ if(name==='wave')return `<g class="arm">${sleeve(46,10)}${cuff(44,198,10)}${hand(43,203)}</g><g class="arm armR"><ellipse cx="154" cy="172" rx="14" ry="26" transform="rotate(-30 154 172)" fill="url(#jacket)"/><ellipse cx="154" cy="172" rx="14" ry="26" transform="rotate(-30 154 172)" fill="url(#jShade)"/>${cuff(164,152,-30)}${hand(168,146)}</g>`;
+ return `<g class="arm">${sleeve(46,10)}${cuff(44,198,10)}${hand(43,203)}</g><g class="arm">${sleeve(154,-10)}${cuff(156,198,-10)}${hand(157,203)}</g>`}
+function props(name){
+ const heart=`<path transform="translate(100 188) scale(1.5)" d="M0 12 C-18 0 -16 -14 -6 -14 C-2 -14 0 -10 0 -8 C0 -10 2 -14 6 -14 C16 -14 18 0 0 12Z" fill="#FF7A45" stroke="#E5601F" stroke-width="1.2"/>`;
+ return {caring:heart}[name]||''}
+function char(name){const e=E[name];
+ const shoe=(cx)=>`<ellipse cx="${cx}" cy="240" rx="26" ry="13" fill="url(#shoe)"/><path d="M${cx-25} 243 Q${cx} 256 ${cx+25} 243" fill="none" stroke="#F0953F" stroke-width="7" stroke-linecap="round"/><ellipse cx="${cx+6}" cy="234" rx="12" ry="5.5" fill="#fff" opacity=".85"/><circle cx="${cx-9}" cy="234" r="2" fill="#D9BE9B"/><circle cx="${cx-3}" cy="232" r="2" fill="#D9BE9B"/>`;
+ return `<svg viewBox="0 -28 200 292" class="m-${name}">
+ <ellipse cx="100" cy="256" rx="60" ry="8" fill="url(#ao)"/><ellipse cx="100" cy="255" rx="42" ry="4" fill="#000" opacity=".25"/>
+ <g class="body"><g filter="url(#plush)">
+  <rect x="52" y="160" width="96" height="52" rx="22" fill="url(#pack)"/>
+  <rect x="70" y="204" width="27" height="30" rx="11" fill="url(#shorts)"/><rect x="103" y="204" width="27" height="30" rx="11" fill="url(#shorts)"/>
+  ${shoe(80)}${shoe(120)}
+  <rect x="62" y="158" width="76" height="52" rx="22" fill="url(#jacket)"/><rect x="62" y="158" width="76" height="52" rx="22" fill="url(#jShade)"/>
+  <path d="M66 178 Q100 186 134 178" fill="none" stroke="#B8560A" stroke-width="2" opacity=".35"/><path d="M66 180 Q100 188 134 180" fill="none" stroke="#fff" stroke-width="1.4" opacity=".35"/>
+  <rect x="80" y="160" width="40" height="48" rx="14" fill="url(#hood)"/><rect x="80" y="160" width="40" height="48" rx="14" fill="url(#jShade)" opacity=".5"/>
+  <path d="M93 170 Q91 180 92 190" fill="none" stroke="#E6CFB0" stroke-width="2.4" stroke-linecap="round"/><circle cx="92" cy="191" r="2.4" fill="#F0953F"/>
+  <path d="M107 170 Q109 180 108 190" fill="none" stroke="#E6CFB0" stroke-width="2.4" stroke-linecap="round"/><circle cx="108" cy="191" r="2.4" fill="#F0953F"/>
+  <g transform="translate(100 194) scale(.9)"><path d="M0 -11 L3.1 -3.6 L11 -3.2 L5 2.2 L6.8 9.6 L0 5.6 L-6.8 9.6 L-5 2.2 L-11 -3.2 L-3.1 -3.6 Z" fill="url(#star)" stroke="#D97812" stroke-width="1"/></g>
+  <path d="M68 160 Q64 186 72 210" fill="none" stroke="#34343F" stroke-width="8" stroke-linecap="round"/><path d="M68 162 Q65 186 72 208" fill="none" stroke="#F0953F" stroke-width="1.5" stroke-dasharray="3 3"/>
+  <path d="M132 160 Q136 186 128 210" fill="none" stroke="#34343F" stroke-width="8" stroke-linecap="round"/><path d="M132 162 Q135 186 128 208" fill="none" stroke="#F0953F" stroke-width="1.5" stroke-dasharray="3 3"/>
+  <g transform="translate(100 34) scale(.78 .85) translate(-100 0)">${arms(name)}</g>
+  <g transform="translate(100 34) scale(.78 .85) translate(-100 0)">${props(name)}</g>
+  <ellipse cx="100" cy="164" rx="40" ry="12" fill="#7A3A06" opacity=".3"/>
+  <g class="head"><g transform="translate(100 100) scale(1.12 1.24) translate(-100 -112)">
+   <g class="ant" style="transform-origin:80px 52px"><path d="M80 56 Q70 32 62 16" fill="none" stroke="url(#stalk)" stroke-width="5.5" stroke-linecap="round"/><circle cx="80" cy="54" r="5.5" fill="#E9822A"/><circle cx="62" cy="14" r="20" fill="url(#halo)"/><circle class="bulb" cx="62" cy="14" r="11" fill="url(#bulb)"/><ellipse cx="58.5" cy="10" rx="3.8" ry="2.6" fill="#fff" opacity=".85"/></g>
+   <g class="ant" style="transform-origin:120px 52px;animation-delay:.5s"><path d="M120 56 Q130 32 138 16" fill="none" stroke="url(#stalk)" stroke-width="5.5" stroke-linecap="round"/><circle cx="120" cy="54" r="5.5" fill="#E9822A"/><circle cx="138" cy="14" r="20" fill="url(#halo)"/><circle class="bulb" cx="138" cy="14" r="11" fill="url(#bulb)" style="animation-delay:.6s"/><ellipse cx="134.5" cy="10" rx="3.8" ry="2.6" fill="#fff" opacity=".85"/></g>
+   <path d="M32 112 C32 62 62 38 100 38 C138 38 168 62 168 112 C168 142 158 162 142 168 L58 168 C42 162 32 142 32 112 Z" fill="url(#hood)"/>
+   <path d="M32 112 C32 62 62 38 100 38 C138 38 168 62 168 112 C168 142 158 162 142 168 L58 168 C42 162 32 142 32 112 Z" fill="none" stroke="#D9BE9B" stroke-width="2" opacity=".6"/>
+   <path d="M50 66 Q76 42 110 42" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".7"/>
+   <path d="M58 166 Q100 180 142 166" fill="none" stroke="#C9A67F" stroke-width="6" stroke-linecap="round" opacity=".45"/>
+   <ellipse cx="100" cy="108" rx="56" ry="54" fill="url(#hoodIn)"/>
+   <ellipse cx="100" cy="108" rx="52" ry="50" fill="url(#face)"/>
+   <ellipse cx="100" cy="108" rx="52" ry="50" fill="url(#faceTop)"/><ellipse cx="100" cy="108" rx="52" ry="50" fill="url(#faceBot)"/>
+   <ellipse cx="74" cy="80" rx="14" ry="6" transform="rotate(-28 74 80)" fill="#fff" opacity=".12"/>
+   <ellipse cx="30" cy="112" rx="15" ry="22" fill="url(#cup)"/><ellipse cx="30" cy="112" rx="10.5" ry="16.5" fill="#2B2B35" stroke="#F0953F" stroke-width="3"/>${starP(30,112,1.25,'#F4A53A')}<path d="M21 100 Q22 91 29 89" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".4"/>
+   <ellipse cx="170" cy="112" rx="15" ry="22" fill="url(#cup)"/><ellipse cx="170" cy="112" rx="10.5" ry="16.5" fill="#2B2B35" stroke="#F0953F" stroke-width="3"/>${starP(170,112,1.25,'#F4A53A')}<path d="M161 100 Q162 91 169 89" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".4"/>
+   <g class="eyes">${eye(74,e)}${eye(126,e)}</g>
+   <ellipse cx="60" cy="126" rx="14" ry="9" fill="url(#blush)" opacity="${e.cheek+.2}"/><ellipse cx="140" cy="126" rx="14" ry="9" fill="url(#blush)" opacity="${e.cheek+.2}"/>
+   ${e.worry?`<path d="M64 90 Q74 84 84 88" fill="none" stroke="#7A4A18" stroke-width="3.4" stroke-linecap="round"/><path d="M116 88 Q126 84 136 90" fill="none" stroke="#7A4A18" stroke-width="3.4" stroke-linecap="round"/>`:''}
+   ${mouth(e.mouth)}
+  </g></g>
+ </g></g>
+ <g data-x="proud">${star(22,40,9,0)}${star(180,30,7,.5)}${star(184,100,5,1)}</g>
+ <g data-x="celebrating">${star(16,40,8,0)}${star(186,34,9,.4)}<g class="conf"><rect x="26" y="-20" width="7" height="12" fill="#4F8CFF"/><rect x="90" y="-20" width="7" height="12" fill="#2EC98C" style="animation-delay:.7s"/><rect x="150" y="-20" width="7" height="12" fill="#FF5C7A" style="animation-delay:1.3s"/><rect x="182" y="-20" width="7" height="12" fill="#FFC531" style="animation-delay:.3s"/></g></g>
+ <g data-x="curious"><text x="168" y="24" font-size="40" font-weight="800" fill="#FF9A2E" font-family="system-ui" class="tw">?</text></g>
+ <g data-x="nudge"><text x="172" y="28" font-size="42" font-weight="800" fill="#FF7A45" font-family="system-ui" class="tw">!</text></g>
+ <g data-x="thinking"><circle cx="166" cy="30" r="4" fill="#9aa6b8" class="tw"/><circle cx="178" cy="14" r="6" fill="#9aa6b8" class="tw" style="animation-delay:.3s"/><circle cx="190" cy="-6" r="9" fill="#9aa6b8" class="tw" style="animation-delay:.6s"/></g>
+ <g data-x="sleepy"><text x="168" y="36" font-size="22" font-weight="800" fill="#7FA8FF" font-family="system-ui" class="fl">z</text><text x="182" y="16" font-size="28" font-weight="800" fill="#7FA8FF" font-family="system-ui" class="fl" style="animation-delay:.8s">Z</text></g>
+ </svg>`}
+let cur='happy';const btns=document.getElementById('btns');
+Object.keys(E).forEach(k=>{const b=document.createElement('button');b.textContent=k;b.onclick=()=>{cur=k;draw()};btns.appendChild(b)});
+const stages=document.getElementById('stages');
+['dark','light'].forEach(t=>{const d=document.createElement('div');d.className='stage '+t;d.id='s_'+t;stages.appendChild(d)});
+function draw(){['dark','light'].forEach(t=>document.getElementById('s_'+t).innerHTML=char(cur));[...btns.children].forEach(b=>b.classList.toggle('on',b.textContent===cur))}
+const mini=document.getElementById('mini');
+Object.keys(E).forEach(m=>['dark','light'].forEach(t=>{const c=document.createElement('div');c.className='chip '+t;c.innerHTML=char(m)+`<span>${m}</span>`;mini.appendChild(c)}));
+draw();
+</script>

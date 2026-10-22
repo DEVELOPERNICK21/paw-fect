@@ -198,7 +198,7 @@ export const OnboardingTipsScreen: React.FC = () => {
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={[styles.title, { fontFamily: fontFamilies.extrabold }]}>
-            Here&apos;s how Pawsoul helps
+            Here&apos;s how Pawfect helps
           </Text>
           <Text style={[styles.subtitle, { fontFamily: fontFamilies.medium }]}>
             Two small habits, and you&apos;ll always feel on top of your
@@ -259,7 +259,7 @@ export const OnboardingTipsScreen: React.FC = () => {
               { fontFamily: fontFamilies.bold },
             ]}
           >
-            Continue to Pawsoul
+            Continue to Pawfect
           </Text>
         </Pressable>
       </View>
