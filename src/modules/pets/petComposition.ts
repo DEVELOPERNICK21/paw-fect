@@ -12,7 +12,9 @@ import { pickPetPhoto } from './data/photos/pickPetPhoto';
 import { createFirestorePetPhotoEncoder } from './data/photos/FirestorePetPhotoEncoder';
 import { createMlKitPetPhotoAnalyzer } from './data/photos/MlKitPetPhotoAnalyzer';
 import { createPetRepository } from './data/repositories/PetRepositoryImpl';
+import { PetCreatedEventHub } from './application/PetCreatedEventHub';
 import type { Pet } from './domain/models/Pet';
+import type { PetCreatedEventPort } from './domain/ports/PetCreatedEventPort';
 import { GetPets } from './domain/usecases/GetPets';
 import { GetPetById } from './domain/usecases/GetPetById';
 import { GetActivePetId } from './domain/usecases/GetActivePetId';
@@ -28,6 +30,7 @@ import type { PetHealthCardViewModel } from './domain/models/PetHealthCardViewMo
 import { registerPetCoordinationPorts } from './store/petCoordinationPorts';
 
 const repository = createPetRepository();
+const petCreatedEvents: PetCreatedEventPort = new PetCreatedEventHub();
 const petPhotoEncoder = createFirestorePetPhotoEncoder();
 const petPhotoAnalyzer = createMlKitPetPhotoAnalyzer();
 
@@ -84,10 +87,12 @@ registerPetCoordinationPorts({
 });
 
 export const petComposition = {
+  /** Fires once per pet profile that was genuinely created (the repository accepted it). */
+  petCreatedEvents,
   getPets: new GetPets(repository),
   getPetById: new GetPetById(repository),
   getActivePetId: new GetActivePetId(repository),
-  createPet: new CreatePet(repository),
+  createPet: new CreatePet(repository, petCreatedEvents),
   updatePet: new UpdatePet(repository),
   deletePet: new DeletePet(repository),
   setActivePet: new SetActivePet(repository),

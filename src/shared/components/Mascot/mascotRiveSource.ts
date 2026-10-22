@@ -1,30 +1,40 @@
-import type { MascotSpecies } from './mascotTypes';
+import type { MascotReaction } from './mascotTypes';
 
 /**
- * Where each character's Rive file lives. `null` means "no Rive file yet": the
- * app then uses the code-drawn mascot, so nothing breaks while art is pending.
- *
- * When the animator delivers a file, drop it in `src/shared/assets/rive/` and
- * point the species at it, e.g.
- *
- *   dog: require('../../assets/rive/pawfect-puppy.riv'),
- *
- * The file must follow the contract in `docs/mascot/rive-spec.md` (view model
- * `Mascot` with `mood`, `lookX`, `lookY`, `tap`, `celebrate`, `petted`).
+ * The companion's Rive file. It must follow the contract in `docs/mascot/rive-spec.md` (artboard
+ * `Mascot`, state machine `Main`, view model `Mascot` with `mood`, `lookX`, `lookY` and the six
+ * reaction triggers). Metro bundles a `.riv` like any other asset and `require` yields its asset id.
  */
-export type MascotRiveSource = number | { uri: string } | null;
+export type MascotRiveSource = number | { uri: string };
 
-export const MASCOT_RIVE_SOURCE: Record<MascotSpecies, MascotRiveSource> = {
-  dog: null,
-  cat: null,
-};
+export const COMPANION_RIVE_SOURCE: MascotRiveSource =
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  require('../../assets/rive/pawfect-companion.riv');
+
+/** The same artwork as a still image: Reduce Motion, `animated={false}`, or a file that fails to load. */
+export const COMPANION_STILL: number =
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  require('../../assets/rive/pawfect-companion-still.png');
 
 /** View-model property names the Rive file must expose (see rive-spec.md). */
 export const RIVE_PROPS = {
   mood: 'mood',
   lookX: 'lookX',
   lookY: 'lookY',
-  tap: 'tap',
+  pet: 'pet',
+  welcome: 'welcome',
+  success: 'success',
   celebrate: 'celebrate',
-  petted: 'petted',
+  curious: 'curious',
+  attention: 'attention',
 } as const;
+
+/** Reaction -> trigger property. Identical names today; kept explicit so a rename is one edit. */
+export const RIVE_TRIGGER_FOR: Record<MascotReaction, string> = {
+  pet: RIVE_PROPS.pet,
+  welcome: RIVE_PROPS.welcome,
+  success: RIVE_PROPS.success,
+  celebrate: RIVE_PROPS.celebrate,
+  curious: RIVE_PROPS.curious,
+  attention: RIVE_PROPS.attention,
+};

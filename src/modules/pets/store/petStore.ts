@@ -12,6 +12,10 @@ import { petComposition } from '../petComposition';
 import type { Pet } from '../domain/models/Pet';
 import type { PetType } from '../domain/models/Pet';
 import type { PetHealthMilestones } from '../domain/ports/PetHealthCoordinationPort';
+import type {
+  PetCreatedListener,
+  PetCreatedUnsubscribe,
+} from '../domain/ports/PetCreatedEventPort';
 import type { CreatePetProfileResult as CreatePetProfileUseCaseResult } from '../domain/usecases/CreatePetProfile';
 import type { PetPhotoEncodeRequest } from '../domain/ports/PetPhotoEncoder';
 import type { PreparePetPhotoResult } from '../domain/usecases/PreparePetPhoto';
@@ -398,3 +402,13 @@ export const usePetStore = create<PetState>((set, get) => ({
     return pc.buildPetHealthCard(userId, petId);
   },
 }));
+
+/**
+ * Subscribe to genuine pet-profile creations. Lives here so UI reaches the event through
+ * the store, like everything else.
+ */
+export function subscribeToPetCreated(
+  listener: PetCreatedListener,
+): PetCreatedUnsubscribe {
+  return petComposition.petCreatedEvents.subscribe(listener);
+}

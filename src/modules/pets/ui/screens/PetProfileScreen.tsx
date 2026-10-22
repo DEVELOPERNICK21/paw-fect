@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppTabBarInset } from '../../../../app/navigation/layout';
 import type { PetProfileRootNavigation } from '../../../../app/navigation/types';
 import { PetProfileHeroCard } from '../components/profile/PetProfileHeroCard';
+import { PetWelcomeMascot } from '../components/profile/PetWelcomeMascot';
 import { PetProfileHealthRecordCard } from '../components/profile/PetProfileHealthRecordCard';
 import { PetProfileQuickStatsRow } from '../components/profile/PetProfileQuickStatsRow';
 import { PetProfileSectionHeader } from '../components/profile/PetProfileSectionHeader';
@@ -358,6 +359,8 @@ export const PetProfileScreen: React.FC = () => {
           onPressEdit={goEditPet}
           onPressShare={goShareHealthCard}
         />
+
+        <PetWelcomeMascot species={effectivePet.type} />
 
         <PetProfileQuickStatsRow
           weightValue={weightValue}
