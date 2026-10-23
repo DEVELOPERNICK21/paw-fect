@@ -16,9 +16,11 @@ import type {
 } from '../../../../app/navigation/types';
 import { useAppTabBarInset } from '../../../../app/navigation/layout';
 import { AppText } from '../../../../shared/components/AppText';
-import { Button } from '../../../../shared/components/Button';
+import {
+  companionLines,
+  MascotEmptyState,
+} from '../../../../shared/components/Companion';
 import { FlatTabHeroBar } from '../../../../shared/components/FlatTabHeroBar';
-import { Paw3dIcon } from '../../../../shared/components/Paw3dIcon';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { useAppSession } from '../../../../shared/session/useAppSession';
 import { usePetStore } from '../../../pets/store/petStore';
@@ -45,6 +47,8 @@ import {
   type CareRewardKind,
   WellnessCompletionToast,
 } from '../components/WellnessCompletionToast';
+
+const EMPTY_DAY_NO_PET_LINES = companionLines({ scene: 'empty', kind: 'dayNoPet' });
 
 const LATER_PRESETS: Array<{ label: string; minutes: number }> = [
   { label: 'In 30 minutes', minutes: 30 },
@@ -259,25 +263,13 @@ export const WellnessHubScreen: React.FC = () => {
             { margin: spacing.lg, paddingBottom: tabBarInset },
           ]}
         >
-          <Paw3dIcon size={48} />
-          <AppText
-            style={[
-              textStyles.title,
-              {
-                color: colors.text.heading,
-                fontFamily: fontFamilies.extrabold,
-                letterSpacing: -0.3,
-              },
-            ]}
-          >
-            Your pets need to be here
-          </AppText>
-          <AppText style={[textStyles.body, { color: colors.text.secondary }]}>
-            Add your first pet to start tracking their care.
-          </AppText>
-          <Button
-            title="Add pet"
-            onPress={() => navigation.navigate('PetsTab', { screen: 'AddPet' })}
+          <MascotEmptyState
+            mood="wave"
+            title="Your pets need to be here"
+            lines={EMPTY_DAY_NO_PET_LINES}
+            actionLabel="Add pet"
+            onAction={() => navigation.navigate('PetsTab', { screen: 'AddPet' })}
+            testID="care-empty-no-pet"
           />
         </View>
       </SafeAreaView>
@@ -326,20 +318,18 @@ export const WellnessHubScreen: React.FC = () => {
 
         {!careLoading && careView.totalCount === 0 ? (
           <View style={[styles.emptyCard, shadows.sm]}>
-            <AppText
-              style={[
-                textStyles.subtitle,
-                { color: colors.text.heading, fontFamily: fontFamilies.bold },
-              ]}
-            >
-              No care tasks yet
-            </AppText>
-            <AppText style={[textStyles.body, { color: colors.text.secondary }]}>
-              Set a daily rhythm so we can show what needs attention.
-            </AppText>
-            <Button
-              title="Set up care schedule"
-              onPress={() => {
+            <MascotEmptyState
+              title="No care tasks yet"
+              lines={companionLines({
+                scene: 'empty',
+                kind: 'careTasks',
+                petName:
+                  careFilterPetId === 'all'
+                    ? undefined
+                    : pets.find(p => p.id === careFilterPetId)?.name,
+              })}
+              actionLabel="Set up care schedule"
+              onAction={() => {
                 const petId =
                   careFilterPetId === 'all' ? pets[0]?.id : careFilterPetId;
                 if (!petId) {
@@ -350,6 +340,7 @@ export const WellnessHubScreen: React.FC = () => {
                   params: { petId },
                 });
               }}
+              testID="care-empty-tasks"
             />
           </View>
         ) : (

@@ -19,15 +19,16 @@ export const OtpBrandBadge: React.FC = () => {
           backgroundColor: colors.surface,
           alignItems: 'center',
           justifyContent: 'center',
+          overflow: 'hidden',
           ...shadows.md,
         },
         appIcon: {
-          width: spacing['5xl'] + spacing.sm,
-          height: spacing['5xl'] + spacing.sm,
-          resizeMode: 'contain',
+          width: '100%',
+          height: '100%',
+          resizeMode: 'cover',
         },
       }),
-    [colors.surface, radius.xl, shadows.md, tile, spacing],
+    [colors.surface, radius.xl, shadows.md, tile],
   );
 
   return (

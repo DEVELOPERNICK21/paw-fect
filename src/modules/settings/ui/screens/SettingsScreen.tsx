@@ -813,9 +813,8 @@ const createStyles = (
     overflow: 'hidden',
   },
   rowAppIcon: {
-    width: spacing['2xl'] + spacing.xs,
-    height: spacing['2xl'] + spacing.xs,
-    borderRadius: radius.sm,
+    width: '100%',
+    height: '100%',
     resizeMode: 'cover',
   },
   rowIconNeutral: {

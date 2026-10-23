@@ -23,6 +23,10 @@ import { PetProfileTipCard } from '../components/profile/PetProfileTipCard';
 import { FlatTabHeroBar } from '../../../../shared/components/FlatTabHeroBar';
 import { AppText } from '../../../../shared/components/AppText';
 import { Button } from '../../../../shared/components/Button';
+import {
+  companionLines,
+  MascotEmptyState,
+} from '../../../../shared/components/Companion';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { spacing } from '../../../../shared/theme/spacing';
@@ -757,23 +761,19 @@ export const PetProfileScreen: React.FC = () => {
                   },
                 ]}
               >
-                <MaterialIcon
-                  name="stethoscope"
-                  size={38}
-                  color={colors.accent}
+                <MascotEmptyState
+                  title="No health records yet"
+                  lines={companionLines({
+                    scene: 'empty',
+                    kind: 'records',
+                    petName: effectivePet?.name,
+                  })}
+                  actionLabel="Add health record"
+                  onAction={goAddHealthRecord}
+                  animated={false}
+                  size={88}
+                  testID="pet-profile-records-empty"
                 />
-                <AppText
-                  style={[
-                    textStyles.subtitle,
-                    {
-                      color: colors.text.heading,
-                      fontFamily: fontFamilies.bold,
-                    },
-                  ]}
-                >
-                  No health records yet
-                </AppText>
-                <Button title="Add health record" onPress={goAddHealthRecord} />
               </View>
             )
           }

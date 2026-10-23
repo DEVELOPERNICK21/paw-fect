@@ -13,12 +13,18 @@ import { useNavigation } from '@react-navigation/native';
 import type { PetProfileRootNavigation } from '../../../../app/navigation/types';
 import { useAppTabBarInset } from '../../../../app/navigation/layout';
 import { AppText } from '../../../../shared/components/AppText';
+import {
+  companionLines,
+  MascotEmptyState,
+} from '../../../../shared/components/Companion';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { resolvePetAvatarSource } from '../../../../shared/utils/petDisplayPhoto';
 import type { Pet } from '../../domain/models/Pet';
 import { formatPetAgeLabel } from '../../domain/utils/petDobDisplay';
 import { usePetStore } from '../../store/petStore';
+
+const EMPTY_PETS_LINES = companionLines({ scene: 'empty', kind: 'pets' });
 
 function petTypeLabel(type: Pet['type'] | undefined): string {
   if (type === 'cat') return 'Cat';
@@ -534,30 +540,13 @@ export const PetSwitcherScreen: React.FC = () => {
                 },
               ]}
             >
-              <MaterialIcon name="pets" size={32} color={colors.accent} />
-              <AppText
-                style={[
-                  textStyles.subtitle,
-                  {
-                    color: colors.text.heading,
-                    fontFamily: fontFamilies.bold,
-                    textAlign: 'center',
-                  },
-                ]}
-              >
-                No pets yet
-              </AppText>
-              <AppText
-                style={[
-                  textStyles.caption,
-                  {
-                    color: colors.text.secondary,
-                    textAlign: 'center',
-                  },
-                ]}
-              >
-                Add a pet profile to build their care schedule.
-              </AppText>
+              <MascotEmptyState
+                title="No pets yet"
+                lines={EMPTY_PETS_LINES}
+                actionLabel="Add a pet"
+                onAction={() => navigation.navigate('AddPet')}
+                testID="pet-switcher-empty"
+              />
             </View>
           }
         />

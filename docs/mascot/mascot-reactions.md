@@ -3,12 +3,9 @@
 The Rive contract (file, view model, triggers) is in [`rive-spec.md`](./rive-spec.md). This page is the
 app-side usage.
 
-> **Merge status.** On `main`: the companion `Mascot` (animation plus still image), the reaction gate and the
-> `reactionRequest` prop, and the **pet-profile welcome** (`PetWelcomeMascot`, `welcome` when a pet is created).
-> **Not merged yet** (written and tested, but its screens depend on the `CompanionBubble` / Home companion /
-> health-summary work that is still uncommitted): the Care-tab reactions (`CareMascot`, `success`, `celebrate`,
-> `attention`), the health-record `curious` reaction (`HealthMascot`), and the Home companion. Sections below that
-> describe those say "not merged yet". Remove this note when they land.
+> **Merge status.** Everything on this page is committed on `main` (commit `db8a614` added the Care, Health
+> and Home work). Where a section below says "not merged yet", that text is out of date. The section
+> "Where the companion appears" at the end of this page covers the screens added later.
 
 ## The component
 There is one mascot component: `Mascot` in `src/shared/components/Mascot`. It always shows the companion: it plays
@@ -187,3 +184,37 @@ Run on an iOS simulator/device and an Android device with the real `@rive-app/re
 - Cats and dogs look the same: the companion does not follow the pet's species. The `species` prop and the helpers that
   compute it (`useActiveMascotSpecies`, `mascotSpeciesFor`) are now unused by the component and can be removed from
   callers later.
+
+## Where the companion appears
+
+The mascot is the app's character, not a decoration: it talks at the moments where a user might get stuck or
+drift away (waiting, nothing there yet, something failed, a win). Every line it says lives in
+`src/shared/components/Companion/companionVoice.ts`. The voice is warm and first person, and it never makes
+the user feel guilty.
+
+Building blocks (`src/shared/components/Companion`):
+- `MascotLoader`: the `thinking` mood with rotating lines. It is announced as a progress bar.
+- `MascotEmptyState`: by default the `happy` mood, a title, lines you can tap through, and one action.
+- `MascotErrorState`: the calm `nudge` mood. It plays `attention` once when shown and has a "Try again" action.
+- `CompanionBubble`: the mascot and a speech bubble. It accepts a `reactionRequest`.
+
+| Screen | What the companion does | Mood / reaction |
+| --- | --- | --- |
+| Splash | Greets while the app loads; the lines rotate | `wave` + `welcome` |
+| Onboarding: welcome | Introduces itself; tap it to say hi | `wave` + `welcome`, `pet` on tap |
+| Onboarding: pet basics | Asks about the pet; cheers when the form becomes valid | `happy` + `success` |
+| Onboarding: first reminder | Greets the named pet; cheers when the reminder is valid | `curious` + `welcome`, `success` |
+| Onboarding: saving | Loader while saving; calm error with retry | `thinking`; `nudge` + `attention` |
+| Home | Companion with bond level | moods; `celebrate` on level-up |
+| Pet profile | Welcomes a new pet (records empty state is a still image) | `welcome` |
+| Care tab | Task done, day done, newly overdue | `success`, `celebrate`, `attention` |
+| Care-done toast | Streak milestones (3, 7, 14, 30, 60, 100 days) use the `streak` line | text only |
+| Health record | Tilts its head on open; calm error if loading fails | `curious`; `nudge` + `attention` |
+| Reminder list | Cheers for 8 s after a reminder is saved; empty and error states | `success`; `happy`; `nudge` + `attention` |
+| Pets, Day view, Care (no pet / no tasks), Notifications | Empty states with one clear action | `happy`, `wave`, `sleepy` |
+
+Rules:
+- At most one animated mascot per screen. Secondary placements use `animated={false}`.
+- Reactions are play-once requests with a unique `id`. Leaving a screen and coming back does not replay one.
+- Onboarding uses the current activation flow (welcome, then activate, persist and paywall). The older
+  8-step funnel (`OnboardingFunnelScreen`) is deprecated and has no companion.

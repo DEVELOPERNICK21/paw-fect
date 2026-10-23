@@ -203,13 +203,17 @@ export const AddReminderScreen: React.FC = () => {
       return;
     }
     void trackEvent('reminder_created', { has_notes: Boolean(notes.trim()) });
-    navigation.navigate('ReminderList');
+    navigation.navigate('ReminderList', {
+      savedAt: Date.now(),
+      savedPetName: pets.find(p => p.id === petId)?.name,
+    });
   }, [
     activePet?.id,
     createReminderEntry,
     date,
     navigation,
     notes,
+    pets,
     selectedPetId,
     time,
     title,

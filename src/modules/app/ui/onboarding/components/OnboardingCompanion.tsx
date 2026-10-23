@@ -9,6 +9,7 @@ import {
   gazeForTyping,
   type MascotHandle,
   type MascotMood,
+  type MascotReactionRequest,
   type MascotSpecies,
 } from '../../../../../shared/components/Mascot';
 
@@ -18,6 +19,8 @@ const NAME_GAZE_CHARS = 12;
 const NAME_GAZE_HOLD_MS = 1800;
 
 const MOOD_BY_STEP: Record<CompanionOnboardingStep, MascotMood> = {
+  welcome: 'wave',
+  firstReminder: 'curious',
   trustOpen: 'wave',
   problemNaming: 'curious',
   petBasics: 'happy',
@@ -31,6 +34,7 @@ export interface OnboardingCompanionProps {
   step: CompanionOnboardingStep;
   petName?: string;
   species: MascotSpecies;
+  reactionRequest?: MascotReactionRequest | null;
 }
 
 /** The app character guiding each onboarding step, in one fixed slot above the content. */
@@ -38,6 +42,7 @@ export const OnboardingCompanion: React.FC<OnboardingCompanionProps> = ({
   step,
   petName,
   species,
+  reactionRequest,
 }) => {
   const lines = useMemo(
     () => companionLines({ scene: 'onboarding', step, petName }),
@@ -62,6 +67,7 @@ export const OnboardingCompanion: React.FC<OnboardingCompanionProps> = ({
       mascotRef={mascotRef}
       mood={MOOD_BY_STEP[step]}
       lines={lines}
+      reactionRequest={reactionRequest}
       testID={`onboarding-companion-${step}`}
     />
   );

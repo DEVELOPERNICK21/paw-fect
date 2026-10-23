@@ -151,6 +151,11 @@ export const PetHealthShareCardSkia = React.forwardRef<
   const logoSize = LOGO_SIZE * scale;
   const logoX = BODY_PADDING_X * scale;
   const logoY = HEADER_TOP * scale;
+  const logoRadius = 12 * scale;
+  const logoClip = useMemo(
+    () => rrect(rect(logoX, logoY, logoSize, logoSize), logoRadius, logoRadius),
+    [logoRadius, logoSize, logoX, logoY],
+  );
   const photoX = BODY_PADDING_X * scale;
   const photoY = logoY + logoSize + 24 * scale;
   const photoWidth = contentWidth;
@@ -287,14 +292,16 @@ export const PetHealthShareCardSkia = React.forwardRef<
           color="rgba(255, 255, 255, 0.14)"
         />
         {logo ? (
-          <Image
-            image={logo}
-            x={logoX}
-            y={logoY}
-            width={logoSize}
-            height={logoSize}
-            fit="cover"
-          />
+          <Group clip={logoClip}>
+            <Image
+              image={logo}
+              x={logoX}
+              y={logoY}
+              width={logoSize}
+              height={logoSize}
+              fit="cover"
+            />
+          </Group>
         ) : null}
         <Text
           x={logoX + logoSize + LOGO_GAP * scale}

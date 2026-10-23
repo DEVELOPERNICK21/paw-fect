@@ -28,6 +28,8 @@ import {
   setReminderDraft,
 } from '../../domain/onboarding/onboardingDraftReducers';
 import { useOnboardingDraftStore } from '../../store/onboardingDraftStore';
+import { OnboardingCompanion } from './components/OnboardingCompanion';
+import { useActivationCompanionReaction } from './hooks/useActivationCompanionReaction';
 import { FirstReminderStep } from './steps/FirstReminderStep';
 import { PetBasicsStep } from './steps/PetBasicsStep';
 
@@ -103,6 +105,10 @@ const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
     },
     scroll: {
       flex: 1,
+    },
+    companionSlot: {
+      paddingHorizontal: spacing.lg,
+      marginBottom: spacing.lg,
     },
     scrollContent: {
       paddingBottom: spacing.xl,
@@ -193,6 +199,8 @@ export const OnboardingActivationScreen: React.FC = () => {
     return false;
   }, [step, petDraft, reminderDraft]);
 
+  const companionReaction = useActivationCompanionReaction(step, isStepValid);
+
   const handleContinue = useCallback(() => {
     if (step === ACTIVATION_STEP.petBasics) {
       if (!draft.petDraft) {
@@ -280,6 +288,18 @@ export const OnboardingActivationScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
         >
           <View key={step}>
+            <View style={styles.companionSlot}>
+              <OnboardingCompanion
+                step={
+                  step === ACTIVATION_STEP.firstReminder
+                    ? 'firstReminder'
+                    : 'petBasics'
+                }
+                petName={petDraft.nickname}
+                species={petDraft.species === 'cat' ? 'cat' : 'dog'}
+                reactionRequest={companionReaction}
+              />
+            </View>
             {step === ACTIVATION_STEP.petBasics ? (
               <PetBasicsStep
                 value={petDraft}

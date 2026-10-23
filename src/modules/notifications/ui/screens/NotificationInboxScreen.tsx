@@ -19,6 +19,10 @@ import type {
   AppTabParamList,
   NotificationsStackParamList,
 } from '../../../../app/navigation/types';
+import {
+  companionLines,
+  MascotEmptyState,
+} from '../../../../shared/components/Companion';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
 import { useTheme, type Theme } from '../../../../shared/hooks/useTheme';
 
@@ -27,6 +31,11 @@ import {
   useNotificationFeedStore,
   type InAppNotificationFeedItem,
 } from '../../store/notificationFeedStore';
+
+const EMPTY_NOTIFICATIONS_LINES = [
+  ...companionLines({ scene: 'empty', kind: 'notifications' }),
+  'Alerts show up here once they are delivered, not every reminder planned for later.',
+];
 
 type InboxNavigation = CompositeNavigationProp<
   NativeStackNavigationProp<NotificationsStackParamList, 'NotificationInbox'>,
@@ -91,8 +100,6 @@ const createStyles = ({ colors, spacing, radius }: Pick<Theme, 'colors' | 'spaci
       alignItems: 'center',
       gap: spacing.sm,
     },
-    emptyTitle: { fontSize: 18, color: colors.text.heading, textAlign: 'center' },
-    emptyBody: { fontSize: 14, color: colors.text.secondary, textAlign: 'center' },
   });
 
 function formatWhen(item: InAppNotificationFeedItem): string {
@@ -220,14 +227,12 @@ export const NotificationInboxScreen: React.FC = () => {
             </View>
           ) : (
             <View style={[styles.empty, { backgroundColor: colors.surface }]}>
-              <MaterialIcon name="notifications" size={40} color={colors.text.subdued} />
-              <Text style={[styles.emptyTitle, { fontFamily: fontFamilies.bold }]}>
-                No notifications yet
-              </Text>
-              <Text style={[styles.emptyBody, { fontFamily: fontFamilies.medium }]}>
-                Alerts show up here after they are delivered or shown in the app — not every
-                scheduled future reminder.
-              </Text>
+              <MascotEmptyState
+                mood="sleepy"
+                title="No notifications yet"
+                lines={EMPTY_NOTIFICATIONS_LINES}
+                testID="notifications-empty"
+              />
             </View>
           )
         }

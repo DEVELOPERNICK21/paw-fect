@@ -24,6 +24,10 @@ import type {
   HealthStackParamList,
 } from '../../../../app/navigation/types';
 import { AppText } from '../../../../shared/components/AppText';
+import {
+  companionLines,
+  MascotErrorState,
+} from '../../../../shared/components/Companion';
 import { DatePickerField } from '../../../../shared/components/DatePickerField';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
 import { useTheme } from '../../../../shared/hooks/useTheme';
@@ -639,12 +643,14 @@ export const HealthRecordScreen: React.FC = () => {
             />
           }
         >
-          <HealthMascot
-            petId={activePet.id}
-            petName={activePet.name}
-            species={activePet.type === 'cat' ? 'cat' : 'dog'}
-            summary={summary}
-          />
+          {loadFailed && !initialLoading ? null : (
+            <HealthMascot
+              petId={activePet.id}
+              petName={activePet.name}
+              species={activePet.type === 'cat' ? 'cat' : 'dog'}
+              summary={summary}
+            />
+          )}
           {initialLoading ? (
             <View
               accessibilityLabel="Loading health plan"
@@ -670,51 +676,19 @@ export const HealthRecordScreen: React.FC = () => {
                   backgroundColor: colors.surface,
                   borderColor: colors.borderSubtle,
                   borderRadius: radius.xl,
-                  padding: spacing.lg,
-                  gap: spacing.sm,
                 },
               ]}
             >
-              <AppText
-                style={[
-                  textStyles.subtitle,
-                  { color: colors.text.heading, fontFamily: fontFamilies.bold },
-                ]}
-              >
-                Couldn&apos;t load {activePet.name}&apos;s plan
-              </AppText>
-              <AppText
-                style={[textStyles.caption, { color: colors.text.secondary }]}
-              >
-                Check your connection, then try again.
-              </AppText>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Try again"
-                onPress={() => void handleRefresh()}
-                style={[
-                  styles.modalActionBtn,
-                  {
-                    flex: 0,
-                    borderColor: colors.primary,
-                    borderRadius: radius.md,
-                    alignSelf: 'flex-start',
-                    paddingHorizontal: spacing.lg,
-                  },
-                ]}
-              >
-                <AppText
-                  style={[
-                    textStyles.body,
-                    {
-                      color: colors.primaryDark,
-                      fontFamily: fontFamilies.semibold,
-                    },
-                  ]}
-                >
-                  Try again
-                </AppText>
-              </Pressable>
+              <MascotErrorState
+                title={`Couldn't load ${activePet.name}'s plan`}
+                lines={companionLines({
+                  scene: 'error',
+                  kind: 'records',
+                  petName: activePet.name,
+                })}
+                onRetry={() => void handleRefresh()}
+                testID="health-record-load-error"
+              />
             </View>
           ) : (
             <HealthSummaryCard petName={activePet.name} summary={summary} />

@@ -71,6 +71,12 @@ export const Mascot = forwardRef<MascotHandle, MascotProps>(function MascotView(
   const screenFocused = useScreenFocused();
   const [riveFailed, setRiveFailed] = useState(false);
   const onFailed = useCallback(() => setRiveFailed(true), []);
+  // The Rive view unmounts whenever the screen loses focus, so "already played" must live here.
+  const [settledRequestId, setSettledRequestId] = useState<string | number | null>(null);
+  const reactionRequest =
+    props.reactionRequest != null && props.reactionRequest.id !== settledRequestId
+      ? props.reactionRequest
+      : null;
 
   if (riveFailed || reduceMotion || props.animated === false) {
     return <StillMascot ref={ref} {...props} />;
@@ -91,7 +97,8 @@ export const Mascot = forwardRef<MascotHandle, MascotProps>(function MascotView(
       onPress={props.onPress}
       onFailed={onFailed}
       paused={props.paused}
-      reactionRequest={props.reactionRequest}
+      reactionRequest={reactionRequest}
+      onReactionRequestSettled={setSettledRequestId}
       lively={props.lively}
       accessibilityLabel={props.accessibilityLabel ?? (interactive ? 'Companion' : undefined)}
       testID={props.testID}

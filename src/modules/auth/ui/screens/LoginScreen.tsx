@@ -394,12 +394,13 @@ const createStyles = ({
       justifyContent: 'center',
       marginBottom: space('md') + space('xs'),
       borderRadius: radius.round,
+      overflow: 'hidden',
       ...brandGlowShadow,
     },
     brandIcon: {
       width: '100%',
       height: '100%',
-      resizeMode: 'contain',
+      resizeMode: 'cover',
     },
     brandTitle: {
       ...ts.display,

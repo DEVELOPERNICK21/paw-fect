@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Image,
+  Pressable,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -11,11 +12,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { trackEvent } from '../../../../infrastructure/analytics/analytics';
 import { images } from '../../../../shared/assets/images';
+import { companionLines } from '../../../../shared/components/Companion';
+import { Mascot } from '../../../../shared/components/Mascot';
+import type { MascotReactionRequest } from '../../../../shared/components/Mascot';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { lineHeights } from '../../../../shared/theme/typography';
 import { useOnboardingDraftStore } from '../../store/onboardingDraftStore';
 import { OnboardingBlobBackdrop } from './components/OnboardingBlobBackdrop';
 import { ScalePressable } from './components/ScalePressable';
+
+const WELCOME_MASCOT_SIZE = 200;
+const WELCOME_GREETING: MascotReactionRequest = {
+  reaction: 'welcome',
+  id: 'onboarding-welcome',
+};
+const WELCOME_LINES = companionLines({ scene: 'onboarding', step: 'welcome' });
 
 type ThemeParams = {
   colors: ReturnType<typeof useTheme>['colors'];
@@ -54,6 +65,7 @@ const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
       width: 36,
       height: 36,
       borderRadius: radius.md,
+      overflow: 'hidden',
     },
     brandName: {
       fontSize: fontSizes.lg,
@@ -65,11 +77,21 @@ const createStyles = ({ colors, spacing, radius, fontSizes }: ThemeParams) =>
       alignItems: 'center',
       marginBottom: spacing.xl,
     },
-    heroImage: {
-      width: '100%',
+    speech: {
+      marginTop: spacing.sm,
+      backgroundColor: colors.surface,
+      borderColor: colors.borderSubtle,
+      borderWidth: 1,
+      borderRadius: radius.xl,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
       maxWidth: 320,
-      height: 280,
-      resizeMode: 'contain',
+    },
+    speechText: {
+      fontSize: fontSizes.base,
+      lineHeight: lineHeights.base,
+      color: colors.text.heading,
+      textAlign: 'center',
     },
     headline: {
       fontSize: fontSizes['2xl'],
@@ -152,6 +174,12 @@ export const OnboardingWelcomeScreen: React.FC = () => {
   const startActivation = useOnboardingDraftStore(state => state.startActivation);
   const setSignInIntent = useOnboardingDraftStore(state => state.setSignInIntent);
 
+  const [lineIndex, setLineIndex] = useState(0);
+  const welcomeLine = WELCOME_LINES[lineIndex % WELCOME_LINES.length];
+  const handleMascotPress = useCallback(() => {
+    setLineIndex(i => i + 1);
+  }, []);
+
   useEffect(() => {
     void trackEvent('onboarding_welcome_viewed');
   }, []);
@@ -191,12 +219,24 @@ export const OnboardingWelcomeScreen: React.FC = () => {
         </View>
 
         <View style={styles.heroWrap}>
-          <Image
-            source={images.petHd1}
-            style={styles.heroImage}
-            accessibilityIgnoresInvertColors
-            accessibilityLabel="Happy pet"
+          <Mascot
+            mood="wave"
+            size={WELCOME_MASCOT_SIZE}
+            interactive
+            onPress={handleMascotPress}
+            reactionRequest={WELCOME_GREETING}
+            accessibilityLabel="Your pet's buddy. Tap to say hi."
           />
+          <Pressable
+            onPress={handleMascotPress}
+            accessibilityRole="text"
+            accessibilityLabel={welcomeLine}
+            style={styles.speech}
+          >
+            <Text style={[styles.speechText, { fontFamily: fontFamilies.medium }]}>
+              {welcomeLine}
+            </Text>
+          </Pressable>
         </View>
 
         <Text

@@ -156,4 +156,23 @@ describe('Mascot (the companion)', () => {
     expect(lastRive()?.reactionRequest).toBe(reactionRequest);
     expect(lastRive()?.interactive).toBe(true);
   });
+
+  it('never hands a settled request to a remounted Rive view (blur and refocus)', () => {
+    const reactionRequest = { reaction: 'welcome', id: 'pet-created:p1' } as const;
+    const tree = mount(<Mascot mood="happy" reactionRequest={reactionRequest} />);
+    expect(lastRive()?.reactionRequest).toBe(reactionRequest);
+    const settle = lastRive()?.onReactionRequestSettled as (id: string) => void;
+    act(() => settle('pet-created:p1'));
+    expect(lastRive()?.reactionRequest).toBeNull();
+
+    mockScreenFocused = false;
+    act(() => tree.update(<Mascot mood="happy" reactionRequest={reactionRequest} />));
+    mockScreenFocused = true;
+    act(() => tree.update(<Mascot mood="happy" reactionRequest={reactionRequest} />));
+    expect(lastRive()?.reactionRequest).toBeNull();
+
+    const next = { reaction: 'welcome', id: 'pet-created:p2' } as const;
+    act(() => tree.update(<Mascot mood="happy" reactionRequest={next} />));
+    expect(lastRive()?.reactionRequest).toBe(next);
+  });
 });

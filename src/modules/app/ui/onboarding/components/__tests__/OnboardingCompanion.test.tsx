@@ -76,7 +76,7 @@ describe('OnboardingCompanion reading along', () => {
   });
 
   it('keeps its eyes still on every other step', () => {
-    for (const step of ['trustOpen', 'goal', 'planReveal', 'commitment'] as const) {
+    for (const step of ['welcome', 'firstReminder', 'trustOpen', 'goal', 'planReveal', 'commitment'] as const) {
       mockLook.mockClear();
       const tree = mount({ step, species: 'dog', petName: 'Bruno' });
       act(() => tree.update(<OnboardingCompanion step={step} species="dog" petName="Bruno Jr" />));
@@ -84,10 +84,12 @@ describe('OnboardingCompanion reading along', () => {
     }
   });
 
-  it('still passes the right mood and test id through to the bubble', () => {
-    mount({ step: 'goal', species: 'dog', petName: 'Bruno' });
-    expect(lastBubble().mood).toBe('happy');
-    expect(lastBubble().testID).toBe('onboarding-companion-goal');
+  it('still passes the reaction request and the right mood through to the bubble', () => {
+    const reactionRequest = { reaction: 'welcome', id: 'x' } as const;
+    mount({ step: 'firstReminder', species: 'dog', petName: 'Bruno', reactionRequest });
+    expect(lastBubble().reactionRequest).toBe(reactionRequest);
+    expect(lastBubble().mood).toBe('curious');
+    expect(lastBubble().testID).toBe('onboarding-companion-firstReminder');
   });
 
   it('copes with no name at all', () => {

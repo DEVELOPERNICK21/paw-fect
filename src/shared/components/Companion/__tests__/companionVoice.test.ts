@@ -1,4 +1,9 @@
-import { companionLines, whenPhrase } from '../companionVoice';
+import {
+  companionLines,
+  isStreakMilestone,
+  STREAK_MILESTONES,
+  whenPhrase,
+} from '../companionVoice';
 
 describe('companionLines', () => {
   it('always offers a primary line and an alternate', () => {
@@ -85,5 +90,59 @@ describe('walk and level-up voice', () => {
     const [line] = companionLines({ scene: 'levelup', level: 3, title: 'Trusty Pal', petName: 'Milo' });
     expect(line).toContain('Level 3');
     expect(line).toContain('Trusty Pals');
+  });
+});
+
+describe('loading, empty, error and celebration voice', () => {
+  const scenes = [
+    { scene: 'loading', kind: 'splash' },
+    { scene: 'loading', kind: 'savingFirstWin', petName: 'Milo' },
+    { scene: 'loading', kind: 'records', petName: 'Milo' },
+    ...(['pets', 'reminders', 'careTasks', 'dayNoPet', 'records', 'notifications'] as const).map(
+      kind => ({ scene: 'empty', kind, petName: 'Milo' }) as const,
+    ),
+    ...(['savingFirstWin', 'records', 'reminders'] as const).map(
+      kind => ({ scene: 'error', kind, petName: 'Milo' }) as const,
+    ),
+    { scene: 'saved', kind: 'reminder', petName: 'Milo' },
+    { scene: 'streak', days: 7, petName: 'Milo' },
+    { scene: 'onboarding', step: 'welcome' },
+    { scene: 'onboarding', step: 'firstReminder', petName: 'Milo' },
+  ] as const;
+
+  it.each(scenes)('has a primary line and an alternate for %o', scene => {
+    const lines = companionLines(scene);
+    expect(lines.length).toBeGreaterThanOrEqual(2);
+    expect(lines.every(l => l.trim().length > 0)).toBe(true);
+  });
+
+  it('never blames the user when something fails', () => {
+    for (const kind of ['savingFirstWin', 'records', 'reminders'] as const) {
+      for (const line of companionLines({ scene: 'error', kind, petName: 'Milo' })) {
+        expect(line).not.toMatch(/your fault|you failed|wrong|error/i);
+      }
+    }
+  });
+
+  it('falls back to "your pet" when there is no name', () => {
+    expect(companionLines({ scene: 'empty', kind: 'records' })[0]).toContain('your pet');
+    expect(companionLines({ scene: 'loading', kind: 'savingFirstWin', petName: '  ' })[0]).toBe(
+      "Saving your pet's reminder...",
+    );
+  });
+
+  it('greets the named pet on the first reminder step', () => {
+    expect(companionLines({ scene: 'onboarding', step: 'firstReminder', petName: 'Milo' })[0]).toContain(
+      'Nice to meet Milo!',
+    );
+  });
+
+  it('celebrates streaks only at milestones', () => {
+    expect(STREAK_MILESTONES).toEqual([3, 7, 14, 30, 60, 100]);
+    expect(isStreakMilestone(7)).toBe(true);
+    expect(isStreakMilestone(8)).toBe(false);
+    expect(companionLines({ scene: 'streak', days: 30, petName: 'Milo' })[0]).toBe(
+      '30 days in a row! Milo has the best human.',
+    );
   });
 });

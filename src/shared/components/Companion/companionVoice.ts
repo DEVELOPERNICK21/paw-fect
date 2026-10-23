@@ -47,9 +47,28 @@ export type CompanionScene =
   | { scene: 'onboarding'; step: CompanionOnboardingStep; petName?: string }
   | { scene: 'celebrate'; kind: 'task' | 'day'; petName: string }
   | { scene: 'levelup'; level: number; title: string; petName: string }
-  | { scene: 'walk'; petName: string; done: number; total: number; streakDays: number };
+  | { scene: 'walk'; petName: string; done: number; total: number; streakDays: number }
+  | { scene: 'loading'; kind: CompanionLoadingKind; petName?: string }
+  | { scene: 'empty'; kind: CompanionEmptyKind; petName?: string }
+  | { scene: 'error'; kind: CompanionErrorKind; petName?: string }
+  | { scene: 'saved'; kind: 'reminder'; petName?: string }
+  | { scene: 'streak'; days: number; petName: string };
+
+export type CompanionLoadingKind = 'splash' | 'savingFirstWin' | 'records';
+
+export type CompanionEmptyKind =
+  | 'pets'
+  | 'reminders'
+  | 'careTasks'
+  | 'dayNoPet'
+  | 'records'
+  | 'notifications';
+
+export type CompanionErrorKind = 'savingFirstWin' | 'records' | 'reminders';
 
 export type CompanionOnboardingStep =
+  | 'welcome'
+  | 'firstReminder'
   | 'trustOpen'
   | 'problemNaming'
   | 'petBasics'
@@ -164,6 +183,16 @@ export function companionLines(ctx: CompanionScene): string[] {
     case 'onboarding': {
       const pet = ctx.petName?.trim() ? ctx.petName.trim() : 'your pet';
       switch (ctx.step) {
+        case 'welcome':
+          return [
+            "Hi, I'm your pet's buddy! I'll help you never miss a vaccine, dose or checkup.",
+            'Tap me any time. I like that.',
+          ];
+        case 'firstReminder':
+          return [
+            `Nice to meet ${pet}! What should I remind you about first? I'll handle the rest.`,
+            `A walk, a dose or a checkup. You can add more later.`,
+          ];
         case 'trustOpen':
           return [
             "Hi! I'm your pet's buddy. Two minutes and I'll build a care plan for your pet.",
@@ -246,5 +275,91 @@ export function companionLines(ctx: CompanionScene): string[] {
         `Welcome, ${ctx.petName}! I'll help keep ${ctx.petName} healthy.`,
         `Let's make every checkup count.`,
       ];
+    case 'loading': {
+      const pet = ctx.petName?.trim() || 'your pet';
+      switch (ctx.kind) {
+        case 'splash':
+          return [`Getting everything ready...`, `Fetching the treats...`];
+        case 'savingFirstWin':
+          return [
+            `Saving ${pet}'s reminder...`,
+            `Building ${pet}'s care plan...`,
+            `Almost there...`,
+          ];
+        default:
+          return [`Opening ${pet}'s health records...`, `Dusting off the files...`];
+      }
+    }
+    case 'empty': {
+      const pet = ctx.petName?.trim() || 'your pet';
+      switch (ctx.kind) {
+        case 'pets':
+          return [
+            `It's quiet in here. Add your first pet and I'll start looking after them.`,
+            `One name and a birthday is all I need.`,
+          ];
+        case 'reminders':
+          return [
+            `No reminders yet. Add one and I'll make sure you never miss it.`,
+            `Walks, doses, checkups: I remember them all.`,
+          ];
+        case 'careTasks':
+          return [
+            `Nothing planned for ${pet} yet. Set up a routine and we'll do it together.`,
+            `Feeding, walks, grooming: I'll keep the day on track.`,
+          ];
+        case 'dayNoPet':
+          return [
+            `Add a pet and I'll plan the day for you both.`,
+            `I'm ready when you are.`,
+          ];
+        case 'records':
+          return [
+            `No health records for ${pet} yet. Add the last vet visit and I'll take it from there.`,
+            `Vaccines, deworming, checkups: all in one place.`,
+          ];
+        default:
+          return [
+            `All quiet. I'll tap you on the shoulder when something needs you.`,
+            `No news is good news.`,
+          ];
+      }
+    }
+    case 'error': {
+      const pet = ctx.petName?.trim() || 'your pet';
+      switch (ctx.kind) {
+        case 'savingFirstWin':
+          return [
+            `Hmm, I couldn't save ${pet}'s reminder. Let's try that again.`,
+            `Check your connection, then tap Try again.`,
+          ];
+        case 'records':
+          return [
+            `I couldn't open ${pet}'s records just now. Let's try again.`,
+            `Nothing is lost. It's probably the connection.`,
+          ];
+        default:
+          return [
+            `I couldn't load your reminders. Let's try again.`,
+            `Nothing is lost. It's probably the connection.`,
+          ];
+      }
+    }
+    case 'saved': {
+      const pet = ctx.petName?.trim() || 'your pet';
+      return [`Got it! I'll remind you for ${pet}.`, `One less thing to remember.`];
+    }
+    case 'streak':
+      return [
+        `${ctx.days} days in a row! ${ctx.petName} has the best human.`,
+        `Look at us go. Same time tomorrow?`,
+      ];
   }
+}
+
+/** Streak lengths worth a celebration. */
+export const STREAK_MILESTONES: readonly number[] = [3, 7, 14, 30, 60, 100];
+
+export function isStreakMilestone(days: number): boolean {
+  return STREAK_MILESTONES.includes(days);
 }

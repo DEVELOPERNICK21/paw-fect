@@ -2,7 +2,10 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 
 import { AppText } from '../../../../shared/components/AppText';
-import { companionLines } from '../../../../shared/components/Companion';
+import {
+  companionLines,
+  isStreakMilestone,
+} from '../../../../shared/components/Companion';
 import { Mascot, type MascotSpecies } from '../../../../shared/components/Mascot';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 
@@ -121,11 +124,10 @@ export const WellnessCompletionToast: React.FC<WellnessCompletionToastProps> = (
     return null;
   }
 
-  const [title] = companionLines({
-    scene: 'celebrate',
-    kind: rewardKind,
-    petName,
-  });
+  const [title] =
+    rewardKind === 'day' && isStreakMilestone(streakDays)
+      ? companionLines({ scene: 'streak', days: streakDays, petName })
+      : companionLines({ scene: 'celebrate', kind: rewardKind, petName });
 
   const subtitle =
     rewardKind === 'day'

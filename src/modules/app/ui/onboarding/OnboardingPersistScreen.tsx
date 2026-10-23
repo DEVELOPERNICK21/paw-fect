@@ -1,14 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  StatusBar,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { StatusBar, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AppText } from '../../../../shared/components/AppText';
-import { Button } from '../../../../shared/components/Button';
+import {
+  companionLines,
+  MascotErrorState,
+  MascotLoader,
+} from '../../../../shared/components/Companion';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { useAuthStore } from '../../../auth/store/authStore';
 import { useOnboardingDraftStore } from '../../store/onboardingDraftStore';
@@ -35,24 +33,10 @@ const createStyles = ({ colors, spacing }: ThemeParams) =>
       justifyContent: 'center',
       paddingHorizontal: spacing.xl,
     },
-    message: {
-      marginTop: spacing.lg,
-      textAlign: 'center',
-      color: colors.text.heading,
-    },
-    errorMessage: {
-      marginTop: spacing.md,
-      textAlign: 'center',
-      color: colors.danger,
-    },
-    retryWrap: {
-      marginTop: spacing.xl,
-      width: '100%',
-    },
   });
 
 export const OnboardingPersistScreen: React.FC = () => {
-  const { colors, spacing, textStyles, isDarkMode } = useTheme();
+  const { colors, spacing, isDarkMode } = useTheme();
   const styles = useMemo(
     () => createStyles({ colors, spacing }),
     [colors, spacing],
@@ -60,7 +44,7 @@ export const OnboardingPersistScreen: React.FC = () => {
 
   const userId = useAuthStore(state => state.user?.id);
   const nickname = useOnboardingDraftStore(
-    state => state.draft.petDraft?.nickname.trim() || 'your pet',
+    state => state.draft.petDraft?.nickname.trim() ?? '',
   );
   const persistFirstWin = useOnboardingDraftStore(state => state.persistFirstWin);
 
@@ -96,7 +80,17 @@ export const OnboardingPersistScreen: React.FC = () => {
     void runPersist();
   }, [runPersist]);
 
-  const savingLabel = `Saving ${nickname}'s reminder…`;
+  const savingLines = useMemo(
+    () => companionLines({ scene: 'loading', kind: 'savingFirstWin', petName: nickname }),
+    [nickname],
+  );
+  const errorLines = useMemo(
+    () => companionLines({ scene: 'error', kind: 'savingFirstWin', petName: nickname }),
+    [nickname],
+  );
+  const handleRetry = useCallback(() => {
+    void runPersist();
+  }, [runPersist]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -106,28 +100,16 @@ export const OnboardingPersistScreen: React.FC = () => {
       />
       <View style={styles.container}>
         {uiState === 'loading' ? (
-          <>
-            <ActivityIndicator size="large" color={colors.accent} />
-            <AppText style={[textStyles.title, styles.message]}>
-              {savingLabel}
-            </AppText>
-          </>
+          <MascotLoader lines={savingLines} testID="onboarding-persist-loader" />
         ) : null}
 
         {uiState === 'error' ? (
-          <>
-            <AppText style={[textStyles.title, styles.message]}>
-              {savingLabel}
-            </AppText>
-            {errorMessage ? (
-              <AppText style={[textStyles.body, styles.errorMessage]}>
-                {errorMessage}
-              </AppText>
-            ) : null}
-            <View style={styles.retryWrap}>
-              <Button title="Retry" onPress={() => void runPersist()} />
-            </View>
-          </>
+          <MascotErrorState
+            title={errorLines[0]}
+            lines={errorMessage ? [errorMessage] : errorLines.slice(1)}
+            onRetry={handleRetry}
+            testID="onboarding-persist-error"
+          />
         ) : null}
       </View>
     </SafeAreaView>

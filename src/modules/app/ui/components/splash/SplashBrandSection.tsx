@@ -21,6 +21,8 @@ interface SplashBrandSectionProps {
   subtitle?: string;
   iconAnimatedStyle?: StyleProp<ViewStyle>;
   iconPulseStyle?: StyleProp<ViewStyle>;
+  /** Shown instead of the app icon (e.g. the companion). Floats with `iconAnimatedStyle`. */
+  hero?: React.ReactNode;
 }
 
 export const SplashBrandSection: React.FC<SplashBrandSectionProps> = ({
@@ -28,25 +30,32 @@ export const SplashBrandSection: React.FC<SplashBrandSectionProps> = ({
   subtitle,
   iconAnimatedStyle,
   iconPulseStyle,
+  hero,
 }) => {
   const { colors } = useTheme();
 
   return (
     <View style={styles.container}>
-      <Animated.View
-        style={[
-          styles.iconPulse,
-          { backgroundColor: colors.brandTint12 },
-          iconPulseStyle,
-        ]}
-      />
-      <Animated.View style={[styles.logoTile, iconAnimatedStyle]}>
-        <Image
-          source={images.appIcon}
-          style={styles.appIcon}
-          resizeMode="cover"
-        />
-      </Animated.View>
+      {hero ? (
+        <Animated.View style={iconAnimatedStyle}>{hero}</Animated.View>
+      ) : (
+        <>
+          <Animated.View
+            style={[
+              styles.iconPulse,
+              { backgroundColor: colors.brandTint12 },
+              iconPulseStyle,
+            ]}
+          />
+          <Animated.View style={[styles.logoTile, iconAnimatedStyle]}>
+            <Image
+              source={images.appIcon}
+              style={styles.appIcon}
+              resizeMode="cover"
+            />
+          </Animated.View>
+        </>
+      )}
 
       <AppText
         style={[
@@ -85,6 +94,7 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
   appIcon: {
     width: SPLASH_LOGO.size,

@@ -6,7 +6,7 @@ import React, {
   useMemo,
   useRef,
 } from 'react';
-import { Pressable, StyleSheet, View, type GestureResponderEvent } from 'react-native';
+import { Image, Pressable, StyleSheet, View, type GestureResponderEvent } from 'react-native';
 import {
   Fit,
   RiveView,
@@ -22,7 +22,12 @@ import { useAppIsActive } from '../../hooks/useAppIsActive';
 import { createTapLadder, gazeFromTouch, moodAllowsIdleLife, type Gaze } from './mascotInteraction';
 import { createMascotReactionGate } from './mascotReactions';
 import { useMascotLife } from './useMascotLife';
-import { RIVE_PROPS, RIVE_TRIGGER_FOR, type MascotRiveSource } from './mascotRiveSource';
+import {
+  COMPANION_STILL,
+  RIVE_PROPS,
+  RIVE_TRIGGER_FOR,
+  type MascotRiveSource,
+} from './mascotRiveSource';
 import type { MascotHandle, MascotMood, MascotReaction, MascotReactionRequest } from './mascotTypes';
 
 export interface RiveMascotProps {
@@ -41,6 +46,8 @@ export interface RiveMascotProps {
   paused?: boolean;
   /** Play a reaction once, as soon as the mascot is loaded and visible (see `MascotReactionRequest`). */
   reactionRequest?: MascotReactionRequest | null;
+  /** Called with the request id once it has played or expired, so a remount does not replay it. */
+  onReactionRequestSettled?: (id: string | number) => void;
   /**
    * Fidget when left alone (glances around, now and then a curious "hm?"). Defaults to `interactive`.
    * Never while asleep, busy, celebrating or nudging; at most one unprompted reaction a minute.
@@ -74,6 +81,7 @@ export const RiveMascot = forwardRef<MascotHandle, RiveMascotProps>(function Riv
     onFailed,
     paused = false,
     reactionRequest,
+    onReactionRequestSettled,
     lively,
     accessibilityLabel,
     testID,
@@ -183,6 +191,7 @@ export const RiveMascot = forwardRef<MascotHandle, RiveMascotProps>(function Riv
     const ttl = reactionRequest.ttlMs ?? DEFAULT_REQUEST_TTL_MS;
     if (Date.now() - requestSeen.current.at > ttl) {
       requestDone.current = reactionRequest.id;
+      onReactionRequestSettled?.(reactionRequest.id);
       return;
     }
     if (!ready || !shouldPlay) {
@@ -190,7 +199,8 @@ export const RiveMascot = forwardRef<MascotHandle, RiveMascotProps>(function Riv
     }
     requestDone.current = reactionRequest.id;
     react(reactionRequest.reaction);
-  }, [reactionRequest, ready, shouldPlay, react]);
+    onReactionRequestSettled?.(reactionRequest.id);
+  }, [reactionRequest, ready, shouldPlay, react, onReactionRequestSettled]);
 
   const lookTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(
@@ -277,7 +287,8 @@ export const RiveMascot = forwardRef<MascotHandle, RiveMascotProps>(function Riv
         style={StyleSheet.flatten([box])}
       />
     ) : (
-      <View style={box} />
+      // Same artwork as the rest pose, so the character is there from the first frame.
+      <Image source={COMPANION_STILL} resizeMode="contain" style={StyleSheet.flatten([box])} />
     );
 
   if (interactive) {

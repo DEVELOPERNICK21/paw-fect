@@ -21,6 +21,10 @@ import type {
 } from '../../../../app/navigation/types';
 import { useAppTabBarInset } from '../../../../app/navigation/layout';
 import { AppText } from '../../../../shared/components/AppText';
+import {
+  companionLines,
+  MascotEmptyState,
+} from '../../../../shared/components/Companion';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
 import { Paw3dIcon } from '../../../../shared/components/Paw3dIcon';
 import { useTheme } from '../../../../shared/hooks/useTheme';
@@ -32,6 +36,8 @@ import { useScheduleStore } from '../../store/scheduleStore';
 import { CareBlockDetailSheet } from '../components/CareBlockDetailSheet';
 import { CareDayPath } from '../components/CareDayPath';
 import { formatScheduleDateLabel } from '../utils/scheduleDisplay';
+
+const EMPTY_DAY_NO_PET_LINES = companionLines({ scene: 'empty', kind: 'dayNoPet' });
 
 type DayViewRoute =
   | RouteProp<PetsStackParamList, 'DayView'>
@@ -249,9 +255,13 @@ export const DayViewScreen: React.FC = () => {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.empty}>
-          <AppText style={[textStyles.body, { color: colors.text.secondary }]}>
-            Add a pet to see today&apos;s schedule.
-          </AppText>
+          <MascotEmptyState
+            mood="wave"
+            lines={EMPTY_DAY_NO_PET_LINES}
+            actionLabel="Add pet"
+            onAction={() => navigation.navigate('PetsTab', { screen: 'AddPet' })}
+            testID="day-empty-no-pet"
+          />
         </View>
       </SafeAreaView>
     );

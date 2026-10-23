@@ -9,16 +9,28 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { RouteProp } from '@react-navigation/native';
 
 import { useAppTabBarInset } from '../../../../app/navigation/layout';
-import type { ReminderListRootNavigation } from '../../../../app/navigation/types';
+import type {
+  NotificationsStackParamList,
+  ReminderListRootNavigation,
+} from '../../../../app/navigation/types';
+import {
+  CompanionBubble,
+  companionLines,
+  MascotEmptyState,
+  MascotErrorState,
+} from '../../../../shared/components/Companion';
 import { MaterialIcon } from '../../../../shared/components/MaterialIcon';
-import { Mascot } from '../../../../shared/components/Mascot';
-import { useActiveMascotSpecies } from '../../../app/ui/hooks/useActiveMascotSpecies';
 import { useTheme, type Theme } from '../../../../shared/hooks/useTheme';
 import type { Reminder } from '../../domain/models/Reminder';
 import { useReminderStore } from '../../store/reminderStore';
+import { useReminderSavedCheer } from '../hooks/useReminderSavedCheer';
+
+const EMPTY_REMINDERS_LINES = companionLines({ scene: 'empty', kind: 'reminders' });
+const ERROR_REMINDERS_LINES = companionLines({ scene: 'error', kind: 'reminders' });
 
 const iconByType: Record<
   string,
@@ -79,42 +91,6 @@ const createStyles = ({ colors }: Pick<Theme, 'colors'>) =>
       paddingHorizontal: 24,
       minHeight: 200,
     },
-    errorText: {
-      textAlign: 'center',
-      fontSize: 14,
-      lineHeight: 20,
-      color: colors.danger,
-    },
-    emptyState: {
-      marginTop: 80,
-      borderRadius: 16,
-      backgroundColor: colors.surface,
-      padding: 20,
-      alignItems: 'center',
-    },
-    mascotWrap: { marginBottom: 12 },
-    emptyTitle: { fontSize: 20, lineHeight: 26, color: colors.text.heading },
-    emptySubtitle: {
-      marginTop: 8,
-      fontSize: 14,
-      lineHeight: 20,
-      color: colors.text.secondary,
-      textAlign: 'center',
-    },
-    primaryBtn: {
-      marginTop: 16,
-      height: 48,
-      borderRadius: 12,
-      backgroundColor: colors.accent,
-      paddingHorizontal: 18,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    primaryBtnText: {
-      color: colors.text.inverse,
-      fontSize: 15,
-      lineHeight: 20,
-    },
     card: {
       borderRadius: 12,
       backgroundColor: colors.surface,
@@ -151,6 +127,7 @@ const createStyles = ({ colors }: Pick<Theme, 'colors'>) =>
       justifyContent: 'center',
     },
     textWrap: { flex: 1 },
+    savedCheer: { marginBottom: 16 },
     cardTitle: { color: colors.text.heading, fontSize: 15, lineHeight: 20 },
     cardMeta: {
       marginTop: 2,
@@ -162,6 +139,7 @@ const createStyles = ({ colors }: Pick<Theme, 'colors'>) =>
 
 export const ReminderListScreen: React.FC = () => {
   const navigation = useNavigation<ReminderListRootNavigation>();
+  const route = useRoute<RouteProp<NotificationsStackParamList, 'ReminderList'>>();
   const tabBarInset = useAppTabBarInset();
   const { fontFamilies, colors } = useTheme();
   const reminders = useReminderStore(s => s.reminders);
@@ -171,6 +149,7 @@ export const ReminderListScreen: React.FC = () => {
   const deleteReminder = useReminderStore(s => s.deleteReminder);
 
   const styles = useMemo(() => createStyles({ colors }), [colors]);
+  const savedCheer = useReminderSavedCheer(route.params);
 
   const confirmDelete = useCallback(
     (reminderId: string, title: string) => {
@@ -245,8 +224,6 @@ export const ReminderListScreen: React.FC = () => {
     [colors, confirmDelete, fontFamilies, navigation, styles],
   );
 
-  const mascotSpecies = useActiveMascotSpecies();
-
   const listEmpty = useMemo(() => {
     if (loading) {
       return (
@@ -257,40 +234,26 @@ export const ReminderListScreen: React.FC = () => {
     }
     if (error) {
       return (
-        <View style={styles.centered}>
-          <Text style={[styles.errorText, { fontFamily: fontFamilies.medium }]}>
-            {error}
-          </Text>
-        </View>
+        <MascotErrorState
+          title={ERROR_REMINDERS_LINES[0]}
+          lines={[error]}
+          onRetry={() => {
+            loadReminders().catch(() => {});
+          }}
+          testID="reminders-error"
+        />
       );
     }
     return (
-      <View style={styles.emptyState}>
-        <View style={styles.mascotWrap}>
-          <Mascot mood="happy" species={mascotSpecies} size={88} />
-        </View>
-        <Text style={[styles.emptyTitle, { fontFamily: fontFamilies.bold }]}>
-          No reminders yet
-        </Text>
-        <Text
-          style={[styles.emptySubtitle, { fontFamily: fontFamilies.medium }]}
-        >
-          Quick extras — vet follow-ups, grooming, anything you want nudged
-          about.
-        </Text>
-        <Pressable
-          style={styles.primaryBtn}
-          onPress={() => navigation.navigate('AddReminder')}
-        >
-          <Text
-            style={[styles.primaryBtnText, { fontFamily: fontFamilies.bold }]}
-          >
-            Add reminder
-          </Text>
-        </Pressable>
-      </View>
+      <MascotEmptyState
+        title="No reminders yet"
+        lines={EMPTY_REMINDERS_LINES}
+        actionLabel="Add reminder"
+        onAction={() => navigation.navigate('AddReminder')}
+        testID="reminders-empty"
+      />
     );
-  }, [colors.primary, error, fontFamilies, loading, mascotSpecies, navigation, styles]);
+  }, [colors.primary, error, loadReminders, loading, navigation, styles]);
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
@@ -331,6 +294,23 @@ export const ReminderListScreen: React.FC = () => {
           { paddingBottom: tabBarInset + 12 },
         ]}
         showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          savedCheer ? (
+            <View style={styles.savedCheer}>
+              <CompanionBubble
+                species="dog"
+                mood="happy"
+                lines={companionLines({
+                  scene: 'saved',
+                  kind: 'reminder',
+                  petName: savedCheer.petName,
+                })}
+                reactionRequest={savedCheer.request}
+                testID="reminders-saved-cheer"
+              />
+            </View>
+          ) : null
+        }
         ListEmptyComponent={listEmpty}
       />
     </SafeAreaView>

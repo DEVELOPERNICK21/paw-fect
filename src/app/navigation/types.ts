@@ -58,7 +58,8 @@ export type NotificationsStackParamList = {
   DayView: { petId?: string; blockId?: string } | undefined;
   NotificationInbox: undefined;
   NotificationDetail: { notificationId: string };
-  ReminderList: undefined;
+  /** `savedAt` is set right after a reminder was created, so the companion can cheer once. */
+  ReminderList: { savedAt?: number; savedPetName?: string } | undefined;
   AddReminder: undefined;
   ReminderDetail: { reminderId: string };
 };

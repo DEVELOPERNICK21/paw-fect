@@ -2,6 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Animated, StatusBar, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { companionLines } from '../../../../shared/components/Companion';
+import { Mascot } from '../../../../shared/components/Mascot';
+import type { MascotReactionRequest } from '../../../../shared/components/Mascot';
 import { APP_VERSION_LABEL } from '../../../../shared/constants/appMeta';
 import { useTheme } from '../../../../shared/hooks/useTheme';
 import { SplashBrandSection } from '../components/splash/SplashBrandSection';
@@ -27,8 +30,23 @@ const SPLASH_DECOR_OPACITY = {
   bottom: { min: 0.75, max: 1 },
 } as const;
 
+const SPLASH_MASCOT_SIZE = 168;
+const SPLASH_GREETING: MascotReactionRequest = { reaction: 'welcome', id: 'splash-greeting' };
+const SPLASH_LINES = companionLines({ scene: 'loading', kind: 'splash' });
+const SPLASH_LINE_ROTATE_MS = 1400;
+
 export const SplashScreen: React.FC = () => {
   const { colors, isDarkMode } = useTheme();
+  const [lineIndex, setLineIndex] = useState(0);
+  const splashLine = SPLASH_LINES[lineIndex % SPLASH_LINES.length];
+
+  useEffect(() => {
+    const timer = setInterval(
+      () => setLineIndex(i => i + 1),
+      SPLASH_LINE_ROTATE_MS,
+    );
+    return () => clearInterval(timer);
+  }, []);
   const styles = useMemo(
     () => createSplashScreenStyles(colors),
     [colors],
@@ -151,13 +169,20 @@ export const SplashScreen: React.FC = () => {
               transform: [{ scale: logoScale }, { translateY: logoFloatY }],
             }}
             iconPulseStyle={{ opacity: logoPulse }}
+            hero={
+              <Mascot
+                mood="wave"
+                size={SPLASH_MASCOT_SIZE}
+                reactionRequest={SPLASH_GREETING}
+              />
+            }
           />
         </View>
 
         <View style={styles.bottomSection}>
           <SplashLoadingSection
             progress={progress}
-            label="Preparing your pet's dashboard..."
+            label={splashLine}
             version={APP_VERSION_LABEL}
           />
         </View>

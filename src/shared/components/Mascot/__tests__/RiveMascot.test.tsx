@@ -307,6 +307,24 @@ describe('RiveMascot', () => {
       expect(fired('curious')).toBe(0);
     });
 
+    it('reports a request as settled once it played, or once it expired', () => {
+      const onReactionRequestSettled = jest.fn();
+      const played = mount({ reactionRequest: request('a'), onReactionRequestSettled });
+      expect(onReactionRequestSettled).toHaveBeenCalledWith('a');
+      played.rerender({});
+      expect(onReactionRequestSettled).toHaveBeenCalledTimes(1);
+
+      const expired = mount({
+        paused: true,
+        reactionRequest: request('b', 'curious', 1_000),
+        onReactionRequestSettled,
+      });
+      expect(onReactionRequestSettled).toHaveBeenCalledTimes(1);
+      now += 1_001;
+      expired.rerender({ paused: false });
+      expect(onReactionRequestSettled).toHaveBeenLastCalledWith('b');
+    });
+
     it('does nothing for a null request', () => {
       mount({ reactionRequest: null });
       for (const name of Object.keys(RIVE_PROPS)) {
