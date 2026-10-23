@@ -17,6 +17,7 @@ import { mascotMoodForHome } from '../../../domain/mascot/mascotMood';
 import type { HomeDashboardViewModel } from '../../../domain/models/HomeDashboardViewModel';
 import { daysUntilDate } from '../../../domain/utils/homeDashboardDates';
 import { useActiveMascotSpecies } from '../../hooks/useActiveMascotSpecies';
+import { useHomeGreeting } from '../../hooks/useHomeGreeting';
 
 export interface HomeCompanionProps {
   viewModel: HomeDashboardViewModel;
@@ -27,6 +28,8 @@ const LEVEL_UP_SHOWN_MS = 9000;
 
 /**
  * The app character on Home, as a small game loop:
+ *  - it recognises you: a hello once a day, a welcome back after days away, a party on the
+ *    pet's birthday (see `useHomeGreeting`),
  *  - it greets you for the day's state (overdue, coming up, all done, night...),
  *  - it walks toward a treat as today's tasks get done,
  *  - your bond with it levels up as you keep caring (and it celebrates).
@@ -39,6 +42,12 @@ export const HomeCompanion: React.FC<HomeCompanionProps> = ({
   const now = useMemo(() => new Date(viewModel.now), [viewModel.now]);
   const mood = mascotMoodForHome(viewModel, now);
   const petName = viewModel.activePet?.name ?? 'your pet';
+  const greeting = useHomeGreeting({
+    enabled: !paused,
+    hasPet: viewModel.hasAnyPet && viewModel.activePet != null,
+    petName,
+    petDob: viewModel.activePet?.dob,
+  });
 
   const streakDays = useScheduleStore(s => s.careStreakDays);
   const bond = useBondProgress();
@@ -77,6 +86,10 @@ export const HomeCompanion: React.FC<HomeCompanionProps> = ({
     });
   }, [pendingLevelUp, mood, viewModel, now, petName]);
 
+  // A level-up is the bigger moment and wins; otherwise a fresh greeting leads, and a tap goes on to Home's usual lines.
+  const shownLines =
+    pendingLevelUp == null && greeting.lines != null ? [...greeting.lines, ...lines] : lines;
+
   const caption = companionLines({
     scene: 'walk',
     petName,
@@ -89,13 +102,13 @@ export const HomeCompanion: React.FC<HomeCompanionProps> = ({
     <View style={{ gap: 12 }} testID="home-companion">
       <CompanionBubble
         species={species}
-        mood={pendingLevelUp != null ? 'celebrating' : mood}
-        lines={lines}
+        mood={pendingLevelUp != null ? 'celebrating' : (greeting.mood ?? mood)}
+        lines={shownLines}
         paused={paused}
         reactionRequest={
           pendingLevelUp != null
             ? { reaction: 'celebrate', id: `levelup-${pendingLevelUp}` }
-            : null
+            : greeting.request
         }
       />
       <BuddyWalkPath

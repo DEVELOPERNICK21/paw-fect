@@ -19,7 +19,9 @@ import {
 } from '@rive-app/react-native';
 
 import { useAppIsActive } from '../../hooks/useAppIsActive';
+import { createTapLadder, gazeFromTouch, moodAllowsIdleLife, type Gaze } from './mascotInteraction';
 import { createMascotReactionGate } from './mascotReactions';
+import { useMascotLife } from './useMascotLife';
 import { RIVE_PROPS, RIVE_TRIGGER_FOR, type MascotRiveSource } from './mascotRiveSource';
 import type { MascotHandle, MascotMood, MascotReaction, MascotReactionRequest } from './mascotTypes';
 
@@ -39,11 +41,18 @@ export interface RiveMascotProps {
   paused?: boolean;
   /** Play a reaction once, as soon as the mascot is loaded and visible (see `MascotReactionRequest`). */
   reactionRequest?: MascotReactionRequest | null;
+  /**
+   * Fidget when left alone (glances around, now and then a curious "hm?"). Defaults to `interactive`.
+   * Never while asleep, busy, celebrating or nudging; at most one unprompted reaction a minute.
+   */
+  lively?: boolean;
   accessibilityLabel?: string;
   testID?: string;
 }
 
 const LOOK_RESET_MS = 1400;
+/** Finger movement is followed at roughly 30 frames a second, no faster. */
+const TOUCH_MOVE_MIN_MS = 33;
 const DEFAULT_REQUEST_TTL_MS = 6000;
 
 /**
@@ -51,11 +60,24 @@ const DEFAULT_REQUEST_TTL_MS = 6000;
  * - `mood` is bound to the file's view model (written only when it changes);
  * - `ref.react(reaction)` fires one of the six reaction triggers, throttled by a
  *   priority gate so repeated calls never restart a playing animation;
- * - a tap fires `pet` and makes the character glance at the touch point;
+ * - the eyes follow the finger (touch, drag); a tap fires `pet`, and quick repeats escalate to a
+ *   playful then an excited reaction; left alone it fidgets (see `lively`);
  * - frames stop while the app is backgrounded or `paused` is set.
  */
 export const RiveMascot = forwardRef<MascotHandle, RiveMascotProps>(function RiveMascotView(
-  { source, mood, size, interactive, onPress, onFailed, paused = false, reactionRequest, accessibilityLabel, testID },
+  {
+    source,
+    mood,
+    size,
+    interactive,
+    onPress,
+    onFailed,
+    paused = false,
+    reactionRequest,
+    lively,
+    accessibilityLabel,
+    testID,
+  },
   ref,
 ) {
   const { riveFile, error: fileError } = useRiveFile(source);
@@ -145,7 +167,6 @@ export const RiveMascot = forwardRef<MascotHandle, RiveMascotProps>(function Riv
     },
     [gate, riveViewRef, triggers],
   );
-  useImperativeHandle(ref, () => ({ react }), [react]);
 
   // Declarative request: waits (without timers) until the mascot is ready and visible, plays
   // once per id, and is dropped if it had to wait longer than its ttl. The effect re-runs
@@ -181,27 +202,66 @@ export const RiveMascot = forwardRef<MascotHandle, RiveMascotProps>(function Riv
     [],
   );
 
+  /** Point the eyes at `gaze`, and glance back to the middle after `holdMs` unless told again. */
+  const holdLook = useCallback(
+    (gaze: Gaze, holdMs: number = LOOK_RESET_MS): void => {
+      if (!shouldPlayRef.current || !readyRef.current) {
+        return;
+      }
+      setLookX(gaze.x);
+      setLookY(gaze.y);
+      riveViewRef?.playIfNeeded();
+      if (lookTimer.current) {
+        clearTimeout(lookTimer.current);
+      }
+      lookTimer.current = setTimeout(() => {
+        lookTimer.current = null;
+        setLookX(0);
+        setLookY(0);
+        riveViewRef?.playIfNeeded();
+      }, holdMs);
+    },
+    [riveViewRef, setLookX, setLookY],
+  );
+  const look = useCallback(
+    (x: number, y: number, holdMs?: number): void => holdLook({ x, y }, holdMs),
+    [holdLook],
+  );
+  useImperativeHandle(ref, () => ({ react, look }), [react, look]);
+
+  // Left alone, a calm character glances around and now and then asks "hm?". A touch restarts the quiet.
+  const tapLadder = useRef(createTapLadder()).current;
+  const fidgets = (lively ?? interactive) && moodAllowsIdleLife(mood);
+  const { poke } = useMascotLife({ enabled: fidgets && ready && shouldPlay, react, look });
+
+  // The eyes follow the finger from the moment it lands, through a drag, until a moment after it lifts.
+  const lastTouchAt = useRef(0);
+  const handleTouch = useCallback(
+    (event: GestureResponderEvent) => {
+      const at = Date.now();
+      if (at - lastTouchAt.current < TOUCH_MOVE_MIN_MS) {
+        return;
+      }
+      lastTouchAt.current = at;
+      const { locationX, locationY } = event.nativeEvent;
+      holdLook(gazeFromTouch(locationX, locationY, size));
+      poke();
+    },
+    [holdLook, poke, size],
+  );
+
   const handlePress = useCallback(
     (event: GestureResponderEvent) => {
       if (shouldPlayRef.current && readyRef.current) {
         const { locationX, locationY } = event.nativeEvent;
-        // -1..1 from the view centre so the character glances at the touch.
-        setLookX((locationX / size - 0.5) * 2);
-        setLookY((locationY / size - 0.5) * 2);
-        riveViewRef?.playIfNeeded();
-        if (lookTimer.current) {
-          clearTimeout(lookTimer.current);
-        }
-        lookTimer.current = setTimeout(() => {
-          setLookX(0);
-          setLookY(0);
-          riveViewRef?.playIfNeeded();
-        }, LOOK_RESET_MS);
-        react('pet');
+        holdLook(gazeFromTouch(locationX, locationY, size));
+        // One tap is the heart; quick repeats escalate (see `createTapLadder`).
+        react(tapLadder.tap());
+        poke();
       }
       onPress?.();
     },
-    [onPress, react, riveViewRef, setLookX, setLookY, size],
+    [onPress, react, holdLook, tapLadder, poke, size],
   );
 
   const box = { width: size, height: size };
@@ -225,6 +285,8 @@ export const RiveMascot = forwardRef<MascotHandle, RiveMascotProps>(function Riv
       <Pressable
         testID={testID}
         onPress={handlePress}
+        onTouchStart={handleTouch}
+        onTouchMove={handleTouch}
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel ?? 'Pet mascot'}
       >

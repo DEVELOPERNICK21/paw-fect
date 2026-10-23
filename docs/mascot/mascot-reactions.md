@@ -23,7 +23,7 @@ const mascotRef = useRef<MascotHandle>(null);
   ref={mascotRef}
   mood="happy"          // persistent state: MascotMood
   size={96}
-  interactive           // tap = the `pet` reaction (and a glance toward the touch)
+  interactive           // eyes follow the finger; a tap = the heart, quick repeats escalate (see below)
   onPress={...}         // optional callback after a tap
   paused={!isFocused}   // optional: stop drawing + ignore reactions while hidden
 />
@@ -49,6 +49,7 @@ if a higher-priority reaction is playing. Re-rendering with the same `id` never 
 | `paused` | `false` | The app being backgrounded pauses it automatically. |
 | `reactionRequest` | none | See above. Ignored while the still image is showing. |
 | `animated` | `true` | `false` shows the still image (use inside long lists). |
+| `lively` | `interactive` | Fidget when left alone: glances around, and about once a minute a curious "?". Never while `sleepy`, `thinking`, `celebrating` or `nudge`. Set `false` to keep an interactive mascot still. |
 | `species` | none | Ignored: the companion is the same for every pet. Still accepted so existing callers did not have to change. |
 
 Reduce Motion: when the OS setting is on, the still image (`pawfect-companion-still.png`, same framing as the
@@ -69,7 +70,19 @@ actually started**. It returns `false` when:
   `pet` = `curious` = `attention`. So a burst of taps plays `pet` once, a tap never cuts off `success`, and
   `celebrate` takes over from `success`.
 
-Nothing in the component fires a trigger by itself: not on render, not on re-render, not on mood changes.
+Nothing fires on render, on re-render or on a mood change. The only reaction the component starts on its own is the
+idle curious "?" of a `lively` mascot, at most once a minute (see [`mascot-moments.md`](./mascot-moments.md)).
+
+### `MascotHandle.look(x, y, holdMs?)`
+Points the eyes (`x` right, `y` down, both -1..1) and glances back to the middle after `holdMs` (default 1.4 s)
+unless told again. Use it to point attention: at the field being typed in, at the button to press next. Onboarding's
+pet-name step uses it to read along as the name is typed (`gazeForTyping`). It is a no-op until the animation is
+loaded and visible, while paused, and while the still image is showing.
+
+### Touch
+The eyes follow a finger from touch-down, through a drag, until a moment after it lifts. Taps escalate when they
+come quickly (each within 2.5 s of the last): 1 tap `pet` (heart), 3 taps `welcome` (sparkles), 6 taps `celebrate`
+(cheer), then a 6 s cooldown during which taps only give the heart. The rules live in `mascotInteraction.ts`.
 
 ## Connecting a reaction to a real event
 Business logic stays out of the animation code. The pattern, as used for care tasks:

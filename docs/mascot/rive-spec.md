@@ -31,7 +31,7 @@ so **everything is driven through View Model data binding**, never `setNumberInp
 | Property | Type | Meaning |
 |---|---|---|
 | `mood` | Enum `happy, wave, curious, nudge, thinking, proud, celebrating, sleepy` | Persistent state. Loops until changed. Default `happy`. |
-| `lookX`, `lookY` | Number, -1..1 | The whole face (eyes, mouth, blush) shifts by up to 24 / 16 artboard units. Tap position drives it. |
+| `lookX`, `lookY` | Number, -1..1 | The whole face (eyes, mouth, blush) shifts by up to 40 / 26 artboard units (a visible glance even at 76 pt). A finger touching or dragging over the character, the idle glances and `ref.look()` drive it. |
 | `pet` | Trigger | Eyes closed and content, stronger blush, orange heart, head tilt, antennae wiggle. |
 | `welcome` | Trigger | Open smile, sparkles, two bounces, arm waves. |
 | `success` | Trigger | Open smile, sparks, happy bounce, antennae flap. |

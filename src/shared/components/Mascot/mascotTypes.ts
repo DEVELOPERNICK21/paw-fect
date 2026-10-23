@@ -74,6 +74,13 @@ export interface MascotHandle {
    * higher priority is already playing (so repeated calls never restart it).
    */
   react: (reaction: MascotReaction) => boolean;
+  /**
+   * Make the character look somewhere (`x` right, `y` down, both -1..1) and glance back to the
+   * middle after `holdMs` (default 1.4 s) unless told again. Use it to point attention: at the
+   * field being typed in, at the button to press next. No-op until the animation is loaded and
+   * visible, and while the still image is showing.
+   */
+  look: (x: number, y: number, holdMs?: number) => void;
 }
 
 export const MASCOT_MOODS: readonly MascotMood[] = [

@@ -30,6 +30,12 @@ export interface MascotProps {
    * still image is showing. See `MascotReactionRequest`.
    */
   reactionRequest?: MascotReactionRequest | null;
+  /**
+   * Let the character fidget when left alone: it glances around and, now and then, asks "hm?".
+   * Defaults to on for interactive mascots and off for decorative ones. Never while it is asleep,
+   * busy (thinking) or nudging, and never more than one unprompted reaction a minute.
+   */
+  lively?: boolean;
   /** Mascots are decorative by default; pass a label only when it carries meaning. */
   accessibilityLabel?: string;
   /** Show the still image instead of the animation (e.g. inside a long list). Reduce Motion also does. */
@@ -37,7 +43,7 @@ export interface MascotProps {
   testID?: string;
 }
 
-const NO_REACTIONS: MascotHandle = { react: () => false };
+const NO_REACTIONS: MascotHandle = { react: () => false, look: () => undefined };
 
 /** The still image has no reaction animations; its handle says so honestly. */
 const StillMascot = forwardRef<MascotHandle, MascotProps>(function StillMascotView(props, ref) {
@@ -86,6 +92,7 @@ export const Mascot = forwardRef<MascotHandle, MascotProps>(function MascotView(
       onFailed={onFailed}
       paused={props.paused}
       reactionRequest={props.reactionRequest}
+      lively={props.lively}
       accessibilityLabel={props.accessibilityLabel ?? (interactive ? 'Companion' : undefined)}
       testID={props.testID}
     />

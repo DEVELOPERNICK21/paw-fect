@@ -34,7 +34,7 @@ const Host: React.FC<{ handle: RefObject<MascotHandle | null>; petFilter: 'all' 
 
 function setup(petFilter: 'all' | string = 'all') {
   const react = jest.fn(() => true);
-  const handle: RefObject<MascotHandle | null> = { current: { react } };
+  const handle: RefObject<MascotHandle | null> = { current: { react, look: jest.fn() } };
   let tree!: ReturnType<typeof create>;
   act(() => {
     tree = create(<Host handle={handle} petFilter={petFilter} />);
